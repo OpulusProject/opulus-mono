@@ -19,7 +19,21 @@ export const auth = betterAuth({
   secret: config.betterAuthSecret,
   baseURL: config.betterAuthBaseURL || `http://localhost:${config.port}`,
   basePath: "/api/auth",
-  trustedOrigins: [config.clientUrl],
+  // Trusted origins: only the frontend client URL
+  // Bruno sends Origin header matching the client URL (simulating browser behavior)
+  // Ensure clientUrl is properly trimmed and not empty
+  trustedOrigins: (() => {
+    const clientUrl = config.clientUrl?.trim();
+    if (!clientUrl) {
+      console.warn("⚠️  CLIENT_URL is not set. Better Auth origin validation may fail.");
+      return [];
+    }
+    // Log trusted origins in development for debugging
+    if (config.nodeEnv === "development") {
+      console.log(`🔒 Better Auth trusted origins: [${clientUrl}]`);
+    }
+    return [clientUrl];
+  })(),
 });
 
 export type Session = typeof auth.$Infer.Session;
