@@ -11,8 +11,10 @@ export const auth = betterAuth({
     enabled: true,
   },
   session: {
-    expiresIn: 60 * 60 * 24 * 7, // Session lasts 7 days
-    updateAge: 60 * 60 * 24, // Refresh session if user was active within last day
+    // Session lasts 7 days
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    // Refresh session if user was active within last day
+    updateAge: 60 * 60 * 24, // 1 day
   },
   secret: config.betterAuthSecret,
   baseURL: config.betterAuthBaseURL || `http://localhost:${config.port}`,
@@ -21,3 +23,4 @@ export const auth = betterAuth({
 });
 
 export type Session = typeof auth.$Infer.Session;
+``

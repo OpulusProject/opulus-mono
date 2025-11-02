@@ -1,4 +1,5 @@
 import { Router } from "express";
+import authRouter from "./auth.js";
 
 const router = Router();
 
@@ -10,6 +11,9 @@ router.get("/healthcheck", (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// Authentication routes (Better Auth)
+router.use("/auth", authRouter);
 
 // Route placeholders (to be implemented)
 // router.use("/users", userRouter);

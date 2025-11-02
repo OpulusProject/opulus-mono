@@ -4,8 +4,7 @@ import "dotenv/config";
 import express, { json, urlencoded } from "express";
 import config from "@/config/default.js";
 import router from "@/routes/index.js";
-import { auth } from "@/lib/auth.js";
-import { toNodeHandler } from "better-auth/node";
+import { errorHandler } from "@/middleware/errorHandler.js";
 
 const app = express();
 
@@ -24,20 +23,11 @@ app.use(json());
 app.use(urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Better Auth Handler - must be mounted before other routes
-// Convert Better Auth handler to Express-compatible middleware
-const authHandler = toNodeHandler(auth);
-app.use("/api/auth", (req, res) => {
-  authHandler(req, res).catch((err: Error) => {
-    console.error("Better Auth handler error:", err);
-    if (!res.headersSent) {
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-});
-
-// API Routes
+// API Routes (includes /api/auth via routes/index.ts)
 app.use("/api", router);
+
+// Global error handler (must be last middleware)
+app.use(errorHandler);
 
 const PORT = config.port;
 
