@@ -1,0 +1,85 @@
+# Bruno Quick Start Guide
+
+## Creating a New Collection
+
+### Step 1: Copy Template
+```bash
+cd bruno/collections
+cp -r _template your-collection-name
+cd your-collection-name
+```
+
+### Step 2: Update Collection Config
+Edit `bruno.json`:
+```json
+{
+  "version": "1",
+  "name": "Your Collection Name",
+  "type": "collection"
+}
+```
+
+### Step 3: Create Endpoints
+Copy `Endpoint Template.bru` for each endpoint:
+```bash
+cp "Endpoint Template.bru" "Your Endpoint Name.bru"
+```
+
+Edit the `.bru` file:
+- Update `name` in meta
+- Change HTTP method (get, post, put, delete, patch)
+- Update URL: `{{base_url}}/api/your-endpoint`
+- Add request body if needed
+- Update documentation
+
+### Step 4: Organize
+- Delete `README.md` and create your own if needed
+- Delete `Endpoint Template.bru` when done
+
+## Example: Creating a Users Collection
+
+```bash
+# 1. Copy template
+cp -r bruno/collections/_template bruno/collections/users
+
+# 2. Create endpoints
+cd bruno/collections/users
+cp "Endpoint Template.bru" "Get User Profile.bru"
+cp "Endpoint Template.bru" "Update User Profile.bru"
+
+# 3. Edit each .bru file with endpoint details
+# 4. Update bruno.json name to "Users API"
+# 5. Delete template files
+```
+
+## Adding a New Endpoint to Existing Collection
+
+1. Copy `_template/Endpoint Template.bru`
+2. Rename it (e.g., `Create User.bru`)
+3. Place it in your collection folder
+4. Update the content:
+   - Meta name
+   - HTTP method and URL
+   - Request body/params
+   - Documentation
+
+## Using Variables
+
+All collections inherit from `bruno/variables.json`:
+- `{{base_url}}` - Use in all URLs
+
+Create `bruno/env.json` (gitignored) for environment-specific variables:
+```json
+{
+  "dev": { "base_url": "http://localhost:8080" },
+  "staging": { "base_url": "https://api-staging.opulus.com" }
+}
+```
+
+## Best Practices
+
+1. **Naming**: Use descriptive names (e.g., `Get User Profile.bru` not `endpoint1.bru`)
+2. **Sequencing**: Set `seq` in meta to control order in Bruno
+3. **Documentation**: Always fill out the `docs` section
+4. **Organization**: One collection per domain (users, plaid, transactions)
+5. **Templates**: Keep `_template` folder clean for reuse

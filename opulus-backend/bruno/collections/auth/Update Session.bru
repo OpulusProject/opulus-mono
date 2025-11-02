@@ -1,0 +1,53 @@
+meta {
+  name: Update Session
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{base_url}}/api/auth/session
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "ipAddress": "192.168.1.1",
+    "userAgent": "Mozilla/5.0..."
+  }
+}
+
+params:query {
+}
+
+docs {
+  # Update Session
+
+  Update session metadata (IP address, user agent, etc.).
+
+  **Endpoint:** `PATCH /api/auth/session`
+
+  ## Authentication
+
+  This endpoint requires a valid session cookie to be present in the request.
+
+  ## Request Body
+
+  - `ipAddress` (string, optional): IP address to update
+  - `userAgent` (string, optional): User agent to update
+
+  ## Response
+
+  Returns the updated session information.
+
+  ## Example Response
+
+  ```json
+  {
+    "session": {
+      "id": "session_123",
+      "updatedAt": "2024-01-01T12:00:00Z"
+    }
+  }
+  ```
+}
