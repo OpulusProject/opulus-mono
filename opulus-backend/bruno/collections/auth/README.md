@@ -6,18 +6,15 @@ Better Auth authentication endpoints.
 
 ## Endpoints
 
-- **Sign Up** - Register a new user account
-- **Sign In** - Authenticate with email and password
-- **Sign Out** - Sign out the current user
-- **Get Session** - Get current session information
-- **Update Session** - Update session metadata
+- **Sign Up** - Register a new user account (`POST /api/auth/sign-up/email`)
+- **Sign In** - Authenticate with email and password (`POST /api/auth/sign-in/email`)
+- **Sign Out** - Sign out the current user (`POST /api/auth/sign-out`)
 
 ## Usage
 
 1. Start with **Sign Up** to create a test user
 2. Use **Sign In** - Bruno will automatically store cookies
-3. Test **Get Session** to verify authentication
-4. Use **Sign Out** to end the session
+3. Use **Sign Out** to end the session
 
 ## Notes
 

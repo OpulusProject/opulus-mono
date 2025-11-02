@@ -11,7 +11,8 @@ router.get("/healthcheck", (req, res) => {
   });
 });
 
-// Note: Better Auth routes are mounted directly in server.ts at /api/auth
+// Note: Better Auth authentication routes (sign-in, sign-up, sign-out) 
+// are mounted directly in server.ts at /api/auth/*
 // This keeps Better Auth separate from other API routes
 
 // Route placeholders (to be implemented)
