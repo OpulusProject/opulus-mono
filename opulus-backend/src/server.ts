@@ -2,7 +2,9 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import "dotenv/config";
 import express, { json, urlencoded } from "express";
+import { toNodeHandler } from "better-auth/node";
 import config from "@/config/default.js";
+import { auth } from "@/lib/auth.js";
 import router from "@/routes/index.js";
 import { errorHandler } from "@/middleware/errorHandler.js";
 
@@ -18,12 +20,17 @@ app.use(
   }),
 );
 
-// Body Parser Middleware
+// Better Auth handler (mounted BEFORE body parsers)
+// Better Auth docs: express.json() should be used AFTER mounting Better Auth handler
+// Mounting it before prevents the client API from getting stuck on "pending"
+app.all("/api/auth/*", toNodeHandler(auth));
+
+// Body Parser Middleware (must come AFTER Better Auth handler)
 app.use(json());
 app.use(urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// API Routes (includes /api/auth via routes/index.ts)
+// API Routes
 app.use("/api", router);
 
 // Global error handler (must be last middleware)

@@ -1,5 +1,4 @@
 import { Router } from "express";
-import authRouter from "./auth.js";
 
 const router = Router();
 
@@ -12,8 +11,8 @@ router.get("/healthcheck", (req, res) => {
   });
 });
 
-// Authentication routes (Better Auth)
-router.use("/auth", authRouter);
+// Note: Better Auth routes are mounted directly in server.ts at /api/auth
+// This keeps Better Auth separate from other API routes
 
 // Route placeholders (to be implemented)
 // router.use("/users", userRouter);
