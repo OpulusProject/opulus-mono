@@ -65,14 +65,40 @@ cp "Endpoint Template.bru" "Update User Profile.bru"
 
 ## Using Variables
 
-All collections inherit from `bruno/variables.json`:
-- `{{base_url}}` - Use in all URLs
+Bruno uses native environment files in `environments/` folder. Variables are defined per environment:
 
-Create `bruno/env.json` (gitignored) for environment-specific variables:
-```json
-{
-  "dev": { "base_url": "http://localhost:8080" },
-  "staging": { "base_url": "https://api-staging.opulus.com" }
+- `{{base_url}}` - Use in all URLs
+- `{{test_email}}` - Test user email
+- `{{test_password}}` - Test user password
+- `{{test_name}}` - Test user name
+
+### First Time Setup
+
+**Create your local environment** (do this once):
+```bash
+cp bruno/environments/local.bru.example bruno/environments/local.bru
+```
+
+Then edit `bruno/environments/local.bru` with your test credentials. This file is gitignored so your personal credentials stay private.
+
+### Switching Environments
+
+Use the environment dropdown in Bruno's UI (top-right) to switch between:
+- **local** - `http://localhost:8080` (create from `local.bru.example`)
+- **staging** - `https://api-staging.opulus.com`
+- **production** - `https://api.opulus.com`
+
+All `{{variable}}` references automatically use the selected environment's values.
+
+### Adding a New Environment
+
+Create a new `.bru` file in `environments/`:
+```bru
+vars {
+  base_url: https://api-custom.opulus.com
+  test_email: [email protected]
+  test_password: TestPassword123!
+  test_name: Test User
 }
 ```
 

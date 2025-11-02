@@ -7,33 +7,52 @@ This directory contains Bruno API collections for testing the Opulus backend API
 ```
 bruno/
 ├── bruno.json              # Root collection config
-├── variables.json           # Global variables
-├── env.json                # Environment-specific variables (gitignored)
-├── collections/
+├── environments/           # Bruno native environments
+├── collections/            # API endpoint collections (auth, users, plaid, etc.)
 └── README.md               # This file
 ```
 
 ## Setup
 
 1. Install [Bruno](https://www.usebruno.com/) if you haven't already
-2. Open Bruno and select "Open Collection"
-3. Navigate to the `bruno` folder
-4. The collection will load with all sub-collections
+2. **Create your local environment** (first time only):
+   ```bash
+   cp bruno/environments/local.bru.example bruno/environments/local.bru
+   ```
+   Then edit `local.bru` with your test credentials.
+3. Open Bruno and select "Open Collection"
+4. Navigate to the `bruno` folder
+5. The collection will load with all sub-collections
+6. Select your environment from the dropdown (top-right in Bruno UI)
 
-## Variables
+## Environments
 
-### Global Variables (`variables.json`)
-Shared across all collections:
-- `base_url`: Base URL for the API (default: `http://localhost:8080`)
+Bruno uses native environment files (`.bru` files) in the `environments/` folder. Each environment defines variables that can be used across all requests.
+
+### Available Environments
+
+- **local** - Local development (`http://localhost:8080`) - **Not version controlled**
+  - Copy `local.bru.example` to `local.bru` and customize with your test credentials
+  - This file is gitignored to keep personal credentials private
+- **staging** - Staging server (version controlled)
+- **production** - Production server (version controlled)
+
+### Environment Variables
+
+Each environment file (e.g., `environments/local.bru`) defines:
+- `base_url`: Base URL for the API
 - `test_email`: Test user email for authentication requests
 - `test_password`: Test user password for authentication requests
 - `test_name`: Test user name for registration requests
 
-**Note:** Update these values in `variables.json` or `env.json` to match your test data.
+**Note:** 
+- The `local.bru` file is gitignored - each developer creates their own copy from `local.bru.example`
+- Update values in your `local.bru` to match your test data
+- Sensitive values (like real passwords) should not be committed to git
 
-### Environment Variables (`env.json`)
-Environment-specific variables, create a copy of this file from `env.json.example`.
-```
+### Switching Environments
+
+Use the environment dropdown in Bruno's UI (top-right corner) to switch between environments. All `{{variable}}` references in requests will automatically use the selected environment's values.
 
 
 ## Adding New Collections
