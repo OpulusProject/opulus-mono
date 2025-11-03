@@ -67,3 +67,4 @@ model Verification {
 
   @@map("verification")
 }
+
