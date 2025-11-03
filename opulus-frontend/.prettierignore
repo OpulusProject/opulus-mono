@@ -1,0 +1,7 @@
+node_modules
+dist
+*.config.js
+*.config.ts
+vite.config.ts
+routeTree.gen.ts
+
