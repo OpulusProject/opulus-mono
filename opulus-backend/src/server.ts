@@ -23,7 +23,7 @@ app.use(
 // Better Auth handler (mounted BEFORE body parsers)
 // Better Auth docs: express.json() should be used AFTER mounting Better Auth handler
 // Mounting it before prevents the client API from getting stuck on "pending"
-app.all("/api/auth/*", toNodeHandler(auth));
+app.use("/api/auth", toNodeHandler(auth));
 
 // Body Parser Middleware (must come AFTER Better Auth handler)
 app.use(json());
