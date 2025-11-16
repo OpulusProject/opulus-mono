@@ -7,7 +7,17 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
-  external: ['react', 'react-dom'],
+  external: [
+    'react',
+    'react-dom',
+    'react/jsx-runtime',
+    'react/jsx-dev-runtime',
+    '@radix-ui/react-slot',
+    '@radix-ui/react-label',
+    'class-variance-authority',
+    'clsx',
+    'tailwind-merge',
+  ],
   treeshake: true,
   outDir: 'dist',
 });
