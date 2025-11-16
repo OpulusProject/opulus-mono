@@ -1,14 +1,41 @@
-import { Gem } from "lucide-react"
+import { Gem } from "lucide-react";
+import { useForm } from "react-hook-form";
 
-import { Button, Input, Label, cn } from "@opulus/gems"
+import { Button, Input, Label, cn } from "@opulus/gems";
+import { useLogin, type LoginRequest } from "@/hooks/auth/useLogin";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginRequest>({
+    defaultValues: {
+      rememberMe: true,
+    },
+  });
+
+  const loginMutation = useLogin();
+
+  const onSubmit = async (data: LoginRequest) => {
+    loginMutation.mutate(data, {
+      onSuccess: (response) => {
+        console.log("Login successful:", response);
+        // TODO: Redirect to dashboard or handle success
+      },
+      onError: (error: any) => {
+        console.error("Login error:", error);
+        // TODO: Show error message to user
+      },
+    });
+  };
+
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <form>
+      <form onSubmit={handleSubmit(onSubmit)}>
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2">
             <a
@@ -35,11 +62,52 @@ export function LoginForm({
                 id="email"
                 type="email"
                 placeholder="m@example.com"
-                required
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Invalid email address",
+                  },
+                })}
+                aria-invalid={errors.email ? "true" : "false"}
               />
+              {errors.email && (
+                <p className="text-sm text-destructive">{errors.email.message}</p>
+              )}
             </div>
-            <Button type="submit" className="w-full">
-              Login
+            <div className="grid gap-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                {...register("password", {
+                  required: "Password is required",
+                  minLength: {
+                    value: 8,
+                    message: "Password must be at least 8 characters",
+                  },
+                })}
+                aria-invalid={errors.password ? "true" : "false"}
+              />
+              {errors.password && (
+                <p className="text-sm text-destructive">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+            {loginMutation.isError && (
+              <p className="text-sm text-destructive">
+                {(loginMutation.error as any)?.response?.data?.message ||
+                  "Invalid email or password"}
+              </p>
+            )}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isSubmitting || loginMutation.isPending}
+            >
+              {isSubmitting || loginMutation.isPending ? "Logging in..." : "Login"}
             </Button>
           </div>
           <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
