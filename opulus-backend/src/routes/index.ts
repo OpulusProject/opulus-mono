@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { sessionController } from "@/controllers/session/sessionController.js";
 
 const router = Router();
 
@@ -11,9 +12,10 @@ router.get("/healthcheck", (req, res) => {
   });
 });
 
-// Note: Better Auth authentication routes (sign-in, sign-up, sign-out) 
-// are mounted directly in server.ts at /api/auth/*
-// This keeps Better Auth separate from other API routes
+router.get("/session", sessionController);
+
+// Note: Better Auth routes are handled by Better Auth handler in server.ts at /api/auth
+// All /api/auth/* routes are handled by Better Auth (sign-in, sign-up, sign-out, TOTP, etc.)
 
 // Route placeholders (to be implemented)
 // router.use("/users", userRouter);

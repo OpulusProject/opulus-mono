@@ -23,7 +23,9 @@ app.use(
 // Better Auth handler (mounted BEFORE body parsers)
 // Better Auth docs: express.json() should be used AFTER mounting Better Auth handler
 // Mounting it before prevents the client API from getting stuck on "pending"
-app.use("/api/auth", toNodeHandler(auth));
+// Using Express v5 wildcard syntax: /{*any} catches all routes under /api/auth
+// Better Auth handles all authentication routes: sign-in, sign-up, sign-out, TOTP, etc.
+app.all("/api/auth/{*any}", toNodeHandler(auth));
 
 // Body Parser Middleware (must come AFTER Better Auth handler)
 app.use(json());
