@@ -1,0 +1,5 @@
+packages:
+  - 'opulus-backend'
+  - 'opulus-frontend'
+  - 'opulus-gems'
+

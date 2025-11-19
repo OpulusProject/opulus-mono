@@ -1,7 +1,9 @@
 import { Gem } from "lucide-react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
 
-import { Button, Input, Label, cn } from "@opulus/gems";
+import { Button, Input, Label, cn } from "@gems";
 import { useLogin, type LoginRequest } from "@/hooks/auth/useLogin";
 
 export function LoginForm({
@@ -19,12 +21,20 @@ export function LoginForm({
   });
 
   const loginMutation = useLogin();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const onSubmit = async (data: LoginRequest) => {
     loginMutation.mutate(data, {
-      onSuccess: (response) => {
+      onSuccess: async (response) => {
         console.log("Login successful:", response);
-        // TODO: Redirect to dashboard or handle success
+        // Invalidate and refetch session
+        queryClient.invalidateQueries({ queryKey: ['session'] });
+        await queryClient.refetchQueries({ queryKey: ['session'] });
+        
+        // Redirect to homepage after successful login
+        // Using replace: true to replace the login page in history
+        navigate({ to: '/home', replace: true });
       },
       onError: (error: any) => {
         console.error("Login error:", error);

@@ -1,0 +1,29 @@
+{
+  "name": "@opulus/mono",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"pnpm --filter @opulus/gems dev\" \"pnpm --filter @opulus/frontend dev\" --names \"gems,frontend\" --prefix-colors \"cyan,magenta\"",
+    "dev:backend": "pnpm --filter @opulus/backend dev",
+    "dev:frontend": "pnpm --filter @opulus/frontend dev",
+    "dev:gems": "pnpm --filter @opulus/gems dev",
+    "build": "pnpm -r build",
+    "build:gems": "pnpm --filter @opulus/gems build",
+    "lint": "pnpm -r lint",
+    "format": "pnpm -r format",
+    "type-check": "pnpm -r type-check",
+    "clean": "rm -rf node_modules && pnpm -r exec rm -rf node_modules dist",
+    "install:all": "pnpm install"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "prettier": "^3.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
+}
+

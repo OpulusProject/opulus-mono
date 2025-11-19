@@ -9,7 +9,9 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@gems": ["../opulus-gems/src/index.ts"],
+      "@gems/*": ["../opulus-gems/src/*"]
     },
 
     /* Bundler mode */
@@ -27,6 +29,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*", "tailwind.config.js", "postcss.config.js"]
+  "include": ["src/**/*", "tailwind.config.js", "postcss.config.js", "../opulus-gems/src/index.ts"]
 }
 

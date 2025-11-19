@@ -12,6 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@gems': path.resolve(__dirname, '../opulus-gems/dist'),
     },
     dedupe: ['react', 'react-dom'],
   },
@@ -20,6 +21,15 @@ export default defineConfig({
   },
   css: {
     postcss: './postcss.config.js',
+  },
+  // Watch for changes in gems dist folder
+  server: {
+    watch: {
+      ignored: ['!**/node_modules/@gems/**'],
+    },
+    fs: {
+      allow: ['..'],
+    },
   },
 });
 
