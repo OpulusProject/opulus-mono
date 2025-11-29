@@ -7,6 +7,12 @@ export default defineConfig({
   splitting: false,
   sourcemap: true,
   clean: true,
+  esbuildOptions(options) {
+    options.resolveExtensions = ['.tsx', '.ts', '.jsx', '.js', '.json'];
+    options.alias = {
+      '@': './src',
+    };
+  },
   external: [
     'react',
     'react-dom',
@@ -20,9 +26,16 @@ export default defineConfig({
     '@radix-ui/react-separator',
     '@radix-ui/react-slot',
     '@radix-ui/react-tooltip',
+    '@radix-ui/react-toggle',
+    '@radix-ui/react-tabs',
+    '@radix-ui/react-checkbox',
+    '@radix-ui/react-select',
+    '@radix-ui/react-toggle-group',
     'class-variance-authority',
     'clsx',
     'tailwind-merge',
+    'recharts',
+    'vaul',
   ],
   treeshake: true,
   outDir: 'dist',

@@ -107,6 +107,72 @@ export { Skeleton } from './components/ui/skeleton';
 // Tooltip components
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './components/ui/tooltip';
 
+// Badge component
+export { Badge, badgeVariants } from './components/ui/badge';
+
+// Chart components
+export {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  ChartStyle,
+  type ChartConfig,
+} from './components/ui/chart';
+
+// Checkbox component
+export { Checkbox } from './components/ui/checkbox';
+
+// Select components
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectScrollDownButton,
+  SelectScrollUpButton,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from './components/ui/select';
+
+// Table components
+export {
+  Table,
+  TableHeader,
+  TableBody,
+  TableFooter,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableCaption,
+} from './components/ui/table';
+
+// Tabs components
+export { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
+
+// Toggle components
+export { Toggle, toggleVariants } from './components/ui/toggle';
+
+// Toggle Group components
+export { ToggleGroup, ToggleGroupItem } from './components/ui/toggle-group';
+
+// Drawer components
+export {
+  Drawer,
+  DrawerPortal,
+  DrawerOverlay,
+  DrawerTrigger,
+  DrawerClose,
+  DrawerContent,
+  DrawerHeader,
+  DrawerFooter,
+  DrawerTitle,
+  DrawerDescription,
+} from './components/ui/drawer';
+
 // ============================================================================
 // Hooks
 // ============================================================================
