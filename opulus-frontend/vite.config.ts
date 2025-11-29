@@ -17,7 +17,18 @@ export default defineConfig({
     dedupe: ['react', 'react-dom'],
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react/jsx-runtime'],
+    include: [
+      'react',
+      'react-dom',
+      'react/jsx-runtime',
+      'recharts',
+      'vaul',
+      '@radix-ui/react-toggle',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-checkbox',
+      '@radix-ui/react-select',
+      '@radix-ui/react-toggle-group',
+    ],
   },
   css: {
     postcss: './postcss.config.js',

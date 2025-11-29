@@ -32,9 +32,9 @@ export function LoginForm({
         queryClient.invalidateQueries({ queryKey: ['session'] });
         await queryClient.refetchQueries({ queryKey: ['session'] });
         
-        // Redirect to homepage after successful login
-        // Using replace: true to replace the login page in history
-        navigate({ to: '/home', replace: true });
+        // Redirect after successful login
+        // TODO: Update redirect target when dashboard/home page is ready
+        navigate({ to: '/', replace: true });
       },
       onError: (error: any) => {
         console.error("Login error:", error);
