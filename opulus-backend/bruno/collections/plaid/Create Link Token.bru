@@ -1,0 +1,100 @@
+meta {
+  name: Create Link Token
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/api/plaid/link-token
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+  Content-Type: application/json
+}
+
+params:query {
+}
+
+docs {
+  # Create Link Token
+
+  Create a Plaid Link token for the authenticated user. This token is used to initialize Plaid Link on the frontend.
+
+  **Endpoint:** `POST /api/plaid/link-token`
+
+  ## Authentication
+
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+
+  ## Flow
+
+  1. If the user doesn't have a Plaid user token, one will be created automatically
+  2. A Link token is generated using the Plaid API
+  3. The Link token is stored in the database as a LinkSession
+  4. The Link token is returned to the client
+
+  ## Response
+
+  Returns the Link token that can be used to initialize Plaid Link.
+
+  ## Success Response (200)
+
+  ```json
+  {
+    "data": {
+      "linkToken": "link-sandbox-abc123..."
+    }
+  }
+  ```
+
+  ## Error Responses
+
+  - `401 Unauthorized`: No active session found
+    ```json
+    {
+      "error": "Unauthorized",
+      "message": "Authentication required"
+    }
+    ```
+
+  - `404 Not Found`: User not found
+    ```json
+    {
+      "error": "Not found",
+      "message": "User not found"
+    }
+    ```
+
+  - `500 Internal Server Error`: Plaid API error or database error
+    ```json
+    {
+      "error": "Application error",
+      "message": "Plaid API error occurred",
+      "code": "INVALID_API_KEYS"
+    }
+    ```
+
+  ## Usage
+
+  1. First, use **Sign In** to authenticate and establish a session
+  2. Bruno will automatically store the session cookie
+  3. Call this endpoint to get a Link token
+  4. Use the Link token in your frontend to initialize Plaid Link
+
+  ## Frontend Integration
+
+  ```typescript
+  import { usePlaidLink } from 'react-plaid-link';
+
+  const { open, ready } = usePlaidLink({
+    token: linkToken, // from this endpoint
+    onSuccess: (publicToken, metadata) => {
+      // Exchange public token for access token
+    },
+  });
+  ```
+}
+

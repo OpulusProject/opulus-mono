@@ -37,7 +37,4 @@ lerna-debug.log*
 *.sln
 *.sw?
 
-# Prisma
-prisma/migrations/
-
 
