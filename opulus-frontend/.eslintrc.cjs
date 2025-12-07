@@ -1,3 +1,5 @@
+const path = require('path');
+
 module.exports = {
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -84,7 +86,15 @@ module.exports = {
   settings: {
     'import/resolver': {
       typescript: {
-        project: './tsconfig.json',
+        project: path.resolve(__dirname, './tsconfig.json'),
+        alwaysTryTypes: true,
+      },
+      alias: {
+        map: [
+          ['@', path.resolve(__dirname, './src')],
+          ['@gems', path.resolve(__dirname, '../opulus-gems/src/index.ts')],
+        ],
+        extensions: ['.ts', '.tsx', '.js', '.jsx'],
       },
     },
     react: { version: 'detect' },
@@ -96,4 +106,3 @@ module.exports = {
     'src/components/ui/**',
   ],
 };
-
