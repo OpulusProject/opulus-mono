@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { sessionController } from "@/controllers/session/sessionController.js";
 
-const router = Router();
+const router: ReturnType<typeof Router> = Router();
 
 // Health check endpoint
 router.get("/healthcheck", (req, res) => {
