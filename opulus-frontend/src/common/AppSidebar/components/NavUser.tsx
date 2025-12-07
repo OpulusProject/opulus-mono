@@ -1,4 +1,4 @@
-"use client"
+'use client';
 
 import {
   CreditCard,
@@ -6,7 +6,7 @@ import {
   LogOut,
   Bell,
   UserCircle,
-} from "lucide-react"
+} from 'lucide-react';
 
 import {
   Avatar,
@@ -23,25 +23,25 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@gems"
+} from '@gems';
 
-import { useLogout } from "@/hooks/auth/useLogout"
+import { useLogout } from '@/hooks/auth/useLogout';
 
 export function NavUser({
   user,
 }: {
   user: {
-    name: string
-    email: string
-    avatar: string
-  }
+    name: string;
+    email: string;
+    avatar: string;
+  };
 }) {
-  const { isMobile } = useSidebar()
-  const logoutMutation = useLogout()
+  const { isMobile } = useSidebar();
+  const logoutMutation = useLogout();
 
   const handleLogout = () => {
-    logoutMutation.mutate()
-  }
+    logoutMutation.mutate();
+  };
 
   return (
     <SidebarMenu>
@@ -67,7 +67,7 @@ export function NavUser({
           </DropdownMenuTrigger>
           <DropdownMenuContent
             className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            side={isMobile ? 'bottom' : 'right'}
             align="end"
             sideOffset={4}
           >
@@ -106,11 +106,11 @@ export function NavUser({
               disabled={logoutMutation.isPending}
             >
               <LogOut />
-              {logoutMutation.isPending ? "Logging out..." : "Log out"}
+              {logoutMutation.isPending ? 'Logging out...' : 'Log out'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </SidebarMenuItem>
     </SidebarMenu>
-  )
+  );
 }

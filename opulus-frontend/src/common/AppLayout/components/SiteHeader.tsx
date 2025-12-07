@@ -1,7 +1,7 @@
-import { Separator, SidebarTrigger } from "@gems"
+import { Separator, SidebarTrigger } from '@gems';
 
 interface SiteHeaderProps {
-  title?: string
+  title?: string;
 }
 
 export function SiteHeader({ title }: SiteHeaderProps) {
@@ -16,6 +16,5 @@ export function SiteHeader({ title }: SiteHeaderProps) {
         {title && <h1 className="text-base font-medium">{title}</h1>}
       </div>
     </header>
-  )
+  );
 }
-

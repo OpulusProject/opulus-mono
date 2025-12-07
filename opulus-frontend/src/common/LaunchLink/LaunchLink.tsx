@@ -24,25 +24,31 @@ interface LaunchLinkProps {
    * @param publicToken - Public token to exchange for access token
    * @param metadata - Metadata about the linked account
    */
-  onSuccess?: (publicToken: string, metadata: PlaidLinkOnSuccessMetadata) => void;
+  onSuccess?: (
+    publicToken: string,
+    metadata: PlaidLinkOnSuccessMetadata
+  ) => void;
   /**
    * Callback when user exits Link without completing
    * @param error - Error if any occurred
    * @param metadata - Metadata about the exit
    */
-  onExit?: (error: PlaidLinkError | null, metadata: PlaidLinkOnExitMetadata) => void;
+  onExit?: (
+    error: PlaidLinkError | null,
+    metadata: PlaidLinkOnExitMetadata
+  ) => void;
 }
 
 /**
  * LaunchLink Component
- * 
+ *
  * Handles Plaid Link initialization and opening.
  * Follows Plaid best practices:
  * - Only opens Link when token is ready
  * - Handles loading and error states
  * - Provides callbacks for success/exit events
  * - Automatically opens Link when ready
- * 
+ *
  * @example
  * ```tsx
  * <LaunchLink
@@ -68,11 +74,11 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
   // Default success handler
   const handleSuccess: PlaidLinkOnSuccess = (
     publicToken: string,
-    metadata: PlaidLinkOnSuccessMetadata,
+    metadata: PlaidLinkOnSuccessMetadata
   ) => {
     // Call custom success handler if provided
     onSuccess?.(publicToken, metadata);
-    
+
     // Always close Link after success
     onClose();
   };
@@ -80,11 +86,11 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
   // Default exit handler
   const handleExit: PlaidLinkOnExit = (
     error: PlaidLinkError | null,
-    metadata: PlaidLinkOnExitMetadata,
+    metadata: PlaidLinkOnExitMetadata
   ) => {
     // Call custom exit handler if provided
     onExit?.(error, metadata);
-    
+
     // Always close Link after exit
     onClose();
   };
@@ -92,7 +98,7 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
   // Event handler for Link events (for analytics/logging)
   const handleEvent: PlaidLinkOnEvent = (
     eventName: PlaidLinkStableEvent | string,
-    metadata: PlaidLinkOnEventMetadata,
+    metadata: PlaidLinkOnEventMetadata
   ) => {
     // Log events for debugging/analytics
     // TODO: Implement proper event logging
@@ -134,4 +140,3 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
   // Plaid Link opens as a modal overlay
   return null;
 };
-

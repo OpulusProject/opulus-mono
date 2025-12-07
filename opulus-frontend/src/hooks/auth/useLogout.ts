@@ -17,10 +17,9 @@ export function useLogout() {
       // Invalidate and clear session query
       queryClient.invalidateQueries({ queryKey: ['session'] });
       queryClient.removeQueries({ queryKey: ['session'] });
-      
+
       // Redirect to login page
       navigate({ to: '/login', replace: true });
     },
   });
 }
-

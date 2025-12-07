@@ -1,6 +1,5 @@
-import React from "react";
-import { LoginForm } from "./components";
-
+import React from 'react';
+import { LoginForm } from './components';
 
 export const Login: React.FC = () => {
   return (
@@ -9,5 +8,5 @@ export const Login: React.FC = () => {
         <LoginForm />
       </div>
     </div>
-  )
-}
+  );
+};

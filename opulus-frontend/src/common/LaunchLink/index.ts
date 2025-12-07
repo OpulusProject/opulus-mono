@@ -1,1 +1,1 @@
-export { LaunchLink } from "./LaunchLink"
+export { LaunchLink } from './LaunchLink';

@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import { Link } from "@tanstack/react-router"
-import { type LucideIcon } from "lucide-react"
+import { Link } from '@tanstack/react-router';
+import { type LucideIcon } from 'lucide-react';
 
 import {
   SidebarGroup,
@@ -9,16 +9,16 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@gems"
+} from '@gems';
 
 export function NavMain({
   items,
 }: {
   items: {
-    title: string
-    url: string
-    icon?: LucideIcon
-  }[]
+    title: string;
+    url: string;
+    icon?: LucideIcon;
+  }[];
 }) {
   return (
     <SidebarGroup>
@@ -37,5 +37,5 @@ export function NavMain({
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>
-  )
+  );
 }

@@ -1,7 +1,7 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import { Link } from "@tanstack/react-router"
+import * as React from 'react';
+import { Link } from '@tanstack/react-router';
 import {
   LayoutDashboard,
   HelpCircle,
@@ -9,7 +9,7 @@ import {
   Landmark,
   Search,
   Settings,
-} from "lucide-react"
+} from 'lucide-react';
 
 import {
   Sidebar,
@@ -19,46 +19,46 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@gems"
+} from '@gems';
 
-import { NavMain, NavSecondary, NavUser } from "./components"
+import { NavMain, NavSecondary, NavUser } from './components';
 
 const data = {
   user: {
-    name: "shadcn",
-    email: "m@example.com",
-    avatar: "/avatars/shadcn.jpg",
+    name: 'shadcn',
+    email: 'm@example.com',
+    avatar: '/avatars/shadcn.jpg',
   },
   navMain: [
     {
-      title: "Search",
-      url: "#",
+      title: 'Search',
+      url: '#',
       icon: Search,
     },
     {
-      title: "Dashboard",
-      url: "/dashboard",
+      title: 'Dashboard',
+      url: '/dashboard',
       icon: LayoutDashboard,
     },
     {
-      title: "Accounts",
-      url: "/accounts",
+      title: 'Accounts',
+      url: '/accounts',
       icon: Landmark,
     },
   ],
   navSecondary: [
     {
-      title: "Settings",
-      url: "#",
+      title: 'Settings',
+      url: '#',
       icon: Settings,
     },
     {
-      title: "Get Help",
-      url: "#",
+      title: 'Get Help',
+      url: '#',
       icon: HelpCircle,
     },
   ],
-}
+};
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
@@ -86,5 +86,5 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <NavUser user={data.user} />
       </SidebarFooter>
     </Sidebar>
-  )
+  );
 }

@@ -7,4 +7,3 @@ export const Route = createFileRoute('/')({
     return <Navigate to="/login" replace />;
   },
 });
-

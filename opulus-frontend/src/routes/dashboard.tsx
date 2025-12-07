@@ -4,4 +4,3 @@ import Dashboard from '@/pages/Dashboard/Dashboard';
 export const Route = createFileRoute('/dashboard')({
   component: Dashboard,
 });
-

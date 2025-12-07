@@ -1,2 +1,1 @@
-export { SiteHeader } from "./SiteHeader"
-
+export { SiteHeader } from './SiteHeader';

@@ -1,25 +1,34 @@
-
-import { Search, Plus } from "lucide-react"
-import { useState } from "react"
-import { Button, InputGroup, InputGroupAddon, InputGroupInput, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@gems"
-import { AppLayout } from "@/common/AppLayout"
-import { LaunchLink } from "@/common/LaunchLink"
+import { AppLayout } from '@/common/AppLayout';
+import { LaunchLink } from '@/common/LaunchLink';
+import {
+  Button,
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@gems';
+import { Plus, Search } from 'lucide-react';
+import { useState } from 'react';
 
 export const Accounts: React.FC = () => {
-  const [isLinkOpen, setIsLinkOpen] = useState(false)
+  const [isLinkOpen, setIsLinkOpen] = useState(false);
 
   const handleLinkSuccess = (publicToken: string, metadata: any) => {
-    console.log('Plaid Link Success:', { publicToken, metadata })
+    console.log('Plaid Link Success:', { publicToken, metadata });
     // TODO: Exchange public token for access token
     // TODO: Store account information
-  }
+  };
 
   const handleLinkExit = (error: any, metadata: any) => {
     if (error) {
-      console.error('Plaid Link Error:', error)
+      console.error('Plaid Link Error:', error);
     }
-    console.log('Plaid Link Exit:', metadata)
-  }
+    console.log('Plaid Link Exit:', metadata);
+  };
 
   return (
     <AppLayout title="Accounts">
@@ -29,9 +38,7 @@ export const Accounts: React.FC = () => {
             <InputGroupAddon>
               <Search className="h-4 w-4" />
             </InputGroupAddon>
-            <InputGroupInput
-              placeholder="Search accounts..."
-            />
+            <InputGroupInput placeholder="Search accounts..." />
           </InputGroup>
           <Select defaultValue="name">
             <SelectTrigger className="w-[180px]">
@@ -58,5 +65,5 @@ export const Accounts: React.FC = () => {
         />
       )}
     </AppLayout>
-  )
-}
+  );
+};

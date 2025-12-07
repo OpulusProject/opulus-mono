@@ -1,16 +1,13 @@
-import * as React from "react"
+import * as React from 'react';
 
-import {
-  SidebarInset,
-  SidebarProvider,
-} from "@gems"
+import { SidebarInset, SidebarProvider } from '@gems';
 
-import { AppSidebar } from "@/common/AppSidebar"
-import { SiteHeader } from "./components/SiteHeader"
+import { AppSidebar } from '@/common/AppSidebar';
+import { SiteHeader } from './components/SiteHeader';
 
 interface AppLayoutProps {
-  children: React.ReactNode
-  title?: string
+  children: React.ReactNode;
+  title?: string;
 }
 
 export function AppLayout({ children, title }: AppLayoutProps) {
@@ -18,8 +15,8 @@ export function AppLayout({ children, title }: AppLayoutProps) {
     <SidebarProvider
       style={
         {
-          "--sidebar-width": "calc(var(--spacing) * 72)",
-          "--header-height": "calc(var(--spacing) * 12)",
+          '--sidebar-width': 'calc(var(--spacing) * 72)',
+          '--header-height': 'calc(var(--spacing) * 12)',
         } as React.CSSProperties
       }
     >
@@ -35,6 +32,5 @@ export function AppLayout({ children, title }: AppLayoutProps) {
         </div>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }
-
