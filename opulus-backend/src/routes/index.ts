@@ -28,5 +28,3 @@ router.use("/plaid", plaidRouter);
 // router.use("/transactions", transactionRouter);
 
 export default router;
-
-

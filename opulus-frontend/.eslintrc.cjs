@@ -17,7 +17,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended-type-checked',
     'plugin:react-hooks/recommended',
     'prettier',
-    'plugin:storybook/recommended',
+    // 'plugin:storybook/recommended', // Commented out - plugin not installed
   ],
   rules: {
     'sort-imports': [

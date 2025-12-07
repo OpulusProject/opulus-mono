@@ -14,7 +14,7 @@ import { UnauthorizedError } from "@/utils/errors.js";
 export async function createLinkTokenController(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   try {
     // Get authenticated user session
@@ -33,7 +33,8 @@ export async function createLinkTokenController(
 
     if (!userToken) {
       const plaidUserResponse = await createPlaidUser(userId);
-      const { user_token: plaidUserToken, user_id: plaidId } = plaidUserResponse;
+      const { user_token: plaidUserToken, user_id: plaidId } =
+        plaidUserResponse;
 
       // Update user with Plaid credentials
       await updateUser({
@@ -64,4 +65,3 @@ export async function createLinkTokenController(
     next(error);
   }
 }
-

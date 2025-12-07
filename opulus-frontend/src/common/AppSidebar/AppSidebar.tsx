@@ -1,16 +1,5 @@
 'use client';
 
-import * as React from 'react';
-import { Link } from '@tanstack/react-router';
-import {
-  LayoutDashboard,
-  HelpCircle,
-  GemIcon,
-  Landmark,
-  Search,
-  Settings,
-} from 'lucide-react';
-
 import {
   Sidebar,
   SidebarContent,
@@ -20,6 +9,16 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@gems';
+import { Link } from '@tanstack/react-router';
+import {
+  GemIcon,
+  HelpCircle,
+  Landmark,
+  LayoutDashboard,
+  Search,
+  Settings,
+} from 'lucide-react';
+import * as React from 'react';
 
 import { NavMain, NavSecondary, NavUser } from './components';
 

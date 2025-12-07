@@ -10,5 +10,3 @@ export {
   SelectTrigger,
   SelectValue,
 } from './select';
-
-

@@ -17,7 +17,7 @@ app.use(
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-  }),
+  })
 );
 
 // Better Auth handler (mounted BEFORE body parsers)
@@ -45,5 +45,3 @@ app.listen(PORT, () => {
   console.log(`📡 Environment: ${config.nodeEnv}`);
   console.log(`🔗 API available at http://localhost:${PORT}/api`);
 });
-
-

@@ -1,5 +1,3 @@
-import { AppLayout } from '@/common/AppLayout';
-import { LaunchLink } from '@/common/LaunchLink';
 import {
   Button,
   InputGroup,
@@ -13,6 +11,9 @@ import {
 } from '@gems';
 import { Plus, Search } from 'lucide-react';
 import { useState } from 'react';
+
+import { AppLayout } from '@/common/AppLayout';
+import { LaunchLink } from '@/common/LaunchLink';
 
 export const Accounts: React.FC = () => {
   const [isLinkOpen, setIsLinkOpen] = useState(false);

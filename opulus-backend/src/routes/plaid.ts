@@ -11,4 +11,3 @@ const router: ReturnType<typeof Router> = Router();
 router.post("/link-token", requireSession, createLinkTokenController);
 
 export default router;
-

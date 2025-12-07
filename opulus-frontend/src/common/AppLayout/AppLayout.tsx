@@ -1,8 +1,8 @@
+import { SidebarInset, SidebarProvider } from '@gems';
 import * as React from 'react';
 
-import { SidebarInset, SidebarProvider } from '@gems';
-
 import { AppSidebar } from '@/common/AppSidebar';
+
 import { SiteHeader } from './components/SiteHeader';
 
 interface AppLayoutProps {

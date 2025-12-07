@@ -35,8 +35,7 @@ export async function getUser(userId: string) {
       error instanceof Error
         ? `Failed to get user: ${error.message}`
         : "An unexpected error occurred while fetching user",
-      500,
+      500
     );
   }
 }
-

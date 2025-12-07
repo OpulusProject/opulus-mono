@@ -1,14 +1,6 @@
 'use client';
 
 import {
-  CreditCard,
-  MoreVertical,
-  LogOut,
-  Bell,
-  UserCircle,
-} from 'lucide-react';
-
-import {
   Avatar,
   AvatarFallback,
   AvatarImage,
@@ -24,6 +16,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@gems';
+import {
+  Bell,
+  CreditCard,
+  LogOut,
+  MoreVertical,
+  UserCircle,
+} from 'lucide-react';
 
 import { useLogout } from '@/hooks/auth/useLogout';
 

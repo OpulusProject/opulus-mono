@@ -6,7 +6,11 @@ import { UnauthorizedError } from "@/utils/errors.js";
  * Get current user session
  * GET /api/session
  */
-export async function sessionController(req: Request, res: Response, next: NextFunction) {
+export async function sessionController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const session = await getSession(req.headers);
 
@@ -28,4 +32,3 @@ export async function sessionController(req: Request, res: Response, next: NextF
     next(error);
   }
 }
-

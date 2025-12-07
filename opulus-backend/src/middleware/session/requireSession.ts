@@ -10,7 +10,7 @@ import { getSession } from "@/services/session/getSession.js";
 export async function requireSession(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ) {
   try {
     const session = await getSession(req.headers);
@@ -25,4 +25,3 @@ export async function requireSession(
     next(error);
   }
 }
-

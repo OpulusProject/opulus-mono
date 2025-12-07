@@ -25,7 +25,9 @@ export const auth = betterAuth({
   trustedOrigins: (() => {
     const clientUrl = config.clientUrl?.trim();
     if (!clientUrl) {
-      console.warn("⚠️  CLIENT_URL is not set. Better Auth origin validation may fail.");
+      console.warn(
+        "⚠️  CLIENT_URL is not set. Better Auth origin validation may fail."
+      );
       return [];
     }
     // Log trusted origins in development for debugging
@@ -37,4 +39,4 @@ export const auth = betterAuth({
 });
 
 export type Session = typeof auth.$Infer.Session;
-``
+``;

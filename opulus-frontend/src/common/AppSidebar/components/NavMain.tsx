@@ -1,8 +1,5 @@
 'use client';
 
-import { Link } from '@tanstack/react-router';
-import { type LucideIcon } from 'lucide-react';
-
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -10,6 +7,8 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@gems';
+import { Link } from '@tanstack/react-router';
+import { type LucideIcon } from 'lucide-react';
 
 export function NavMain({
   items,

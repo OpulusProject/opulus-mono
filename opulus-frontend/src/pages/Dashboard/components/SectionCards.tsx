@@ -1,5 +1,3 @@
-import { TrendingDown, TrendingUp } from 'lucide-react';
-
 import {
   Badge,
   Card,
@@ -9,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@gems';
+import { TrendingDown, TrendingUp } from 'lucide-react';
 
 export function SectionCards() {
   return (

@@ -33,8 +33,7 @@ export async function createLinkSession(data: CreateLinkSessionData) {
       error instanceof Error
         ? `Failed to create link session: ${error.message}`
         : "An unexpected error occurred while creating link session",
-      500,
+      500
     );
   }
 }
-

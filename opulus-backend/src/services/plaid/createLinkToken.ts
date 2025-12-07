@@ -35,4 +35,3 @@ export async function createLinkToken(userToken: string, userId: string) {
     throw handlePlaidError(error);
   }
 }
-

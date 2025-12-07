@@ -15,7 +15,7 @@ interface UpdateUserData {
  * Update a user's non-sensitive fields
  * For password updates, use updatePassword service (to be created)
  * For email updates, consider using updateEmail service (if email verification required)
- * 
+ *
  * @param data - User update data
  * @returns Updated user
  * @throws NotFoundError if user not found
@@ -48,8 +48,7 @@ export async function updateUser(data: UpdateUserData) {
       error instanceof Error
         ? `Failed to update user: ${error.message}`
         : "An unexpected error occurred while updating user",
-      500,
+      500
     );
   }
 }
-

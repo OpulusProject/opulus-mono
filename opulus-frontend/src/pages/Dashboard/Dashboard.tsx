@@ -1,6 +1,7 @@
-import data from './data.json';
 import { AppLayout } from '@/common/AppLayout';
+
 import { ChartAreaInteractive, DataTable, SectionCards } from './components';
+import data from './data.json';
 
 export default function Dashboard() {
   return (

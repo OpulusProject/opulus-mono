@@ -9,7 +9,7 @@ import { AppError } from "./errors.js";
 export function handlePlaidError(error: unknown): AppError {
   if (error && typeof error === "object" && "error_code" in error) {
     const plaidError = error as PlaidError;
-    
+
     // Map Plaid error codes to HTTP status codes
     const statusCodeMap: Record<string, number> = {
       INVALID_ACCESS_TOKEN: 401,
@@ -38,6 +38,9 @@ export function handlePlaidError(error: unknown): AppError {
     return new AppError(error.message, 500, "PLAID_ERROR");
   }
 
-  return new AppError("An unexpected error occurred with Plaid", 500, "PLAID_ERROR");
+  return new AppError(
+    "An unexpected error occurred with Plaid",
+    500,
+    "PLAID_ERROR"
+  );
 }
-

@@ -10,5 +10,3 @@ export default {
   betterAuthSecret: process.env.BETTER_AUTH_SECRET || "",
   betterAuthBaseURL: process.env.BETTER_AUTH_BASE_URL,
 };
-
-

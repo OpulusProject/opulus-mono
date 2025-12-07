@@ -12,12 +12,15 @@
     "build:gems": "pnpm --filter @opulus/gems build",
     "lint": "pnpm -r lint",
     "format": "pnpm -r format",
+    "fix-all": "node scripts/fix-all.mjs",
     "type-check": "pnpm -r type-check",
     "clean": "rm -rf node_modules && pnpm -r exec rm -rf node_modules dist",
     "install:all": "pnpm install"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
+    "glob": "^13.0.0",
+    "organize-imports-cli": "^0.10.0",
     "prettier": "^3.3.3"
   },
   "engines": {
@@ -26,4 +29,3 @@
   },
   "packageManager": "pnpm@9.0.0"
 }
-

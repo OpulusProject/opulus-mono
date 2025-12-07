@@ -15,7 +15,7 @@ export function errorHandler(
   error: unknown,
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void {
   // Log error for debugging
   // console.error("Error:", error);
@@ -83,7 +83,10 @@ export function errorHandler(
   if (error instanceof Error) {
     res.status(500).json({
       error: "Internal server error",
-      message: process.env.NODE_ENV === "development" ? error.message : "An unexpected error occurred",
+      message:
+        process.env.NODE_ENV === "development"
+          ? error.message
+          : "An unexpected error occurred",
     });
     return;
   }

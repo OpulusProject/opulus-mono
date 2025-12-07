@@ -5,10 +5,10 @@ import { ValidationError } from "@/utils/errors.js";
 /**
  * Validation middleware factory
  * Creates a middleware that validates request body against a Zod schema
- * 
+ *
  * @param schema - Zod schema to validate against
  * @returns Express middleware function
- * 
+ *
  * @example
  * router.post("/register", validate(registerSchema), authController.register);
  */
@@ -24,7 +24,7 @@ export function validate<T extends ZodSchema>(schema: T) {
           validationResult.error.errors.map((err) => ({
             field: err.path.join("."),
             message: err.message,
-          })),
+          }))
         );
       }
 
