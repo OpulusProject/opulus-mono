@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth.js";
+import { auth } from "@/client/auth.js";
 import { IncomingHttpHeaders } from "http";
 
 /**

@@ -25,7 +25,7 @@
       "@/utils/*": ["./src/utils/*"],
       "@/config/*": ["./src/config/*"],
       "@/types/*": ["./src/types/*"],
-      "@/lib/*": ["./src/lib/*"]
+      "@/lib/*": ["src/client/*"]
     }
   },
   "include": ["src/**/*", "prisma/**/*"],
