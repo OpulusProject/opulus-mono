@@ -9,15 +9,18 @@ datasource db {
 }
 
 model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @default(now()) @updatedAt
-  sessions      Session[]
-  accounts      Account[]
+  id                String       @id
+  name              String
+  email             String
+  emailVerified     Boolean      @default(false)
+  image             String?
+  plaidId           String?      @unique
+  plaidUserToken    String?      @unique
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @default(now()) @updatedAt
+  sessions          Session[]
+  accounts          Account[]
+  linkSessions      LinkSession[]
 
   @@unique([email])
   @@map("user")
@@ -66,5 +69,16 @@ model Verification {
   updatedAt  DateTime @default(now()) @updatedAt
 
   @@map("verification")
+}
+
+model LinkSession {
+  id        String   @id @default(cuid())
+  userId    String
+  linkToken String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("link_session")
 }
 
