@@ -2,21 +2,12 @@
 
 import * as React from "react"
 import {
-  Camera,
-  BarChart3,
   LayoutDashboard,
-  Database,
-  Bot,
-  FileText,
-  FileText as FileWord,
-  Folder,
   HelpCircle,
   GemIcon,
-  List,
-  FileBarChart,
+  Landmark,
   Search,
   Settings,
-  Users,
 } from "lucide-react"
 
 import {
@@ -29,7 +20,7 @@ import {
   SidebarMenuItem,
 } from "@gems"
 
-import { NavMain, NavSecondary, NavDocuments, NavUser } from "./components"
+import { NavMain, NavSecondary, NavUser } from "./components"
 
 const data = {
   user: {
@@ -39,77 +30,19 @@ const data = {
   },
   navMain: [
     {
+      title: "Search",
+      url: "#",
+      icon: Search,
+    },
+    {
       title: "Dashboard",
       url: "#",
       icon: LayoutDashboard,
     },
     {
-      title: "Lifecycle",
+      title: "Accounts",
       url: "#",
-      icon: List,
-    },
-    {
-      title: "Analytics",
-      url: "#",
-      icon: BarChart3,
-    },
-    {
-      title: "Projects",
-      url: "#",
-      icon: Folder,
-    },
-    {
-      title: "Team",
-      url: "#",
-      icon: Users,
-    },
-  ],
-  navClouds: [
-    {
-      title: "Capture",
-      icon: Camera,
-      isActive: true,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Proposal",
-      icon: FileText,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "Prompts",
-      icon: Bot,
-      url: "#",
-      items: [
-        {
-          title: "Active Proposals",
-          url: "#",
-        },
-        {
-          title: "Archived",
-          url: "#",
-        },
-      ],
+      icon: Landmark,
     },
   ],
   navSecondary: [
@@ -122,28 +55,6 @@ const data = {
       title: "Get Help",
       url: "#",
       icon: HelpCircle,
-    },
-    {
-      title: "Search",
-      url: "#",
-      icon: Search,
-    },
-  ],
-  documents: [
-    {
-      name: "Data Library",
-      url: "#",
-      icon: Database,
-    },
-    {
-      name: "Reports",
-      url: "#",
-      icon: FileBarChart,
-    },
-    {
-      name: "Word Assistant",
-      url: "#",
-      icon: FileWord,
     },
   ],
 }
@@ -168,7 +79,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavDocuments items={data.documents} />
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
