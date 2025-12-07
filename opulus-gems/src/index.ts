@@ -55,6 +55,16 @@ export {
 // Input component
 export { Input } from './components/ui/input';
 
+// Input Group components
+export {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupText,
+  InputGroupInput,
+  InputGroupTextarea,
+} from './components/ui/input-group';
+
 // Label component
 export { Label } from './components/ui/label';
 
