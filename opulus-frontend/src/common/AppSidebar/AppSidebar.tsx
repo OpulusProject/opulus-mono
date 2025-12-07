@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { Link } from "@tanstack/react-router"
 import {
   LayoutDashboard,
   HelpCircle,
@@ -36,12 +37,12 @@ const data = {
     },
     {
       title: "Dashboard",
-      url: "#",
+      url: "/dashboard",
       icon: LayoutDashboard,
     },
     {
       title: "Accounts",
-      url: "#",
+      url: "/accounts",
       icon: Landmark,
     },
   ],
@@ -69,10 +70,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="#">
+              <Link to="/dashboard">
                 <GemIcon className="size-4" />
                 <span className="text-base font-semibold">Opulus</span>
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
