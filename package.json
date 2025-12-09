@@ -5,17 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"pnpm --filter @opulus/gems dev\" \"pnpm --filter @opulus/frontend dev\" --names \"gems,frontend\" --prefix-colors \"cyan,magenta\"",
-    "dev:backend": "pnpm --filter @opulus/backend dev",
+    "dev:backend": "pnpm --filter @opulus/core build && pnpm --filter @opulus/backend dev",
     "dev:frontend": "pnpm --filter @opulus/frontend dev",
     "dev:gems": "pnpm --filter @opulus/gems dev",
-    "build": "pnpm -r build",
+    "build": "pnpm --filter @opulus/core build && pnpm -r build",
+    "build:core": "pnpm --filter @opulus/core build",
     "build:gems": "pnpm --filter @opulus/gems build",
     "lint": "pnpm -r lint",
     "format": "pnpm -r format",
     "fix-all": "node scripts/fix-all.mjs",
     "type-check": "pnpm -r type-check",
     "clean": "rm -rf node_modules && pnpm -r exec rm -rf node_modules dist",
-    "install:all": "pnpm install"
+    "install:all": "pnpm install",
+    "prisma:generate": "pnpm --filter @opulus/core prisma:generate",
+    "prisma:migrate": "pnpm --filter @opulus/core prisma:migrate"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
