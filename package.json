@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "concurrently \"pnpm --filter @opulus/gems dev\" \"pnpm --filter @opulus/frontend dev\" --names \"gems,frontend\" --prefix-colors \"cyan,magenta\"",
     "dev:backend": "pnpm --filter @opulus/core build && pnpm --filter @opulus/backend dev",
+    "dev:webhooks": "pnpm --filter @opulus/core build && pnpm --filter @opulus/webhooks dev",
     "dev:frontend": "pnpm --filter @opulus/frontend dev",
     "dev:gems": "pnpm --filter @opulus/gems dev",
     "build": "pnpm --filter @opulus/core build && pnpm -r build",

@@ -436,6 +436,43 @@ importers:
         specifier: ^5.3.1
         version: 5.4.21(@types/node@20.19.25)(lightningcss@1.30.2)(terser@5.44.1)
 
+  opulus-webhooks:
+    dependencies:
+      '@opulus/core':
+        specifier: workspace:*
+        version: link:../opulus-core
+      express:
+        specifier: ^5.1.0
+        version: 5.1.0
+    devDependencies:
+      '@types/express':
+        specifier: ^5.0.5
+        version: 5.0.5
+      '@types/node':
+        specifier: ^22.2.0
+        version: 22.19.1
+      '@typescript-eslint/eslint-plugin':
+        specifier: ^8.12.2
+        version: 8.47.0(@typescript-eslint/parser@8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      '@typescript-eslint/parser':
+        specifier: ^8.12.2
+        version: 8.47.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      eslint:
+        specifier: ^9.17.0
+        version: 9.39.1(jiti@2.6.1)
+      eslint-config-prettier:
+        specifier: ^9.1.0
+        version: 9.1.2(eslint@9.39.1(jiti@2.6.1))
+      prettier:
+        specifier: ^3.3.3
+        version: 3.6.2
+      tsx:
+        specifier: ^4.19.2
+        version: 4.20.6
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
 packages:
 
   '@adobe/css-tools@4.4.4':

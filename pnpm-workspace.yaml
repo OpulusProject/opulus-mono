@@ -3,4 +3,5 @@ packages:
   - 'opulus-frontend'
   - 'opulus-gems'
   - 'opulus-core'
+  - 'opulus-webhooks'
 
