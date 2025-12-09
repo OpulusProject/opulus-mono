@@ -5,7 +5,7 @@ import {
   NotFoundError,
   UnauthorizedError,
   AppError,
-} from "@/utils/errors.js";
+} from "@opulus/core";
 
 /**
  * Global error handler middleware

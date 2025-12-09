@@ -1,11 +1,11 @@
-import { Request, Response, NextFunction } from "express";
-import { createLinkToken } from "@/services/plaid/createLinkToken.js";
-import { createPlaidUser } from "@/services/plaid/createPlaidUser.js";
-import { createLinkSession } from "@/services/linkSession/createLinkSession.js";
-import { getUser } from "@/services/user/getUser.js";
-import { updateUser } from "@/services/user/updateUser.js";
 import { getSession } from "@/services/session/getSession.js";
-import { UnauthorizedError } from "@/utils/errors.js";
+import {
+  linkSessionService,
+  plaidService,
+  UnauthorizedError,
+  userService,
+} from "@opulus/core";
+import { NextFunction, Request, Response } from "express";
 
 /**
  * Create a Plaid Link token for the authenticated user
@@ -26,18 +26,18 @@ export async function createLinkTokenController(
     const userId = session.user.id;
 
     // Get user from database
-    const user = await getUser(userId);
+    const user = await userService.get(userId);
 
     // Check if user has a Plaid user token, create one if not
     let userToken = user.plaidUserToken;
 
     if (!userToken) {
-      const plaidUserResponse = await createPlaidUser(userId);
+      const plaidUserResponse = await plaidService.createUser(userId);
       const { user_token: plaidUserToken, user_id: plaidId } =
         plaidUserResponse;
 
       // Update user with Plaid credentials
-      await updateUser({
+      await userService.update({
         id: userId,
         plaidId,
         plaidUserToken,
@@ -47,11 +47,14 @@ export async function createLinkTokenController(
     }
 
     // Create Link token
-    const linkTokenResponse = await createLinkToken(userToken, userId);
+    const linkTokenResponse = await plaidService.createLinkToken(
+      userToken,
+      userId
+    );
     const linkToken = linkTokenResponse.link_token;
 
     // Store link session in database
-    await createLinkSession({
+    await linkSessionService.create({
       userId,
       linkToken,
     });

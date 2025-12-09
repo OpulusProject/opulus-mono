@@ -3,7 +3,7 @@ import cors from "cors";
 import "dotenv/config";
 import express, { json, urlencoded } from "express";
 import { toNodeHandler } from "better-auth/node";
-import config from "@/config/default.js";
+import { config } from "@opulus/core";
 import { auth } from "@/client/auth.js";
 import router from "@/routes/index.js";
 import { errorHandler } from "@/middleware/errorHandler.js";

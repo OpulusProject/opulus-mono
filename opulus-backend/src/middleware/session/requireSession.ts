@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { UnauthorizedError } from "@/utils/errors.js";
+import { UnauthorizedError } from "@opulus/core";
 import { getSession } from "@/services/session/getSession.js";
 
 /**

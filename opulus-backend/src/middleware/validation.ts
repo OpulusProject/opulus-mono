@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { z, ZodSchema } from "zod";
-import { ValidationError } from "@/utils/errors.js";
+import { ValidationError } from "@opulus/core";
 
 /**
  * Validation middleware factory

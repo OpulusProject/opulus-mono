@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { getSession } from "@/services/session/getSession.js";
-import { UnauthorizedError } from "@/utils/errors.js";
+import { UnauthorizedError } from "@opulus/core";
 
 /**
  * Get current user session
