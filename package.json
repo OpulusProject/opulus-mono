@@ -4,11 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"pnpm --filter @opulus/gems dev\" \"pnpm --filter @opulus/frontend dev\" --names \"gems,frontend\" --prefix-colors \"cyan,magenta\"",
+    "dev:frontend": "concurrently \"pnpm --filter @opulus/gems dev\" \"pnpm --filter @opulus/frontend dev\" --names \"gems,frontend\" --prefix-colors \"cyan,magenta\"",
     "dev:backend": "concurrently \"pnpm --filter @opulus/core dev\" \"pnpm --filter @opulus/backend dev\" --names \"core,backend\" --prefix-colors \"blue,green\"",
     "dev:webhooks": "concurrently \"pnpm --filter @opulus/core dev\" \"pnpm --filter @opulus/webhooks dev\" --names \"core,webhooks\" --prefix-colors \"blue,yellow\"",
-    "dev:frontend": "pnpm --filter @opulus/frontend dev",
-    "dev:gems": "pnpm --filter @opulus/gems dev",
+    "dev:webhooks:local": "concurrently \"pnpm --filter @opulus/core dev\" \"pnpm --filter @opulus/webhooks dev\" \"pnpm --filter @opulus/webhooks tunnel\" --names \"core,webhooks,tunnel\" --prefix-colors \"blue,yellow,cyan\"",
     "build": "pnpm --filter @opulus/core build && pnpm -r build",
     "build:core": "pnpm --filter @opulus/core build",
     "build:gems": "pnpm --filter @opulus/gems build",

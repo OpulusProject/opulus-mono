@@ -68,7 +68,7 @@ class PlaidService {
         days_requested: 730,
       },
       ...(config.plaidWebhookUrl && {
-        webhook: `${config.plaidWebhookUrl}/api/plaid/webhook`,
+        webhook: `${config.plaidWebhookUrl}/webhook/plaid`,
       }),
     };
 
