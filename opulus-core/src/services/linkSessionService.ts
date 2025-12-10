@@ -53,7 +53,7 @@ class LinkSessionService {
    */
   async getByToken(linkToken: string) {
     try {
-      const linkSession = await this.prisma.linkSession.findUnique({
+      const linkSession = await this.prisma.linkSession.findUniqueOrThrow({
         where: { linkToken },
         select: {
           id: true,
@@ -62,10 +62,6 @@ class LinkSessionService {
           createdAt: true,
         },
       });
-
-      if (!linkSession) {
-        throw new NotFoundError("Link session not found");
-      }
 
       return linkSession;
     } catch (error) {
@@ -91,4 +87,3 @@ class LinkSessionService {
 
 // Export singleton instance
 export const linkSessionService = new LinkSessionService(prisma);
-

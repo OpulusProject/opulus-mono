@@ -99,4 +99,3 @@ class UserService {
 
 // Export singleton instance
 export const userService = new UserService(prisma);
-
