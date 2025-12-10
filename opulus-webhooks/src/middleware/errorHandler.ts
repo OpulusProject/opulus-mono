@@ -1,11 +1,11 @@
-import { Request, Response, NextFunction } from "express";
 import {
-  ValidationError,
+  AppError,
   ConflictError,
   NotFoundError,
   UnauthorizedError,
-  AppError,
+  ValidationError,
 } from "@opulus/core";
+import { NextFunction, Request, Response } from "express";
 
 /**
  * Global error handler middleware
@@ -15,7 +15,7 @@ export function errorHandler(
   error: unknown,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void {
   // Handle known error types
   if (error instanceof ValidationError) {
@@ -78,5 +78,3 @@ export function errorHandler(
     message: "An unexpected error occurred",
   });
 }
-
-
