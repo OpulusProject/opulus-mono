@@ -16,3 +16,4 @@ const configuration = new Configuration({
 export const plaidClient = new PlaidApi(configuration);
 export default plaidClient;
 
+
