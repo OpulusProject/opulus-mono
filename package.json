@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"pnpm --filter @opulus/gems dev\" \"pnpm --filter @opulus/frontend dev\" --names \"gems,frontend\" --prefix-colors \"cyan,magenta\"",
-    "dev:backend": "pnpm --filter @opulus/core build && pnpm --filter @opulus/backend dev",
-    "dev:webhooks": "pnpm --filter @opulus/core build && pnpm --filter @opulus/webhooks dev",
+    "dev:backend": "concurrently \"pnpm --filter @opulus/core dev\" \"pnpm --filter @opulus/backend dev\" --names \"core,backend\" --prefix-colors \"blue,green\"",
+    "dev:webhooks": "concurrently \"pnpm --filter @opulus/core dev\" \"pnpm --filter @opulus/webhooks dev\" --names \"core,webhooks\" --prefix-colors \"blue,yellow\"",
     "dev:frontend": "pnpm --filter @opulus/frontend dev",
     "dev:gems": "pnpm --filter @opulus/gems dev",
     "build": "pnpm --filter @opulus/core build && pnpm -r build",
@@ -19,10 +19,11 @@
     "clean": "rm -rf node_modules && pnpm -r exec rm -rf node_modules dist",
     "install:all": "pnpm install",
     "prisma:generate": "pnpm --filter @opulus/core prisma:generate",
-    "prisma:migrate": "pnpm --filter @opulus/core prisma:migrate"
+    "prisma:migrate": "dotenv -e .env -- pnpm --filter @opulus/core prisma:migrate"
   },
   "devDependencies": {
     "concurrently": "^9.1.0",
+    "dotenv-cli": "^11.0.0",
     "glob": "^13.0.0",
     "organize-imports-cli": "^0.10.0",
     "prettier": "^3.3.3"
