@@ -44,5 +44,3 @@ export function handlePlaidError(error: unknown): AppError {
     "PLAID_ERROR"
   );
 }
-
-
