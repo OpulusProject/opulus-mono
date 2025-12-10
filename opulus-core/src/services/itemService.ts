@@ -1,4 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
+import type { Item as PlaidItem } from "plaid";
 import prisma from "../client/prisma.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
 
@@ -14,6 +15,30 @@ export interface CreateItemData {
   products?: string[];
   updateType: string;
   consentExpirationTime?: string | null;
+}
+
+/**
+ * Transform Plaid Item to CreateItemData format
+ * Handles field name mapping and type conversions
+ */
+export function transformPlaidItemToCreateData(
+  plaidItem: PlaidItem,
+  userId: string,
+  accessToken: string
+): CreateItemData {
+  return {
+    plaidItemId: plaidItem.item_id,
+    userId,
+    accessToken,
+    institutionId: plaidItem.institution_id ?? null,
+    webhook: plaidItem.webhook ?? null,
+    error: plaidItem.error ?? null,
+    availableProducts: plaidItem.available_products.map((p) => p.toString()),
+    billedProducts: plaidItem.billed_products.map((p) => p.toString()),
+    products: plaidItem.products?.map((p) => p.toString()),
+    updateType: plaidItem.update_type,
+    consentExpirationTime: plaidItem.consent_expiration_time ?? null,
+  };
 }
 
 /**
