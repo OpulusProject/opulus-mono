@@ -1,0 +1,104 @@
+import { Prisma, PrismaClient } from "@prisma/client";
+import prisma from "../client/prisma.js";
+import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
+
+export interface CreateItemData {
+  plaidItemId: string;
+  userId: string;
+  accessToken: string;
+  institutionId?: string | null;
+  webhook?: string | null;
+  error?: unknown | null;
+  availableProducts: string[];
+  billedProducts: string[];
+  products?: string[];
+  updateType: string;
+  consentExpirationTime?: string | null;
+}
+
+/**
+ * Service for managing Plaid items
+ * Handles item creation and retrieval
+ */
+class ItemService {
+  constructor(private prisma: PrismaClient) {}
+
+  /**
+   * Create a Plaid item in the database
+   * @param data - Item data
+   * @returns Created item
+   * @throws ConflictError if item already exists
+   * @throws AppError if database error occurs
+   */
+  async create(data: CreateItemData) {
+    try {
+      return await this.prisma.item.create({
+        data: {
+          plaidItemId: data.plaidItemId,
+          userId: data.userId,
+          accessToken: data.accessToken,
+          institutionId: data.institutionId,
+          webhook: data.webhook,
+          error: data.error ? JSON.stringify(data.error) : null,
+          availableProducts: data.availableProducts,
+          billedProducts: data.billedProducts,
+          products: data.products,
+          updateType: data.updateType,
+          consentExpirationTime: data.consentExpirationTime
+            ? new Date(data.consentExpirationTime)
+            : null,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === "P2002") {
+          throw new ConflictError("Item already exists");
+        }
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to create item: ${error.message}`
+          : "An unexpected error occurred while creating item";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * Get an item by Plaid item ID
+   * @param plaidItemId - The Plaid item ID
+   * @returns Item if found
+   * @throws NotFoundError if item not found
+   * @throws AppError if database error occurs
+   */
+  async getByPlaidItemId(plaidItemId: string) {
+    try {
+      const item = await this.prisma.item.findUniqueOrThrow({
+        where: { plaidItemId },
+      });
+
+      return item;
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
+        throw new NotFoundError("Item not found");
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get item: ${error.message}`
+          : "An unexpected error occurred while fetching item";
+      throw new AppError(message, 500);
+    }
+  }
+}
+
+// Export singleton instance
+export const itemService = new ItemService(prisma);
