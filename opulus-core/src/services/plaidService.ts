@@ -1,4 +1,5 @@
 import {
+  AccountsGetRequest,
   CountryCode,
   InstitutionsGetByIdRequest,
   ItemGetRequest,
@@ -146,6 +147,28 @@ class PlaidService {
 
     try {
       const response = await this.plaid.institutionsGetById(request);
+      return response.data;
+    } catch (error) {
+      throw handlePlaidError(error);
+    }
+  }
+
+  // ============================================================================
+  // Account Management
+  // ============================================================================
+
+  /**
+   * Get accounts for a Plaid item
+   * @param accessToken - The access token for the item
+   * @returns The accounts from Plaid
+   */
+  async getAccounts(accessToken: string) {
+    const request: AccountsGetRequest = {
+      access_token: accessToken,
+    };
+
+    try {
+      const response = await this.plaid.accountsGet(request);
       return response.data;
     } catch (error) {
       throw handlePlaidError(error);

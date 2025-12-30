@@ -3,6 +3,7 @@ export { default as plaid, plaidClient } from "./client/plaid.js";
 export { default as prisma } from "./client/prisma.js";
 
 // Service exports
+export * from "./services/bankAccountService.js";
 export * from "./services/itemService.js";
 export * from "./services/linkSessionService.js";
 export * from "./services/plaidService.js";

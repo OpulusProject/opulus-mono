@@ -1,10 +1,11 @@
 import { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
 import {
   AppError,
-  itemService,
   linkSessionService,
+  normalizePlaidAccount,
   normalizePlaidItem,
   plaidService,
+  prisma,
 } from "@opulus/core";
 
 export async function createItemHandler(event: PlaidWebhookEvent) {
@@ -56,6 +57,11 @@ export async function createItemHandler(event: PlaidWebhookEvent) {
       }
     }
 
+    // Fetch accounts from Plaid for this item
+    const accountsResponse = await plaidService.getAccounts(
+      accessTokenRespone.access_token
+    );
+
     // Transform Plaid Item to our database format
     const itemData = normalizePlaidItem(
       item,
@@ -64,11 +70,28 @@ export async function createItemHandler(event: PlaidWebhookEvent) {
       institution
     );
 
-    // Create the item in our database
-    await itemService.create(itemData);
+    // Create item and accounts in a transaction
+    // If any part fails, the entire transaction rolls back
+    await prisma.$transaction(async (tx) => {
+      // Create the item first
+      const createdItem = await tx.item.create({ data: itemData });
+
+      // Create all accounts for this item
+      for (const plaidAccount of accountsResponse.accounts) {
+        const accountData = normalizePlaidAccount(
+          plaidAccount,
+          createdItem.id,
+          linkSessionResponse.userId
+        );
+
+        await tx.bankAccount.create({ data: accountData });
+      }
+
+      return createdItem;
+    });
 
     console.log(
-      `[ITEM WEBHOOK] ITEM_ADD_RESULT - Item created: ${item.item_id} for user ${linkSessionResponse.userId}`
+      `[ITEM WEBHOOK] ITEM_ADD_RESULT - Item created: ${item.item_id} for user ${linkSessionResponse.userId} with ${accountsResponse.accounts.length} accounts`
     );
   } catch (error) {
     throw error;
