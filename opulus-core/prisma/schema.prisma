@@ -22,7 +22,7 @@ model User {
   accounts          Account[]
   linkSessions      LinkSession[]
   items             Item[]
-  plaidAccounts     PlaidAccount[]
+  bankAccounts      BankAccount[]
 
   @@unique([email])
   @@map("user")
@@ -100,16 +100,16 @@ model Item {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plaidAccounts        PlaidAccount[]
+  bankAccounts         BankAccount[]
 
   @@map("item")
 }
 
-model PlaidAccount {
+model BankAccount {
   id                      String   @id @default(cuid())
-  plaidAccountId          String   // Plaid's account_id (may change across item updates)
+  providerAccountId       String   // Provider's account_id (may change across item updates)
   persistentAccountId     String?  // Stable account identifier across item updates
-  itemId                  String   // Reference to Item (Plaid item)
+  itemId                  String   // Reference to Item (connection to financial institution)
   userId                  String   // Reference to User
   name                    String
   officialName            String?
@@ -126,9 +126,9 @@ model PlaidAccount {
   user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   item                    Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
 
-  @@unique([plaidAccountId, itemId]) // Same account_id can exist in different items
+  @@unique([providerAccountId, itemId]) // Same account_id can exist in different items
   @@index([persistentAccountId]) // Index for stable account lookups
-  @@map("plaid_account")
+  @@map("bank_account")
 }
 
 

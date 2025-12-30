@@ -1,7 +1,7 @@
 -- CreateTable
-CREATE TABLE "plaid_account" (
+CREATE TABLE "bank_account" (
     "id" TEXT NOT NULL,
-    "plaidAccountId" TEXT NOT NULL,
+    "providerAccountId" TEXT NOT NULL,
     "persistentAccountId" TEXT,
     "itemId" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
@@ -18,17 +18,17 @@ CREATE TABLE "plaid_account" (
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "plaid_account_pkey" PRIMARY KEY ("id")
+    CONSTRAINT "bank_account_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE INDEX "plaid_account_persistentAccountId_idx" ON "plaid_account"("persistentAccountId");
+CREATE INDEX "bank_account_persistentAccountId_idx" ON "bank_account"("persistentAccountId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "plaid_account_plaidAccountId_itemId_key" ON "plaid_account"("plaidAccountId", "itemId");
+CREATE UNIQUE INDEX "bank_account_providerAccountId_itemId_key" ON "bank_account"("providerAccountId", "itemId");
 
 -- AddForeignKey
-ALTER TABLE "plaid_account" ADD CONSTRAINT "plaid_account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "bank_account" ADD CONSTRAINT "bank_account_userId_fkey" FOREIGN KEY ("userId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "plaid_account" ADD CONSTRAINT "plaid_account_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "item"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "bank_account" ADD CONSTRAINT "bank_account_itemId_fkey" FOREIGN KEY ("itemId") REFERENCES "item"("id") ON DELETE CASCADE ON UPDATE CASCADE;
