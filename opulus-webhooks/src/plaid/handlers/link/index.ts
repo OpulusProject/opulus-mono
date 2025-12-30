@@ -13,6 +13,10 @@ export async function handleLinkWebhook(
       await createItemHandler(event);
       break;
     }
+    case "SESSION_FINISHED": {
+      // since we're updating our db after every item add result, we don't need to do anything here
+      break;
+    }
     default:
       console.log(`Unhandled LINK webhook code: ${webhook_code}`);
   }
