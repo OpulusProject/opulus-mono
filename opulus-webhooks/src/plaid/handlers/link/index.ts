@@ -11,6 +11,7 @@ export async function handleLinkWebhook(
   switch (webhook_code) {
     case "ITEM_ADD_RESULT": {
       await createItemHandler(event);
+      break;
     }
     default:
       console.log(`Unhandled LINK webhook code: ${webhook_code}`);
