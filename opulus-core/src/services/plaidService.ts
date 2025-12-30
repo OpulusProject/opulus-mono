@@ -1,5 +1,6 @@
 import {
   CountryCode,
+  InstitutionsGetByIdRequest,
   ItemGetRequest,
   ItemPublicTokenExchangeRequest,
   LinkTokenCreateRequest,
@@ -119,6 +120,32 @@ class PlaidService {
 
     try {
       const response = await this.plaid.itemGet(request);
+      return response.data;
+    } catch (error) {
+      throw handlePlaidError(error);
+    }
+  }
+
+  // ============================================================================
+  // Institution Management
+  // ============================================================================
+
+  /**
+   * Get institution details by ID
+   * @param institutionId - The Plaid institution ID
+   * @returns Institution details with optional metadata
+   */
+  async getInstitutionById(institutionId: string) {
+    const request: InstitutionsGetByIdRequest = {
+      institution_id: institutionId,
+      country_codes: [CountryCode.Ca],
+      options: {
+        include_optional_metadata: true,
+      },
+    };
+
+    try {
+      const response = await this.plaid.institutionsGetById(request);
       return response.data;
     } catch (error) {
       throw handlePlaidError(error);

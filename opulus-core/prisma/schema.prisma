@@ -90,6 +90,9 @@ model Item {
   userId               String
   accessToken          String
   institutionId        String?
+  institutionName      String?
+  institutionColor     String? // Primary brand color from Plaid
+  institutionLogo      String? // Logo URL from Plaid
   webhook              String?
   error                String? // JSON stringified PlaidError
   availableProducts    String[]  @default([])

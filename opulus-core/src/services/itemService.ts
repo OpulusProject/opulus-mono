@@ -8,6 +8,9 @@ export interface CreateItemData {
   userId: string;
   accessToken: string;
   institutionId?: string | null;
+  institutionName?: string | null;
+  institutionColor?: string | null;
+  institutionLogo?: string | null;
   webhook?: string | null;
   error?: string | null;
   availableProducts: string[];
@@ -20,17 +23,29 @@ export interface CreateItemData {
 /**
  * Normalize Plaid Item to CreateItemData format
  * Handles field name mapping and type conversions
+ * @param plaidItem - The Plaid item
+ * @param userId - User ID
+ * @param accessToken - Access token
+ * @param institution - Optional institution data from Plaid (null for same-day micro deposits)
  */
 export function normalizePlaidItem(
   plaidItem: PlaidItem,
   userId: string,
-  accessToken: string
+  accessToken: string,
+  institution?: {
+    name: string;
+    logo?: string | null;
+    primary_color?: string | null;
+  } | null
 ): CreateItemData {
   return {
     plaidItemId: plaidItem.item_id,
     userId,
     accessToken,
     institutionId: plaidItem.institution_id ?? null,
+    institutionName: institution?.name ?? null,
+    institutionColor: institution?.primary_color ?? null,
+    institutionLogo: institution?.logo ?? null,
     webhook: plaidItem.webhook ?? null,
     error: plaidItem.error ? JSON.stringify(plaidItem.error) : null,
     availableProducts: plaidItem.available_products.map((p) => p.toString()),
