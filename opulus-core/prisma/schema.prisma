@@ -22,6 +22,7 @@ model User {
   accounts          Account[]
   linkSessions      LinkSession[]
   items             Item[]
+  plaidAccounts     PlaidAccount[]
 
   @@unique([email])
   @@map("user")
@@ -99,8 +100,35 @@ model Item {
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plaidAccounts        PlaidAccount[]
 
   @@map("item")
+}
+
+model PlaidAccount {
+  id                      String   @id @default(cuid())
+  plaidAccountId          String   // Plaid's account_id (may change across item updates)
+  persistentAccountId     String?  // Stable account identifier across item updates
+  itemId                  String   // Reference to Item (Plaid item)
+  userId                  String   // Reference to User
+  name                    String
+  officialName            String?
+  type                    String   // e.g., "depository", "credit", "loan", "investment", etc.
+  subtype                 String?  // e.g., "checking", "savings", "credit card", etc.
+  mask                    String?  // Last 2-4 alphanumeric characters of account number
+  balanceAvailable        Decimal? // Available balance
+  balanceCurrent          Decimal? // Current balance
+  balanceLimit            Decimal? // Credit limit (for credit accounts)
+  isoCurrencyCode         String?  // ISO 4217 currency code (e.g., "USD", "CAD")
+  unofficialCurrencyCode  String?  // Unofficial currency code (used when ISO currency unavailable)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item                    Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@unique([plaidAccountId, itemId]) // Same account_id can exist in different items
+  @@index([persistentAccountId]) // Index for stable account lookups
+  @@map("plaid_account")
 }
 
 
