@@ -68,9 +68,13 @@ class PlaidService {
         days_requested: 730,
       },
       ...(config.plaidWebhookUrl && {
-        webhook: `${config.plaidWebhookUrl}/webhook/plaid`,
+        webhook: `${config.plaidWebhookUrl}`,
       }),
     };
+
+    console.log(
+      `[PLAID SERVICE] Creating link token with webhook: ${config.plaidWebhookUrl}`
+    );
 
     try {
       const response = await this.plaid.linkTokenCreate(request);

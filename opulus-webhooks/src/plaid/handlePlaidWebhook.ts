@@ -1,6 +1,5 @@
 import { AppError } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
-import { webhookQueue } from "../services/webhookQueue.js";
 import type { PlaidWebhookEvent } from "../types/plaid/webhookSchema.js";
 import { handleItemWebhook } from "./handlers/item/index.js";
 import { handleLinkWebhook } from "./handlers/link/index.js";
@@ -9,12 +8,12 @@ import { unhandledWebhook } from "./handlers/unhandledPlaidWebhook.js";
 
 /**
  * Handler for processing webhook events
- * Acknowledges immediately and processes asynchronously via queue
+ * Acknowledges immediately and processes asynchronously
  */
 export async function handlePlaidWebhook(
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): Promise<void> {
   try {
     const event = req.body as PlaidWebhookEvent;
@@ -22,15 +21,15 @@ export async function handlePlaidWebhook(
     // Acknowledge immediately
     res.status(200).json({ received: true });
 
-    // Process async (queue/job system)
-    await webhookQueue.add(event, processPlaidWebhook, "plaid");
+    // Process asynchronously (don't await - fire and forget)
+    processPlaidWebhook(event);
   } catch (error) {
     // If acknowledgment hasn't been sent yet, send error response
     if (!res.headersSent) {
       next(error);
     } else {
       // Already acknowledged, log error
-      console.error("Error queuing webhook:", error);
+      console.error("Error handling webhook:", error);
     }
   }
 }
@@ -42,7 +41,7 @@ export async function handlePlaidWebhook(
  * @throws AppError if processing fails
  */
 export async function processPlaidWebhook(
-  event: PlaidWebhookEvent,
+  event: PlaidWebhookEvent
 ): Promise<void> {
   try {
     const { webhook_type, webhook_code } = event;
@@ -52,7 +51,7 @@ export async function processPlaidWebhook(
       case "ITEM":
         await handleItemWebhook(webhook_code, event);
         break;
-      case "LINK": 
+      case "LINK":
         await handleLinkWebhook(webhook_code, event);
         break;
       case "TRANSACTIONS":

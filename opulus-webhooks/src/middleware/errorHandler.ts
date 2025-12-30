@@ -15,7 +15,7 @@ export function errorHandler(
   error: unknown,
   req: Request,
   res: Response,
-  next: NextFunction,
+  next: NextFunction
 ): void {
   // Handle known error types
   if (error instanceof ValidationError) {

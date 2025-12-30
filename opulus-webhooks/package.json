@@ -10,7 +10,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "lint": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit",
-    "tunnel": "zrok share public http://localhost:8081 --backend-mode web --headless",
+    "tunnel": "zrok share public http://localhost:8081",
     "tunnel:reserved": "zrok reserve public http://localhost:8081 --backend-mode web --unique-name opuluswebhooks"
   },
   "dependencies": {

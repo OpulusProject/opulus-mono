@@ -1,12 +1,14 @@
+// Load .env FIRST, before any other imports that depend on environment variables
+import "dotenv/config";
+
+import { auth } from "@/client/auth.js";
+import { errorHandler } from "@/middleware/errorHandler.js";
+import router from "@/routes/index.js";
+import { config } from "@opulus/core";
+import { toNodeHandler } from "better-auth/node";
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import "dotenv/config";
 import express, { json, urlencoded } from "express";
-import { toNodeHandler } from "better-auth/node";
-import { config } from "@opulus/core";
-import { auth } from "@/client/auth.js";
-import router from "@/routes/index.js";
-import { errorHandler } from "@/middleware/errorHandler.js";
 
 const app = express();
 
