@@ -9,19 +9,19 @@ export interface CreateItemData {
   accessToken: string;
   institutionId?: string | null;
   webhook?: string | null;
-  error?: unknown | null;
+  error?: string | null;
   availableProducts: string[];
   billedProducts: string[];
   products?: string[];
   updateType: string;
-  consentExpirationTime?: string | null;
+  consentExpirationTime?: Date | null;
 }
 
 /**
- * Transform Plaid Item to CreateItemData format
+ * Normalize Plaid Item to CreateItemData format
  * Handles field name mapping and type conversions
  */
-export function transformPlaidItemToCreateData(
+export function normalizePlaidItem(
   plaidItem: PlaidItem,
   userId: string,
   accessToken: string
@@ -32,12 +32,14 @@ export function transformPlaidItemToCreateData(
     accessToken,
     institutionId: plaidItem.institution_id ?? null,
     webhook: plaidItem.webhook ?? null,
-    error: plaidItem.error ?? null,
+    error: plaidItem.error ? JSON.stringify(plaidItem.error) : null,
     availableProducts: plaidItem.available_products.map((p) => p.toString()),
     billedProducts: plaidItem.billed_products.map((p) => p.toString()),
     products: plaidItem.products?.map((p) => p.toString()),
     updateType: plaidItem.update_type,
-    consentExpirationTime: plaidItem.consent_expiration_time ?? null,
+    consentExpirationTime: plaidItem.consent_expiration_time
+      ? new Date(plaidItem.consent_expiration_time)
+      : null,
   };
 }
 
@@ -57,23 +59,7 @@ class ItemService {
    */
   async create(data: CreateItemData) {
     try {
-      return await this.prisma.item.create({
-        data: {
-          plaidItemId: data.plaidItemId,
-          userId: data.userId,
-          accessToken: data.accessToken,
-          institutionId: data.institutionId,
-          webhook: data.webhook,
-          error: data.error ? JSON.stringify(data.error) : null,
-          availableProducts: data.availableProducts,
-          billedProducts: data.billedProducts,
-          products: data.products,
-          updateType: data.updateType,
-          consentExpirationTime: data.consentExpirationTime
-            ? new Date(data.consentExpirationTime)
-            : null,
-        },
-      });
+      return await this.prisma.item.create({ data });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {

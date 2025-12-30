@@ -3,8 +3,8 @@ import {
   AppError,
   itemService,
   linkSessionService,
+  normalizePlaidItem,
   plaidService,
-  transformPlaidItemToCreateData,
 } from "@opulus/core";
 
 export async function createItemHandler(event: PlaidWebhookEvent) {
@@ -38,7 +38,7 @@ export async function createItemHandler(event: PlaidWebhookEvent) {
     const { item } = itemResponse;
 
     // Transform Plaid Item to our database format
-    const itemData = transformPlaidItemToCreateData(
+    const itemData = normalizePlaidItem(
       item,
       linkSessionResponse.userId,
       accessTokenRespone.access_token
