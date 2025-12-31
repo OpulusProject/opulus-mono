@@ -1,0 +1,102 @@
+meta {
+  name: Get Items
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/api/items
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+params:query {
+}
+
+docs {
+  # Get Items
+
+  Get all Plaid items for the authenticated user with metadata including account count and total available balance.
+
+  **Endpoint:** `GET /api/items`
+
+  ## Authentication
+
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+
+  ## Response
+
+  Returns all items for the authenticated user, each including:
+  - Item details (institution info, Plaid item ID, etc.)
+  - Metadata:
+    - `accountCount`: Number of bank accounts linked to the item
+    - `totalAvailableBalance`: Sum of available balances across all accounts
+
+  ## Success Response (200)
+
+  ```json
+  {
+    "data": {
+      "items": [
+        {
+          "id": "item_123",
+          "plaidItemId": "plaid_item_abc",
+          "userId": "user_123",
+          "accessToken": "access-sandbox-...",
+          "institutionId": "ins_123",
+          "institutionName": "Chase",
+          "institutionColor": "#117ACA",
+          "institutionLogo": "https://...",
+          "availableProducts": ["transactions", "identity"],
+          "billedProducts": ["transactions"],
+          "products": ["transactions"],
+          "updateType": "background",
+          "consentExpirationTime": null,
+          "createdAt": "2024-01-08T00:00:00.000Z",
+          "updatedAt": "2024-01-08T00:00:00.000Z",
+          "metadata": {
+            "accountCount": 3,
+            "totalAvailableBalance": 1234.56
+          }
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Error Responses
+
+  - `401 Unauthorized`: No active session found
+    ```json
+    {
+      "error": "Unauthorized",
+      "message": "Authentication required"
+    }
+    ```
+
+  - `500 Internal Server Error`: Database error
+    ```json
+    {
+      "error": "Application error",
+      "message": "Failed to get items: ..."
+    }
+    ```
+
+  ## Usage
+
+  1. First, use **Sign In** to authenticate and establish a session
+  2. Bruno will automatically store the session cookie
+  3. Call this endpoint to get all items for the authenticated user
+  4. Items are ordered by creation date (newest first)
+
+  ## Notes
+
+  - Items without any bank accounts will have `accountCount: 0` and `totalAvailableBalance: 0`
+  - Balances are summed from the `balanceAvailable` field of each account
+  - Null balances are treated as 0 in the calculation
+}
+

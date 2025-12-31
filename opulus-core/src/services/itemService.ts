@@ -124,6 +124,66 @@ class ItemService {
       throw new AppError(message, 500);
     }
   }
+
+  /**
+   * Get all items for a user with metadata (account count and total available balance)
+   * @param userId - The user ID
+   * @returns Array of items with metadata
+   * @throws AppError if database error occurs
+   */
+  async getAllByUserId(userId: string) {
+    try {
+      const items = await this.prisma.item.findMany({
+        where: { userId },
+        include: {
+          bankAccounts: {
+            select: {
+              balanceAvailable: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      // Transform items to include metadata
+      return items.map((item) => {
+        const accountCount = item.bankAccounts.length;
+        const totalAvailableBalance = item.bankAccounts.reduce(
+          (sum, account) => {
+            // Convert Decimal to number, handling null values
+            const balance = account.balanceAvailable
+              ? Number(account.balanceAvailable)
+              : 0;
+            return sum + balance;
+          },
+          0
+        );
+
+        // Remove bankAccounts from response, add metadata instead
+        const { bankAccounts, ...itemWithoutAccounts } = item;
+
+        return {
+          ...itemWithoutAccounts,
+          metadata: {
+            accountCount,
+            totalAvailableBalance,
+          },
+        };
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get items: ${error.message}`
+          : "An unexpected error occurred while fetching items";
+      throw new AppError(message, 500);
+    }
+  }
 }
 
 // Export singleton instance
