@@ -7,17 +7,20 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Spinner,
 } from '@gems';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 
 import { AppLayout } from '@/common/AppLayout';
 import { LaunchLink } from '@/common/LaunchLink';
+import { useItems } from '@/hooks/items/useItems';
 
 import { EmptyAccountsView } from './components';
 
 export const Accounts: React.FC = () => {
   const [isLinkOpen, setIsLinkOpen] = useState(false);
+  const { data: itemsData, isLoading } = useItems();
 
   const handleLinkSuccess = (publicToken: string, metadata: unknown) => {
     console.log('Plaid Link Success:', { publicToken, metadata });
@@ -55,13 +58,21 @@ export const Accounts: React.FC = () => {
           </Select>
         </div>
 
-        <div
-          className={`transition-opacity duration-300 ${
-            isLinkOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
-          }`}
-        >
-          <EmptyAccountsView onAddAccount={() => setIsLinkOpen(true)} />
-        </div>
+        {isLoading ? (
+          <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+            <Spinner className="size-6" />
+          </div>
+        ) : itemsData && itemsData.items.length > 0 ? (
+          <div>{/* TODO: Render items list */}</div>
+        ) : (
+          <div
+            className={`transition-opacity duration-300 ${
+              isLinkOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}
+          >
+            <EmptyAccountsView onAddAccount={() => setIsLinkOpen(true)} />
+          </div>
+        )}
       </div>
       {isLinkOpen && (
         <LaunchLink
