@@ -1,5 +1,4 @@
 import {
-  Button,
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
@@ -9,22 +8,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@gems';
-import { Plus, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useState } from 'react';
 
 import { AppLayout } from '@/common/AppLayout';
 import { LaunchLink } from '@/common/LaunchLink';
 
+import { EmptyAccountsView } from './components';
+
 export const Accounts: React.FC = () => {
   const [isLinkOpen, setIsLinkOpen] = useState(false);
 
-  const handleLinkSuccess = (publicToken: string, metadata: any) => {
+  const handleLinkSuccess = (publicToken: string, metadata: unknown) => {
     console.log('Plaid Link Success:', { publicToken, metadata });
     // TODO: Exchange public token for access token
     // TODO: Store account information
   };
 
-  const handleLinkExit = (error: any, metadata: any) => {
+  const handleLinkExit = (error: unknown, metadata: unknown) => {
     if (error) {
       console.error('Plaid Link Error:', error);
     }
@@ -52,10 +53,14 @@ export const Accounts: React.FC = () => {
               <SelectItem value="type">Type</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={() => setIsLinkOpen(true)}>
-            <Plus className="h-4 w-4" />
-            Add Account
-          </Button>
+        </div>
+
+        <div
+          className={`transition-opacity duration-300 ${
+            isLinkOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+        >
+          <EmptyAccountsView onAddAccount={() => setIsLinkOpen(true)} />
         </div>
       </div>
       {isLinkOpen && (
