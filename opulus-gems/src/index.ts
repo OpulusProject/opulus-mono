@@ -35,13 +35,13 @@ export {
 
 // Chart components
 export {
-  type ChartConfig,
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
   ChartStyle,
   ChartTooltip,
   ChartTooltipContent,
+  type ChartConfig,
 } from './components/ui/chart';
 
 // Checkbox component
@@ -86,6 +86,16 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from './components/ui/dropdown-menu';
+
+// Empty component
+export {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from './components/ui/empty';
 
 // Input component
 export { Input } from './components/ui/input';
