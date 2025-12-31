@@ -65,7 +65,16 @@ export async function getItemsController(
     const items = await itemService.getAllByUserId(userId);
 
     // Transform to public DTO, filtering sensitive fields
-    const publicItems: ItemPublicDTO[] = items.map(toItemPublicDTO);
+    const publicItems: ItemPublicDTO[] = items.map((item) =>
+      toItemPublicDTO({
+        id: item.id,
+        institutionName: item.institutionName,
+        institutionLogo: item.institutionLogo,
+        institutionColor: item.institutionColor,
+        error: item.error,
+        metadata: item.metadata,
+      })
+    );
 
     res.status(200).json({
       data: {

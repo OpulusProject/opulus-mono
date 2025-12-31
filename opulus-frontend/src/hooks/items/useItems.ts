@@ -43,4 +43,3 @@ export function useItems() {
     staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
   });
 }
-

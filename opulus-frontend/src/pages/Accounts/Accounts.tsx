@@ -16,7 +16,7 @@ import { AppLayout } from '@/common/AppLayout';
 import { LaunchLink } from '@/common/LaunchLink';
 import { useItems } from '@/hooks/items/useItems';
 
-import { EmptyAccountsView } from './components';
+import { AddAccountCard, EmptyAccountsView, ItemCard } from './components';
 
 export const Accounts: React.FC = () => {
   const [isLinkOpen, setIsLinkOpen] = useState(false);
@@ -63,7 +63,12 @@ export const Accounts: React.FC = () => {
             <Spinner className="size-6" />
           </div>
         ) : itemsData && itemsData.items.length > 0 ? (
-          <div>{/* TODO: Render items list */}</div>
+          <div className="flex flex-wrap gap-8">
+            {itemsData.items.map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+            <AddAccountCard onAddAccount={() => setIsLinkOpen(true)} />
+          </div>
         ) : (
           <div
             className={`transition-opacity duration-300 ${

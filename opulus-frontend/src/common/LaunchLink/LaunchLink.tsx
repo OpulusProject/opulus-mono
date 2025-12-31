@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect } from 'react';
 import {
   PlaidLinkError,
@@ -64,6 +65,7 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
   onSuccess,
   onExit,
 }) => {
+  const queryClient = useQueryClient();
   const {
     data: tokenData,
     isLoading: isLinkTokenLoading,
@@ -78,6 +80,9 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
   ) => {
     // Call custom success handler if provided
     onSuccess?.(publicToken, metadata);
+
+    // Invalidate items query to refresh the list with new item(s)
+    void queryClient.invalidateQueries({ queryKey: ['items'] });
 
     // Always close Link after success
     onClose();
