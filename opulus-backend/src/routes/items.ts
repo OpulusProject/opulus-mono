@@ -1,6 +1,6 @@
-import { Router } from "express";
 import { getItemsController } from "@/controllers/items/getItemsController.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
+import { Router } from "express";
 
 const router: ReturnType<typeof Router> = Router();
 
@@ -11,4 +11,3 @@ const router: ReturnType<typeof Router> = Router();
 router.get("/", requireSession, getItemsController);
 
 export default router;
-
