@@ -173,6 +173,9 @@ export {
 // Skeleton component
 export { Skeleton } from './components/ui/skeleton';
 
+// Spinner component
+export { Spinner } from './components/ui/spinner';
+
 // Table components
 export {
   Table,
