@@ -23,6 +23,7 @@ model User {
   linkSessions      LinkSession[]
   items             Item[]
   bankAccounts      BankAccount[]
+  transactions      Transaction[]
 
   @@unique([email])
   @@map("user")
@@ -100,10 +101,12 @@ model Item {
   products             String[]  @default([])
   updateType           String    // "background" | "user_present_required"
   consentExpirationTime DateTime?
+  transactionCursor    String?  // Cursor for /transactions/sync pagination
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
   user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   bankAccounts         BankAccount[]
+  transactions         Transaction[]
 
   @@map("item")
 }
@@ -128,10 +131,50 @@ model BankAccount {
   updatedAt               DateTime @updatedAt
   user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   item                    Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  transactions            Transaction[]
 
   @@unique([providerAccountId, itemId]) // Same account_id can exist in different items
   @@index([persistentAccountId]) // Index for stable account lookups
   @@map("bank_account")
+}
+
+model Transaction {
+  id                        String   @id @default(cuid())
+  providerTransactionId     String   // Plaid transaction_id (unique per transaction)
+  accountId                 String   // Reference to BankAccount
+  itemId                    String   // Reference to Item
+  userId                    String   // Reference to User
+  amount                    Decimal   // Transaction amount (positive for credits, negative for debits)
+  date                      DateTime // Date transaction occurred (YYYY-MM-DD)
+  authorizedDate            DateTime? // Date transaction was authorized (YYYY-MM-DD)
+  name                      String   // Merchant name or transaction description
+  merchantName              String?  // Merchant name if available
+  category                  String[] // Array of category strings
+  categoryId                String?  // Plaid category ID
+  personalFinanceCategory   String?  // Personal finance category (JSON stringified)
+  location                  String?  // Location data (JSON stringified)
+  paymentMeta               String?  // Payment metadata (JSON stringified)
+  isoCurrencyCode           String?  // ISO 4217 currency code
+  unofficialCurrencyCode    String?  // Unofficial currency code
+  pending                   Boolean  @default(false) // Whether transaction is pending
+  pendingTransactionId      String?  // ID of pending transaction if this is a posted transaction
+  accountOwner              String?  // Account owner name
+  transactionCode           String?  // Transaction code (e.g., "direct_debit")
+  merchantEntityId          String?  // Merchant entity ID
+  checkNumber               String?  // Check number if applicable
+  dateTransacted            DateTime? // Date transaction was posted
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item                      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  bankAccount               BankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([providerTransactionId, accountId]) // Same transaction_id can exist in different accounts
+  @@index([accountId])
+  @@index([itemId])
+  @@index([userId])
+  @@index([date])
+  @@map("transaction")
 }
 
 
