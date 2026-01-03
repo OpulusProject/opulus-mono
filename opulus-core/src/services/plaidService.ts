@@ -7,6 +7,7 @@ import {
   LinkTokenCreateRequest,
   PlaidApi,
   Products,
+  TransactionsSyncRequest,
   UserCreateRequest,
 } from "plaid";
 import plaidClient from "../client/plaid.js";
@@ -171,6 +172,68 @@ class PlaidService {
       const response = await this.plaid.accountsGet(request);
       return response.data;
     } catch (error) {
+      throw handlePlaidError(error);
+    }
+  }
+
+  // ============================================================================
+  // Transaction Management
+  // ============================================================================
+
+  /**
+   * Sync transactions for a Plaid item
+   * Handles pagination automatically and returns all transactions
+   * @param accessToken - The access token for the item
+   * @param cursor - Optional cursor for incremental updates (null for initial sync)
+   * @returns Object containing added, modified, removed transactions and next cursor
+   */
+  async transactionsSync(accessToken: string, cursor: string | null = null) {
+    const allAdded: any[] = [];
+    const allModified: any[] = [];
+    const allRemoved: any[] = [];
+    let nextCursor: string | null = cursor;
+    let originalCursor: string | null = cursor; // Track original cursor for pagination restarts
+
+    try {
+      // Pagination loop - continue until has_more is false
+      while (true) {
+        const request: TransactionsSyncRequest = {
+          access_token: accessToken,
+          cursor: nextCursor ?? undefined,
+        };
+
+        const response = await this.plaid.transactionsSync(request);
+        const { added, modified, removed, has_more, next_cursor } =
+          response.data;
+
+        // Accumulate transactions
+        allAdded.push(...(added || []));
+        allModified.push(...(modified || []));
+        allRemoved.push(...(removed || []));
+
+        // If this is the first page and has_more is true, track the original cursor
+        if (originalCursor === null && has_more && next_cursor) {
+          originalCursor = next_cursor;
+        }
+
+        // Update next cursor
+        nextCursor = next_cursor ?? null;
+
+        // If no more pages, break
+        if (!has_more) {
+          break;
+        }
+      }
+
+      return {
+        added: allAdded,
+        modified: allModified,
+        removed: allRemoved,
+        nextCursor,
+      };
+    } catch (error) {
+      // If pagination fails, Plaid docs say to restart from original cursor
+      // But for now, we'll just throw the error and let the caller handle retry logic
       throw handlePlaidError(error);
     }
   }

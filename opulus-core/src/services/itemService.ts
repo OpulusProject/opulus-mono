@@ -126,6 +126,41 @@ class ItemService {
   }
 
   /**
+   * Update an item by ID
+   * Only updates fields that are provided (undefined fields are ignored)
+   * @param itemId - The item ID
+   * @param data - Partial item data to update
+   * @returns Updated item
+   * @throws NotFoundError if item not found
+   * @throws AppError if database error occurs
+   */
+  async update(itemId: string, data: Prisma.ItemUpdateInput) {
+    try {
+      return await this.prisma.item.update({
+        where: { id: itemId },
+        data,
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
+        throw new NotFoundError("Item not found");
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to update item: ${error.message}`
+          : "An unexpected error occurred while updating item";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
    * Get all items for a user with metadata (account count and total available balance)
    * @param userId - The user ID
    * @returns Array of items with metadata
