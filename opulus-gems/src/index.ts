@@ -100,6 +100,22 @@ export {
 // Input component
 export { Input } from './components/ui/input';
 
+// Input OTP components
+export {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+  InputOTPSeparator,
+} from './components/ui/input-otp';
+
+// Field components
+export {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from './components/ui/field';
+
 // Input Group components
 export {
   InputGroup,
