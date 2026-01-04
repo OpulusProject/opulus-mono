@@ -9,21 +9,23 @@ datasource db {
 }
 
 model User {
-  id                String       @id
-  name              String
-  email             String
-  emailVerified     Boolean      @default(false)
-  image             String?
-  plaidId           String?      @unique
-  plaidUserToken    String?      @unique
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @default(now()) @updatedAt
-  sessions          Session[]
-  accounts          Account[]
-  linkSessions      LinkSession[]
-  items             Item[]
-  bankAccounts      BankAccount[]
-  transactions      Transaction[]
+  id               String        @id
+  name             String
+  email            String
+  emailVerified    Boolean       @default(false)
+  image            String?
+  plaidId          String?       @unique
+  plaidUserToken   String?       @unique
+  twoFactorEnabled Boolean       @default(false)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @default(now()) @updatedAt
+  sessions         Session[]
+  accounts         Account[]
+  linkSessions     LinkSession[]
+  items            Item[]
+  bankAccounts     BankAccount[]
+  transactions     Transaction[]
+  twoFactor        TwoFactor?
 
   @@unique([email])
   @@map("user")
@@ -86,95 +88,108 @@ model LinkSession {
 }
 
 model Item {
-  id                   String    @id @default(cuid())
-  plaidItemId          String    @unique
-  userId               String
-  accessToken          String
-  institutionId        String?
-  institutionName      String?
-  institutionColor     String? // Primary brand color from Plaid
-  institutionLogo      String? // Logo URL from Plaid
-  webhook              String?
-  error                String? // JSON stringified PlaidError
-  availableProducts    String[]  @default([])
-  billedProducts       String[]  @default([])
-  products             String[]  @default([])
-  updateType           String    // "background" | "user_present_required"
+  id                    String        @id @default(cuid())
+  plaidItemId           String        @unique
+  userId                String
+  accessToken           String
+  institutionId         String?
+  institutionName       String?
+  institutionColor      String? // Primary brand color from Plaid
+  institutionLogo       String? // Logo URL from Plaid
+  webhook               String?
+  error                 String? // JSON stringified PlaidError
+  availableProducts     String[]      @default([])
+  billedProducts        String[]      @default([])
+  products              String[]      @default([])
+  updateType            String // "background" | "user_present_required"
   consentExpirationTime DateTime?
-  transactionCursor    String?  // Cursor for /transactions/sync pagination
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bankAccounts         BankAccount[]
-  transactions         Transaction[]
+  transactionCursor     String? // Cursor for /transactions/sync pagination
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bankAccounts          BankAccount[]
+  transactions          Transaction[]
 
   @@map("item")
 }
 
 model BankAccount {
-  id                      String   @id @default(cuid())
-  providerAccountId       String   // Provider's account_id (may change across item updates)
-  persistentAccountId     String?  // Stable account identifier across item updates
-  itemId                  String   // Reference to Item (connection to financial institution)
-  userId                  String   // Reference to User
-  name                    String
-  officialName            String?
-  type                    String   // e.g., "depository", "credit", "loan", "investment", etc.
-  subtype                 String?  // e.g., "checking", "savings", "credit card", etc.
-  mask                    String?  // Last 2-4 alphanumeric characters of account number
-  balanceAvailable        Decimal? // Available balance
-  balanceCurrent          Decimal? // Current balance
-  balanceLimit            Decimal? // Credit limit (for credit accounts)
-  isoCurrencyCode         String?  // ISO 4217 currency code (e.g., "USD", "CAD")
-  unofficialCurrencyCode  String?  // Unofficial currency code (used when ISO currency unavailable)
-  createdAt               DateTime @default(now())
-  updatedAt               DateTime @updatedAt
-  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  item                    Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  transactions            Transaction[]
+  id                     String        @id @default(cuid())
+  providerAccountId      String // Provider's account_id (may change across item updates)
+  persistentAccountId    String? // Stable account identifier across item updates
+  itemId                 String // Reference to Item (connection to financial institution)
+  userId                 String // Reference to User
+  name                   String
+  officialName           String?
+  type                   String // e.g., "depository", "credit", "loan", "investment", etc.
+  subtype                String? // e.g., "checking", "savings", "credit card", etc.
+  mask                   String? // Last 2-4 alphanumeric characters of account number
+  balanceAvailable       Decimal? // Available balance
+  balanceCurrent         Decimal? // Current balance
+  balanceLimit           Decimal? // Credit limit (for credit accounts)
+  isoCurrencyCode        String? // ISO 4217 currency code (e.g., "USD", "CAD")
+  unofficialCurrencyCode String? // Unofficial currency code (used when ISO currency unavailable)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  user                   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item                   Item          @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  transactions           Transaction[]
 
-  @@unique([providerAccountId, itemId]) // Same account_id can exist in different items
-  @@index([persistentAccountId]) // Index for stable account lookups
+  // Same account_id can exist in different items
+  // Index for stable account lookups
+  @@unique([providerAccountId, itemId])
+  @@index([persistentAccountId])
   @@map("bank_account")
 }
 
 model Transaction {
-  id                        String   @id @default(cuid())
-  providerTransactionId     String   // Plaid transaction_id (unique per transaction)
-  accountId                 String   // Reference to BankAccount
-  itemId                    String   // Reference to Item
-  userId                    String   // Reference to User
-  amount                    Decimal   // Transaction amount (positive for credits, negative for debits)
-  date                      DateTime // Date transaction occurred (YYYY-MM-DD)
-  authorizedDate            DateTime? // Date transaction was authorized (YYYY-MM-DD)
-  name                      String   // Merchant name or transaction description
-  merchantName              String?  // Merchant name if available
-  category                  String[] // Array of category strings
-  categoryId                String?  // Plaid category ID
-  personalFinanceCategory   String?  // Personal finance category (JSON stringified)
-  location                  String?  // Location data (JSON stringified)
-  paymentMeta               String?  // Payment metadata (JSON stringified)
-  isoCurrencyCode           String?  // ISO 4217 currency code
-  unofficialCurrencyCode    String?  // Unofficial currency code
-  pending                   Boolean  @default(false) // Whether transaction is pending
-  pendingTransactionId      String?  // ID of pending transaction if this is a posted transaction
-  accountOwner              String?  // Account owner name
-  transactionCode           String?  // Transaction code (e.g., "direct_debit")
-  merchantEntityId          String?  // Merchant entity ID
-  checkNumber               String?  // Check number if applicable
-  dateTransacted            DateTime? // Date transaction was posted
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
-  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  item                      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  bankAccount               BankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  id                      String      @id @default(cuid())
+  providerTransactionId   String // Plaid transaction_id (unique per transaction)
+  accountId               String // Reference to BankAccount
+  itemId                  String // Reference to Item
+  userId                  String // Reference to User
+  amount                  Decimal // Transaction amount (positive for credits, negative for debits)
+  date                    DateTime // Date transaction occurred (YYYY-MM-DD)
+  authorizedDate          DateTime? // Date transaction was authorized (YYYY-MM-DD)
+  name                    String // Merchant name or transaction description
+  merchantName            String? // Merchant name if available
+  category                String[] // Array of category strings
+  categoryId              String? // Plaid category ID
+  personalFinanceCategory String? // Personal finance category (JSON stringified)
+  location                String? // Location data (JSON stringified)
+  paymentMeta             String? // Payment metadata (JSON stringified)
+  isoCurrencyCode         String? // ISO 4217 currency code
+  unofficialCurrencyCode  String? // Unofficial currency code
+  pending                 Boolean     @default(false) // Whether transaction is pending
+  pendingTransactionId    String? // ID of pending transaction if this is a posted transaction
+  accountOwner            String? // Account owner name
+  transactionCode         String? // Transaction code (e.g., "direct_debit")
+  merchantEntityId        String? // Merchant entity ID
+  checkNumber             String? // Check number if applicable
+  dateTransacted          DateTime? // Date transaction was posted
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+  user                    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item                    Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  bankAccount             BankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
-  @@unique([providerTransactionId, accountId]) // Same transaction_id can exist in different accounts
+  // Same transaction_id can exist in different accounts
+  @@unique([providerTransactionId, accountId])
   @@index([accountId])
   @@index([itemId])
   @@index([userId])
   @@index([date])
   @@map("transaction")
+}
+
+model TwoFactor {
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  secret      String? // Encrypted secret for TOTP
+  backupCodes String? // Encrypted backup codes (JSON array)
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("two_factor")
 }
 
 

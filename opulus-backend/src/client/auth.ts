@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { twoFactor } from "better-auth/plugins";
 import { prisma, config } from "@opulus/core";
 
 export const auth = betterAuth({
@@ -18,6 +19,12 @@ export const auth = betterAuth({
   secret: config.betterAuthSecret,
   baseURL: config.betterAuthBaseURL || `http://localhost:${config.port}`,
   basePath: "/api/auth",
+  appName: "Opulus", // Used as issuer for TOTP
+  plugins: [
+    twoFactor({
+      issuer: "Opulus", // Display name in authenticator apps
+    }),
+  ],
   // Trusted origins: only the frontend client URL
   // Bruno sends Origin header matching the client URL (simulating browser behavior)
   // Ensure clientUrl is properly trimmed and not empty
