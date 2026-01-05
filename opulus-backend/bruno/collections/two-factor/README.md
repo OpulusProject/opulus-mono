@@ -6,6 +6,7 @@ Better Auth handles all 2FA endpoints automatically under `/api/auth/two-factor/
 
 - **Enable 2FA** - Enable two-factor authentication (`POST /api/auth/two-factor/enable`)
 - **Verify TOTP** - Verify TOTP code (`POST /api/auth/two-factor/verify-totp`)
+- **Disable 2FA** - Disable two-factor authentication (`POST /api/auth/two-factor/disable`)
 
 ## Usage Flow
 
