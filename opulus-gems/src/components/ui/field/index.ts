@@ -1,7 +1,1 @@
-export {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from './field';
-
+export { Field, FieldDescription, FieldGroup, FieldLabel } from './field';

@@ -1,29 +1,21 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils';
+import * as React from 'react';
 
 const FieldGroup = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex flex-col gap-4", className)}
-    {...props}
-  />
-))
-FieldGroup.displayName = "FieldGroup"
+  <div ref={ref} className={cn('flex flex-col gap-4', className)} {...props} />
+));
+FieldGroup.displayName = 'FieldGroup';
 
 const Field = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex flex-col gap-2", className)}
-    {...props}
-  />
-))
-Field.displayName = "Field"
+  <div ref={ref} className={cn('flex flex-col gap-2', className)} {...props} />
+));
+Field.displayName = 'Field';
 
 const FieldLabel = React.forwardRef<
   HTMLLabelElement,
@@ -32,13 +24,13 @@ const FieldLabel = React.forwardRef<
   <label
     ref={ref}
     className={cn(
-      "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+      'text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70',
       className
     )}
     {...props}
   />
-))
-FieldLabel.displayName = "FieldLabel"
+));
+FieldLabel.displayName = 'FieldLabel';
 
 const FieldDescription = React.forwardRef<
   HTMLParagraphElement,
@@ -46,11 +38,10 @@ const FieldDescription = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <p
     ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
+    className={cn('text-sm text-muted-foreground', className)}
     {...props}
   />
-))
-FieldDescription.displayName = "FieldDescription"
+));
+FieldDescription.displayName = 'FieldDescription';
 
-export { Field, FieldDescription, FieldGroup, FieldLabel }
-
+export { Field, FieldDescription, FieldGroup, FieldLabel };
