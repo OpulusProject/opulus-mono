@@ -18,7 +18,7 @@ export function errorHandler(
   next: NextFunction
 ): void {
   // Log error for debugging
-  // console.error("Error:", error);
+  console.error("Error:", error);
 
   // Handle known error types
   if (error instanceof ValidationError) {

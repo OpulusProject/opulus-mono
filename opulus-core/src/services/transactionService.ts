@@ -237,6 +237,72 @@ class TransactionService {
       throw new AppError(message, 500);
     }
   }
+
+  /**
+   * Get all transactions for a user with optional filters and pagination
+   * @param userId - User ID
+   * @param filters - Optional filters (itemId, accountId)
+   * @param pagination - Optional pagination (page, limit)
+   * @returns Paginated transactions with metadata
+   */
+  async getAllByUserId(
+    userId: string,
+    filters?: {
+      itemId?: string;
+      accountId?: string;
+    },
+    pagination?: {
+      page?: number;
+      limit?: number;
+    }
+  ) {
+    try {
+      // Build where clause
+      const where: Prisma.TransactionWhereInput = {
+        userId,
+        ...(filters?.itemId && { itemId: filters.itemId }),
+        ...(filters?.accountId && { accountId: filters.accountId }),
+      };
+
+      // Pagination defaults
+      const page = pagination?.page ?? 1;
+      const limit = pagination?.limit ?? 50;
+      const skip = (page - 1) * limit;
+
+      // Get total count for pagination metadata
+      const total = await this.prisma.transaction.count({ where });
+
+      // Get paginated transactions
+      const transactions = await this.prisma.transaction.findMany({
+        where,
+        orderBy: {
+          date: "desc",
+        },
+        skip,
+        take: limit,
+      });
+
+      return {
+        transactions,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get transactions: ${error.message}`
+          : "An unexpected error occurred while getting transactions";
+      throw new AppError(message, 500);
+    }
+  }
 }
 
 // Export singleton instance

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { sessionController } from "@/controllers/session/sessionController.js";
 import plaidRouter from "./plaid.js";
 import itemsRouter from "./items.js";
+import transactionsRouter from "./transactions.js";
 
 const router: ReturnType<typeof Router> = Router();
 
@@ -22,12 +23,14 @@ router.use("/plaid", plaidRouter);
 // Items routes
 router.use("/items", itemsRouter);
 
+// Transactions routes
+router.use("/transactions", transactionsRouter);
+
 // Note: Better Auth routes are handled by Better Auth handler in server.ts at /api/auth
 // All /api/auth/* routes are handled by Better Auth (sign-in, sign-up, sign-out, TOTP, etc.)
 
 // Route placeholders (to be implemented)
 // router.use("/users", userRouter);
 // router.use("/accounts", accountRouter);
-// router.use("/transactions", transactionRouter);
 
 export default router;
