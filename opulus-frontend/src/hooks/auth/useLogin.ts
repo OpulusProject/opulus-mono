@@ -9,7 +9,10 @@ export interface LoginRequest {
   rememberMe?: boolean;
 }
 
-export interface LoginResponse {
+// Login response can be either a successful login or a 2FA redirect
+export type LoginResponse = TwoFactorRedirectResponse | LoginSuccessResponse;
+
+export interface LoginSuccessResponse {
   user: {
     id: string;
     email: string;
@@ -21,6 +24,10 @@ export interface LoginResponse {
     token: string;
     expiresAt: string;
   };
+}
+
+export interface TwoFactorRedirectResponse {
+  twoFactorRedirect: true;
 }
 
 const loginApi = async (credentials: LoginRequest): Promise<LoginResponse> => {

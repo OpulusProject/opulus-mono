@@ -9,12 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TwoFactorRouteImport } from './routes/two-factor'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 
+const TwoFactorRoute = TwoFactorRouteImport.update({
+  id: '/two-factor',
+  path: '/two-factor',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -47,6 +53,7 @@ export interface FileRoutesByFullPath {
   '/accounts': typeof AccountsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/two-factor': typeof TwoFactorRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByTo {
   '/accounts': typeof AccountsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/two-factor': typeof TwoFactorRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +70,21 @@ export interface FileRoutesById {
   '/accounts': typeof AccountsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/two-factor': typeof TwoFactorRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/$' | '/accounts' | '/dashboard' | '/login'
+  fullPaths: '/' | '/$' | '/accounts' | '/dashboard' | '/login' | '/two-factor'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/$' | '/accounts' | '/dashboard' | '/login'
-  id: '__root__' | '/' | '/$' | '/accounts' | '/dashboard' | '/login'
+  to: '/' | '/$' | '/accounts' | '/dashboard' | '/login' | '/two-factor'
+  id:
+    | '__root__'
+    | '/'
+    | '/$'
+    | '/accounts'
+    | '/dashboard'
+    | '/login'
+    | '/two-factor'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,10 +93,18 @@ export interface RootRouteChildren {
   AccountsRoute: typeof AccountsRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
+  TwoFactorRoute: typeof TwoFactorRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/two-factor': {
+      id: '/two-factor'
+      path: '/two-factor'
+      fullPath: '/two-factor'
+      preLoaderRoute: typeof TwoFactorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -125,6 +149,7 @@ const rootRouteChildren: RootRouteChildren = {
   AccountsRoute: AccountsRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
+  TwoFactorRoute: TwoFactorRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

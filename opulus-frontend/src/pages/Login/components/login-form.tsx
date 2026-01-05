@@ -24,18 +24,26 @@ export function LoginForm({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const onSubmit = async (data: LoginRequest) => {
+  const onSubmit = (data: LoginRequest) => {
     loginMutation.mutate(data, {
-      onSuccess: async (response) => {
+      onSuccess: (response) => {
+        // Check if 2FA is required
+        if ('twoFactorRedirect' in response && response.twoFactorRedirect) {
+          // Redirect to 2FA verification page
+          void navigate({ to: '/two-factor', replace: true });
+          return;
+        }
+
+        // Normal login success - response is LoginSuccessResponse
         console.log('Login successful:', response);
         // Invalidate and refetch session
-        queryClient.invalidateQueries({ queryKey: ['session'] });
-        await queryClient.refetchQueries({ queryKey: ['session'] });
+        void queryClient.invalidateQueries({ queryKey: ['session'] });
+        void queryClient.refetchQueries({ queryKey: ['session'] });
 
         // Redirect to dashboard after successful login
-        navigate({ to: '/dashboard', replace: true });
+        void navigate({ to: '/dashboard', replace: true });
       },
-      onError: (error: any) => {
+      onError: (error: unknown) => {
         console.error('Login error:', error);
         // TODO: Show error message to user
       },
@@ -109,8 +117,9 @@ export function LoginForm({
             </div>
             {loginMutation.isError && (
               <p className="text-sm text-destructive">
-                {(loginMutation.error as any)?.response?.data?.message ||
-                  'Invalid email or password'}
+                {loginMutation.error instanceof Error
+                  ? loginMutation.error.message
+                  : 'Invalid email or password'}
               </p>
             )}
             <Button
