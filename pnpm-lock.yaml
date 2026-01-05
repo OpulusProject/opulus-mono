@@ -31,7 +31,7 @@ importers:
         version: link:../opulus-core
       better-auth:
         specifier: ^1.3.34
-        version: 1.3.34(react@19.2.0)
+        version: 1.3.34(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       config:
         specifier: ^3.3.12
         version: 3.3.12
@@ -172,6 +172,9 @@ importers:
       axios:
         specifier: ^1.7.7
         version: 1.13.2
+      better-auth:
+        specifier: ^1.3.34
+        version: 1.3.34(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       lucide-react:
         specifier: ^0.399.0
         version: 0.399.0(react@19.2.0)
@@ -365,7 +368,7 @@ importers:
         version: 8.6.14(storybook@8.6.14(prettier@3.6.2))
       '@storybook/addon-styling-webpack':
         specifier: ^1.0.1
-        version: 1.0.1(storybook@8.6.14(prettier@3.6.2))(webpack@5.103.0(@swc/core@1.15.2)(esbuild@0.25.12))
+        version: 1.0.1(storybook@8.6.14(prettier@3.6.2))(webpack@5.103.0(@swc/core@1.15.2)(esbuild@0.27.0))
       '@storybook/addon-themes':
         specifier: ^8.5.7
         version: 8.6.14(storybook@8.6.14(prettier@3.6.2))
@@ -4509,9 +4512,6 @@ packages:
     resolution: {integrity: sha512-ekilCSN1jwRvIbgeg/57YFh8qQDNbwDb9xT/qu2DAHbFFZUicIl4ygVaAvzveMhMVr3LnpSKTNnwt8PoOfmKhQ==}
     hasBin: true
 
-  jose@6.1.2:
-    resolution: {integrity: sha512-MpcPtHLE5EmztuFIqB0vzHAWJPpmN1E6L4oo+kze56LIs3MyXIj9ZHMDxqOvkP38gBR7K1v3jqd4WU2+nrfONQ==}
-
   jose@6.1.3:
     resolution: {integrity: sha512-0TpaTfihd4QMNwrz/ob2Bp7X04yuxJkjRGi4aKmOqwhov54i6u79oCv7T+C7lo70MKH6BesI3vscD1yb/yzKXQ==}
 
@@ -6300,7 +6300,7 @@ snapshots:
       '@prisma/client': 5.22.0(prisma@6.19.0(typescript@5.9.3))
       '@types/better-sqlite3': 7.6.13
       '@types/prompts': 2.4.9
-      better-auth: 1.3.34(react@19.2.0)
+      better-auth: 1.3.34(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       better-sqlite3: 12.4.1
       c12: 3.3.2
       chalk: 5.6.2
@@ -6352,19 +6352,19 @@ snapshots:
       - svelte
       - vue
 
-  '@better-auth/core@1.3.34(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.0.19)(jose@6.1.2)(kysely@0.28.8)(nanostores@1.0.1)':
+  '@better-auth/core@1.3.34(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.0.19)(jose@6.1.3)(kysely@0.28.8)(nanostores@1.0.1)':
     dependencies:
       '@better-auth/utils': 0.3.0
       '@better-fetch/fetch': 1.1.18
       better-call: 1.0.19
-      jose: 6.1.2
+      jose: 6.1.3
       kysely: 0.28.8
       nanostores: 1.0.1
       zod: 4.1.12
 
-  '@better-auth/telemetry@1.3.34(better-call@1.0.19)(jose@6.1.2)(kysely@0.28.8)(nanostores@1.0.1)':
+  '@better-auth/telemetry@1.3.34(better-call@1.0.19)(jose@6.1.3)(kysely@0.28.8)(nanostores@1.0.1)':
     dependencies:
-      '@better-auth/core': 1.3.34(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.0.19)(jose@6.1.2)(kysely@0.28.8)(nanostores@1.0.1)
+      '@better-auth/core': 1.3.34(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.0.19)(jose@6.1.3)(kysely@0.28.8)(nanostores@1.0.1)
       '@better-auth/utils': 0.3.0
       '@better-fetch/fetch': 1.1.18
     transitivePeerDependencies:
@@ -7999,10 +7999,10 @@ snapshots:
       storybook: 8.6.14(prettier@3.6.2)
       ts-dedent: 2.2.0
 
-  '@storybook/addon-styling-webpack@1.0.1(storybook@8.6.14(prettier@3.6.2))(webpack@5.103.0(@swc/core@1.15.2)(esbuild@0.25.12))':
+  '@storybook/addon-styling-webpack@1.0.1(storybook@8.6.14(prettier@3.6.2))(webpack@5.103.0(@swc/core@1.15.2)(esbuild@0.27.0))':
     dependencies:
       '@storybook/node-logger': 8.6.14(storybook@8.6.14(prettier@3.6.2))
-      webpack: 5.103.0(@swc/core@1.15.2)(esbuild@0.25.12)
+      webpack: 5.103.0(@swc/core@1.15.2)(esbuild@0.27.0)
     transitivePeerDependencies:
       - storybook
 
@@ -9154,10 +9154,10 @@ snapshots:
 
   baseline-browser-mapping@2.8.29: {}
 
-  better-auth@1.3.34(react@19.2.0):
+  better-auth@1.3.34(react-dom@19.2.0(react@19.2.0))(react@19.2.0):
     dependencies:
-      '@better-auth/core': 1.3.34(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.0.19)(jose@6.1.2)(kysely@0.28.8)(nanostores@1.0.1)
-      '@better-auth/telemetry': 1.3.34(better-call@1.0.19)(jose@6.1.2)(kysely@0.28.8)(nanostores@1.0.1)
+      '@better-auth/core': 1.3.34(@better-auth/utils@0.3.0)(@better-fetch/fetch@1.1.18)(better-call@1.0.19)(jose@6.1.3)(kysely@0.28.8)(nanostores@1.0.1)
+      '@better-auth/telemetry': 1.3.34(better-call@1.0.19)(jose@6.1.3)(kysely@0.28.8)(nanostores@1.0.1)
       '@better-auth/utils': 0.3.0
       '@better-fetch/fetch': 1.1.18
       '@noble/ciphers': 2.0.1
@@ -9166,12 +9166,13 @@ snapshots:
       '@simplewebauthn/server': 13.2.2
       better-call: 1.0.19
       defu: 6.1.4
-      jose: 6.1.2
+      jose: 6.1.3
       kysely: 0.28.8
       nanostores: 1.0.1
       zod: 4.1.12
     optionalDependencies:
       react: 19.2.0
+      react-dom: 19.2.0(react@19.2.0)
 
   better-call@1.0.19:
     dependencies:
@@ -10658,8 +10659,6 @@ snapshots:
 
   jiti@2.6.1: {}
 
-  jose@6.1.2: {}
-
   jose@6.1.3: {}
 
   joycon@3.1.1: {}
@@ -11866,17 +11865,17 @@ snapshots:
       inherits: 2.0.4
       readable-stream: 3.6.2
 
-  terser-webpack-plugin@5.3.14(@swc/core@1.15.2)(esbuild@0.25.12)(webpack@5.103.0(@swc/core@1.15.2)(esbuild@0.25.12)):
+  terser-webpack-plugin@5.3.14(@swc/core@1.15.2)(esbuild@0.27.0)(webpack@5.103.0(@swc/core@1.15.2)(esbuild@0.27.0)):
     dependencies:
       '@jridgewell/trace-mapping': 0.3.31
       jest-worker: 27.5.1
       schema-utils: 4.3.3
       serialize-javascript: 6.0.2
       terser: 5.44.1
-      webpack: 5.103.0(@swc/core@1.15.2)(esbuild@0.25.12)
+      webpack: 5.103.0(@swc/core@1.15.2)(esbuild@0.27.0)
     optionalDependencies:
       '@swc/core': 1.15.2
-      esbuild: 0.25.12
+      esbuild: 0.27.0
 
   terser-webpack-plugin@5.3.14(webpack@5.103.0):
     dependencies:
@@ -12263,7 +12262,7 @@ snapshots:
       - uglify-js
     optional: true
 
-  webpack@5.103.0(@swc/core@1.15.2)(esbuild@0.25.12):
+  webpack@5.103.0(@swc/core@1.15.2)(esbuild@0.27.0):
     dependencies:
       '@types/eslint-scope': 3.7.7
       '@types/estree': 1.0.8
@@ -12287,7 +12286,7 @@ snapshots:
       neo-async: 2.6.2
       schema-utils: 4.3.3
       tapable: 2.3.0
-      terser-webpack-plugin: 5.3.14(@swc/core@1.15.2)(esbuild@0.25.12)(webpack@5.103.0(@swc/core@1.15.2)(esbuild@0.25.12))
+      terser-webpack-plugin: 5.3.14(@swc/core@1.15.2)(esbuild@0.27.0)(webpack@5.103.0(@swc/core@1.15.2)(esbuild@0.27.0))
       watchpack: 2.4.4
       webpack-sources: 3.3.3
     transitivePeerDependencies:

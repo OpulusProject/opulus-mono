@@ -1,0 +1,70 @@
+meta {
+  name: Enable 2FA
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/api/auth/two-factor/enable
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+body:json {
+  {
+    "password": "{{test_password}}",
+    "issuer": "Opulus"
+  }
+}
+
+docs {
+  # Enable Two-Factor Authentication
+
+  Enable two-factor authentication for the authenticated user.
+
+  **Endpoint:** `POST /api/auth/two-factor/enable`
+
+  ## Authentication
+
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+
+  ## Request Body
+
+  - `password` (string, required): The user's password for verification
+  - `issuer` (string, optional): Custom issuer name for TOTP. Defaults to "Opulus"
+
+  ## Response
+
+  Returns TOTP URI and backup codes. The TOTP URI can be used to set up an authenticator app.
+
+  ## Example Response
+
+  ```json
+  {
+    "totpURI": "otpauth://totp/Opulus:user%40example.com?secret=JBSWY3DPEHPK3PXP&issuer=Opulus",
+    "backupCodes": [
+      "1234567890",
+      "0987654321",
+      "..."
+    ]
+  }
+  ```
+
+  ## Usage
+
+  1. First, use **Sign In** to authenticate and establish a session
+  2. Call this endpoint to enable 2FA
+  3. Use the `totpURI` to set up an authenticator app (Google Authenticator, Authy, etc.)
+  4. Save the `backupCodes` securely - they can be used to recover access if you lose your device
+
+  ## Notes
+
+  - Two-factor authentication can only be enabled for credential accounts (email/password)
+  - The `twoFactorEnabled` flag won't be set to `true` until the user verifies their TOTP code
+  - Backup codes are generated automatically and should be stored securely
+}
+

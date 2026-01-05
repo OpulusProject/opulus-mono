@@ -1,0 +1,85 @@
+meta {
+  name: Verify TOTP
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/auth/two-factor/verify-totp
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+body:json {
+  {
+    "code": "123456",
+    "trustDevice": true
+  }
+}
+
+docs {
+  # Verify TOTP Code
+
+  Verify a TOTP code during sign-in or after enabling 2FA.
+
+  **Endpoint:** `POST /api/auth/two-factor/verify-totp`
+
+  ## Authentication
+
+  This endpoint may or may not require a session depending on the context:
+  - During sign-in: No session required (user is authenticating)
+  - After enabling 2FA: Session required
+
+  ## Request Body
+
+  - `code` (string, required): The 6-digit TOTP code from the authenticator app
+  - `trustDevice` (boolean, optional): If `true`, the device will be trusted for 30 days. Default: `false`
+
+  ## Response
+
+  Returns user and session information on successful verification.
+
+  ## Example Response
+
+  ```json
+  {
+    "user": {
+      "id": "user_123",
+      "email": "[email protected]",
+      "name": "John Doe",
+      "emailVerified": false
+    },
+    "session": {
+      "id": "session_123",
+      "token": "...",
+      "expiresAt": "2024-01-08T00:00:00Z"
+    }
+  }
+  ```
+
+  ## Usage
+
+  ### During Sign-In
+
+  1. User signs in with email/password
+  2. If user has 2FA enabled and device is not trusted, response includes `twoFactorRedirect: true`
+  3. User enters TOTP code from authenticator app
+  4. Call this endpoint with the code to complete authentication
+
+  ### After Enabling 2FA
+
+  1. User enables 2FA via `/api/auth/two-factor/enable`
+  2. User scans QR code with authenticator app
+  3. User enters TOTP code to verify setup
+  4. Call this endpoint with the code to complete setup
+
+  ## Error Responses
+
+  - `400`: Invalid TOTP code
+  - `401`: Unauthorized (if session required but not provided)
+}
+
