@@ -1,10 +1,11 @@
 import { Button, Input, Label, cn } from '@gems';
+import { LoginRequest } from '@opulus/core';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { Gem } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
-import { type LoginRequest, useLogin } from '@/hooks/auth/useLogin';
+import { useLogin } from '@/hooks/auth/useLogin';
 
 export function LoginForm({
   className,

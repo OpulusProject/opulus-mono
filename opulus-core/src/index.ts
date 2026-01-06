@@ -10,6 +10,9 @@ export * from "./services/plaidService.js";
 export * from "./services/transactionService.js";
 export * from "./services/userService.js";
 
+// Type exports (DTOs)
+export * from "./types/dto/index.js";
+
 // Util exports
 export * from "./utils/errors.js";
 export * from "./utils/plaidErrors.js";

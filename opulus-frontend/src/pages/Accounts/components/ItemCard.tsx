@@ -7,9 +7,8 @@ import {
   CardContent,
   CardHeader,
 } from '@gems';
+import { ItemPublicDTO } from '@opulus/core';
 import React from 'react';
-
-import { ItemPublicDTO } from '@/hooks/items/useItems';
 
 interface ItemCardProps {
   item: ItemPublicDTO;

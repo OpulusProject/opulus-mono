@@ -1,12 +1,7 @@
+import { LinkTokenResponse } from '@opulus/core';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
-
-export interface LinkTokenResponse {
-  data: {
-    linkToken: string;
-  };
-}
 
 /**
  * Hook to fetch a Plaid Link token

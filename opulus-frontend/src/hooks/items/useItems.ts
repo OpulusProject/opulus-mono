@@ -1,28 +1,7 @@
+import { ItemsResponse } from '@opulus/core';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
-
-/**
- * Public DTO for Item response
- * Matches the backend ItemPublicDTO interface
- */
-export interface ItemPublicDTO {
-  id: string;
-  institutionName: string | null;
-  institutionLogo: string | null;
-  institutionColor: string | null;
-  error: string | null;
-  metadata: {
-    accountCount: number;
-    totalAvailableBalance: number;
-  };
-}
-
-export interface ItemsResponse {
-  data: {
-    items: ItemPublicDTO[];
-  };
-}
 
 const getItemsApi = async (): Promise<ItemsResponse['data']> => {
   const response = await apiClient.get<ItemsResponse>('/api/items');

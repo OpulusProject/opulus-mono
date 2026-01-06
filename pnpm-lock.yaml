@@ -142,6 +142,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.2.0)
+      '@opulus/core':
+        specifier: workspace:*
+        version: link:../opulus-core
       '@opulus/gems':
         specifier: workspace:*
         version: link:../opulus-gems

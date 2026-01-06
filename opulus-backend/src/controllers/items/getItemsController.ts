@@ -1,47 +1,11 @@
 import { getSession } from "@/services/session/getSession.js";
-import { itemService, UnauthorizedError } from "@opulus/core";
+import {
+  ItemPublicDTO,
+  itemService,
+  toItemPublicDTO,
+  UnauthorizedError,
+} from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
-
-/**
- * Public DTO for Item response
- * Only includes fields safe to expose to the client
- */
-export interface ItemPublicDTO {
-  id: string;
-  institutionName: string | null;
-  institutionLogo: string | null;
-  institutionColor: string | null;
-  error: string | null;
-  metadata: {
-    accountCount: number;
-    totalAvailableBalance: number;
-  };
-}
-
-/**
- * Transform full item data to public DTO
- * Filters out sensitive fields like accessToken, plaidItemId, etc.
- */
-function toItemPublicDTO(item: {
-  id: string;
-  institutionName: string | null;
-  institutionLogo: string | null;
-  institutionColor: string | null;
-  error: string | null;
-  metadata: {
-    accountCount: number;
-    totalAvailableBalance: number;
-  };
-}): ItemPublicDTO {
-  return {
-    id: item.id,
-    institutionName: item.institutionName,
-    institutionLogo: item.institutionLogo,
-    institutionColor: item.institutionColor,
-    error: item.error,
-    metadata: item.metadata,
-  };
-}
 
 /**
  * Get all items for the authenticated user with metadata

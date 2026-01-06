@@ -12,6 +12,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@opulus/core': path.resolve(__dirname, '../opulus-core/src/index.ts'),
       '@gems': path.resolve(__dirname, '../opulus-gems/dist'),
     },
     dedupe: ['react', 'react-dom'],

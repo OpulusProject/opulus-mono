@@ -1,35 +1,12 @@
+import {
+  EnableTwoFactorRequest,
+  EnableTwoFactorResponse,
+  VerifyTotpRequest,
+  VerifyTotpResponse,
+} from '@opulus/core';
 import { useMutation } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
-
-export interface EnableTwoFactorRequest {
-  password: string;
-  issuer?: string;
-}
-
-export interface EnableTwoFactorResponse {
-  totpURI: string;
-  backupCodes: string[];
-}
-
-export interface VerifyTotpRequest {
-  code: string;
-  trustDevice?: boolean;
-}
-
-export interface VerifyTotpResponse {
-  user: {
-    id: string;
-    email: string;
-    name: string | null;
-    emailVerified: boolean;
-  };
-  session: {
-    id: string;
-    token: string;
-    expiresAt: string;
-  };
-}
 
 const enableTwoFactorApi = async (
   data: EnableTwoFactorRequest

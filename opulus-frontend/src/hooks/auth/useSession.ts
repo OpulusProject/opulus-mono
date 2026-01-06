@@ -1,23 +1,7 @@
+import { SessionResponse } from '@opulus/core';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
-
-// TODO: Move these types to a shared types package or generate from backend schema
-export interface SessionResponse {
-  data: {
-    user: {
-      id: string;
-      email: string;
-      name: string;
-      emailVerified: boolean;
-      image: string | null;
-    };
-    session: {
-      id: string;
-      expiresAt: string;
-    };
-  };
-}
 
 const getSessionApi = async (): Promise<SessionResponse['data']> => {
   const response = await apiClient.get<SessionResponse>('/api/session');

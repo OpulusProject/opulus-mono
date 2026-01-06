@@ -10,6 +10,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"],
+      "@opulus/core": ["../opulus-core/src/index.ts"],
       "@gems": ["../opulus-gems/src/index.ts"],
       "@gems/*": ["../opulus-gems/src/*"]
     },
@@ -29,6 +30,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src/**/*", "tailwind.config.js", "postcss.config.js", "../opulus-gems/src/index.ts"]
+  "include": [
+    "src/**/*",
+    "tailwind.config.js",
+    "postcss.config.js",
+    "../opulus-gems/src/index.ts",
+    "../opulus-core/src/**/*"
+  ]
 }
-
