@@ -7,54 +7,154 @@ Monorepo for Opulus financial management platform.
 - `opulus-backend/` - Express.js backend API
 - `opulus-frontend/` - React frontend application
 - `opulus-gems/` - Shared UI component library
+- `opulus-core/` - Shared core logic and types
+- `opulus-webhooks/` - Webhook receiver service
 
-## Getting Started
+## Prerequisites
 
-### Prerequisites
+- **Node.js** >= 18.0.0
+- **pnpm** >= 8.0.0
+- **Docker** (for PostgreSQL database)
+- **PostgreSQL** 15+ (via Docker or local installation)
 
-- Node.js >= 18.0.0
-- pnpm >= 8.0.0
+### Installing Prerequisites
 
-Install pnpm globally (if not already installed):
-
+**Install Node.js:**
 ```bash
+# Using Homebrew (macOS)
+brew install node
+
+# Or download from https://nodejs.org/
+```
+
+**Install pnpm:**
+```bash
+# Using Homebrew (macOS)
+brew install pnpm
+
+# Or using npm
 npm install -g pnpm
-# or
+
+# Or using corepack (Node.js 16+)
 corepack enable
 corepack prepare pnpm@latest --activate
 ```
 
-### Installation
+**Install Docker:**
+```bash
+# Using Homebrew (macOS)
+brew install --cask docker
 
-Install all dependencies:
+# Or download from https://www.docker.com/
+```
+
+**Install zrok** (for webhook tunneling):
+```bash
+# Using Homebrew (macOS)
+brew install zrok/tap/zrok
+
+# Or download from https://zrok.io/
+```
+
+After installation, authenticate:
+```bash
+zrok enable <your-token>
+# Get your token from https://zrok.io/
+```
+
+## Quick Start
+
+### 1. Clone and Install
 
 ```bash
+git clone <repository-url>
+cd opulus-mono
 pnpm install
 ```
 
-This will install dependencies for all workspaces.
+### 2. Set Up Database (Docker)
 
-### Development
-
-Run all development servers:
+Start PostgreSQL:
 
 ```bash
-pnpm dev
+docker-compose up -d
 ```
 
-This will:
-- Start `opulus-gems` in watch mode (auto-rebuilds on changes)
-- Start `opulus-frontend` dev server
+This starts PostgreSQL on `localhost:5432` with:
+- Username: `postgres`
+- Password: `password`
+- Database: `postgres`
 
-Run individual workspaces:
+### 3. Configure Environment Variables
+
+Create a `.env` file in the root directory:
 
 ```bash
-pnpm dev:backend    # Backend only
-pnpm dev:frontend   # Frontend only
-pnpm dev:gems       # Gems watch mode only
+# Database
+DATABASE_URL="postgresql://postgres:password@localhost:5432/postgres?schema=public"
+
+# Better Auth
+BETTER_AUTH_SECRET="your-secret-key-here"  # Generate with: openssl rand -base64 32
+BETTER_AUTH_BASE_URL="http://localhost:8080"
+
+# Plaid (get from https://dashboard.plaid.com/)
+PLAID_CLIENT_ID="your-plaid-client-id"
+PLAID_SECRET="your-plaid-secret"
+PLAID_ENV="sandbox"  # sandbox, development, or production
+PLAID_WEBHOOK_URL="https://opuluswebhooks.share.zrok.io"  # Set after zrok setup
+
+# Application
+CLIENT_URL="http://localhost:5173"
+PORT=8080
+WEBHOOK_PORT=8081
 ```
 
-### Building
+### 4. Set Up Database Schema
+
+```bash
+# Generate Prisma client
+pnpm prisma:generate
+
+# Run migrations
+pnpm prisma:migrate
+```
+
+### 5. Start Development Servers
+
+```bash
+# Start backend (includes core watch mode)
+pnpm dev:backend
+
+# In another terminal, start frontend (includes gems watch mode)
+pnpm dev:frontend
+```
+
+The application will be available at:
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8080/api
+- **Webhooks**: http://localhost:8081 (if running `pnpm dev:webhooks`)
+
+### 6. Set Up Webhook Tunneling (zrok)
+
+After installing and authenticating zrok (see Prerequisites), use the pnpm script to start webhooks with tunneling:
+
+```bash
+pnpm dev:webhooks:tunnel
+```
+
+**Note:** The webhook URL is automatically included in Plaid link tokens - no Dashboard configuration needed!
+
+## Development
+
+Run individual services:
+
+```bash
+pnpm dev:backend    # Backend + Core watch mode
+pnpm dev:frontend   # Frontend + Gems watch mode
+pnpm dev:webhooks   # Webhook server + Core watch mode
+```
+
+## Building
 
 Build all packages:
 
@@ -65,27 +165,33 @@ pnpm build
 Build individual packages:
 
 ```bash
-pnpm build:gems
+pnpm build:core    # Core package (must be built first)
+pnpm build:gems    # UI component library
 ```
 
-### Workspace Packages
+## Workspace Packages
 
-Package names (for pnpm workspaces):
+- `@opulus/core` - Core logic, services, and types
+- `@opulus/gems` - UI component library
+- `@opulus/frontend` - Frontend application
+- `@opulus/backend` - Backend API
+- `@opulus/webhooks` - Webhook receiver service
 
-- `@opulus/gems` - UI component library (`opulus-gems`)
-- `@opulus/frontend` - Frontend application (`opulus-frontend`)
-- `@opulus/backend` - Backend API (`opulus-backend`)
+## Database Management
 
-### Importing from Gems
+```bash
+# Generate Prisma client (after schema changes)
+pnpm prisma:generate
 
-We use `@gems` as an import alias (configured in Vite/TypeScript):
+# Create and run migrations
+pnpm prisma:migrate
 
-```typescript
-import { Button, Card, Input } from "@gems";
-import "@gems/styles";
+# Open Prisma Studio (database GUI)
+pnpm prisma:studio
+
+# Deploy migrations (production)
+pnpm prisma:migrate:deploy
 ```
-
-The alias `@gems` maps to `@opulus/gems` package.
 
 ## Workspace Scripts
 
