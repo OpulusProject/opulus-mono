@@ -44,22 +44,9 @@ corepack prepare pnpm@latest --activate
 ```bash
 # Using Homebrew (macOS)
 brew install --cask docker
+brew install docker-compose
 
 # Or download from https://www.docker.com/
-```
-
-**Install zrok** (for webhook tunneling):
-```bash
-# Using Homebrew (macOS)
-brew install zrok/tap/zrok
-
-# Or download from https://zrok.io/
-```
-
-After installation, authenticate:
-```bash
-zrok enable <your-token>
-# Get your token from https://zrok.io/
 ```
 
 ## Quick Start
@@ -69,7 +56,12 @@ zrok enable <your-token>
 ```bash
 git clone <repository-url>
 cd opulus-mono
+
+# Install dependencies (recommended: pnpm)
 pnpm install
+
+# Or using npm
+npm install
 ```
 
 ### 2. Set Up Database (Docker)
@@ -101,7 +93,6 @@ BETTER_AUTH_BASE_URL="http://localhost:8080"
 PLAID_CLIENT_ID="your-plaid-client-id"
 PLAID_SECRET="your-plaid-secret"
 PLAID_ENV="sandbox"  # sandbox, development, or production
-PLAID_WEBHOOK_URL="https://opuluswebhooks.share.zrok.io"  # Set after zrok setup
 
 # Application
 CLIENT_URL="http://localhost:5173"
@@ -132,7 +123,6 @@ pnpm dev:frontend
 The application will be available at:
 - **Frontend**: http://localhost:5173
 - **Backend API**: http://localhost:8080/api
-- **Webhooks**: http://localhost:8081 (if running `pnpm dev:webhooks`)
 
 ### 6. Set Up Webhook Tunneling (zrok)
 
@@ -143,6 +133,21 @@ pnpm dev:webhooks:tunnel
 ```
 
 **Note:** The webhook URL is automatically included in Plaid link tokens - no Dashboard configuration needed!
+
+### 7. Set Up Bruno (API Testing)
+
+**Install Bruno:**
+```bash
+# Using Homebrew (macOS)
+brew install --cask bruno
+
+# Or download from https://www.usebruno.com/
+```
+
+**Open the collection:**
+1. Open Bruno
+2. Select "Open Collection"
+3. Navigate to `opulus-backend/bruno` folder
 
 ## Development
 
