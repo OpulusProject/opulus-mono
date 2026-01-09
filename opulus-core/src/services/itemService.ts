@@ -172,6 +172,11 @@ class ItemService {
         where: { userId },
         include: {
           bankAccounts: {
+            where: {
+              type: {
+                not: "credit",
+              },
+            },
             select: {
               balanceAvailable: true,
               balanceCurrent: true,
