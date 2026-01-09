@@ -10,6 +10,15 @@ export function handlePlaidError(error: unknown): AppError {
   if (error && typeof error === "object" && "error_code" in error) {
     const plaidError = error as PlaidError;
 
+    // Log the full error for debugging
+    console.error("[PLAID ERROR]", {
+      error_code: plaidError.error_code,
+      error_message: plaidError.error_message,
+      error_type: plaidError.error_type,
+      display_message: plaidError.display_message,
+      request_id: (plaidError as any).request_id,
+    });
+
     // Map Plaid error codes to HTTP status codes
     const statusCodeMap: Record<string, number> = {
       INVALID_ACCESS_TOKEN: 401,
@@ -22,6 +31,7 @@ export function handlePlaidError(error: unknown): AppError {
       INVALID_INPUT: 400,
       INVALID_ACCOUNT_ID: 400,
       INVALID_ITEM: 400,
+      INVALID_WEBHOOK_URL: 400,
       RATE_LIMIT_EXCEEDED: 429,
       API_ERROR: 500,
       INTERNAL_SERVER_ERROR: 500,

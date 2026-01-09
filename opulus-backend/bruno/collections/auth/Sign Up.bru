@@ -22,28 +22,29 @@ body:json {
   }
 }
 
-params:query {
+vars:pre-request {
+  base_url: http://localhost:8080
 }
 
 docs {
   # Sign Up
-
+  
   Register a new user account with email and password.
-
+  
   **Endpoint:** `POST /api/auth/sign-up/email`
-
+  
   ## Request Body
-
+  
   - `email` (string, required): User's email address
   - `password` (string, required): User's password
   - `name` (string, required): User's full name
-
+  
   ## Response
-
+  
   Returns the created user and session information. Session cookie is automatically set.
-
+  
   ## Example Response
-
+  
   ```json
   {
     "user": {
@@ -59,9 +60,9 @@ docs {
     }
   }
   ```
-
+  
   ## Notes
-
+  
   - Session cookie is automatically set in response
   - User is automatically logged in after registration
   - Sessions last 7 days by default
