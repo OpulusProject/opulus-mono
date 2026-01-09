@@ -234,16 +234,18 @@ const columns: ColumnDef<Transaction>[] = [
     cell: ({ row }) => {
       const amount = Number(row.original.amount);
       const currencyCode = row.original.isoCurrencyCode;
+      // Negate the amount for display: positive = money out (red), negative = money in (green)
+      const displayAmount = -amount;
       const formattedAmount = new Intl.NumberFormat('en-US', {
         style: 'currency',
         currency: currencyCode || 'USD',
         minimumFractionDigits: 2,
-      }).format(amount);
+      }).format(displayAmount);
 
       return (
         <div
           className={`text-right font-medium ${
-            amount < 0
+            amount > 0
               ? 'text-red-600 dark:text-red-400'
               : 'text-green-600 dark:text-green-400'
           }`}
@@ -291,17 +293,26 @@ const columns: ColumnDef<Transaction>[] = [
   },
   {
     accessorKey: 'date',
-    header: 'Date & Time',
+    header: 'Date',
     cell: ({ row }) => {
-      const date = new Date(row.original.date);
+      // Plaid dates are date-only (YYYY-MM-DD), parse as local date to avoid timezone issues
+      const dateString = row.original.date;
+      
+      // Parse date string and create a local date (not UTC)
+      // If it's an ISO string with time component, extract just the date part
+      const dateOnly = dateString.split('T')[0]; // Get YYYY-MM-DD part
+      const [year, month, day] = dateOnly.split('-').map(Number);
+      
+      // Create date in local timezone (not UTC) to avoid timezone conversion issues
+      const date = new Date(year, month - 1, day);
+      
+      // Format date only since Plaid doesn't provide transaction times
       const formattedDate = new Intl.DateTimeFormat('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
       }).format(date);
+      
       return <div>{formattedDate}</div>;
     },
   },

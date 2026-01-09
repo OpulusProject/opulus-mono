@@ -78,7 +78,10 @@ class PlaidService {
     console.log(
       `[PLAID SERVICE] Creating link token with webhook: ${config.plaidWebhookUrl}`
     );
-    console.log("[PLAID SERVICE] Link token request:", JSON.stringify(request, null, 2));
+    console.log(
+      "[PLAID SERVICE] Link token request:",
+      JSON.stringify(request, null, 2)
+    );
 
     try {
       const response = await this.plaid.linkTokenCreate(request);

@@ -174,6 +174,7 @@ class ItemService {
           bankAccounts: {
             select: {
               balanceAvailable: true,
+              balanceCurrent: true,
             },
           },
         },
@@ -188,9 +189,12 @@ class ItemService {
         const totalAvailableBalance = item.bankAccounts.reduce(
           (sum, account) => {
             // Convert Decimal to number, handling null values
+            // Use balanceAvailable if available, otherwise fall back to balanceCurrent
             const balance = account.balanceAvailable
               ? Number(account.balanceAvailable)
-              : 0;
+              : account.balanceCurrent
+                ? Number(account.balanceCurrent)
+                : 0;
             return sum + balance;
           },
           0

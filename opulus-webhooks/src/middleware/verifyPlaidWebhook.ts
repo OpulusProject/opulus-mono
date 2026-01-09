@@ -85,25 +85,32 @@ export async function verifyPlaidWebhook(
         KEY_CACHE.set(keyID, key);
       } catch (err: any) {
         // Check if it's an invalid key_id error (environment mismatch)
-        if (err?.response?.data?.error_code === 'INVALID_WEBHOOK_VERIFICATION_KEY_ID') {
+        if (
+          err?.response?.data?.error_code ===
+          "INVALID_WEBHOOK_VERIFICATION_KEY_ID"
+        ) {
           console.error(
             `[WEBHOOK VERIFICATION] Invalid key_id: ${keyID}. ` +
-            `This usually means the webhook is from a different Plaid environment than configured. ` +
-            `Current PLAID_ENV: ${config.plaidEnv}. ` +
-            `Error: ${err.response.data.error_message}`
+              `This usually means the webhook is from a different Plaid environment than configured. ` +
+              `Current PLAID_ENV: ${config.plaidEnv}. ` +
+              `Error: ${err.response.data.error_message}`
           );
           res.status(401).json({
-            message: "Webhook verification failed: Invalid key ID (environment mismatch)",
+            message:
+              "Webhook verification failed: Invalid key ID (environment mismatch)",
             details: err.response.data.error_message,
           });
           return;
         }
-        
+
         // For other errors, log and return generic error
         console.error("Error fetching webhook verification key:", err);
         res.status(500).json({
           message: "Internal server error",
-          details: err?.response?.data?.error_message || err?.message || "Unknown error",
+          details:
+            err?.response?.data?.error_message ||
+            err?.message ||
+            "Unknown error",
         });
         return;
       }
