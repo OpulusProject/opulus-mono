@@ -44,6 +44,7 @@ export function toItemPublicDTO(item: {
     type: string;
     balanceAvailable: any; // Prisma Decimal
     balanceCurrent: any; // Prisma Decimal
+    balanceLimit: any; // Prisma Decimal
   }>;
 }): ItemPublicDTO {
   return {
@@ -62,6 +63,7 @@ export function toItemPublicDTO(item: {
       balanceCurrent: account.balanceCurrent
         ? Number(account.balanceCurrent)
         : null,
+      balanceLimit: account.balanceLimit ? Number(account.balanceLimit) : null,
     })),
   };
 }

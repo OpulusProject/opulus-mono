@@ -3,7 +3,10 @@ import * as React from 'react';
 
 import { useItems } from '@/hooks/items/useItems';
 import { useTransactions } from '@/hooks/transactions/useTransactions';
-import { calculateAvailableCash } from '@/utils/accounts';
+import {
+  calculateAvailableCash,
+  calculateCreditUtilization,
+} from '@/utils/accounts';
 import {
   calculateLargestCategory,
   calculateTotalSpending,
@@ -67,6 +70,14 @@ export function SectionCards() {
     return calculateLargestCategory(transactionsData.transactions);
   }, [transactionsData]);
 
+  // Calculate credit utilization
+  const creditUtilization: number | null = React.useMemo((): number | null => {
+    if (!itemsData?.items) return null;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+    const result = calculateCreditUtilization(itemsData.items);
+    return result as number | null;
+  }, [itemsData]);
+
   // Format values
   const formattedAvailableCash = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -96,7 +107,16 @@ export function SectionCards() {
         description="Largest Category This Month"
         value={isLoading ? '...' : largestCategory || 'N/A'}
       />
-      <StatCard description="Credit Utilization" value="35%" />
+      <StatCard
+        description="Credit Utilization"
+        value={
+          isLoading
+            ? '...'
+            : creditUtilization !== null
+              ? `${creditUtilization.toFixed(1)}%`
+              : 'N/A'
+        }
+      />
     </div>
   );
 }

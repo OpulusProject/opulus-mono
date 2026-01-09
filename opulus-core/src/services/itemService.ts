@@ -178,6 +178,7 @@ class ItemService {
               type: true,
               balanceAvailable: true,
               balanceCurrent: true,
+              balanceLimit: true,
             },
           },
         },

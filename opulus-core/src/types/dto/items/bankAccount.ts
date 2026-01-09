@@ -7,4 +7,5 @@ export interface Account {
   type: string; // e.g., "depository", "credit", "loan", "investment", etc.
   balanceAvailable: number | null;
   balanceCurrent: number | null;
+  balanceLimit: number | null; // Credit limit (for credit accounts)
 }
