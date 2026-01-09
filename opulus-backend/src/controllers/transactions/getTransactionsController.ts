@@ -9,6 +9,22 @@ import { z } from "zod";
 export const getTransactionsQuerySchema = z.object({
   itemId: z.string().optional(),
   accountId: z.string().optional(),
+  startDate: z.preprocess((val) => {
+    if (val === undefined || val === null || val === "") return undefined;
+    if (typeof val === "string") {
+      const date = new Date(val);
+      return isNaN(date.getTime()) ? undefined : date;
+    }
+    return val;
+  }, z.date().optional()),
+  endDate: z.preprocess((val) => {
+    if (val === undefined || val === null || val === "") return undefined;
+    if (typeof val === "string") {
+      const date = new Date(val);
+      return isNaN(date.getTime()) ? undefined : date;
+    }
+    return val;
+  }, z.date().optional()),
   page: z.preprocess((val) => {
     if (val === undefined || val === null || val === "") return undefined;
     if (typeof val === "string") {
@@ -24,7 +40,7 @@ export const getTransactionsQuerySchema = z.object({
       return isNaN(parsed) ? undefined : parsed;
     }
     return val;
-  }, z.number().int().positive().max(100).optional()),
+  }, z.number().int().positive().max(10000).optional()),
 });
 
 /**
@@ -48,9 +64,8 @@ export async function getTransactionsController(
     const userId = session.user.id;
 
     // Query parameters are already validated by validateQuery middleware
-    const { itemId, accountId, page, limit } = req.validatedQuery as z.infer<
-      typeof getTransactionsQuerySchema
-    >;
+    const { itemId, accountId, startDate, endDate, page, limit } =
+      req.validatedQuery as z.infer<typeof getTransactionsQuerySchema>;
 
     // Get transactions with filters and pagination
     const result = await transactionService.getAllByUserId(
@@ -58,6 +73,8 @@ export async function getTransactionsController(
       {
         ...(itemId && { itemId }),
         ...(accountId && { accountId }),
+        ...(startDate && { startDate }),
+        ...(endDate && { endDate }),
       },
       {
         ...(page && { page }),

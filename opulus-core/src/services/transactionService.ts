@@ -241,7 +241,7 @@ class TransactionService {
   /**
    * Get all transactions for a user with optional filters and pagination
    * @param userId - User ID
-   * @param filters - Optional filters (itemId, accountId)
+   * @param filters - Optional filters (itemId, accountId, startDate, endDate)
    * @param pagination - Optional pagination (page, limit)
    * @returns Paginated transactions with metadata
    */
@@ -250,6 +250,8 @@ class TransactionService {
     filters?: {
       itemId?: string;
       accountId?: string;
+      startDate?: Date;
+      endDate?: Date;
     },
     pagination?: {
       page?: number;
@@ -262,6 +264,14 @@ class TransactionService {
         userId,
         ...(filters?.itemId && { itemId: filters.itemId }),
         ...(filters?.accountId && { accountId: filters.accountId }),
+        ...(filters?.startDate || filters?.endDate
+          ? {
+              date: {
+                ...(filters?.startDate && { gte: filters.startDate }),
+                ...(filters?.endDate && { lte: filters.endDate }),
+              },
+            }
+          : {}),
       };
 
       // Pagination defaults

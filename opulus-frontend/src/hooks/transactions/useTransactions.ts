@@ -6,6 +6,8 @@ import { apiClient } from '@/lib/api/client';
 interface GetTransactionsParams {
   itemId?: string;
   accountId?: string;
+  startDate?: Date;
+  endDate?: Date;
   page?: number;
   limit?: number;
 }
@@ -16,6 +18,10 @@ const getTransactionsApi = async (
   const queryParams = new URLSearchParams();
   if (params?.itemId) queryParams.append('itemId', params.itemId);
   if (params?.accountId) queryParams.append('accountId', params.accountId);
+  if (params?.startDate)
+    queryParams.append('startDate', params.startDate.toISOString());
+  if (params?.endDate)
+    queryParams.append('endDate', params.endDate.toISOString());
   if (params?.page) queryParams.append('page', params.page.toString());
   if (params?.limit) queryParams.append('limit', params.limit.toString());
 
