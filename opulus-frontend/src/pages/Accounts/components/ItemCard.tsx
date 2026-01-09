@@ -25,12 +25,12 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
     : null;
 
   // Calculate metadata from accounts (frontend calculation)
-  // Filter out credit accounts for balance calculation
-  const nonCreditAccounts = item.accounts.filter(
-    (account) => account.type !== 'credit'
-  );
-  const accountCount = nonCreditAccounts.length;
-  const totalAvailableBalance = calculateTotalBalance(item.accounts);
+  // Account count includes all accounts (including credit)
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  const accountCount: number = item.accounts.length;
+  // Balance calculation excludes credit accounts
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  const totalAvailableBalance: number = calculateTotalBalance(item.accounts);
 
   // Format currency as CAD (Canadian Dollar)
   // TODO: Currency handling strategy - consider:
