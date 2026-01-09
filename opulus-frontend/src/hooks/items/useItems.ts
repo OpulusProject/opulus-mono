@@ -9,10 +9,10 @@ const getItemsApi = async (): Promise<ItemsResponse['data']> => {
 };
 
 /**
- * Hook to fetch all items for the authenticated user with metadata
- * Includes account count and total available balance for each item
+ * Hook to fetch all items for the authenticated user with their bank accounts
+ * Frontend should calculate metadata (account count, total balance) from accounts array
  *
- * @returns TanStack Query result with items array
+ * @returns TanStack Query result with items array (each item includes accounts)
  */
 export function useItems() {
   return useQuery<ItemsResponse['data'], Error>({

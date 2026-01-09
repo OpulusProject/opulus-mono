@@ -161,9 +161,9 @@ class ItemService {
   }
 
   /**
-   * Get all items for a user with metadata (account count and total available balance)
+   * Get all items for a user with their bank accounts
    * @param userId - The user ID
-   * @returns Array of items with metadata
+   * @returns Array of items with bank accounts (excluding credit accounts)
    * @throws AppError if database error occurs
    */
   async getAllByUserId(userId: string) {
@@ -172,12 +172,10 @@ class ItemService {
         where: { userId },
         include: {
           bankAccounts: {
-            where: {
-              type: {
-                not: "credit",
-              },
-            },
             select: {
+              id: true,
+              name: true,
+              type: true,
               balanceAvailable: true,
               balanceCurrent: true,
             },
@@ -188,34 +186,7 @@ class ItemService {
         },
       });
 
-      // Transform items to include metadata
-      return items.map((item) => {
-        const accountCount = item.bankAccounts.length;
-        const totalAvailableBalance = item.bankAccounts.reduce(
-          (sum, account) => {
-            // Convert Decimal to number, handling null values
-            // Use balanceAvailable if available, otherwise fall back to balanceCurrent
-            const balance = account.balanceAvailable
-              ? Number(account.balanceAvailable)
-              : account.balanceCurrent
-                ? Number(account.balanceCurrent)
-                : 0;
-            return sum + balance;
-          },
-          0
-        );
-
-        // Remove bankAccounts from response, add metadata instead
-        const { bankAccounts, ...itemWithoutAccounts } = item;
-
-        return {
-          ...itemWithoutAccounts,
-          metadata: {
-            accountCount,
-            totalAvailableBalance,
-          },
-        };
-      });
+      return items;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new AppError(`Database error: ${error.message}`, 500, error.code);

@@ -2,5 +2,5 @@
  * Items-related DTOs
  */
 
-export * from './getItems.js';
-
+export * from "./bankAccount.js";
+export * from "./getItems.js";

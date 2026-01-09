@@ -22,6 +22,18 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
       : `data:image/png;base64,${item.institutionLogo}`
     : null;
 
+  // Calculate metadata from accounts (frontend calculation)
+  // Filter out credit accounts for balance calculation
+  const nonCreditAccounts = item.accounts.filter(
+    (account) => account.type !== 'credit'
+  );
+  const accountCount = nonCreditAccounts.length;
+  const totalAvailableBalance = nonCreditAccounts.reduce((sum, account) => {
+    // Use balanceAvailable if available, otherwise fall back to balanceCurrent
+    const balance = account.balanceAvailable ?? account.balanceCurrent ?? 0;
+    return sum + balance;
+  }, 0);
+
   // Format currency as CAD (Canadian Dollar)
   // TODO: Currency handling strategy - consider:
   // - User preference/settings for display currency (global setting)
@@ -32,7 +44,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
   const formattedBalance = new Intl.NumberFormat('en-CA', {
     style: 'currency',
     currency: 'CAD',
-  }).format(item.metadata.totalAvailableBalance);
+  }).format(totalAvailableBalance);
 
   return (
     <Card className="w-[310px] p-8">
@@ -56,8 +68,8 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
           <span className="text-sm text-muted-foreground">CAD</span>
         </div>
         <Badge>
-          {item.metadata.accountCount} account
-          {item.metadata.accountCount !== 1 ? 's' : ''}
+          {accountCount} account
+          {accountCount !== 1 ? 's' : ''}
         </Badge>
       </CardContent>
     </Card>

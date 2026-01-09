@@ -25,7 +25,7 @@ export async function getItemsController(
 
     const userId = session.user.id;
 
-    // Get all items with metadata (service returns full data)
+    // Get all items with bank accounts (service returns full data)
     const items = await itemService.getAllByUserId(userId);
 
     // Transform to public DTO, filtering sensitive fields
@@ -36,7 +36,7 @@ export async function getItemsController(
         institutionLogo: item.institutionLogo,
         institutionColor: item.institutionColor,
         error: item.error,
-        metadata: item.metadata,
+        bankAccounts: item.bankAccounts,
       })
     );
 
