@@ -10,6 +10,8 @@ import {
 import { ItemPublicDTO } from '@opulus/core';
 import React from 'react';
 
+import { calculateTotalBalance } from '@/utils/accounts';
+
 interface ItemCardProps {
   item: ItemPublicDTO;
 }
@@ -28,11 +30,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
     (account) => account.type !== 'credit'
   );
   const accountCount = nonCreditAccounts.length;
-  const totalAvailableBalance = nonCreditAccounts.reduce((sum, account) => {
-    // Use balanceAvailable if available, otherwise fall back to balanceCurrent
-    const balance = account.balanceAvailable ?? account.balanceCurrent ?? 0;
-    return sum + balance;
-  }, 0);
+  const totalAvailableBalance = calculateTotalBalance(item.accounts);
 
   // Format currency as CAD (Canadian Dollar)
   // TODO: Currency handling strategy - consider:
