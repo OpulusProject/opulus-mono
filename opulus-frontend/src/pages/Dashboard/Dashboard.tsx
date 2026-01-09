@@ -1,7 +1,6 @@
 import { AppLayout } from '@/common/AppLayout';
 
 import { ChartAreaInteractive, DataTable, SectionCards } from './components';
-import data from './data.json';
 
 export default function Dashboard() {
   return (
@@ -10,7 +9,7 @@ export default function Dashboard() {
       <div className="px-4 lg:px-6">
         <ChartAreaInteractive />
       </div>
-      <DataTable data={data} />
+      <DataTable />
     </AppLayout>
   );
 }

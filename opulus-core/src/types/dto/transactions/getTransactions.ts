@@ -2,7 +2,7 @@
  * Get Transactions endpoint DTOs
  */
 
-import { PaginationMetadata } from '../common.js';
+import { PaginationMetadata } from "../common.js";
 
 /**
  * Transaction DTO matching the API response
@@ -35,6 +35,11 @@ export interface Transaction {
   dateTransacted: string | null; // ISO string or null
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
+  bankAccount: {
+    id: string;
+    name: string;
+    mask: string | null;
+  };
 }
 
 /**
@@ -46,4 +51,3 @@ export interface TransactionsResponse {
     pagination: PaginationMetadata;
   };
 }
-

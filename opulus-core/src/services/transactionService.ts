@@ -272,9 +272,18 @@ class TransactionService {
       // Get total count for pagination metadata
       const total = await this.prisma.transaction.count({ where });
 
-      // Get paginated transactions
+      // Get paginated transactions with account information
       const transactions = await this.prisma.transaction.findMany({
         where,
+        include: {
+          bankAccount: {
+            select: {
+              id: true,
+              name: true,
+              mask: true,
+            },
+          },
+        },
         orderBy: {
           date: "desc",
         },
