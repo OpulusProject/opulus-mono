@@ -34,7 +34,7 @@
     "src/**/*",
     "tailwind.config.js",
     "postcss.config.js",
-    "../opulus-gems/src/index.ts",
+    "../opulus-gems/src/**/*",
     "../opulus-core/src/**/*"
   ]
 }
