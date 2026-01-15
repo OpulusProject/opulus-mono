@@ -1,5 +1,5 @@
 import type { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
-import { createItemHandler } from "./createItemHandler";
+import { createItemHandler } from "./createItemHandler.js";
 
 /**
  * Handle ITEM webhook events
