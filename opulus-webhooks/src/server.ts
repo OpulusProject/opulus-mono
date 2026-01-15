@@ -102,9 +102,9 @@ app.use(router);
 // Global error handler
 app.use(errorHandler);
 
-const server = app.listen(WEBHOOK_PORT, () => {
+const server = app.listen(WEBHOOK_PORT, "0.0.0.0", () => {
   console.log(
-    `Webhook receiver is up and running at http://localhost:${WEBHOOK_PORT}`
+    `Webhook receiver is up and running at http://0.0.0.0:${WEBHOOK_PORT}`
   );
   console.log(`Queue worker initialized and ready to process webhooks`);
 });

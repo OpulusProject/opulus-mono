@@ -66,7 +66,8 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Start script: run migrations, then start server
 # Migrations run automatically on container start (for Railway and other platforms)
-CMD pnpm --filter @opulus/core exec prisma migrate deploy --schema=./opulus-core/prisma/schema.prisma && \
+# Note: pnpm --filter changes working directory, so use relative path from opulus-core
+CMD pnpm --filter @opulus/core exec prisma migrate deploy --schema=./prisma/schema.prisma && \
     pnpm --filter @opulus/webhooks start
 
 
