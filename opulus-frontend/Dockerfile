@@ -22,6 +22,9 @@ COPY opulus-core ./opulus-core
 COPY opulus-gems ./opulus-gems
 COPY opulus-frontend ./opulus-frontend
 
+# Generate Prisma client first (needed for opulus-core build)
+RUN pnpm --filter @opulus/core prisma:generate
+
 # Build dependencies first
 RUN pnpm --filter @opulus/core build
 RUN pnpm --filter @opulus/gems build
