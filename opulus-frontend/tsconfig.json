@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["./src/*", "../opulus-gems/src/*"],
       "@opulus/core": ["../opulus-core/src/index.ts"],
       "@gems": ["../opulus-gems/src/index.ts"],
       "@gems/*": ["../opulus-gems/src/*"]
