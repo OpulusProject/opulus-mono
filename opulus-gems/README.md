@@ -7,16 +7,9 @@ Reusable component library for Opulus applications.
 `@opulus/gems` is a component library built on top of Radix UI and Tailwind CSS. It provides reusable, accessible components that can be used across Opulus applications.
 
 **Contains:**
-- ✅ shadcn/ui base components (`Button`, `Card`, etc.)
-- ✅ Custom reusable components
-- ✅ Storybook for component development
-- ✅ All component utilities and styles
-
-## Installation
-
-```bash
-npm install @opulus/gems
-```
+- shadcn/ui base components (`Button`, `Card`, etc.)
+- Storybook for component development
+- All component utilities and styles
 
 ## Usage
 
@@ -27,33 +20,18 @@ import '@opulus/gems/styles';
 
 ## Development
 
-### Storybook
-
-```bash
-npm run storybook
-```
-
-Stories are automatically discovered from `src/**/*.stories.tsx`.
-
-### Build
-
-```bash
-npm run build
-```
-
-### Development Mode (Watch)
-
-```bash
-npm run dev
-```
 
 ### Adding shadcn/ui Components
 
 ```bash
+# From opulus-gems directory
+cd opulus-gems
 npx shadcn@latest add [component-name]
 ```
 
 Components will be added to `src/components/ui/` automatically.
+
+**Note:** Make sure to export new components from `src/index.ts` after adding them.
 
 ### Adding Custom Components
 
@@ -94,8 +72,12 @@ The build generates:
 ## Development Workflow
 
 1. Make changes in `src/`
-2. Run `npm run dev` to watch and rebuild
-3. Test in Storybook: `npm run storybook`
-4. Applications import from the built package
+2. Frontend automatically picks up changes (watches `dist/` folder)
+3. No manual rebuilds needed during development
+
+## Related Documentation
+
+- [Main README](../../README.md) - Repo-wide setup and prerequisites
+- [Frontend Package](../opulus-frontend/README.md) - Usage examples
 
 

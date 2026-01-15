@@ -59,23 +59,24 @@ cd opulus-mono
 
 # Install dependencies (recommended: pnpm)
 pnpm install
-
-# Or using npm
-npm install
 ```
 
-### 2. Set Up Database (Docker)
+### 2. Set Up Services (Docker)
 
-Start PostgreSQL:
+Start PostgreSQL and Redis:
 
 ```bash
 docker-compose up -d
 ```
 
-This starts PostgreSQL on `localhost:5432` with:
-- Username: `postgres`
-- Password: `password`
-- Database: `postgres`
+This starts:
+- **PostgreSQL** on `localhost:5432`:
+  - Username: `postgres`
+  - Password: `password`
+  - Database: `opulus`
+- **Redis** on `localhost:6379`:
+  - Used for webhook queue processing
+  - No password required for local dev
 
 ### 3. Configure Environment Variables
 
@@ -83,7 +84,12 @@ Create a `.env` file in the root directory:
 
 ```bash
 # Database
-DATABASE_URL="postgresql://postgres:password@localhost:5432/postgres?schema=public"
+DATABASE_URL="postgresql://postgres:password@localhost:5432/opulus?schema=public"
+
+# Redis (for webhook queue)
+REDIS_HOST=localhost
+REDIS_PORT=6379
+# REDIS_PASSWORD=  # Optional, not needed for local dev
 
 # Better Auth
 BETTER_AUTH_SECRET="your-secret-key-here"  # Generate with: openssl rand -base64 32
@@ -92,7 +98,8 @@ BETTER_AUTH_BASE_URL="http://localhost:8080"
 # Plaid (get from https://dashboard.plaid.com/)
 PLAID_CLIENT_ID="your-plaid-client-id"
 PLAID_SECRET="your-plaid-secret"
-PLAID_ENV="sandbox"  # sandbox, development, or production
+PLAID_ENV="sandbox"  # sandbox or production
+PLAID_WEBHOOK_URL=""  # Set after zrok tunnel setup (see webhooks README)
 
 # Application
 CLIENT_URL="http://localhost:5173"
@@ -109,70 +116,18 @@ pnpm prisma:generate
 # Run migrations
 pnpm prisma:migrate
 ```
-
-### 5. Start Development Servers
-
-```bash
-# Start backend (includes core watch mode)
-pnpm dev:backend
-
-# In another terminal, start frontend (includes gems watch mode)
-pnpm dev:frontend
-```
-
-The application will be available at:
-- **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:8080/api
-
-### 6. Set Up Webhook Tunneling (zrok)
-
-After installing and authenticating zrok (see Prerequisites), use the pnpm script to start webhooks with tunneling:
-
-```bash
-pnpm dev:webhooks:tunnel
-```
-
-**Note:** The webhook URL is automatically included in Plaid link tokens - no Dashboard configuration needed!
-
-### 7. Set Up Bruno (API Testing)
-
-**Install Bruno:**
-```bash
-# Using Homebrew (macOS)
-brew install --cask bruno
-
-# Or download from https://www.usebruno.com/
-```
-
-**Open the collection:**
-1. Open Bruno
-2. Select "Open Collection"
-3. Navigate to `opulus-backend/bruno` folder
-
 ## Development
 
-Run individual services:
+### Running Services
 
 ```bash
-pnpm dev:backend    # Backend + Core watch mode
-pnpm dev:frontend   # Frontend + Gems watch mode
-pnpm dev:webhooks   # Webhook server + Core watch mode
+pnpm dev:backend    # Backend API + Core watch mode
+pnpm dev:frontend   # Frontend app + Gems watch mode
+pnpm dev:webhooks   # Webhook service + Core watch mode + Queue worker
 ```
 
-## Building
+**Note:** Each service has its own README with detailed setup instructions (see Service Documentation below).
 
-Build all packages:
-
-```bash
-pnpm build
-```
-
-Build individual packages:
-
-```bash
-pnpm build:core    # Core package (must be built first)
-pnpm build:gems    # UI component library
-```
 
 ## Workspace Packages
 
@@ -222,10 +177,26 @@ pnpm type-check  # Runs type-check in all workspaces
 2. Frontend automatically picks up rebuilt gems
 3. No need to manually rebuild or restart servers
 
-## Notes
+## Service Documentation
 
-- Gems package runs in watch mode during `pnpm dev`
-- Frontend watches for changes in gems `dist/` folder
-- All packages use pnpm workspaces for dependency management
-- pnpm uses a content-addressable store for faster installs and less disk space
+Each service has its own comprehensive README with detailed setup instructions:
+
+- **[Backend](./opulus-backend/README.md)** - Express API, endpoints, Bruno testing, deployment
+- **[Frontend](./opulus-frontend/README.md)** - React app, routing, build, deployment
+- **[Webhooks](./opulus-webhooks/README.md)** - Webhook receiver, zrok tunneling, queue system, testing
+- **[Core](./opulus-core/README.md)** - Shared services, database, types, utilities
+- **[Gems](./opulus-gems/README.md)** - UI component library, Storybook, usage
+
+## Development Notes
+
+- **Watch Mode**: Gems and Core packages run in watch mode during `pnpm dev:*`
+- **Hot Reload**: Frontend watches for changes in gems `dist/` folder automatically
+- **Dockerfiles**: For hosting only (Railway) - use Node.js directly for local development
+- **Workspaces**: All packages use pnpm workspaces for dependency management
+- **Performance**: pnpm uses a content-addressable store for faster installs and less disk space
+
+## Additional Resources
+
+- [Webhook Testing](./opulus-webhooks/TESTING.md) - Webhook testing guide
+- [Bruno Collections](./opulus-backend/bruno/README.md) - API testing documentation
 
