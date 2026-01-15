@@ -16,7 +16,7 @@ import {
   shutdownQueue,
 } from "./queue/webhookQueue.js";
 
-const WEBHOOK_PORT = process.env.WEBHOOK_PORT || 8081;
+const WEBHOOK_PORT = parseInt(process.env.WEBHOOK_PORT || "8081", 10);
 
 const app = express();
 
