@@ -72,10 +72,11 @@ curl -X GET http://localhost:8080/api/items \
 ### Setup
 
 1. **Install Bruno**:
+
    ```bash
    # macOS
    brew install --cask bruno
-   
+
    # Or download from https://www.usebruno.com/
    ```
 
@@ -85,10 +86,12 @@ curl -X GET http://localhost:8080/api/items \
    - Navigate to `opulus-backend/bruno` folder
 
 3. **Create Local Environment**:
+
    ```bash
    cp opulus-backend/bruno/environments/local.bru.example \
       opulus-backend/bruno/environments/local.bru
    ```
+
    Edit `local.bru` with your test credentials.
 
 4. **Select Environment**:
@@ -115,6 +118,7 @@ pnpm dev:backend
 ```
 
 This runs:
+
 - Express server with hot reload
 - Core package in watch mode (auto-rebuilds)
 
@@ -149,6 +153,7 @@ opulus-backend/
 ## Error Handling
 
 The API uses a global error handler that:
+
 - Returns appropriate HTTP status codes
 - Provides error messages in development
 - Hides sensitive errors in production
@@ -157,6 +162,7 @@ The API uses a global error handler that:
 ## CORS Configuration
 
 CORS is configured to allow requests from:
+
 - `CLIENT_URL` environment variable (default: `http://localhost:5173`)
 - Credentials are enabled for cookie-based authentication
 
@@ -165,5 +171,3 @@ CORS is configured to allow requests from:
 - [Main README](../../README.md) - Repo-wide setup and prerequisites
 - [Bruno Collections](./bruno/README.md) - API testing documentation
 - [Core Package](../opulus-core/README.md) - Shared services and types
-
-
