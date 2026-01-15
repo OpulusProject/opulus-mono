@@ -1,4 +1,9 @@
-import { Configuration, PlaidApi, PlaidEnvironments } from "plaid";
+import {
+  Configuration,
+  PlaidApi,
+  PlaidEnvironments,
+  type JWKPublicKey,
+} from "plaid";
 import config from "../config/default.js";
 
 const configuration = new Configuration({
@@ -14,4 +19,5 @@ const configuration = new Configuration({
 });
 
 export const plaidClient = new PlaidApi(configuration);
+export type { JWKPublicKey };
 export default plaidClient;

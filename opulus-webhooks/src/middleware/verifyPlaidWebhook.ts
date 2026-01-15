@@ -1,10 +1,9 @@
 import "dotenv/config";
-import { config, plaid } from "@opulus/core";
+import { config, plaid, type JWKPublicKey } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import { importJWK, jwtVerify } from "jose";
 import { sha256 } from "js-sha256";
 import { jwtDecode } from "jwt-decode";
-import { JWKPublicKey } from "plaid";
 import safeCompare from "safe-compare";
 
 const KEY_CACHE = new Map<string, JWKPublicKey>();
