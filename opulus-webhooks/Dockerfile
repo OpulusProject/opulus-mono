@@ -21,7 +21,8 @@ COPY opulus-core ./opulus-core
 COPY opulus-webhooks ./opulus-webhooks
 
 # Generate Prisma client first (needed for opulus-core build)
-RUN pnpm --filter @opulus/core prisma:generate
+# Must run from opulus-core directory for schema path to resolve correctly
+RUN cd opulus-core && pnpm exec prisma generate --schema=./prisma/schema.prisma
 
 # Build core package first (dependency)
 RUN pnpm --filter @opulus/core build
