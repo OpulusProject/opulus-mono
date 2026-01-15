@@ -4,13 +4,43 @@ import "dotenv/config";
 import { auth } from "@/client/auth.js";
 import { errorHandler } from "@/middleware/errorHandler.js";
 import router from "@/routes/index.js";
-import { config } from "@opulus/core";
+import { config, prisma } from "@opulus/core";
 import { toNodeHandler } from "better-auth/node";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { json, urlencoded } from "express";
 
 const app = express();
+
+// Health check endpoints (before other middleware for faster response)
+// /health - Simple health check (no database connection)
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    service: "backend",
+  });
+});
+
+// /ready - Readiness check (includes database connection)
+app.get("/ready", async (req, res) => {
+  try {
+    // Check database connection
+    await prisma.$queryRaw`SELECT 1`;
+    res.status(200).json({
+      status: "ready",
+      timestamp: new Date().toISOString(),
+      database: "connected",
+    });
+  } catch (error) {
+    res.status(503).json({
+      status: "not ready",
+      timestamp: new Date().toISOString(),
+      database: "disconnected",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+});
 
 // CORS Configuration
 app.use(

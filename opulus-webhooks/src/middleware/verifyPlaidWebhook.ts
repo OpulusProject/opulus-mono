@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { config, plaid } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import { importJWK, jwtVerify } from "jose";
@@ -104,7 +105,10 @@ export async function verifyPlaidWebhook(
         }
 
         // For other errors, log and return generic error
-        console.error("Error fetching webhook verification key:", err);
+        console.error(
+          `[WEBHOOK VERIFICATION] Error fetching webhook verification key:`,
+          err
+        );
         res.status(500).json({
           message: "Internal server error",
           details:
@@ -145,7 +149,7 @@ export async function verifyPlaidWebhook(
       maxTokenAge: "5 min",
     });
   } catch (error) {
-    console.error("Webhook verification failed: Invalid signature", error);
+    console.error("[WEBHOOK VERIFICATION] Signature verification failed:", error);
     res
       .status(401)
       .json({ message: "Webhook verification failed: Invalid signature" });
@@ -153,15 +157,35 @@ export async function verifyPlaidWebhook(
   }
 
   // Compare hashes.
-  const bodyString = JSON.stringify(req.body, null, 2);
+  // req.body is a Buffer from raw() middleware, convert to string
+  const bodyString =
+    typeof req.body === "string"
+      ? req.body
+      : Buffer.isBuffer(req.body)
+        ? req.body.toString("utf8")
+        : JSON.stringify(req.body, null, 2);
+
   const bodyHash = sha256(bodyString);
   const claimedBodyHash = (decodedToken as { request_body_sha256: string })
     .request_body_sha256;
 
   if (!safeCompare(bodyHash, claimedBodyHash)) {
+    console.error(
+      `[WEBHOOK VERIFICATION] Hash mismatch. Expected: ${claimedBodyHash}, Got: ${bodyHash}`
+    );
     res
       .status(401)
       .json({ message: "Webhook verification failed: Invalid body hash" });
+    return;
+  }
+
+  // Parse body and attach to req for handler
+  try {
+    req.body = JSON.parse(bodyString);
+  } catch (error) {
+    res.status(400).json({
+      message: "Webhook verification failed: Invalid JSON body",
+    });
     return;
   }
 

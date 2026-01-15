@@ -1,14 +1,10 @@
-import { AppError } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
+import { webhookQueue } from "../queue/webhookQueue.js";
 import type { PlaidWebhookEvent } from "../types/plaid/webhookSchema.js";
-import { handleItemWebhook } from "./handlers/item/index.js";
-import { handleLinkWebhook } from "./handlers/link/index.js";
-import { handleTransactionsWebhook } from "./handlers/transactions/index.js";
-import { unhandledWebhook } from "./handlers/unhandledPlaidWebhook.js";
 
 /**
  * Handler for processing webhook events
- * Acknowledges immediately and processes asynchronously
+ * Acknowledges immediately and enqueues for async processing
  */
 export async function handlePlaidWebhook(
   req: Request,
@@ -16,55 +12,37 @@ export async function handlePlaidWebhook(
   next: NextFunction
 ): Promise<void> {
   try {
+    // Body is already parsed by verification middleware
     const event = req.body as PlaidWebhookEvent;
 
-    // Acknowledge immediately
+    console.log(
+      `[WEBHOOK] Received ${event.webhook_type}:${event.webhook_code}`
+    );
+
+    // Acknowledge immediately (Plaid requires fast response)
     res.status(200).json({ received: true });
 
-    // Process asynchronously (don't await - fire and forget)
-    processPlaidWebhook(event);
+    // Enqueue for async processing with retry support
+    // Uses defaultJobOptions from queue configuration (no need to duplicate)
+    await webhookQueue.add(
+      `process-${event.webhook_type.toLowerCase()}`,
+      event
+    );
+
+    console.log(
+      `[WEBHOOK] Enqueued ${event.webhook_type}:${event.webhook_code} for processing`
+    );
   } catch (error) {
     // If acknowledgment hasn't been sent yet, send error response
     if (!res.headersSent) {
+      console.error("[WEBHOOK] Error before acknowledgment:", error);
       next(error);
     } else {
       // Already acknowledged, log error
-      console.error("Error handling webhook:", error);
+      console.error("[WEBHOOK] Error enqueueing webhook:", error);
     }
   }
 }
 
-/**
- * Process a Plaid webhook event
- * Routes webhook events to appropriate handlers based on type and code
- * @param event - Plaid webhook event
- * @throws AppError if processing fails
- */
-export async function processPlaidWebhook(
-  event: PlaidWebhookEvent
-): Promise<void> {
-  try {
-    const { webhook_type, webhook_code } = event;
-
-    // Route to appropriate handler based on webhook type and code
-    switch (webhook_type) {
-      case "ITEM":
-        await handleItemWebhook(webhook_code, event);
-        break;
-      case "LINK":
-        await handleLinkWebhook(webhook_code, event);
-        break;
-      case "TRANSACTIONS":
-        await handleTransactionsWebhook(webhook_code, event);
-        break;
-      default:
-        unhandledWebhook(webhook_type, webhook_code, event);
-    }
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? `Failed to process webhook: ${error.message}`
-        : "An unexpected error occurred while processing webhook";
-    throw new AppError(message, 500);
-  }
-}
+// This function is no longer needed - processing is handled by queue workers
+// Keeping for backwards compatibility if needed
