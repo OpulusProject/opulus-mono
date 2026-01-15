@@ -20,6 +20,9 @@ RUN pnpm install --frozen-lockfile --prod=false
 COPY opulus-core ./opulus-core
 COPY opulus-webhooks ./opulus-webhooks
 
+# Generate Prisma client first (needed for opulus-core build)
+RUN pnpm --filter @opulus/core prisma:generate
+
 # Build core package first (dependency)
 RUN pnpm --filter @opulus/core build
 
@@ -47,11 +50,11 @@ COPY --from=base /app/opulus-webhooks/node_modules ./opulus-webhooks/node_module
 COPY --from=base /app/opulus-core/dist ./opulus-core/dist
 COPY --from=base /app/opulus-webhooks/dist ./opulus-webhooks/dist
 
-# Copy Prisma schema and generated client (if webhooks need it)
+# Copy Prisma schema and migrations
 COPY --from=base /app/opulus-core/prisma ./opulus-core/prisma
 
-# Generate Prisma client (if needed)
-RUN pnpm --filter @opulus/core prisma:generate || true
+# Generate Prisma client
+RUN pnpm --filter @opulus/core prisma:generate
 
 # Expose port
 EXPOSE 8081
@@ -60,7 +63,9 @@ EXPOSE 8081
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:8081/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the server
-CMD ["pnpm", "--filter", "@opulus/webhooks", "start"]
+# Start script: run migrations, then start server
+# Migrations run automatically on container start (for Railway and other platforms)
+CMD pnpm --filter @opulus/core exec prisma migrate deploy --schema=./opulus-core/prisma/schema.prisma && \
+    pnpm --filter @opulus/webhooks start
 
 
