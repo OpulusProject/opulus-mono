@@ -20,6 +20,10 @@ RUN pnpm install --frozen-lockfile --prod=false
 COPY opulus-core ./opulus-core
 COPY opulus-backend ./opulus-backend
 
+# Generate Prisma client first (needed for opulus-core build)
+# Must run from opulus-core directory for schema path to resolve correctly
+RUN cd opulus-core && pnpm exec prisma generate --schema=./prisma/schema.prisma
+
 # Build core package first (dependency)
 RUN pnpm --filter @opulus/core build
 
@@ -47,7 +51,7 @@ COPY --from=base /app/opulus-backend/node_modules ./opulus-backend/node_modules
 COPY --from=base /app/opulus-core/dist ./opulus-core/dist
 COPY --from=base /app/opulus-backend/dist ./opulus-backend/dist
 
-# Copy Prisma schema and generated client
+# Copy Prisma schema and migrations
 COPY --from=base /app/opulus-core/prisma ./opulus-core/prisma
 
 # Generate Prisma client
@@ -60,7 +64,10 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:8080/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the server
-CMD ["pnpm", "--filter", "@opulus/backend", "start"]
+# Start script: run migrations, then start server
+# Migrations run automatically on container start (for Railway and other platforms)
+# Use cd to ensure correct working directory for schema path
+CMD cd opulus-core && pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma && \
+    cd .. && pnpm --filter @opulus/backend start
 
 
