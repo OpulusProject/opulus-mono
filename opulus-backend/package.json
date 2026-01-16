@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc",
-    "start": "node --loader tsx/dist/esm dist/server.js",
+    "build": "tsup",
+    "start": "node dist/server.js",
     "prisma:generate": "pnpm --filter @opulus/core prisma:generate",
     "prisma:studio": "pnpm --filter @opulus/core prisma:studio",
     "prisma:migrate": "pnpm --filter @opulus/core prisma:migrate",
@@ -24,7 +24,6 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^5.1.0",
-    "tsx": "^4.19.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -41,6 +40,8 @@
     "prettier": "^3.3.3",
     "prisma": "^6.3.1",
     "tsconfig-paths": "^4.2.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
 }

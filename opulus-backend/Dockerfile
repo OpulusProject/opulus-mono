@@ -52,9 +52,6 @@ COPY --from=base /app/opulus-backend/node_modules ./opulus-backend/node_modules
 COPY --from=base /app/opulus-core/dist ./opulus-core/dist
 COPY --from=base /app/opulus-backend/dist ./opulus-backend/dist
 
-# Copy tsconfig.json for path alias resolution (tsx loader needs it)
-COPY --from=base /app/opulus-backend/tsconfig.json ./opulus-backend/tsconfig.json
-
 # Copy Prisma schema and migrations
 COPY --from=base /app/opulus-core/prisma ./opulus-core/prisma
 
