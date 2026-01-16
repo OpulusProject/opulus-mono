@@ -99,7 +99,9 @@ router.post(
       path: req.path,
       headers: {
         "content-type": req.headers["content-type"],
-        "plaid-verification": req.headers["plaid-verification"] ? "present" : "missing",
+        "plaid-verification": req.headers["plaid-verification"]
+          ? "present"
+          : "missing",
         "user-agent": req.headers["user-agent"],
       },
       ip: req.ip,
