@@ -49,6 +49,7 @@ export const auth = betterAuth({
   advanced: {
     crossSubDomainCookies: {
       enabled: true,
+      domain: config.clientUrl,
     },
     // Force secure cookies (required for SameSite=None)
     useSecureCookies: true,
