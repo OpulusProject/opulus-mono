@@ -1,8 +1,9 @@
 # Multi-stage build for webhook service
 FROM node:18-alpine AS base
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm and build dependencies for native modules (better-sqlite3, etc.)
+RUN apk add --no-cache python3 make g++ && \
+    corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
