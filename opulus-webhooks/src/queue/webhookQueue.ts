@@ -66,7 +66,7 @@ export const webhookQueue = new Queue<PlaidWebhookEvent>("webhooks", {
 /**
  * Create and start webhook worker with handlers
  * Handlers are provided directly, eliminating the need for setWebhookHandlers()
- * 
+ *
  * @param handlers - Webhook handlers for ITEM, LINK, and TRANSACTIONS events
  * @returns Worker instance
  */
@@ -171,4 +171,3 @@ export async function shutdownQueue(
   await webhookQueue.close();
   await queueEvents.close();
 }
-

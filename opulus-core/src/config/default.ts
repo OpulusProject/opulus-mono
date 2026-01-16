@@ -14,7 +14,7 @@ const getEnv = (key: string, defaultValue: string = ""): string => {
 export default {
   port: parseInt(process.env.PORT || "8080", 10),
   nodeEnv: getEnv("NODE_ENV", "development"),
-  clientUrl: getEnv("CLIENT_URL",),
+  clientUrl: getEnv("CLIENT_URL", "http://localhost:5173"),
   databaseUrl: getEnv("DATABASE_URL"),
   plaidClientId: getEnv("PLAID_CLIENT_ID"),
   plaidSecret: getEnv("PLAID_SECRET"),
