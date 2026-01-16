@@ -4,6 +4,11 @@ FROM node:18-alpine AS base
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
+# Accept build-time arguments for Vite environment variables
+# Railway automatically passes environment variables as build args
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
 WORKDIR /app
 
 # Copy root package files
