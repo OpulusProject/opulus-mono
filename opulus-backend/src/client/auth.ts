@@ -3,6 +3,11 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { twoFactor } from "better-auth/plugins";
 
+// Determine if we need SameSite=None for cookies
+// In production: always cross-origin (frontend and backend on different Railway subdomains)
+// In development: same-origin (localhost), so SameSite=Lax is more secure
+const needsSameSiteNone = config.nodeEnv === "production";
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
@@ -40,6 +45,19 @@ export const auth = betterAuth({
     console.log(`🔒 Better Auth trusted origins: [${clientUrl}]`);
     return [clientUrl];
   })(),
+  // Advanced cookie configuration for cross-origin support
+  // Reference: https://www.better-auth.com/docs/concepts/cookies
+  advanced: {
+    // Force secure cookies (required for SameSite=None)
+    useSecureCookies: true,
+    // Set default cookie attributes for cross-origin requests
+    // SameSite=None is required when frontend and backend are on different domains
+    defaultCookieAttributes: {
+      secure: true, // Required for SameSite=None
+      httpOnly: true, // Security: prevent JavaScript access
+      sameSite: needsSameSiteNone ? "none" : "lax", // "none" for production (cross-origin), "lax" for development (same-origin)
+    },
+  },
 });
 
 export type Session = typeof auth.$Infer.Session;
