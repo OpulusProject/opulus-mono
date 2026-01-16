@@ -46,19 +46,21 @@ export const auth = betterAuth({
   })(),
   // Advanced cookie configuration for cross-origin support
   // Reference: https://www.better-auth.com/docs/concepts/cookies
+  // Note: crossSubDomainCookies won't work here because frontend and backend
+  // are on different Railway subdomains (not subdomains of YOUR domain)
   advanced: {
-    crossSubDomainCookies: {
-      enabled: true,
-      domain: config.clientUrl,
-    },
     // Force secure cookies (required for SameSite=None)
     useSecureCookies: true,
-    // Set default cookie attributes for cross-origin requests
-    // SameSite=None is required when frontend and backend are on different domains
-    defaultCookieAttributes: {
-      secure: true, // Required for SameSite=None
-      httpOnly: true, // Security: prevent JavaScript access
-      sameSite: needsSameSiteNone ? "none" : "lax", // "none" for production (cross-origin), "lax" for development (same-origin)
+    // Explicitly configure session_token cookie (defaultCookieAttributes doesn't always apply)
+    // This is the ONLY way to guarantee SameSite=None for session cookies
+    cookies: {
+      session_token: {
+        attributes: {
+          secure: true, // Required for SameSite=None
+          httpOnly: true, // Security: prevent JavaScript access
+          sameSite: needsSameSiteNone ? "none" : "lax", // "none" for production (cross-origin), "lax" for development (same-origin)
+        },
+      },
     },
   },
 });
