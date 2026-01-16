@@ -11,6 +11,10 @@ export default defineConfig({
   bundle: true,
   minify: false,
   treeshake: true,
+  // Inject crypto polyfill at the top of the bundle (before any imports)
+  banner: {
+    js: `import { webcrypto } from "node:crypto"; if (typeof globalThis.crypto === "undefined") { globalThis.crypto = webcrypto; }`,
+  },
   // Resolve path aliases from tsconfig.json
   esbuildOptions(options) {
     options.alias = {
@@ -26,6 +30,6 @@ export default defineConfig({
     "cors",
     "dotenv",
     "zod",
+    "node:crypto", // Keep crypto external (not bundled)
   ],
 });
-
