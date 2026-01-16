@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
-    "start": "node dist/server.js",
+    "start": "tsx src/server.ts",
     "prisma:generate": "pnpm --filter @opulus/core prisma:generate",
     "prisma:studio": "pnpm --filter @opulus/core prisma:studio",
     "prisma:migrate": "pnpm --filter @opulus/core prisma:migrate",
@@ -24,6 +24,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^5.1.0",
+    "tsx": "^4.19.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -39,7 +40,6 @@
     "eslint-config-prettier": "^9.1.0",
     "prettier": "^3.3.3",
     "prisma": "^6.3.1",
-    "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
 }
