@@ -1,7 +1,7 @@
+import { config, prisma } from "@opulus/core";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { twoFactor } from "better-auth/plugins";
-import { prisma, config } from "@opulus/core";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -36,10 +36,8 @@ export const auth = betterAuth({
       );
       return [];
     }
-    // Log trusted origins in development for debugging
-    if (config.nodeEnv === "development") {
-      console.log(`🔒 Better Auth trusted origins: [${clientUrl}]`);
-    }
+    // Always log trusted origins for debugging (helps diagnose production issues)
+    console.log(`🔒 Better Auth trusted origins: [${clientUrl}]`);
     return [clientUrl];
   })(),
 });
