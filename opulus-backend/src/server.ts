@@ -71,9 +71,10 @@ app.use("/api", router);
 app.use(errorHandler);
 
 const PORT = config.port;
+const baseURL = config.betterAuthBaseURL || `http://localhost:${PORT}`;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`📡 Environment: ${config.nodeEnv}`);
-  console.log(`🔗 API available at http://localhost:${PORT}/api`);
+  console.log(`🔗 API available at ${baseURL}/api`);
 });
