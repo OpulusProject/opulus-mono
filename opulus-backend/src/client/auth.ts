@@ -41,13 +41,15 @@ export const auth = betterAuth({
       );
       return [];
     }
-    // Always log trusted origins for debugging (helps diagnose production issues)
-    console.log(`🔒 Better Auth trusted origins: [${clientUrl}]`);
+
     return [clientUrl];
   })(),
   // Advanced cookie configuration for cross-origin support
   // Reference: https://www.better-auth.com/docs/concepts/cookies
   advanced: {
+    crossSubDomainCookies: {
+      enabled: true,
+    },
     // Force secure cookies (required for SameSite=None)
     useSecureCookies: true,
     // Set default cookie attributes for cross-origin requests
