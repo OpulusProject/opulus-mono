@@ -69,6 +69,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Migrations run automatically on container start (for Railway and other platforms)
 # Use cd to ensure correct working directory for schema path
 CMD cd opulus-core && pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma && \
-    cd .. && pnpm --filter @opulus/backend start
+    cd ../opulus-backend && node dist/server.js
 
 
