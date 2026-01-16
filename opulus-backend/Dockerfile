@@ -48,11 +48,11 @@ COPY --from=base /app/node_modules ./node_modules
 COPY --from=base /app/opulus-core/node_modules ./opulus-core/node_modules
 COPY --from=base /app/opulus-backend/node_modules ./opulus-backend/node_modules
 
-# Copy built code (core still uses compiled dist)
+# Copy built code
 COPY --from=base /app/opulus-core/dist ./opulus-core/dist
+COPY --from=base /app/opulus-backend/dist ./opulus-backend/dist
 
-# Copy source files for backend (tsx runs TypeScript directly)
-COPY --from=base /app/opulus-backend/src ./opulus-backend/src
+# Copy tsconfig.json for path alias resolution (tsx loader needs it)
 COPY --from=base /app/opulus-backend/tsconfig.json ./opulus-backend/tsconfig.json
 
 # Copy Prisma schema and migrations
