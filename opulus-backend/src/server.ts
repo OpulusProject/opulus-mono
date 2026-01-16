@@ -56,6 +56,30 @@ app.use(
   })
 );
 
+// Debug middleware to log cookie headers (temporary, for debugging)
+app.use((req, res, next) => {
+  if (req.path.startsWith("/api/auth")) {
+    console.log("[AUTH DEBUG] Request:", {
+      path: req.path,
+      method: req.method,
+      origin: req.headers.origin,
+      cookie: req.headers.cookie || "none",
+      "x-forwarded-proto": req.headers["x-forwarded-proto"],
+      secure: req.secure,
+    });
+
+    // Log Set-Cookie headers in response
+    const originalSetHeader = res.setHeader.bind(res);
+    res.setHeader = function (name: string, value: string | string[]) {
+      if (name.toLowerCase() === "set-cookie") {
+        console.log("[AUTH DEBUG] Setting cookie:", value);
+      }
+      return originalSetHeader(name, value);
+    };
+  }
+  next();
+});
+
 // Better Auth handler (mounted BEFORE body parsers)
 // Better Auth docs: express.json() should be used AFTER mounting Better Auth handler
 // Mounting it before prevents the client API from getting stuck on "pending"
