@@ -12,6 +12,10 @@ import express, { json, urlencoded } from "express";
 
 const app = express();
 
+// Trust proxy (Railway uses a reverse proxy)
+// This ensures Express correctly detects HTTPS and sets secure cookies
+app.set("trust proxy", 1);
+
 // Health check endpoints (before other middleware for faster response)
 // /health - Simple health check (no database connection)
 app.get("/health", (req, res) => {
