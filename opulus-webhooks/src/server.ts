@@ -92,23 +92,6 @@ router.get("/ready", async (req, res) => {
 // The verification middleware needs the raw body string for hash comparison
 router.post(
   "/webhook/plaid",
-  // Log all incoming webhook requests for debugging
-  (req, res, next) => {
-    console.log("[WEBHOOK] Incoming request:", {
-      method: req.method,
-      path: req.path,
-      headers: {
-        "content-type": req.headers["content-type"],
-        "plaid-verification": req.headers["plaid-verification"]
-          ? "present"
-          : "missing",
-        "user-agent": req.headers["user-agent"],
-      },
-      ip: req.ip,
-      ips: req.ips,
-    });
-    next();
-  },
   raw({ type: "application/json" }),
   verifyPlaidWebhook,
   handlePlaidWebhook

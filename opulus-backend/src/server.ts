@@ -56,38 +56,6 @@ app.use(
   })
 );
 
-// Debug middleware to log cookie headers (for troubleshooting)
-app.use((req, res, next) => {
-  if (req.path.startsWith("/api/auth")) {
-    const origin = req.headers.origin;
-    const isCrossOrigin =
-      origin &&
-      config.clientUrl &&
-      origin !== config.betterAuthBaseURL &&
-      origin === config.clientUrl;
-
-    console.log("[AUTH DEBUG] Request:", {
-      path: req.path,
-      method: req.method,
-      origin: req.headers.origin,
-      cookie: req.headers.cookie || "none",
-      "x-forwarded-proto": req.headers["x-forwarded-proto"],
-      secure: req.secure,
-      isCrossOrigin,
-    });
-
-    // Log Set-Cookie headers in response (Better Auth should set SameSite=None automatically)
-    const originalSetHeader = res.setHeader.bind(res);
-    res.setHeader = function (name: string, value: string | string[]) {
-      if (name.toLowerCase() === "set-cookie") {
-        console.log("[AUTH DEBUG] Setting cookie:", value);
-      }
-      return originalSetHeader(name, value);
-    };
-  }
-  next();
-});
-
 // Better Auth handler (mounted BEFORE body parsers)
 // Better Auth docs: express.json() should be used AFTER mounting Better Auth handler
 // Mounting it before prevents the client API from getting stuck on "pending"

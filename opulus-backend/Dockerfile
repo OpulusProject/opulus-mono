@@ -67,8 +67,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Start script: run migrations, then start server
 # Migrations run automatically on container start (for Railway and other platforms)
-# Use cd to ensure correct working directory for schema path
-# Use tsx to run TypeScript directly (handles path aliases and ES modules)
 CMD cd opulus-core && pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma && \
     cd .. && pnpm --filter @opulus/backend start
 
