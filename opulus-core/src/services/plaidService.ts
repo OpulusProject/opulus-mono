@@ -7,6 +7,7 @@ import {
   LinkTokenCreateRequest,
   PlaidApi,
   Products,
+  TransactionsRefreshRequest,
   TransactionsSyncRequest,
   UserCreateRequest,
 } from "plaid";
@@ -231,6 +232,27 @@ class PlaidService {
     } catch (error) {
       // If pagination fails, Plaid docs say to restart from original cursor
       // But for now, we'll just throw the error and let the caller handle retry logic
+      throw handlePlaidError(error);
+    }
+  }
+
+  /**
+   * Refresh transactions for a Plaid item
+   * Triggers an on-demand extraction to fetch the newest transactions
+   * Note: This endpoint may take 10-30 seconds to complete
+   * After refresh, Plaid will fire SYNC_UPDATES_AVAILABLE webhook
+   * @param accessToken - The access token for the item
+   * @returns Plaid refresh response
+   */
+  async transactionsRefresh(accessToken: string) {
+    try {
+      const request: TransactionsRefreshRequest = {
+        access_token: accessToken,
+      };
+
+      const response = await this.plaid.transactionsRefresh(request);
+      return response.data;
+    } catch (error) {
       throw handlePlaidError(error);
     }
   }
