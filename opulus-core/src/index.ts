@@ -3,6 +3,7 @@ export {
   default as plaid,
   plaidClient,
   type JWKPublicKey,
+  type RemovedTransaction,
 } from "./client/plaid.js";
 export { default as prisma } from "./client/prisma.js";
 

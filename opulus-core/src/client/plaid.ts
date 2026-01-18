@@ -3,6 +3,7 @@ import {
   PlaidApi,
   PlaidEnvironments,
   type JWKPublicKey,
+  type RemovedTransaction,
 } from "plaid";
 import config from "../config/default.js";
 
@@ -19,5 +20,5 @@ const configuration = new Configuration({
 });
 
 export const plaidClient = new PlaidApi(configuration);
-export type { JWKPublicKey };
+export type { JWKPublicKey, RemovedTransaction };
 export default plaidClient;

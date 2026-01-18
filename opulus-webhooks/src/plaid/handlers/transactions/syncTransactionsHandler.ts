@@ -5,6 +5,7 @@ import {
   normalizePlaidTransaction,
   plaidService,
   prisma,
+  type RemovedTransaction,
 } from "@opulus/core";
 
 /**
@@ -180,21 +181,30 @@ export async function syncTransactionsHandler(
       }
 
       // Process removed transactions
-      // Removed transactions are just transaction IDs (strings), not full transaction objects
+      // Plaid's /transactions/sync returns removed as Array<RemovedTransaction>
+      // RemovedTransaction has { transaction_id: string, account_id: string }
       if (removed.length > 0) {
         console.log(
           `[TRANSACTIONS SYNC] Processing ${removed.length} removed transactions`
         );
-        const deleteResult = await tx.transaction.deleteMany({
-          where: {
-            providerTransactionId: {
-              in: removed,
-            },
-          },
-        });
-        console.log(
-          `[TRANSACTIONS SYNC] Deleted ${deleteResult.count} transactions`
+
+        // Extract transaction IDs from RemovedTransaction objects
+        const transactionIdsToDelete = (removed as RemovedTransaction[]).map(
+          (removedTx) => removedTx.transaction_id
         );
+
+        if (transactionIdsToDelete.length > 0) {
+          const deleteResult = await tx.transaction.deleteMany({
+            where: {
+              providerTransactionId: {
+                in: transactionIdsToDelete,
+              },
+            },
+          });
+          console.log(
+            `[TRANSACTIONS SYNC] Deleted ${deleteResult.count} transactions`
+          );
+        }
       }
 
       // Update item's transaction cursor
