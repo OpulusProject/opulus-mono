@@ -1,0 +1,168 @@
+meta {
+  name: Refresh Transactions
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/plaid/transactions/refresh
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "itemId": "{{plaid_item_id}}"
+  }
+}
+
+vars:pre-request {
+  plaid_item_id: DZbeZBxB7KHkLYMBxO7ACp7z9z4KA5tZA8Aq9
+}
+
+docs {
+  # Refresh Transactions
+  
+  Trigger an on-demand extraction to fetch the newest transactions for a Plaid item. This endpoint initiates a refresh request to Plaid, which may take 10-30 seconds to complete.
+  
+  **Endpoint:** `POST /api/plaid/transactions/refresh`
+  
+  ## Authentication
+  
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+  
+  ## Request Body
+  
+  ```json
+  {
+    "itemId": "string" // The Plaid item ID (plaidItemId field from your database, e.g., "DZbeZBxB7KHkLYMBxO7ACp7z9z4KA5tZA8Aq9")
+  }
+  ```
+  
+  **Note:** This is the Plaid item ID (`plaidItemId`), not your database item ID. You can get this from the **Get Items** endpoint response.
+  
+  ## Flow
+  
+  1. Validates that the item belongs to the authenticated user
+  2. Calls Plaid's `/transactions/refresh` endpoint
+  3. Returns immediately (does not wait for refresh to complete)
+  4. Plaid will fire `SYNC_UPDATES_AVAILABLE` webhook when refresh completes
+  5. Your webhook handler will process the updated transactions
+  
+  ## Response
+  
+  Returns immediately with a success message. The actual transaction updates will arrive via webhook.
+  
+  ## Success Response (200)
+  
+  ```json
+  {
+    "data": {
+      "requestId": "abc123...",
+      "message": "Transaction refresh initiated. Plaid will fire SYNC_UPDATES_AVAILABLE webhook when refresh completes."
+    }
+  }
+  ```
+  
+  ## Error Responses
+  
+  - `400 Bad Request`: Invalid request body
+    ```json
+    {
+      "error": "Validation failed",
+      "details": [
+        {
+          "field": "itemId",
+          "message": "itemId is required"
+        }
+      ]
+    }
+    ```
+  
+  - `401 Unauthorized`: No active session or item doesn't belong to user
+    ```json
+    {
+      "error": "Unauthorized",
+      "message": "Authentication required"
+    }
+    ```
+    or
+    ```json
+    {
+      "error": "Unauthorized",
+      "message": "You do not have access to this item"
+    }
+    ```
+  
+  - `404 Not Found`: Item not found
+    ```json
+    {
+      "error": "Not found",
+      "message": "Item not found"
+    }
+    ```
+  
+  - `500 Internal Server Error`: Plaid API error
+    ```json
+    {
+      "error": "Application error",
+      "message": "Plaid API error occurred",
+      "code": "PRODUCTS_NOT_SUPPORTED"
+    }
+    ```
+  
+  ## Usage
+  
+  1. First, use **Sign In** to authenticate and establish a session
+  2. Get your items using **Get Items** endpoint (`GET /api/items`)
+  3. Find the `plaidItemId` from the items response (this is the `itemId` you need)
+  4. Set the `{{plaid_item_id}}` variable in Bruno to the Plaid item ID
+  5. Call this endpoint - it will return immediately
+  6. Wait for the `SYNC_UPDATES_AVAILABLE` webhook to fire (check webhook logs)
+  7. Transactions will be automatically synced by your webhook handler
+  
+  ## Notes
+  
+  - This endpoint returns immediately (does not wait for refresh to complete)
+  - Refresh may take 10-30 seconds (or occasionally longer)
+  - Plaid will fire `SYNC_UPDATES_AVAILABLE` webhook when refresh completes
+  - Your webhook handler (`syncTransactionsHandler`) will automatically process the updates
+  - This endpoint is an optional Plaid add-on and may have additional costs
+  - Not supported for Capital One (ins_128026) non-depository accounts
+  - Use this for manual refresh when user clicks "Refresh Transactions" button
+  - For automatic updates, rely on Plaid's periodic webhooks (1-4 times per day)
+  
+  ## Example: Frontend Integration
+  
+  ```typescript
+  const handleRefreshTransactions = async (itemId: string) => {
+    try {
+      const response = await fetch('/api/plaid/transactions/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include session cookie
+        body: JSON.stringify({ itemId }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to refresh transactions');
+      }
+  
+      const data = await response.json();
+      console.log('Refresh initiated:', data.data.message);
+      
+      // Show user a message: "Refreshing transactions... Updates will appear shortly"
+      // The webhook will handle the actual sync
+    } catch (error) {
+      console.error('Error refreshing transactions:', error);
+    }
+  };
+  ```
+}
