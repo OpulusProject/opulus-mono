@@ -16,6 +16,9 @@ const getAuthBaseURL = (): string => {
 
 export const authClient = createAuthClient({
   baseURL: getAuthBaseURL(),
+  fetchOptions: {
+    credentials: 'include', // Send cookies with cross-origin requests
+  },
   plugins: [
     twoFactorClient({
       // Global handler for 2FA redirects
