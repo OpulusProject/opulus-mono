@@ -56,10 +56,10 @@ export function LoginForm({
         return;
       }
 
-      // If 2FA is required, the onTwoFactorRedirect callback in the plugin config
-      // will handle the redirect automatically. Don't navigate to dashboard in this case.
+      // If 2FA is required, navigate to 2FA page using router (client-side navigation)
+      // This preserves network tab data for debugging (unlike window.location.href)
       if (response && isTwoFactorRedirect(response)) {
-        // Global handler will navigate, so just return early
+        void navigate({ to: '/two-factor', replace: true });
         return;
       }
 

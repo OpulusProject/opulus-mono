@@ -21,11 +21,8 @@ export const authClient = createAuthClient({
   },
   plugins: [
     twoFactorClient({
-      // Global handler for 2FA redirects
-      // This will be called automatically when signIn.email returns twoFactorRedirect: true
-      onTwoFactorRedirect() {
-        window.location.href = '/two-factor';
-      },
+      // Note: Navigation is handled in the login form component using router
+      // This avoids full page reloads and preserves network tab data for debugging
     }),
   ],
 });
