@@ -48,7 +48,11 @@ export const auth = betterAuth({
   // Reference: https://www.better-auth.com/docs/concepts/cookies
   // Note: crossSubDomainCookies won't work here because frontend and backend
   // are on different Railway subdomains (not subdomains of YOUR domain)
+  // We must use SameSite=None + Secure=true for cross-origin cookies
   advanced: {
+    // Remove __Secure- prefix - it can cause issues with cross-origin cookies
+    // The prefix requires strict host matching which doesn't work across different Railway subdomains
+    cookiePrefix: "better-auth",
     // Force secure cookies (required for SameSite=None)
     useSecureCookies: true,
     // Default cookie attributes for ALL cookies (including temporary 2FA cookies)
@@ -57,6 +61,8 @@ export const auth = betterAuth({
     defaultCookieAttributes: {
       secure: true, // Required for SameSite=None
       sameSite: needsSameSiteNone ? "none" : "lax", // "none" for production (cross-origin), "lax" for development (same-origin)
+      // Don't set domain - let browser handle it (important for Railway subdomains)
+      // Setting domain would try to set cookies for Railway's domain which won't work
     },
     // Explicitly configure session_token cookie
     // Only specify httpOnly here since secure and sameSite are already in defaultCookieAttributes
