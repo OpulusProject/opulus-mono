@@ -51,14 +51,19 @@ export const auth = betterAuth({
   advanced: {
     // Force secure cookies (required for SameSite=None)
     useSecureCookies: true,
-    // Explicitly configure session_token cookie (defaultCookieAttributes doesn't always apply)
-    // This is the ONLY way to guarantee SameSite=None for session cookies
+    // Default cookie attributes for ALL cookies (including temporary 2FA cookies)
+    // This is critical - Better Auth creates temporary cookies during 2FA flow
+    // that need the same cross-origin settings as session_token
+    defaultCookieAttributes: {
+      secure: true, // Required for SameSite=None
+      sameSite: needsSameSiteNone ? "none" : "lax", // "none" for production (cross-origin), "lax" for development (same-origin)
+    },
+    // Explicitly configure session_token cookie
+    // Only specify httpOnly here since secure and sameSite are already in defaultCookieAttributes
     cookies: {
       session_token: {
         attributes: {
-          secure: true, // Required for SameSite=None
-          httpOnly: true, // Security: prevent JavaScript access
-          sameSite: needsSameSiteNone ? "none" : "lax", // "none" for production (cross-origin), "lax" for development (same-origin)
+          httpOnly: true, // Security: prevent JavaScript access (not in defaultCookieAttributes)
         },
       },
     },
