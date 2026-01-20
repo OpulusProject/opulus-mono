@@ -13,52 +13,41 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from '@gems';
-import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 
-import { useVerifyTotp } from '@/hooks/auth/useTwoFactor';
+import { authClient } from '@/lib/auth/client';
 
-interface OTPFormProps {
-  onSuccess?: () => void;
-}
-
-export function OTPForm({ onSuccess }: OTPFormProps) {
+export function OTPForm() {
   const [code, setCode] = useState('');
-  const verifyTotpMutation = useVerifyTotp();
-  const queryClient = useQueryClient();
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
     if (code.length !== 6) {
       return;
     }
 
-    verifyTotpMutation.mutate(
-      { code, trustDevice: true },
-      {
-        onSuccess: async (response) => {
-          console.log('2FA verified successfully:', response);
-          // Invalidate and refetch session
-          queryClient.invalidateQueries({ queryKey: ['session'] });
-          await queryClient.refetchQueries({ queryKey: ['session'] });
+    try {
+      const { error } = await authClient.twoFactor.verifyTotp({
+        code,
+        trustDevice: true,
+      });
 
-          // Call onSuccess callback if provided, otherwise redirect to dashboard
-          if (onSuccess) {
-            onSuccess();
-          } else {
-            navigate({ to: '/dashboard', replace: true });
-          }
-        },
-        onError: (error: any) => {
-          console.error('2FA verification error:', error);
-          // Reset code on error
-          setCode('');
-        },
+      if (error) {
+        setError(error.message || 'Invalid verification code');
+        setCode('');
+        return;
       }
-    );
+
+      void navigate({ to: '/dashboard', replace: true });
+    } catch (err) {
+      setError('An unexpected error occurred');
+      setCode('');
+    }
   };
 
   return (
@@ -88,19 +77,14 @@ export function OTPForm({ onSuccess }: OTPFormProps) {
                 Enter the 6-digit code from your authenticator app.
               </FieldDescription>
             </Field>
-            {verifyTotpMutation.isError && (
-              <p className="text-sm text-destructive">
-                {(verifyTotpMutation.error as any)?.response?.data?.message ||
-                  'Invalid verification code'}
-              </p>
-            )}
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <FieldGroup>
               <Button
                 type="submit"
-                disabled={code.length !== 6 || verifyTotpMutation.isPending}
+                disabled={code.length !== 6}
                 className="w-full"
               >
-                {verifyTotpMutation.isPending ? 'Verifying...' : 'Verify'}
+                Verify
               </Button>
               <FieldDescription className="text-center">
                 Having trouble?{' '}

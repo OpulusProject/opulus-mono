@@ -16,6 +16,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from '@gems';
+import { useNavigate } from '@tanstack/react-router';
 import {
   Bell,
   CreditCard,
@@ -23,8 +24,9 @@ import {
   MoreVertical,
   UserCircle,
 } from 'lucide-react';
+import { useState } from 'react';
 
-import { useLogout } from '@/hooks/auth/useLogout';
+import { authClient } from '@/lib/auth/client';
 
 export function NavUser({
   user,
@@ -36,10 +38,23 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
-  const logoutMutation = useLogout();
+  const navigate = useNavigate();
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
-  const handleLogout = () => {
-    logoutMutation.mutate();
+  const handleLogout = async () => {
+    setIsSigningOut(true);
+    try {
+      await authClient.signOut({
+        fetchOptions: {
+          onSuccess: () => {
+            setIsSigningOut(false);
+            void navigate({ to: '/login', replace: true });
+          },
+        },
+      });
+    } catch (error) {
+      setIsSigningOut(false);
+    }
   };
 
   return (
@@ -100,12 +115,9 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleLogout}
-              disabled={logoutMutation.isPending}
-            >
+            <DropdownMenuItem onClick={handleLogout} disabled={isSigningOut}>
               <LogOut />
-              {logoutMutation.isPending ? 'Logging out...' : 'Log out'}
+              {isSigningOut ? 'Logging out...' : 'Log out'}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

@@ -1,11 +1,25 @@
 import { Button, Input, Label, cn } from '@gems';
 import { LoginRequest } from '@opulus/core';
-import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { Gem } from 'lucide-react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { useLogin } from '@/hooks/auth/useLogin';
+import { authClient } from '@/lib/auth/client';
+
+/**
+ * Type guard to check if the response indicates 2FA is required
+ */
+function isTwoFactorRedirect(
+  response: unknown
+): response is { twoFactorRedirect: true } {
+  return (
+    typeof response === 'object' &&
+    response !== null &&
+    'twoFactorRedirect' in response &&
+    response.twoFactorRedirect === true
+  );
+}
 
 export function LoginForm({
   className,
@@ -21,34 +35,41 @@ export function LoginForm({
     },
   });
 
-  const loginMutation = useLogin();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
-  const onSubmit = (data: LoginRequest) => {
-    loginMutation.mutate(data, {
-      onSuccess: (response) => {
-        // Check if 2FA is required
-        if ('twoFactorRedirect' in response && response.twoFactorRedirect) {
-          // Redirect to 2FA verification page
-          void navigate({ to: '/two-factor', replace: true });
-          return;
-        }
+  const onSubmit = async (data: LoginRequest) => {
+    setLoginError(null);
+    setIsSigningIn(true);
 
-        // Normal login success - response is LoginSuccessResponse
-        console.log('Login successful:', response);
-        // Invalidate and refetch session
-        void queryClient.invalidateQueries({ queryKey: ['session'] });
-        void queryClient.refetchQueries({ queryKey: ['session'] });
+    try {
+      const { data: response, error } = await authClient.signIn.email({
+        email: data.email,
+        password: data.password,
+      });
 
-        // Redirect to dashboard after successful login
-        void navigate({ to: '/dashboard', replace: true });
-      },
-      onError: (error: unknown) => {
-        console.error('Login error:', error);
-        // TODO: Show error message to user
-      },
-    });
+      setIsSigningIn(false);
+
+      if (error) {
+        setLoginError(error.message || 'Invalid email or password');
+        return;
+      }
+
+      // If 2FA is required, the onTwoFactorRedirect callback in the plugin config
+      // will handle the redirect automatically. Don't navigate to dashboard in this case.
+      if (response && isTwoFactorRedirect(response)) {
+        // Global handler will navigate, so just return early
+        return;
+      }
+
+      // Normal login success - Better Auth session hook will automatically update
+      void navigate({ to: '/dashboard', replace: true });
+    } catch (err) {
+      setIsSigningIn(false);
+      console.error('Login error:', err);
+      setLoginError('An unexpected error occurred');
+    }
   };
 
   return (
@@ -116,21 +137,15 @@ export function LoginForm({
                 </p>
               )}
             </div>
-            {loginMutation.isError && (
-              <p className="text-sm text-destructive">
-                {loginMutation.error instanceof Error
-                  ? loginMutation.error.message
-                  : 'Invalid email or password'}
-              </p>
+            {loginError && (
+              <p className="text-sm text-destructive">{loginError}</p>
             )}
             <Button
               type="submit"
               className="w-full"
-              disabled={isSubmitting || loginMutation.isPending}
+              disabled={isSubmitting || isSigningIn}
             >
-              {isSubmitting || loginMutation.isPending
-                ? 'Logging in...'
-                : 'Login'}
+              {isSubmitting || isSigningIn ? 'Logging in...' : 'Login'}
             </Button>
           </div>
           <div className="relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t after:border-border">
