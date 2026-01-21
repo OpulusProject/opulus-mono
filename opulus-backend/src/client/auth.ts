@@ -4,20 +4,31 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { twoFactor } from "better-auth/plugins";
 
 /**
- * Cookie Configuration for Cross-Origin Setup
+ * Cookie Configuration for Cross-Subdomain Setup
  *
  * Our setup:
- * - Frontend: opulusfrontend-production.up.railway.app
- * - Backend: opulusbackend-production.up.railway.app
- * - These are DIFFERENT domains (cross-origin)
+ * - Frontend: www.opulus.app
+ * - Backend: api.opulus.app
+ * - Webhooks: webhooks.opulus.app
  *
- * For cross-origin cookies to work, we MUST use:
- * - SameSite=None (allows cookies across different domains)
- * - Secure=true (required when SameSite=None)
- * - credentials: 'include' on client (sends cookies with requests)
+ * With crossSubDomainCookies, cookies are shared across all subdomains of opulus.app
+ * This allows us to use SameSite=Lax (more secure than SameSite=None)
  */
 
 const isProduction = config.nodeEnv === "production";
+
+// Extract root domain from clientUrl (e.g., "https://www.opulus.app" -> ".opulus.app")
+const getRootDomain = (url: string): string => {
+  try {
+    const urlObj = new URL(url);
+    const parts = urlObj.hostname.split(".");
+    // Get last two parts (e.g., "opulus.app") and add leading dot
+    const rootDomain = parts.slice(-2).join(".");
+    return `.${rootDomain}`;
+  } catch {
+    return ".opulus.app"; // Fallback
+  }
+};
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -54,11 +65,14 @@ export const auth = betterAuth({
     cookiePrefix: "opulus",
     crossSubDomainCookies: {
       enabled: true,
-      domain: config.clientUrl.split("://")[1],
+      // Must be ".opulus.app" (with leading dot) for cross-subdomain cookies to work
+      domain: getRootDomain(config.clientUrl),
     },
     defaultCookieAttributes: {
       httpOnly: true,
       secure: true,
+      // With crossSubDomainCookies, we can use SameSite=Lax (more secure than None)
+      sameSite: "lax",
     },
   },
 });
