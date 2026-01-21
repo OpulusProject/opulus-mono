@@ -71,11 +71,11 @@ class PlaidService {
       transactions: {
         days_requested: 730,
       },
-      ...(config.plaidWebhookUrl && {
-        webhook: `${config.plaidWebhookUrl}`,
+      ...(config.webhookUrl && {
+        webhook: `${config.webhookUrl}/webhook/plaid`,
       }),
     };
-
+``
     try {
       const response = await this.plaid.linkTokenCreate(request);
       return response.data;

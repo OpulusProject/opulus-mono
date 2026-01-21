@@ -22,5 +22,5 @@ export default {
   plaidVersion: getEnv("PLAID_VERSION", "2020-09-14"),
   betterAuthSecret: getEnv("BETTER_AUTH_SECRET"),
   betterAuthBaseURL: getEnv("BETTER_AUTH_BASE_URL"),
-  plaidWebhookUrl: getEnv("PLAID_WEBHOOK_URL"),
+  webhookUrl: getEnv("WEBHOOK_URL"),
 };
