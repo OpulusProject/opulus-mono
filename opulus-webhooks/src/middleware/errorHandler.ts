@@ -1,6 +1,7 @@
 import {
   AppError,
   ConflictError,
+  logger,
   NotFoundError,
   UnauthorizedError,
   ValidationError,
@@ -17,6 +18,26 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ): void {
+  const requestId = (req as Request & { id?: string }).id || "unknown";
+
+  logger.error(
+    {
+      type: "http_error",
+      request_id: requestId,
+      method: req.method,
+      path: req.path,
+      status_code: error instanceof AppError ? error.statusCode : 500,
+      error_type:
+        error instanceof Error ? error.constructor.name : typeof error,
+      error_message: error instanceof Error ? error.message : String(error),
+      error_stack: error instanceof Error ? error.stack : undefined,
+      error_code:
+        error instanceof AppError || error instanceof ConflictError
+          ? error.code
+          : undefined,
+    },
+    "Request error"
+  );
   // Handle known error types
   if (error instanceof ValidationError) {
     res.status(error.statusCode).json({

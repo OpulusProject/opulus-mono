@@ -1,4 +1,5 @@
 import type { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
+import { logger } from "@opulus/core";
 import { createItemHandler } from "./createItemHandler.js";
 
 /**
@@ -18,6 +19,14 @@ export async function handleLinkWebhook(
       break;
     }
     default:
-      console.log(`Unhandled LINK webhook code: ${webhook_code}`);
+      logger.warn(
+        {
+          webhook_code: event.webhook_code,
+          webhook_type: event.webhook_type,
+          item_id: event.item_id,
+        },
+        "Unhandled LINK webhook code"
+      );
+      break;
   }
 }

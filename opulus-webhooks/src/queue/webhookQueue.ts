@@ -1,3 +1,4 @@
+import { logger } from "@opulus/core";
 import { Queue, QueueEvents, Worker } from "bullmq";
 import type { PlaidWebhookEvent } from "../types/plaid/webhookSchema.js";
 
@@ -36,7 +37,13 @@ export async function checkRedisConnection(): Promise<boolean> {
     await testClient.quit();
     return true;
   } catch (error) {
-    console.error("[REDIS] Connection check failed:", error);
+    logger.error(
+      {
+        error_type: error instanceof Error ? error.constructor.name : typeof error,
+        error_message: error instanceof Error ? error.message : String(error),
+      },
+      "Redis connection check failed"
+    );
     return false;
   }
 }
@@ -83,9 +90,18 @@ export function createWebhookWorker(handlers: {
     async (job) => {
       const event = job.data;
       const { webhook_type, webhook_code } = event;
+      const jobStartTime = Date.now();
 
-      console.log(
-        `[WEBHOOK QUEUE] Processing ${webhook_type}:${webhook_code} (attempt ${job.attemptsMade + 1}/${job.opts.attempts})`
+      // Log job processing started
+      logger.info(
+        {
+          job_id: job.id,
+          webhook_type,
+          webhook_code,
+          attempt: job.attemptsMade + 1,
+          max_attempts: job.opts.attempts || 3,
+        },
+        "Webhook job processing started"
       );
 
       try {
@@ -101,20 +117,41 @@ export function createWebhookWorker(handlers: {
             await handleTransactionsWebhook(webhook_code, event);
             break;
           default:
-            console.warn(
-              `[WEBHOOK QUEUE] Unhandled webhook type: ${webhook_type}`
+            logger.warn(
+              {
+                job_id: job.id,
+                webhook_type,
+                webhook_code,
+              },
+              "Unhandled webhook type"
             );
         }
 
-        console.log(
-          `[WEBHOOK QUEUE] Successfully processed ${webhook_type}:${webhook_code}`
+        // Log job completed successfully
+        logger.info(
+          {
+            job_id: job.id,
+            webhook_type,
+            webhook_code,
+            duration_ms: Date.now() - jobStartTime,
+          },
+          "Webhook job completed successfully"
         );
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error";
-        console.error(
-          `[WEBHOOK QUEUE] Failed to process ${webhook_type}:${webhook_code}:`,
-          errorMessage
+        // Log job failed
+        logger.error(
+          {
+            job_id: job.id,
+            webhook_type,
+            webhook_code,
+            attempt: job.attemptsMade + 1,
+            error_type: error instanceof Error ? error.constructor.name : typeof error,
+            error_message: error instanceof Error ? error.message : String(error),
+            error_stack: error instanceof Error ? error.stack : undefined,
+            will_retry: job.attemptsMade < (job.opts.attempts || 3),
+            duration_ms: Date.now() - jobStartTime,
+          },
+          "Webhook job failed"
         );
         throw error; // Re-throw to trigger BullMQ retry
       }
@@ -144,15 +181,18 @@ export function createQueueEvents(): QueueEvents {
   // Log queue events (optional - can be disabled in production)
   if (process.env.NODE_ENV === "development") {
     queueEvents.on("completed", ({ jobId }) => {
-      console.log(`[WEBHOOK QUEUE] Job ${jobId} completed`);
+      logger.debug({ job_id: jobId }, "Queue event: job completed");
     });
 
     queueEvents.on("failed", ({ jobId, failedReason }) => {
-      console.error(`[WEBHOOK QUEUE] Job ${jobId} failed: ${failedReason}`);
+      logger.error(
+        { job_id: jobId, failed_reason: failedReason },
+        "Queue event: job failed"
+      );
     });
 
     queueEvents.on("stalled", ({ jobId }) => {
-      console.warn(`[WEBHOOK QUEUE] Job ${jobId} stalled`);
+      logger.warn({ job_id: jobId }, "Queue event: job stalled");
     });
   }
 

@@ -1,3 +1,4 @@
+import { logger } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import { webhookQueue } from "../queue/webhookQueue.js";
 import type { PlaidWebhookEvent } from "../types/plaid/webhookSchema.js";
@@ -11,12 +12,21 @@ export async function handlePlaidWebhook(
   res: Response,
   next: NextFunction
 ): Promise<void> {
+  const requestId = (req as Request & { id?: string }).id || "unknown";
+
   try {
     // Body is already parsed by verification middleware
     const event = req.body as PlaidWebhookEvent;
 
-    console.log(
-      `[WEBHOOK] Received ${event.webhook_type}:${event.webhook_code}`
+    // Log webhook received
+    logger.info(
+      {
+        webhook_type: event.webhook_type,
+        webhook_code: event.webhook_code,
+        item_id: event.item_id,
+        request_id: requestId,
+      },
+      "Webhook received"
     );
 
     // Acknowledge immediately (Plaid requires fast response)
@@ -24,22 +34,43 @@ export async function handlePlaidWebhook(
 
     // Enqueue for async processing with retry support
     // Uses defaultJobOptions from queue configuration (no need to duplicate)
-    await webhookQueue.add(
+    const job = await webhookQueue.add(
       `process-${event.webhook_type.toLowerCase()}`,
       event
     );
 
-    console.log(
-      `[WEBHOOK] Enqueued ${event.webhook_type}:${event.webhook_code} for processing`
+    // Log webhook enqueued
+    logger.info(
+      {
+        webhook_type: event.webhook_type,
+        webhook_code: event.webhook_code,
+        job_id: job.id,
+        request_id: requestId,
+      },
+      "Webhook enqueued"
     );
   } catch (error) {
     // If acknowledgment hasn't been sent yet, send error response
     if (!res.headersSent) {
-      console.error("[WEBHOOK] Error before acknowledgment:", error);
+      logger.error(
+        {
+          request_id: requestId,
+          error_type: error instanceof Error ? error.constructor.name : typeof error,
+          error_message: error instanceof Error ? error.message : String(error),
+        },
+        "Error before webhook acknowledgment"
+      );
       next(error);
     } else {
       // Already acknowledged, log error
-      console.error("[WEBHOOK] Error enqueueing webhook:", error);
+      logger.error(
+        {
+          request_id: requestId,
+          error_type: error instanceof Error ? error.constructor.name : typeof error,
+          error_message: error instanceof Error ? error.message : String(error),
+        },
+        "Error enqueueing webhook"
+      );
     }
   }
 }

@@ -1,11 +1,12 @@
-import { Request, Response, NextFunction } from "express";
 import {
-  ValidationError,
+  AppError,
   ConflictError,
+  logger,
   NotFoundError,
   UnauthorizedError,
-  AppError,
+  ValidationError,
 } from "@opulus/core";
+import { NextFunction, Request, Response } from "express";
 
 /**
  * Global error handler middleware
@@ -17,8 +18,26 @@ export function errorHandler(
   res: Response,
   next: NextFunction
 ): void {
-  // Log error for debugging
-  console.error("Error:", error);
+  const requestId = (req as Request & { id?: string }).id || "unknown";
+
+  logger.error(
+    {
+      type: "http_error",
+      request_id: requestId,
+      method: req.method,
+      path: req.path,
+      status_code: error instanceof AppError ? error.statusCode : 500,
+      error_type:
+        error instanceof Error ? error.constructor.name : typeof error,
+      error_message: error instanceof Error ? error.message : String(error),
+      error_stack: error instanceof Error ? error.stack : undefined,
+      error_code:
+        error instanceof AppError || error instanceof ConflictError
+          ? error.code
+          : undefined,
+    },
+    "Request error"
+  );
 
   // Handle known error types
   if (error instanceof ValidationError) {

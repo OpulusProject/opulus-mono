@@ -2,6 +2,7 @@ import { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
 import {
   AppError,
   linkSessionService,
+  logger,
   normalizePlaidAccount,
   normalizePlaidItem,
   plaidService,
@@ -50,9 +51,21 @@ export async function createItemHandler(event: PlaidWebhookEvent) {
         institution = institutionResponse.institution;
       } catch (error) {
         // Log error but continue - institution data is optional
-        console.warn(
-          `[ITEM WEBHOOK] Failed to fetch institution ${item.institution_id}:`,
-          error instanceof Error ? error.message : error
+        logger.warn(
+          {
+            event: {
+              webhook_type: event.webhook_type,
+              webhook_code: event.webhook_code,
+              item_id: event.item_id,
+            },
+            institution_id: item.institution_id,
+            error_type:
+              error instanceof Error ? error.constructor.name : typeof error,
+            error_message:
+              error instanceof Error ? error.message : String(error),
+            recoverable: true,
+          },
+          "Failed to fetch institution (optional)"
         );
       }
     }
@@ -90,10 +103,33 @@ export async function createItemHandler(event: PlaidWebhookEvent) {
       return createdItem;
     });
 
-    console.log(
-      `[ITEM WEBHOOK] ITEM_ADD_RESULT - Item created: ${item.item_id} for user ${linkSessionResponse.userId} with ${accountsResponse.accounts.length} accounts`
+    logger.info(
+      {
+        event: {
+          webhook_type: event.webhook_type,
+          webhook_code: event.webhook_code,
+          item_id: event.item_id,
+        },
+        user_id: linkSessionResponse.userId,
+        accounts_count: accountsResponse.accounts.length,
+      },
+      "Item and accounts created successfully"
     );
   } catch (error) {
+    logger.error(
+      {
+        event: {
+          webhook_type: event.webhook_type,
+          webhook_code: event.webhook_code,
+          item_id: event.item_id,
+        },
+        error_type:
+          error instanceof Error ? error.constructor.name : typeof error,
+        error_message: error instanceof Error ? error.message : String(error),
+        error_stack: error instanceof Error ? error.stack : undefined,
+      },
+      "Handler execution failed"
+    );
     throw error;
   }
 }

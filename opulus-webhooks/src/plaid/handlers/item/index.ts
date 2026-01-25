@@ -1,11 +1,12 @@
 import type { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
+import { logger } from "@opulus/core";
 
 /**
  * Handle ITEM webhook events
  */
 export async function handleItemWebhook(
   webhook_code: string,
-  event: PlaidWebhookEvent,
+  event: PlaidWebhookEvent
 ): Promise<void> {
   switch (webhook_code) {
     case "ERROR":
@@ -17,6 +18,14 @@ export async function handleItemWebhook(
       // await updateItemStatusHandler(event);
     }
     default:
-      console.log(`Unhandled ITEM webhook code: ${webhook_code}`);
+      logger.warn(
+        {
+          webhook_code: event.webhook_code,
+          webhook_type: event.webhook_type,
+          item_id: event.item_id,
+        },
+        "Unhandled ITEM webhook code"
+      );
+      break;
   }
 }

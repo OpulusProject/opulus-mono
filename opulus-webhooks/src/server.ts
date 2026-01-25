@@ -1,7 +1,12 @@
 // Load .env FIRST, before any other imports that depend on environment variables
 import "dotenv/config";
 
-import { prisma } from "@opulus/core";
+import {
+  logger,
+  prisma,
+  requestIdMiddleware,
+  requestLogger,
+} from "@opulus/core";
 import express, { Router, raw } from "express";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { verifyPlaidWebhook } from "./middleware/verifyPlaidWebhook.js";
@@ -20,6 +25,12 @@ const WEBHOOK_PORT = parseInt(process.env.WEBHOOK_PORT || "8081", 10);
 
 const app = express();
 
+// Request ID middleware (must be first)
+app.use(requestIdMiddleware);
+
+// Request logging middleware (logs all HTTP requests)
+app.use(requestLogger);
+
 const router = Router();
 
 // Note: We don't use json() middleware globally because webhook route needs raw body
@@ -36,7 +47,7 @@ const webhookWorker = createWebhookWorker({
 // Initialize queue events listener for monitoring
 const queueEvents = createQueueEvents();
 
-console.log("Webhook queue worker initialized and ready to process webhooks");
+logger.info("Webhook queue worker initialized and ready to process webhooks");
 
 // Health check endpoints
 // /health - Simple health check (no database connection)
@@ -103,27 +114,26 @@ app.use(router);
 app.use(errorHandler);
 
 const server = app.listen(WEBHOOK_PORT, "0.0.0.0", () => {
-  console.log(
+  logger.info(
     `Webhook receiver is up and running at http://0.0.0.0:${WEBHOOK_PORT}`
   );
-  console.log(`Queue worker initialized and ready to process webhooks`);
 });
 
 // Graceful shutdown
 process.on("SIGTERM", async () => {
-  console.log("SIGTERM received, shutting down gracefully...");
+  logger.info("SIGTERM received, shutting down gracefully...");
   await shutdownQueue(webhookWorker, queueEvents);
   server.close(() => {
-    console.log("Server closed");
+    logger.info("Server closed");
     process.exit(0);
   });
 });
 
 process.on("SIGINT", async () => {
-  console.log("SIGINT received, shutting down gracefully...");
+  logger.info("SIGINT received, shutting down gracefully...");
   await shutdownQueue(webhookWorker, queueEvents);
   server.close(() => {
-    console.log("Server closed");
+    logger.info("Server closed");
     process.exit(0);
   });
 });

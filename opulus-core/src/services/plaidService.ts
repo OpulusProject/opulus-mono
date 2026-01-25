@@ -75,12 +75,11 @@ class PlaidService {
         webhook: `${config.webhookUrl}/webhook/plaid`,
       }),
     };
-``
+
     try {
       const response = await this.plaid.linkTokenCreate(request);
       return response.data;
     } catch (error) {
-      console.error("[PLAID SERVICE] Link token creation failed:", error);
       throw handlePlaidError(error);
     }
   }

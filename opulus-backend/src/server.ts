@@ -4,7 +4,13 @@ import "dotenv/config";
 import { auth } from "@/client/auth.js";
 import { errorHandler } from "@/middleware/errorHandler.js";
 import router from "@/routes/index.js";
-import { config, prisma } from "@opulus/core";
+import {
+  config,
+  logger,
+  prisma,
+  requestIdMiddleware,
+  requestLogger,
+} from "@opulus/core";
 import { toNodeHandler } from "better-auth/node";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -15,6 +21,12 @@ const app = express();
 // Trust proxy (Railway uses a reverse proxy)
 // This ensures Express correctly detects HTTPS and sets secure cookies
 app.set("trust proxy", 1);
+
+// Request ID middleware (must be first - before requestLogger)
+app.use(requestIdMiddleware);
+
+// Request logging middleware (logs all HTTP requests)
+app.use(requestLogger);
 
 // Health check endpoints (before other middleware for faster response)
 // /health - Simple health check (no database connection)
@@ -78,7 +90,7 @@ const PORT = config.port;
 const baseURL = config.betterAuthBaseURL || `http://localhost:${PORT}`;
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📡 Environment: ${config.nodeEnv}`);
-  console.log(`🔗 API available at ${baseURL}/api`);
+  logger.info(`Server running on port ${PORT}`);
+  logger.info(`Environment: ${config.nodeEnv}`);
+  logger.info(`API available at ${baseURL}/api`);
 });

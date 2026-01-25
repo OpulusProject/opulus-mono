@@ -1,5 +1,6 @@
 import type { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
 import { syncTransactionsHandler } from "./syncTransactionsHandler.js";
+import { logger } from "@opulus/core";
 
 /**
  * Handle TRANSACTIONS webhook events
@@ -17,6 +18,14 @@ export async function handleTransactionsWebhook(
       // handled by SYNC_UPDATES_AVAILABLE
       break;
     default:
-      console.log(`Unhandled TRANSACTIONS webhook code: ${webhook_code}`);
+      logger.warn(
+        {
+          webhook_code: event.webhook_code,
+          webhook_type: event.webhook_type,
+          item_id: event.item_id,
+        },
+        "Unhandled TRANSACTIONS webhook code"
+      );
+      break;
   }
 }

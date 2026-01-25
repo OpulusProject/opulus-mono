@@ -1,3 +1,4 @@
+import { logger } from "@opulus/core";
 import type { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
 
 /**
@@ -11,8 +12,13 @@ export function unhandledWebhook(
 ): void {
   const { item_id: plaidItemId } = event;
 
-  console.log(
-    `UNHANDLED ${webhook_type} WEBHOOK: ${webhook_code}: Plaid item id ${plaidItemId || "N/A"}`,
+  logger.warn(
+    {
+      webhook_type,
+      webhook_code,
+      item_id: plaidItemId,
+    },
+    "Unhandled webhook type"
   );
 }
 

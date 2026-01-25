@@ -20,7 +20,12 @@ export * from "./types/dto/index.js";
 
 // Util exports
 export * from "./utils/errors.js";
+export * from "./utils/logger.js";
 export * from "./utils/plaidErrors.js";
 
 // Config export
 export { default as config } from "./config/default.js";
+
+// Middleware exports
+export { requestIdMiddleware } from "./middleware/requestId.js";
+export { requestLogger } from "./middleware/requestLogger.js";
