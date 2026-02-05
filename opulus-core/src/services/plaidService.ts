@@ -2,6 +2,7 @@ import {
   AccountsGetRequest,
   CountryCode,
   InstitutionsGetByIdRequest,
+  InstitutionsGetRequest,
   ItemGetRequest,
   ItemPublicTokenExchangeRequest,
   LinkTokenCreateRequest,
@@ -64,13 +65,13 @@ class PlaidService {
         client_user_id: userId,
       },
       client_name: "Opulus",
-      enable_multi_item_link: true,
       products,
       country_codes: countryCodes,
       language: "en",
       transactions: {
         days_requested: 730,
       },
+      institution_id: "ins_118273",
       ...(config.webhookUrl && {
         webhook: `${config.webhookUrl}/webhook/plaid`,
       }),
@@ -145,6 +146,30 @@ class PlaidService {
 
     try {
       const response = await this.plaid.institutionsGetById(request);
+      return response.data;
+    } catch (error) {
+      throw handlePlaidError(error);
+    }
+  }
+
+  /**
+   * Get all institutions from Plaid
+   * Supports pagination to retrieve all available institutions
+   * @returns List of institutions with total count
+   */
+  async getInstitutions(
+  ) {
+    const request: InstitutionsGetRequest = {
+      count: 500, // Plaid max is 500
+      offset: 0,
+      country_codes: [CountryCode.Ca],
+      options: {
+        include_optional_metadata: true,
+      },
+    };
+
+    try {
+      const response = await this.plaid.institutionsGet(request);
       return response.data;
     } catch (error) {
       throw handlePlaidError(error);

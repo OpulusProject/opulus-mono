@@ -1,0 +1,91 @@
+meta {
+  name: Get Institutions
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/api/plaid/institutions
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+  Content-Type: application/json
+}
+
+params:query {
+}
+
+docs {
+  # Get Institutions
+
+  Retrieve all available institutions from Plaid. Returns up to 500 institutions for Canada.
+
+  **Endpoint:** `GET /api/plaid/institutions`
+
+  ## Authentication
+
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+
+  ## Response
+
+  Returns a list of institutions with metadata including logos, brand colors, and supported products. The endpoint returns up to 500 institutions per request.
+
+  ## Success Response (200)
+
+  ```json
+  {
+    "data": {
+      "institutions": [
+        {
+          "institution_id": "ins_109508",
+          "name": "First Platypus Bank",
+          "products": ["assets", "auth", "balance", "identity", "investments", "liabilities", "payment_initiation", "transactions"],
+          "country_codes": ["CA"],
+          "url": "https://www.plaid.com",
+          "primary_color": "#000000",
+          "logo": "data:image/png;base64,...",
+          "routing_numbers": ["110000000"]
+        }
+      ],
+      "total": 150,
+      "count": 150
+    }
+  }
+  ```
+
+  ## Error Responses
+
+  - `401 Unauthorized`: No active session found
+    ```json
+    {
+      "error": "Unauthorized",
+      "message": "Authentication required"
+    }
+    ```
+
+  - `500 Internal Server Error`: Plaid API error
+    ```json
+    {
+      "error": "Application error",
+      "message": "Plaid API error occurred",
+      "code": "INVALID_API_KEYS"
+    }
+    ```
+
+  ## Usage
+
+  1. First, use **Sign In** to authenticate and establish a session
+  2. Bruno will automatically store the session cookie
+  3. Call this endpoint to get institutions
+
+  ## Notes
+
+  - The endpoint returns institutions for Canada (`CA`) only
+  - Maximum of 500 institutions per request
+  - Includes optional metadata (logos, brand colors, URLs)
+  - To modify filtering criteria (products, country codes), update the service method in `plaidService.ts`
+}
+
