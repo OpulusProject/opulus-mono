@@ -71,7 +71,6 @@ class PlaidService {
       transactions: {
         days_requested: 730,
       },
-      institution_id: "ins_118273",
       ...(config.webhookUrl && {
         webhook: `${config.webhookUrl}/webhook/plaid`,
       }),
