@@ -15,6 +15,9 @@ export * from "./services/plaidService.js";
 export * from "./services/transactionService.js";
 export * from "./services/userService.js";
 
+// Service factory exports (for demo mode support)
+export { getItemService } from "./services/getItemService.js";
+
 // Type exports (DTOs)
 export * from "./types/dto/index.js";
 

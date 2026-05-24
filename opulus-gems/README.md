@@ -77,7 +77,7 @@ The build generates:
 
 ## Related Documentation
 
-- [Main README](../../README.md) - Repo-wide setup and prerequisites
+- [Main README](../README.md) - Repo-wide setup and prerequisites
 - [Frontend Package](../opulus-frontend/README.md) - Usage examples
 
 

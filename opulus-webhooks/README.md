@@ -25,7 +25,7 @@ Plaid Webhook → Express Handler → Redis Queue → BullMQ Worker → Process 
 
 - Redis running (via Docker Compose or local installation)
 - zrok installed and configured (see Local Development section)
-- See [main README](../../README.md) for full prerequisites
+- See [main README](../README.md) for full prerequisites
 
 ## Queue System
 
@@ -196,5 +196,5 @@ opulus-webhooks/
 
 ## Related Documentation
 
-- [Main README](../../README.md) - Repo-wide setup and prerequisites
+- [Main README](../README.md) - Repo-wide setup and prerequisites
 - [Testing Guide](./TESTING.md) - Detailed webhook testing instructions

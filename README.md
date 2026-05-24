@@ -1,202 +1,196 @@
-# Opulus Monorepo
+# Opulus
 
-Monorepo for Opulus financial management platform.
+A personal finance dashboard prototype built around Plaid, transaction sync,
+and a small design system.
 
-## Structure
+Opulus is not a production financial product. It is a portfolio project that
+explores the shape of a multi-service finance app: auth, bank-account linking,
+transaction reads, webhook ingestion, async processing, shared DTOs, and a React
+frontend that can run against either real services or demo fixtures.
 
-- `opulus-backend/` - Express.js backend API
-- `opulus-frontend/` - React frontend application
-- `opulus-gems/` - Shared UI component library
-- `opulus-core/` - Shared core logic and types
-- `opulus-webhooks/` - Webhook receiver service
+> Demo and sandbox use only. Do not connect real financial accounts to a public
+> deployment of this project.
 
-## Prerequisites
+## What's in the box
 
-- **Node.js** >= 18.0.0
-- **pnpm** >= 8.0.0
-- **Docker** (for PostgreSQL database)
-- **PostgreSQL** 15+ (via Docker or local installation)
-
-### Installing Prerequisites
-
-**Install Node.js:**
-```bash
-# Using Homebrew (macOS)
-brew install node
-
-# Or download from https://nodejs.org/
+```
+.
+├── opulus-backend/              Express API, Better Auth, Bruno collections
+│   ├── src/controllers/         Thin request handlers for session, Plaid, items, transactions
+│   ├── src/middleware/          error handling, auth/session, demo-mode checks
+│   ├── src/routes/              API route registration
+│   └── bruno/                   API client collections and local/prod environments
+├── opulus-frontend/             React + Vite + TanStack Router/Query app
+│   ├── src/common/              app layout, sidebar, shared UI glue
+│   ├── src/hooks/               auth, Plaid, items, transactions hooks
+│   ├── src/lib/                 API clients, including demo-mode client
+│   ├── src/pages/               dashboard, accounts, login, 2FA, settings
+│   └── src/routes/              file-based TanStack Router routes
+├── opulus-core/                 Shared Prisma, Plaid client, services, DTOs, config
+│   ├── prisma/                  schema and migrations
+│   └── src/services/            item, transaction, Plaid, demo services
+├── opulus-gems/                 Shared Radix/Tailwind component library
+├── opulus-webhooks/             Plaid webhook receiver + Redis/BullMQ worker
+├── docs/                        Notes on demo mode, observability, privacy
+├── docker-compose.yml           Local Postgres + Redis
+├── package.json                 pnpm workspace orchestration
+└── pnpm-workspace.yaml          Declares the five workspace packages
 ```
 
-**Install pnpm:**
+## Stack
+
+| Layer      | Choice                                      |
+| ---------- | ------------------------------------------- |
+| Frontend   | React · Vite · TanStack Router · TanStack Query |
+| UI         | Tailwind CSS · Radix UI · shared `@opulus/gems` package |
+| Backend    | Express · Better Auth · Prisma              |
+| Integrations | Plaid sandbox · Plaid webhooks           |
+| Storage    | PostgreSQL · Redis for webhook jobs         |
+| Queueing   | BullMQ                                      |
+| Tooling    | pnpm workspaces · TypeScript · tsup         |
+| API testing | Bruno collections                          |
+
+## Public Repo Notes
+
+This repo is best read as a working prototype and portfolio case study. A few
+things are intentionally scoped that way:
+
+- Plaid should be used in sandbox mode for local development.
+- Demo mode exists so the UI can be shown without auth, database reads, or
+  network calls.
+- Transaction privacy work is documented in `docs/TRANSACTION_PRIVACY.md`, but
+  this repo should not be treated as production-ready financial infrastructure.
+- Local `.env` files are ignored. Use `.env.example` as the public template.
+
+## Local Development
+
+### Prereqs
+
+- Node 18+
+- pnpm 9 (`corepack enable` will use the version pinned in `package.json`)
+- Docker Desktop
+- Plaid sandbox credentials, unless you only use demo mode
+
+### One-time setup
+
 ```bash
-# Using Homebrew (macOS)
-brew install pnpm
-
-# Or using npm
-npm install -g pnpm
-
-# Or using corepack (Node.js 16+)
-corepack enable
-corepack prepare pnpm@latest --activate
-```
-
-**Install Docker:**
-```bash
-# Using Homebrew (macOS)
-brew install --cask docker
-brew install docker-compose
-
-# Or download from https://www.docker.com/
-```
-
-## Quick Start
-
-### 1. Clone and Install
-
-```bash
-git clone <repository-url>
-cd opulus-mono
-
-# Install dependencies (recommended: pnpm)
+# 1. Install all workspaces
 pnpm install
-```
 
-### 2. Set Up Services (Docker)
+# 2. Start local Postgres and Redis
+docker compose up -d
 
-Start PostgreSQL and Redis:
+# 3. Create local environment
+cp .env.example .env
 
-```bash
-docker-compose up -d
-```
-
-This starts:
-- **PostgreSQL** on `localhost:5432`:
-  - Username: `postgres`
-  - Password: `password`
-  - Database: `opulus`
-- **Redis** on `localhost:6379`:
-  - Used for webhook queue processing
-  - No password required for local dev
-
-### 3. Configure Environment Variables
-
-Create a `.env` file in the root directory:
-
-```bash
-# Database
-DATABASE_URL="postgresql://postgres:password@localhost:5432/opulus?schema=public"
-
-# Redis (for webhook queue)
-REDIS_HOST=localhost
-REDIS_PORT=6379
-# REDIS_PASSWORD=  # Optional, not needed for local dev
-
-# Better Auth
-BETTER_AUTH_SECRET="your-secret-key-here"  # Generate with: openssl rand -base64 32
-BETTER_AUTH_BASE_URL="http://localhost:8080"
-
-# Plaid (get from https://dashboard.plaid.com/)
-PLAID_CLIENT_ID="your-plaid-client-id"
-PLAID_SECRET="your-plaid-secret"
-PLAID_ENV="sandbox"  # sandbox or production
-PLAID_WEBHOOK_URL=""  # Set after zrok tunnel setup (see webhooks README)
-
-# Application
-CLIENT_URL="http://localhost:5173"
-PORT=8080
-WEBHOOK_PORT=8081
-```
-
-### 4. Set Up Database Schema
-
-```bash
-# Generate Prisma client
+# 4. Generate Prisma client and apply migrations
 pnpm prisma:generate
-
-# Run migrations
 pnpm prisma:migrate
 ```
-## Development
 
-### Running Services
+`docker-compose.yml` starts Postgres on `localhost:5432` with database
+`opulus`, username `postgres`, password `password`, plus Redis on
+`localhost:6379`.
 
-```bash
-pnpm dev:backend    # Backend API + Core watch mode
-pnpm dev:frontend   # Frontend app + Gems watch mode
-pnpm dev:webhooks   # Webhook service + Core watch mode + Queue worker
-```
+### Run
 
-**Note:** Each service has its own README with detailed setup instructions (see Service Documentation below).
-
-
-## Workspace Packages
-
-- `@opulus/core` - Core logic, services, and types
-- `@opulus/gems` - UI component library
-- `@opulus/frontend` - Frontend application
-- `@opulus/backend` - Backend API
-- `@opulus/webhooks` - Webhook receiver service
-
-## Database Management
+From the repo root:
 
 ```bash
-# Generate Prisma client (after schema changes)
-pnpm prisma:generate
-
-# Create and run migrations
-pnpm prisma:migrate
-
-# Open Prisma Studio (database GUI)
-pnpm prisma:studio
-
-# Deploy migrations (production)
-pnpm prisma:migrate:deploy
+pnpm dev:backend      # API on http://localhost:8080, core in watch mode
+pnpm dev:frontend     # frontend on http://localhost:5173, gems in watch mode
+pnpm dev:webhooks     # webhook receiver on http://localhost:8081, core in watch mode
 ```
 
-## Workspace Scripts
+The root scripts are thin wrappers around `pnpm --filter ...` commands. You can
+also run package scripts directly from each workspace.
 
-All workspaces support these scripts:
+### Demo mode
 
-- `dev` - Start development server
-- `build` - Build for production
-- `lint` - Run linter
-- `format` - Format code
-- `type-check` - TypeScript type checking
-
-Run scripts across all workspaces:
+Demo mode is intended for portfolio display. It returns static fixtures instead
+of touching auth, Plaid, the API, or the database.
 
 ```bash
-pnpm lint    # Runs lint in all workspaces
-pnpm format  # Runs format in all workspaces
-pnpm type-check  # Runs type-check in all workspaces
+DEMO_MODE=true pnpm dev:backend
+VITE_DEMO_MODE=true pnpm dev:frontend
 ```
 
-## Development Workflow
+See `docs/DEMO_MODE_IMPLEMENTATION.md` for the implementation notes.
 
-1. Make changes to `opulus-gems` - changes auto-rebuild
-2. Frontend automatically picks up rebuilt gems
-3. No need to manually rebuild or restart servers
+## Useful Commands
+
+Run these from the repo root unless noted.
+
+| Command                 | What                                      |
+| ----------------------- | ----------------------------------------- |
+| `pnpm install`          | Install all workspace dependencies        |
+| `pnpm dev:frontend`     | Run frontend + gems watch mode            |
+| `pnpm dev:backend`      | Run backend + core watch mode             |
+| `pnpm dev:webhooks`     | Run webhook service + core watch mode     |
+| `pnpm build`            | Build core, then all workspace packages   |
+| `pnpm lint`             | Run lint scripts across workspaces        |
+| `pnpm format`           | Run formatting across workspaces          |
+| `pnpm type-check`       | Run TypeScript checks across workspaces   |
+| `pnpm prisma:generate`  | Generate Prisma client via `@opulus/core` |
+| `pnpm prisma:migrate`   | Apply local Prisma migrations             |
+| `pnpm prisma:studio`    | Open Prisma Studio                        |
+
+## Architecture
+
+### Plaid link and account data
+
+1. The frontend requests a Plaid Link token from the backend.
+2. Plaid Link returns a public token after the user selects an institution.
+3. The backend exchanges that public token for an access token.
+4. Core services persist the Plaid item and normalized account data.
+5. The frontend reads connected items through typed DTOs from `@opulus/core`.
+
+### Webhook processing
+
+Plaid webhook callbacks are acknowledged quickly, then queued for background
+work:
+
+```
+Plaid webhook -> opulus-webhooks -> Redis/BullMQ -> handler -> core services
+```
+
+That keeps provider callbacks fast while still allowing retries, observability,
+and a separate worker process for heavier sync work.
+
+### Shared package boundaries
+
+- `@opulus/core` owns Prisma, external clients, business services, config, and
+  DTOs shared between apps.
+- `@opulus/gems` owns reusable UI primitives and styles.
+- App packages consume those shared packages instead of duplicating contracts.
+
+## Environment
+
+Copy `.env.example` to `.env` and fill in local values.
+
+| Var                    | Default / Example                                      | Notes |
+| ---------------------- | ------------------------------------------------------ | ----- |
+| `DATABASE_URL`         | `postgresql://postgres:password@localhost:5432/opulus?schema=public` | Local Postgres URL |
+| `REDIS_HOST`           | `localhost`                                            | Webhook queue Redis host |
+| `REDIS_PORT`           | `6379`                                                 | Webhook queue Redis port |
+| `BETTER_AUTH_SECRET`   | _none_                                                 | Generate with `openssl rand -base64 32` |
+| `BETTER_AUTH_BASE_URL` | `http://localhost:8080`                                | Backend auth base URL |
+| `PLAID_CLIENT_ID`      | _sandbox client id_                                    | Plaid sandbox credential |
+| `PLAID_SECRET`         | _sandbox secret_                                       | Plaid sandbox credential |
+| `PLAID_ENV`            | `sandbox`                                              | Keep public/demo work in sandbox |
+| `PLAID_WEBHOOK_URL`    | _blank_                                                | Public tunnel URL for local webhook tests |
+| `CLIENT_URL`           | `http://localhost:5173`                                | CORS origin for frontend |
+| `PORT`                 | `8080`                                                 | Backend API port |
+| `WEBHOOK_PORT`         | `8081`                                                 | Webhook receiver port |
+| `DEMO_MODE`            | `false`                                                | Backend demo-mode switch |
+| `VITE_DEMO_MODE`       | `false`                                                | Frontend demo-mode switch |
 
 ## Service Documentation
 
-Each service has its own comprehensive README with detailed setup instructions:
-
-- **[Backend](./opulus-backend/README.md)** - Express API, endpoints, Bruno testing, deployment
-- **[Frontend](./opulus-frontend/README.md)** - React app, routing, build, deployment
-- **[Webhooks](./opulus-webhooks/README.md)** - Webhook receiver, zrok tunneling, queue system, testing
-- **[Core](./opulus-core/README.md)** - Shared services, database, types, utilities
-- **[Gems](./opulus-gems/README.md)** - UI component library, Storybook, usage
-
-## Development Notes
-
-- **Watch Mode**: Gems and Core packages run in watch mode during `pnpm dev:*`
-- **Hot Reload**: Frontend watches for changes in gems `dist/` folder automatically
-- **Dockerfiles**: For hosting only (Railway) - use Node.js directly for local development
-- **Workspaces**: All packages use pnpm workspaces for dependency management
-- **Performance**: pnpm uses a content-addressable store for faster installs and less disk space
-
-## Additional Resources
-
-- [Webhook Testing](./opulus-webhooks/TESTING.md) - Webhook testing guide
-- [Bruno Collections](./opulus-backend/bruno/README.md) - API testing documentation
+- [Backend](./opulus-backend/README.md) - Express API, auth, endpoints, Bruno testing
+- [Frontend](./opulus-frontend/README.md) - React app, routing, query hooks, UI integration
+- [Webhooks](./opulus-webhooks/README.md) - Plaid webhook receiver, queueing, local tunnel setup
+- [Core](./opulus-core/README.md) - Shared services, Prisma, DTOs, Plaid client
+- [Gems](./opulus-gems/README.md) - Shared component library and Storybook notes
+- [Docs](./docs/README.md) - Demo mode, observability, and transaction privacy notes
 

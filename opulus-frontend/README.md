@@ -8,7 +8,7 @@ Modern React application built with Vite, TanStack Router, and TanStack Query. U
 
 ## Prerequisites
 
-- See [main README](../../README.md) for repo-wide prerequisites
+- See [main README](../README.md) for repo-wide prerequisites
 - Backend API running (for API calls)
 - Environment variables configured (see Configuration section)
 
@@ -146,7 +146,7 @@ Uses `@opulus/gems` for UI components:
 
 ## Related Documentation
 
-- [Main README](../../README.md) - Repo-wide setup and prerequisites
+- [Main README](../README.md) - Repo-wide setup and prerequisites
 - [Gems Package](../opulus-gems/README.md) - Component library documentation
 - [Backend API](../opulus-backend/README.md) - API documentation
 
