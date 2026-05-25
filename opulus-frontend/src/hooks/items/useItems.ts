@@ -1,9 +1,11 @@
 import { ItemsResponse } from '@opulus/core';
 import { useQuery } from '@tanstack/react-query';
 
-import { apiClient } from '@/lib/api/client';
+import { getApiClient } from '@/lib/api/getApiClient';
 
 const getItemsApi = async (): Promise<ItemsResponse['data']> => {
+  // getApiClient() returns demo client in demo mode (no network calls), real client otherwise
+  const apiClient = getApiClient();
   const response = await apiClient.get<ItemsResponse>('/api/items');
   return response.data.data;
 };

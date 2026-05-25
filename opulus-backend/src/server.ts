@@ -3,6 +3,7 @@ import "dotenv/config";
 
 import { auth } from "@/client/auth.js";
 import { errorHandler } from "@/middleware/errorHandler.js";
+import { detectDemoMode } from "@/middleware/demo/demoMode.js";
 import router from "@/routes/index.js";
 import {
   config,
@@ -24,6 +25,9 @@ app.set("trust proxy", 1);
 
 // Request ID middleware (must be first - before requestLogger)
 app.use(requestIdMiddleware);
+
+// Demo mode detection middleware (detects from hostname)
+app.use(detectDemoMode);
 
 // Request logging middleware (logs all HTTP requests)
 app.use(requestLogger);
