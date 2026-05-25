@@ -62,7 +62,7 @@ export function normalizePlaidItem(
  * Service for managing Plaid items
  * Handles item creation and retrieval
  */
-class ItemService {
+export class ItemService {
   constructor(private prisma: PrismaClient) {}
 
   /**
