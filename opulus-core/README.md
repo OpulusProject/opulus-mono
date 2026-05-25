@@ -173,7 +173,7 @@ const databaseUrl = config.databaseUrl;
 const plaidClientId = config.plaidClientId;
 ```
 
-See [main README](../../README.md) for required environment variables.
+See [main README](../README.md) for required environment variables.
 
 ## Error Handling
 
@@ -278,5 +278,5 @@ import type { PlaidWebhookEvent } from "@opulus/core";
 
 ## Related Documentation
 
-- [Main README](../../README.md) - Repo-wide setup and prerequisites
+- [Main README](../README.md) - Repo-wide setup and prerequisites
 - [Backend API](../opulus-backend/README.md) - API usage examples

@@ -8,7 +8,7 @@ RESTful API server built with Express.js, providing endpoints for authentication
 
 ## Prerequisites
 
-- See [main README](../../README.md) for repo-wide prerequisites
+- See [main README](../README.md) for repo-wide prerequisites
 - PostgreSQL database (via Docker Compose or local installation)
 - Environment variables configured (see Configuration section)
 
@@ -168,6 +168,6 @@ CORS is configured to allow requests from:
 
 ## Related Documentation
 
-- [Main README](../../README.md) - Repo-wide setup and prerequisites
+- [Main README](../README.md) - Repo-wide setup and prerequisites
 - [Bruno Collections](./bruno/README.md) - API testing documentation
 - [Core Package](../opulus-core/README.md) - Shared services and types
