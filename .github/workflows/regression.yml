@@ -1,0 +1,191 @@
+# Service regression suites, run as required status checks on every PR to main.
+#
+# Two independent gates, one per HTTP service:
+#   - "Backend regression"  -> exercises @opulus/backend over REST
+#   - "Webhooks regression" -> exercises @opulus/webhooks over REST
+#
+# Each job provisions the service's dependencies (Postgres, and Redis for the
+# webhooks receiver), boots the service exactly as the repo does, and points the
+# black-box Playwright suite at it via TEST_BASE_URL. The suites never touch the
+# database or Redis directly — provisioning lives here in the pipeline, never in
+# the tests.
+#
+# Merge gating requires TWO things:
+#   1. this workflow running on pull requests, AND
+#   2. branch protection marking each job below (by name) as a required status
+#      check. A green/red run alone does not block merges.
+
+name: Regression
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Branch protection matches this job by NAME ("Backend regression"). Keep it
+  # stable — renaming silently removes the gate until protection is updated.
+  # ---------------------------------------------------------------------------
+  backend-regression:
+    name: Backend regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      BETTER_AUTH_SECRET: ci-regression-secret-not-for-production
+      CLIENT_URL: http://localhost:5173
+      NODE_ENV: test
+      PORT: "8080"
+      PLAID_CLIENT_ID: ci-test
+      PLAID_SECRET: ci-test
+      PLAID_ENV: sandbox
+      TEST_BASE_URL: http://localhost:8080
+
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app_dev
+          POSTGRES_DB: app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @opulus/core prisma:generate
+
+      - name: Build core package
+        run: pnpm --filter @opulus/core build
+
+      - name: Apply database migrations
+        run: pnpm --filter @opulus/core exec prisma migrate deploy --schema=./prisma/schema.prisma
+
+      - name: Boot backend service
+        run: |
+          pnpm --filter @opulus/backend exec tsx src/server.ts &
+          echo $! > /tmp/backend.pid
+          for i in $(seq 1 60); do
+            if curl -sf "$TEST_BASE_URL/health" >/dev/null; then
+              echo "Backend is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Backend did not become healthy in time" >&2
+          exit 1
+
+      - name: Run backend regression suite
+        run: pnpm --filter @opulus/tests test:backend
+
+  # ---------------------------------------------------------------------------
+  # Branch protection matches this job by NAME ("Webhooks regression").
+  # ---------------------------------------------------------------------------
+  webhooks-regression:
+    name: Webhooks regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      NODE_ENV: test
+      WEBHOOK_PORT: "8081"
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
+      PLAID_CLIENT_ID: ci-test
+      PLAID_SECRET: ci-test
+      PLAID_ENV: sandbox
+      TEST_BASE_URL: http://localhost:8081
+
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app_dev
+          POSTGRES_DB: app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @opulus/core prisma:generate
+
+      - name: Build core package
+        run: pnpm --filter @opulus/core build
+
+      - name: Apply database migrations
+        run: pnpm --filter @opulus/core exec prisma migrate deploy --schema=./prisma/schema.prisma
+
+      - name: Boot webhooks service
+        run: |
+          pnpm --filter @opulus/webhooks exec tsx src/server.ts &
+          echo $! > /tmp/webhooks.pid
+          for i in $(seq 1 60); do
+            if curl -sf "$TEST_BASE_URL/health" >/dev/null; then
+              echo "Webhooks receiver is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Webhooks receiver did not become healthy in time" >&2
+          exit 1
+
+      - name: Run webhooks regression suite
+        run: pnpm --filter @opulus/tests test:webhooks

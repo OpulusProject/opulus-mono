@@ -1,0 +1,15 @@
+{
+  "name": "@opulus/tests",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Black-box REST regression suites for the Opulus HTTP services.",
+  "scripts": {
+    "test:backend": "playwright test --config backend/playwright.config.ts",
+    "test:webhooks": "playwright test --config webhooks/playwright.config.ts",
+    "test:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}
