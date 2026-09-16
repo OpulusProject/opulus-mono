@@ -6,6 +6,11 @@ export {
   type RemovedTransaction,
 } from "./client/plaid.js";
 export { default as prisma } from "./client/prisma.js";
+// Re-export the Prisma client class + namespace so black-box test suites can
+// open their OWN connection to an isolated test database (see the service-api
+// tests' db helper) without depending on @prisma/client's generated output
+// location directly.
+export { Prisma, PrismaClient } from "@prisma/client";
 
 // Service exports
 export * from "./services/bankAccountService.js";

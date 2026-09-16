@@ -1,20 +1,21 @@
 import { expect, test } from "@playwright/test";
-import { expectMessageIncludes, expectStatus } from "./helpers/assertions.js";
+import { expectMessageIncludes, expectStatus } from "../helpers/assertions.js";
 import {
   fakeJwt,
   postWebhookWithMalformedSignature,
   postWebhookWithoutSignature,
-} from "./helpers/fixtures.js";
+} from "../helpers/fixtures.js";
 
 /**
- * POST /webhook/plaid — the receiver's only ingest endpoint. Every request must
- * carry a Plaid-signed `plaid-verification` JWT; the verification middleware is
- * the security boundary this service owns, so we cover its rejection branches
- * exhaustively. A genuinely Plaid-signed happy path needs Plaid's ES256 keys and
- * is out of scope for a black-box suite (see helpers/fixtures.ts).
+ * This file: the Plaid webhook ingest endpoint — the service's only inbound
+ * write surface. Its accepted create happy-path (item creation) requires a
+ * genuinely Plaid-signed webhook (asymmetric ES256, key fetched from Plaid),
+ * which cannot be produced offline; that path needs real Plaid and is out of
+ * scope for this black-box suite. What this single service owns and can answer
+ * deterministically is the verification boundary, covered exhaustively below.
+ * Matrix rows: authn/verification (missing, malformed, wrong-alg), method.
  */
-
-test.describe("POST /webhook/plaid — verification", () => {
+test.describe("POST /webhook/plaid", () => {
   test("rejects a request missing the plaid-verification header (401)", async ({
     request,
   }) => {
@@ -37,7 +38,7 @@ test.describe("POST /webhook/plaid — verification", () => {
     await expectMessageIncludes(res, "Invalid alg");
   });
 
-  test("does not accept GET on the webhook route", async ({ request }) => {
+  test("does not accept GET on the webhook route (404)", async ({ request }) => {
     const res = await request.get("/webhook/plaid");
     expect(res.status()).toBe(404);
   });

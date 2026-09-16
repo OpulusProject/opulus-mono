@@ -1,26 +1,28 @@
 import { expect, test } from "@playwright/test";
-import { withSession } from "./helpers/client.js";
-import { expectOk, expectStatus } from "./helpers/assertions.js";
-import { createAuthedUser } from "./helpers/fixtures.js";
+import { withSession } from "../helpers/client.js";
+import { expectOk, expectStatus } from "../helpers/assertions.js";
+import { createAuthedUser } from "../helpers/fixtures.js";
 
 /**
- * GET /api/session — the canonical "who am I" endpoint used by the frontend to
- * hydrate auth state. Exercises the requireSession-style branch: valid cookie
- * returns the user; no/invalid cookie is rejected.
+ * This file: the current-session endpoint. Matrix rows: happy, authn (no
+ * session), authn (invalid session).
  */
-
 test.describe("GET /api/session", () => {
   test("returns the authenticated user for a valid session", async ({
     request,
   }) => {
-    const { cookie, user } = await createAuthedUser(request);
+    // Arrange
+    const { cookie, userId, email } = await createAuthedUser(request);
+
+    // Act
     const res = await request.get("/api/session", {
       headers: withSession(cookie),
     });
-    await expectOk(res);
 
+    // Assert
+    await expectOk(res);
     const body = await res.json();
-    expect(body.data.user).toMatchObject({ id: user.id, email: user.email });
+    expect(body.data.user).toMatchObject({ id: userId, email });
     expect(body.data.session.id).toBeTruthy();
   });
 

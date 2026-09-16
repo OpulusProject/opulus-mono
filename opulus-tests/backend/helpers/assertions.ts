@@ -27,11 +27,11 @@ export async function expectStatus(
 }
 
 /**
- * Assert the backend error envelope carries a specific machine-readable code.
+ * Assert the service's error envelope carries a specific machine-readable code.
  *
- * The @opulus/core AppError hierarchy serializes as `{ error, message, code }`
- * (see opulus-backend/src/middleware/errorHandler.ts), so the code lives at
- * `body.code`.
+ * ENVELOPE (service-specific): @opulus/core's AppError hierarchy serializes as
+ * `{ error, message, code }`, so the code lives at `body.code` (not
+ * `body.error.code`).
  */
 export async function expectErrorCode(
   res: APIResponse,

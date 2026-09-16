@@ -26,9 +26,9 @@ export async function expectStatus(
 }
 
 /**
- * The receiver's verification middleware rejects with a plain
- * `{ message: string }` envelope. Assert the message conveys the expected
- * failure reason (substring match keeps the assertion resilient to wording).
+ * The verification middleware rejects with a plain `{ message: string }`
+ * envelope. Assert the message conveys the expected reason (substring match
+ * keeps it resilient to wording tweaks).
  */
 export async function expectMessageIncludes(
   res: APIResponse,

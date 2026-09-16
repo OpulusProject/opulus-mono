@@ -2,14 +2,15 @@ import { type APIRequestContext } from "@playwright/test";
 
 /**
  * Builders for webhook requests. The receiver accepts a single POST that must
- * carry a Plaid-signed `plaid-verification` JWT whose payload hash matches the
- * body. We cannot forge Plaid's ES256 signature from a black-box test, so these
- * builders produce the requests needed to exercise the verification middleware's
- * rejection branches (missing header, malformed JWT, wrong algorithm).
+ * carry a Plaid-signed `plaid-verification` JWT (ES256) whose payload hash
+ * matches the body. Plaid signs asymmetrically and verification fetches Plaid's
+ * public key by `kid`, so a genuinely-accepted webhook can only come from Plaid
+ * itself (sandbox delivery to a public URL) — it cannot be forged offline.
  *
- * The happy path — a genuinely Plaid-signed webhook that enqueues a job — can
- * only be covered end-to-end from Plaid's sandbox or a signing harness, which is
- * out of scope for a black-box REST suite and is intentionally not asserted here.
+ * These builders therefore drive the verification middleware's rejection
+ * branches, which is the part of the create path this single service owns and
+ * can answer deterministically. The accepted create happy-path (item creation)
+ * requires real Plaid and lives outside a black-box CI suite.
  */
 
 const SAMPLE_WEBHOOK_BODY = {
@@ -19,9 +20,9 @@ const SAMPLE_WEBHOOK_BODY = {
 };
 
 /** POST the webhook with no `plaid-verification` header at all. */
-export async function postWebhookWithoutSignature(
+export function postWebhookWithoutSignature(
   request: APIRequestContext,
-): Promise<ReturnType<APIRequestContext["post"]>> {
+): ReturnType<APIRequestContext["post"]> {
   return request.post("/webhook/plaid", {
     headers: { "content-type": "application/json" },
     data: SAMPLE_WEBHOOK_BODY,
@@ -29,10 +30,10 @@ export async function postWebhookWithoutSignature(
 }
 
 /** POST the webhook with a syntactically invalid `plaid-verification` header. */
-export async function postWebhookWithMalformedSignature(
+export function postWebhookWithMalformedSignature(
   request: APIRequestContext,
   header = "not-a-jwt",
-): Promise<ReturnType<APIRequestContext["post"]>> {
+): ReturnType<APIRequestContext["post"]> {
   return request.post("/webhook/plaid", {
     headers: {
       "content-type": "application/json",

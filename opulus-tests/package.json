@@ -9,6 +9,9 @@
     "test:webhooks": "playwright test --config webhooks/playwright.config.ts",
     "test:report": "playwright show-report"
   },
+  "dependencies": {
+    "@opulus/core": "workspace:*"
+  },
   "devDependencies": {
     "@playwright/test": "^1.55.0"
   }
