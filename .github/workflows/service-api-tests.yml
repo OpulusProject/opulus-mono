@@ -1,21 +1,21 @@
-# Service regression suites, run as required status checks on every PR to main.
+# Service API test suites, run as required status checks on every PR to main.
 #
 # Two independent gates, one per HTTP service:
-#   - "Backend regression"  -> exercises @opulus/backend over REST
-#   - "Webhooks regression" -> exercises @opulus/webhooks over REST
+#   - "Backend service-api tests"  -> exercises @opulus/backend over REST
+#   - "Webhooks service-api tests" -> exercises @opulus/webhooks over REST
 #
 # Each job provisions the service's dependencies (Postgres, and Redis for the
 # webhooks receiver), boots the service exactly as the repo does, and points the
-# black-box Playwright suite at it via TEST_BASE_URL. The suites never touch the
-# database or Redis directly — provisioning lives here in the pipeline, never in
-# the tests.
+# black-box Playwright suite at it via TEST_BASE_URL. The suites read state over
+# HTTP; for no-create-endpoint resources they seed the same isolated CI database
+# via the db helper — provisioning lives here in the pipeline, never in the tests.
 #
 # Merge gating requires TWO things:
 #   1. this workflow running on pull requests, AND
 #   2. branch protection marking each job below (by name) as a required status
 #      check. A green/red run alone does not block merges.
 
-name: Regression
+name: Service API Tests
 
 on:
   pull_request:
@@ -27,11 +27,12 @@ permissions:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # Branch protection matches this job by NAME ("Backend regression"). Keep it
-  # stable — renaming silently removes the gate until protection is updated.
+  # Branch protection matches this job by NAME ("Backend service-api tests").
+  # Keep it stable — renaming silently removes the gate until protection is
+  # updated.
   # ---------------------------------------------------------------------------
-  backend-regression:
-    name: Backend regression
+  backend-service-api-tests:
+    name: Backend service-api tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -40,7 +41,7 @@ jobs:
       # The suite seeds no-create-endpoint resources (items/transactions) into
       # this same isolated CI database via the db helper; reads stay over HTTP.
       TEST_DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
-      BETTER_AUTH_SECRET: ci-regression-secret-not-for-production
+      BETTER_AUTH_SECRET: ci-service-api-tests-secret-not-for-production
       CLIENT_URL: http://localhost:5173
       NODE_ENV: test
       PORT: "8080"
@@ -66,13 +67,13 @@ jobs:
 
     steps:
       - name: Check out repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -102,14 +103,14 @@ jobs:
           echo "Backend did not become healthy in time" >&2
           exit 1
 
-      - name: Run backend regression suite
+      - name: Run backend service-api tests
         run: pnpm --filter @opulus/tests test:backend
 
   # ---------------------------------------------------------------------------
-  # Branch protection matches this job by NAME ("Webhooks regression").
+  # Branch protection matches this job by NAME ("Webhooks service-api tests").
   # ---------------------------------------------------------------------------
-  webhooks-regression:
-    name: Webhooks regression
+  webhooks-service-api-tests:
+    name: Webhooks service-api tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -150,13 +151,13 @@ jobs:
 
     steps:
       - name: Check out repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: pnpm
@@ -186,5 +187,5 @@ jobs:
           echo "Webhooks receiver did not become healthy in time" >&2
           exit 1
 
-      - name: Run webhooks regression suite
+      - name: Run webhooks service-api tests
         run: pnpm --filter @opulus/tests test:webhooks
