@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { uniqueEmail } from "../helpers/client.js";
 import { expectStatus } from "../helpers/assertions.js";
-import { TEST_PASSWORD, signUp } from "../helpers/fixtures.js";
+import { TEST_PASSWORD, signUp } from "../helpers/fixtures/index.js";
 
 /**
  * This file: the better-auth email sign-in endpoint. Matrix rows: happy,

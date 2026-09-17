@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { withSession } from "../helpers/client.js";
 import { expectOk, expectStatus } from "../helpers/assertions.js";
-import { createAuthedUser, seedItemWithAccount } from "../helpers/fixtures.js";
+import { createAuthedUser, seedItemWithAccount } from "../helpers/fixtures/index.js";
 
 /**
  * This file: the linked-items list endpoint. Items have no create endpoint —

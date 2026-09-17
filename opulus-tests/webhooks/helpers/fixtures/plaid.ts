@@ -1,8 +1,8 @@
 import { type APIRequestContext } from "@playwright/test";
 
 /**
- * Builders for webhook requests. The receiver accepts a single POST that must
- * carry a Plaid-signed `plaid-verification` JWT (ES256) whose payload hash
+ * Builders for Plaid webhook requests. The receiver accepts a single POST that
+ * must carry a Plaid-signed `plaid-verification` JWT (ES256) whose payload hash
  * matches the body. Plaid signs asymmetrically and verification fetches Plaid's
  * public key by `kid`, so a genuinely-accepted webhook can only come from Plaid
  * itself (sandbox delivery to a public URL) — it cannot be forged offline.

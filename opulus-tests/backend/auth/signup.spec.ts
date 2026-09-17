@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { extractSessionCookie, uniqueEmail, withSession } from "../helpers/client.js";
 import { expectOk } from "../helpers/assertions.js";
-import { TEST_PASSWORD, signUp } from "../helpers/fixtures.js";
+import { TEST_PASSWORD, signUp } from "../helpers/fixtures/index.js";
 
 /**
  * This file: the better-auth email sign-up endpoint. Matrix rows: happy (with a

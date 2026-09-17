@@ -4,7 +4,7 @@ import {
   fakeJwt,
   postWebhookWithMalformedSignature,
   postWebhookWithoutSignature,
-} from "../helpers/fixtures.js";
+} from "../helpers/fixtures/index.js";
 
 /**
  * This file: the Plaid webhook ingest endpoint — the service's only inbound

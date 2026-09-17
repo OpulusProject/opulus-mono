@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { withSession } from "../helpers/client.js";
 import { expectOk, expectStatus } from "../helpers/assertions.js";
-import { createAuthedUser } from "../helpers/fixtures.js";
+import { createAuthedUser } from "../helpers/fixtures/index.js";
 
 /**
  * This file: the current-session endpoint. Matrix rows: happy, authn (no

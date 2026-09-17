@@ -9,7 +9,7 @@ import {
   createAuthedUser,
   seedItemWithAccount,
   seedTransactions,
-} from "../helpers/fixtures.js";
+} from "../helpers/fixtures/index.js";
 
 /**
  * This file: the transactions list endpoint (authenticated, query-validated).
