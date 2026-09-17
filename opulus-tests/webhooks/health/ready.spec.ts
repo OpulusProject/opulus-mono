@@ -3,7 +3,7 @@ import { expectOk } from "../helpers/assertions.js";
 
 /**
  * This file: the readiness endpoint (checks database, Redis, and the queue
- * worker). Matrix rows: happy.
+ * worker).
  */
 test.describe("GET /ready", () => {
   test("reports ready with database, redis, and worker up", async ({

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { expectOk } from "../helpers/assertions.js";
 
 /**
- * This file: the API-router healthcheck endpoint. Matrix rows: happy.
+ * This file: the API-router healthcheck endpoint.
  */
 test.describe("GET /api/healthcheck", () => {
   test("reports the API as healthy", async ({ request }) => {

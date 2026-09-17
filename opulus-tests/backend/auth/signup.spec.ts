@@ -4,8 +4,7 @@ import { expectOk } from "../helpers/assertions.js";
 import { TEST_PASSWORD, signUp } from "../helpers/fixtures/index.js";
 
 /**
- * This file: the better-auth email sign-up endpoint. Matrix rows: happy (with a
- * follow-up read proving the session works), validation, boundary, conflict.
+ * This file: the better-auth email sign-up endpoint.
  */
 test.describe("POST /api/auth/sign-up/email", () => {
   test("creates an account and issues a session a follow-up read accepts", async ({

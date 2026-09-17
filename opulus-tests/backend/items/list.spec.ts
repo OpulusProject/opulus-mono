@@ -6,8 +6,7 @@ import { createAuthedUser, seedItemWithAccount } from "../helpers/fixtures/index
 /**
  * This file: the linked-items list endpoint. Items have no create endpoint —
  * they are seeded directly into the isolated test DB (helpers/db.ts) and then
- * verified over HTTP. Matrix rows: happy (empty), happy (populated),
- * authz (owner-scoped), authn.
+ * verified over HTTP.
  */
 test.describe("GET /api/items", () => {
   test("returns an empty list for a user who has linked nothing", async ({

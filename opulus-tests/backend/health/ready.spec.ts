@@ -2,8 +2,7 @@ import { expect, test } from "@playwright/test";
 import { expectOk } from "../helpers/assertions.js";
 
 /**
- * This file: the readiness endpoint (includes a DB connectivity check). Matrix
- * rows: happy.
+ * This file: the readiness endpoint (includes a DB connectivity check).
  */
 test.describe("GET /ready", () => {
   test("reports ready with a connected database", async ({ request }) => {

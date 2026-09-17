@@ -4,8 +4,7 @@ import { expectOk, expectStatus } from "../helpers/assertions.js";
 import { createAuthedUser } from "../helpers/fixtures/index.js";
 
 /**
- * This file: the current-session endpoint. Matrix rows: happy, authn (no
- * session), authn (invalid session).
+ * This file: the current-session endpoint.
  */
 test.describe("GET /api/session", () => {
   test("returns the authenticated user for a valid session", async ({

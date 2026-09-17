@@ -6,8 +6,7 @@ import { createAuthedUser } from "../helpers/fixtures/index.js";
 /**
  * This file: the Plaid transactions-refresh endpoint. The happy path triggers an
  * external Plaid call, so this suite covers the service-owned boundaries that run
- * before it: authentication gating and request-body validation. Matrix rows:
- * authn, validation.
+ * before it: authentication gating and request-body validation.
  */
 test.describe("POST /api/plaid/transactions/refresh", () => {
   test("requires authentication (401)", async ({ request }) => {

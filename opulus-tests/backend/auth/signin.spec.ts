@@ -4,8 +4,7 @@ import { expectStatus } from "../helpers/assertions.js";
 import { TEST_PASSWORD, signUp } from "../helpers/fixtures/index.js";
 
 /**
- * This file: the better-auth email sign-in endpoint. Matrix rows: happy,
- * authn (wrong password), authn (unknown account).
+ * This file: the better-auth email sign-in endpoint.
  */
 test.describe("POST /api/auth/sign-in/email", () => {
   test("authenticates a registered user and returns a session", async ({

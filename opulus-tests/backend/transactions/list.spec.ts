@@ -14,9 +14,7 @@ import {
 /**
  * This file: the transactions list endpoint (authenticated, query-validated).
  * Transactions have no create endpoint — they are seeded into the isolated test
- * DB (helpers/db.ts) and verified over HTTP. Matrix rows: happy (empty),
- * happy (populated + pagination), validation (limit over max), validation
- * (non-positive page), authn.
+ * DB (helpers/db.ts) and verified over HTTP.
  */
 test.describe("GET /api/transactions", () => {
   test("returns an empty, paginated list for a fresh user", async ({

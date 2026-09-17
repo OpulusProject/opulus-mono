@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { expectOk } from "../helpers/assertions.js";
 
 /**
- * This file: the liveness endpoint. Matrix rows: happy.
+ * This file: the liveness endpoint.
  */
 test.describe("GET /health", () => {
   test("reports the receiver as ok", async ({ request }) => {
