@@ -17,6 +17,11 @@ import {
  * DB (helpers/db.ts) and verified over HTTP.
  */
 test.describe("GET /api/transactions", () => {
+  test("requires authentication (401)", async ({ request }) => {
+    const res = await request.get("/api/transactions");
+    await expectStatus(res, 401);
+  });
+
   test("returns an empty, paginated list for a fresh user", async ({
     request,
   }) => {
@@ -79,10 +84,5 @@ test.describe("GET /api/transactions", () => {
       headers: withSession(cookie),
     });
     await expectValidationError(res);
-  });
-
-  test("requires authentication (401)", async ({ request }) => {
-    const res = await request.get("/api/transactions");
-    await expectStatus(res, 401);
   });
 });

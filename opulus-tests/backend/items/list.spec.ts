@@ -9,6 +9,11 @@ import { createAuthedUser, seedItemWithAccount } from "../helpers/fixtures/index
  * verified over HTTP.
  */
 test.describe("GET /api/items", () => {
+  test("requires authentication (401)", async ({ request }) => {
+    const res = await request.get("/api/items");
+    await expectStatus(res, 401);
+  });
+
   test("returns an empty list for a user who has linked nothing", async ({
     request,
   }) => {
@@ -72,10 +77,5 @@ test.describe("GET /api/items", () => {
     );
     expect(ids).toContain(aliceItem.itemId);
     expect(ids).not.toContain(bobItem.itemId);
-  });
-
-  test("requires authentication (401)", async ({ request }) => {
-    const res = await request.get("/api/items");
-    await expectStatus(res, 401);
   });
 });
