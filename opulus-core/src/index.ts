@@ -6,6 +6,7 @@ export {
   type RemovedTransaction,
 } from "./client/plaid.js";
 export { default as prisma } from "./client/prisma.js";
+export { Prisma, PrismaClient } from "@prisma/client";
 
 // Service exports
 export * from "./services/bankAccountService.js";
