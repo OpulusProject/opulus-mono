@@ -1,6 +1,13 @@
-import { Avatar, AvatarFallback, Card, CardContent, CardHeader } from '@gems';
 import { Plus } from 'lucide-react';
 import React from 'react';
+
+import {
+  Avatar,
+  AvatarFallback,
+  Card,
+  CardContent,
+  CardHeader,
+} from '@/components/ui';
 
 interface AddAccountCardProps {
   onAddAccount: () => void;

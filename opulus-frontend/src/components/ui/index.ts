@@ -3,10 +3,10 @@
 // ============================================================================
 
 // Avatar component
-export { Avatar, AvatarFallback, AvatarImage } from './components/ui/avatar';
+export { Avatar, AvatarFallback, AvatarImage } from './avatar';
 
 // Badge component
-export { Badge, badgeVariants } from './components/ui/badge';
+export { Badge, badgeVariants } from './badge';
 
 // Breadcrumb components
 export {
@@ -17,10 +17,10 @@ export {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from './components/ui/breadcrumb';
+} from './breadcrumb';
 
 // Button component
-export { Button, buttonVariants } from './components/ui/button';
+export { Button, buttonVariants } from './button';
 
 // Card components
 export {
@@ -31,7 +31,7 @@ export {
   CardFooter,
   CardHeader,
   CardTitle,
-} from './components/ui/card';
+} from './card';
 
 // Chart components
 export {
@@ -42,17 +42,17 @@ export {
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from './components/ui/chart';
+} from './chart';
 
 // Checkbox component
-export { Checkbox } from './components/ui/checkbox';
+export { Checkbox } from './checkbox';
 
 // Collapsible components
 export {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from './components/ui/collapsible';
+} from './collapsible';
 
 // Drawer components
 export {
@@ -66,7 +66,7 @@ export {
   DrawerPortal,
   DrawerTitle,
   DrawerTrigger,
-} from './components/ui/drawer';
+} from './drawer';
 
 // Dropdown Menu components
 export {
@@ -85,7 +85,7 @@ export {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from './components/ui/dropdown-menu';
+} from './dropdown-menu';
 
 // Empty component
 export {
@@ -95,10 +95,10 @@ export {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from './components/ui/empty';
+} from './empty';
 
 // Input component
-export { Input } from './components/ui/input';
+export { Input } from './input';
 
 // Input OTP components
 export {
@@ -106,7 +106,7 @@ export {
   InputOTPGroup,
   InputOTPSlot,
   InputOTPSeparator,
-} from './components/ui/input-otp';
+} from './input-otp';
 
 // Field components
 export {
@@ -114,7 +114,7 @@ export {
   FieldDescription,
   FieldGroup,
   FieldLabel,
-} from './components/ui/field';
+} from './field';
 
 // Input Group components
 export {
@@ -124,10 +124,10 @@ export {
   InputGroupInput,
   InputGroupText,
   InputGroupTextarea,
-} from './components/ui/input-group';
+} from './input-group';
 
 // Label component
-export { Label } from './components/ui/label';
+export { Label } from './label';
 
 // Select components
 export {
@@ -141,10 +141,10 @@ export {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from './components/ui/select';
+} from './select';
 
 // Separator component
-export { Separator } from './components/ui/separator';
+export { Separator } from './separator';
 
 // Sheet components
 export {
@@ -156,7 +156,7 @@ export {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from './components/ui/sheet';
+} from './sheet';
 
 // Sidebar components
 export {
@@ -184,13 +184,13 @@ export {
   SidebarSeparator,
   SidebarTrigger,
   useSidebar,
-} from './components/ui/sidebar';
+} from './sidebar';
 
 // Skeleton component
-export { Skeleton } from './components/ui/skeleton';
+export { Skeleton } from './skeleton';
 
 // Spinner component
-export { Spinner } from './components/ui/spinner';
+export { Spinner } from './spinner';
 
 // Table components
 export {
@@ -202,16 +202,16 @@ export {
   TableHead,
   TableHeader,
   TableRow,
-} from './components/ui/table';
+} from './table';
 
 // Tabs components
-export { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
+export { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs';
 
 // Toggle components
-export { Toggle, toggleVariants } from './components/ui/toggle';
+export { Toggle, toggleVariants } from './toggle';
 
 // Toggle Group components
-export { ToggleGroup, ToggleGroupItem } from './components/ui/toggle-group';
+export { ToggleGroup, ToggleGroupItem } from './toggle-group';
 
 // Tooltip components
 export {
@@ -219,16 +219,16 @@ export {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from './components/ui/tooltip';
+} from './tooltip';
 
 // ============================================================================
 // Utilities
 // ============================================================================
 // Class name utility
-export { cn } from './lib/utils';
+export { cn } from '../../lib/utils';
 
 // ============================================================================
 // Hooks
 // ============================================================================
 // Mobile detection hook
-export { useIsMobile } from './hooks/use-mobile';
+export { useIsMobile } from '../../hooks/use-mobile';

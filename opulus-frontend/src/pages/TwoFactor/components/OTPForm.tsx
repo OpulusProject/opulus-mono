@@ -1,3 +1,6 @@
+import { useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
+
 import {
   Button,
   Card,
@@ -12,10 +15,7 @@ import {
   InputOTP,
   InputOTPGroup,
   InputOTPSlot,
-} from '@gems';
-import { useNavigate } from '@tanstack/react-router';
-import { useState } from 'react';
-
+} from '@/components/ui';
 import { authClient } from '@/lib/auth/client';
 
 export function OTPForm() {

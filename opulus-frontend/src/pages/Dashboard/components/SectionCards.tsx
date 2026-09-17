@@ -1,6 +1,6 @@
-import { Card, CardDescription, CardHeader, CardTitle } from '@gems';
 import * as React from 'react';
 
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
 import { useTransactions } from '@/hooks/transactions/useTransactions';
 import {
@@ -75,7 +75,7 @@ export function SectionCards() {
     if (!itemsData?.items) return null;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
     const result = calculateCreditUtilization(itemsData.items);
-    return result as number | null;
+    return result;
   }, [itemsData]);
 
   // Format values

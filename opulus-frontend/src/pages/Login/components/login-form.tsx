@@ -1,10 +1,10 @@
-import { Button, Input, Label, cn } from '@gems';
 import { LoginRequest } from '@opulus/core';
 import { useNavigate } from '@tanstack/react-router';
 import { Gem } from 'lucide-react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { Button, Input, Label, cn } from '@/components/ui';
 import { authClient } from '@/lib/auth/client';
 
 /**

@@ -1,3 +1,6 @@
+import { ItemPublicDTO } from '@opulus/core';
+import React from 'react';
+
 import {
   Avatar,
   AvatarFallback,
@@ -6,10 +9,7 @@ import {
   Card,
   CardContent,
   CardHeader,
-} from '@gems';
-import { ItemPublicDTO } from '@opulus/core';
-import React from 'react';
-
+} from '@/components/ui';
 import { calculateTotalBalance } from '@/utils/accounts';
 
 interface ItemCardProps {

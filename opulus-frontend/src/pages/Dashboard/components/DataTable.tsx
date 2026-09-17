@@ -1,22 +1,5 @@
 'use client';
 
-import {
-  Badge,
-  Button,
-  Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Spinner,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@gems';
 import type { Transaction } from '@opulus/core';
 import {
   ColumnDef,
@@ -36,6 +19,23 @@ import {
 } from 'lucide-react';
 import * as React from 'react';
 
+import {
+  Badge,
+  Button,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Spinner,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui';
 import { useTransactions } from '@/hooks/transactions/useTransactions';
 
 export function DataTable() {
@@ -297,22 +297,22 @@ const columns: ColumnDef<Transaction>[] = [
     cell: ({ row }) => {
       // Plaid dates are date-only (YYYY-MM-DD), parse as local date to avoid timezone issues
       const dateString = row.original.date;
-      
+
       // Parse date string and create a local date (not UTC)
       // If it's an ISO string with time component, extract just the date part
       const dateOnly = dateString.split('T')[0]; // Get YYYY-MM-DD part
       const [year, month, day] = dateOnly.split('-').map(Number);
-      
+
       // Create date in local timezone (not UTC) to avoid timezone conversion issues
       const date = new Date(year, month - 1, day);
-      
+
       // Format date only since Plaid doesn't provide transaction times
       const formattedDate = new Intl.DateTimeFormat('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
       }).format(date);
-      
+
       return <div>{formattedDate}</div>;
     },
   },

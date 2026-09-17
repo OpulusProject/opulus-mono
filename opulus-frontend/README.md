@@ -4,7 +4,7 @@ React frontend application for Opulus financial management platform.
 
 ## Overview
 
-Modern React application built with Vite, TanStack Router, and TanStack Query. Uses the `@opulus/gems` component library and communicates with the backend API.
+Modern React application built with Vite, TanStack Router, and TanStack Query. UI is built with shadcn/ui components (in `src/components/ui`) and communicates with the backend API.
 
 ## Prerequisites
 
@@ -23,8 +23,6 @@ pnpm dev:frontend
 
 This runs:
 - Vite dev server with HMR
-- Gems package in watch mode (auto-rebuilds)
-- Frontend watches for changes in gems `dist/` folder
 
 The app will be available at: **http://localhost:5173**
 
@@ -112,30 +110,28 @@ Custom hooks for API calls:
 
 ## Styling
 
-- **Tailwind CSS** - Utility-first CSS framework
-- **Radix UI** - Accessible component primitives (via `@opulus/gems`)
+- **Tailwind CSS v4** - Utility-first CSS framework (theme in `src/index.css`)
+- **Radix UI** - Accessible component primitives
 - **CSS Variables** - Theming support
 
 ## Component Library
 
-Uses `@opulus/gems` for UI components:
-- Import components: `import { Button, Card } from '@opulus/gems'`
-- Import styles: `import '@opulus/gems/styles'`
-- Components auto-rebuild in watch mode
+UI primitives are shadcn/ui components colocated in `src/components/ui`:
+- Import components: `import { Button, Card } from '@/components/ui'`
+- Add new components with the shadcn CLI (see `components.json`)
 
 ## Development Workflow
 
 1. **Make changes** to frontend code
 2. **Vite HMR** automatically updates browser
-3. **Gems changes** auto-rebuild and hot-reload
-4. **No manual rebuilds** needed
+3. **No manual rebuilds** needed
 
 ## Troubleshooting
 
 ### Build Errors
 
 - **Type errors**: Run `pnpm type-check` to see TypeScript errors
-- **Import errors**: Ensure `@opulus/core` and `@opulus/gems` are built
+- **Import errors**: Ensure `@opulus/core` is built
 - **Missing types**: Run `pnpm prisma:generate` in core package
 
 ### Runtime Errors
@@ -147,7 +143,6 @@ Uses `@opulus/gems` for UI components:
 ## Related Documentation
 
 - [Main README](../README.md) - Repo-wide setup and prerequisites
-- [Gems Package](../opulus-gems/README.md) - Component library documentation
 - [Backend API](../opulus-backend/README.md) - API documentation
 
 

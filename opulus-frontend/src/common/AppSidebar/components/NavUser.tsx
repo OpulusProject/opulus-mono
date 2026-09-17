@@ -1,5 +1,15 @@
 'use client';
 
+import { useNavigate } from '@tanstack/react-router';
+import {
+  Bell,
+  CreditCard,
+  LogOut,
+  MoreVertical,
+  UserCircle,
+} from 'lucide-react';
+import { useState } from 'react';
+
 import {
   Avatar,
   AvatarFallback,
@@ -15,17 +25,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from '@gems';
-import { useNavigate } from '@tanstack/react-router';
-import {
-  Bell,
-  CreditCard,
-  LogOut,
-  MoreVertical,
-  UserCircle,
-} from 'lucide-react';
-import { useState } from 'react';
-
+} from '@/components/ui';
 import { authClient } from '@/lib/auth/client';
 
 export function NavUser({

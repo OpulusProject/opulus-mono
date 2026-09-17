@@ -1,3 +1,6 @@
+import { Landmark, Plus } from 'lucide-react';
+import React from 'react';
+
 import {
   Button,
   Empty,
@@ -6,9 +9,7 @@ import {
   EmptyHeader,
   EmptyMedia,
   EmptyTitle,
-} from '@gems';
-import { Landmark, Plus } from 'lucide-react';
-import React from 'react';
+} from '@/components/ui';
 
 interface EmptyAccountsViewProps {
   onAddAccount: () => void;
