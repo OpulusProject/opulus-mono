@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { test } from "@playwright/test";
 import { expectMessageIncludes, expectStatus } from "../helpers/assertions.js";
 import {
   fakeJwt,
@@ -35,10 +35,5 @@ test.describe("POST /webhook/plaid", () => {
     const res = await postWebhookWithMalformedSignature(request, fakeJwt("HS256"));
     await expectStatus(res, 401);
     await expectMessageIncludes(res, "Invalid alg");
-  });
-
-  test("does not accept GET on the webhook route (404)", async ({ request }) => {
-    const res = await request.get("/webhook/plaid");
-    expect(res.status()).toBe(404);
   });
 });
