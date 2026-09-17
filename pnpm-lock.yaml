@@ -475,6 +475,9 @@ importers:
       '@playwright/test':
         specifier: ^1.55.0
         version: 1.63.0
+      otpauth:
+        specifier: ^9.5.2
+        version: 9.5.2
 
   opulus-webhooks:
     dependencies:
@@ -1433,6 +1436,10 @@ packages:
 
   '@noble/hashes@2.0.1':
     resolution: {integrity: sha512-XlOlEbQcE9fmuXxrVTXCTlG2nlRXa9Rj3rr5Ue/+tX+nmkgbX720YHh0VR3hBF9xDvwnb8D2shVGOwNx+ulArw==}
+    engines: {node: '>= 20.19.0'}
+
+  '@noble/hashes@2.4.0':
+    resolution: {integrity: sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==}
     engines: {node: '>= 20.19.0'}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -5063,6 +5070,9 @@ packages:
     resolution: {integrity: sha512-cVyNEeiDxX/zA6gdK1QS2rr3TK1VymIkT0LagnAk4f6eE0IC0bo3BeUkMzm3q3GnCJzYC+6lfuMpBE0Cequ7Vg==}
     hasBin: true
 
+  otpauth@9.5.2:
+    resolution: {integrity: sha512-GQ5emWR/x1tcExT62IBT0UfO95wZzJZyxYOJOGVeQF47SYEN9vmh0vISvDZaNMuFJRG+IaWCKtfm+t9Bfoal6w==}
+
   own-keys@1.0.1:
     resolution: {integrity: sha512-qFOyK5PjiWZd+QQIh+1jhdb9LpxTF0qs7Pm8o5QHYZ0M3vKqSqzsZaEB6oWlxZ+q2sJBMI/Ktgd2N5ZwQoRHfg==}
     engines: {node: '>= 0.4'}
@@ -7094,6 +7104,8 @@ snapshots:
   '@noble/ciphers@2.0.1': {}
 
   '@noble/hashes@2.0.1': {}
+
+  '@noble/hashes@2.4.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:
@@ -10991,6 +11003,10 @@ snapshots:
       editorconfig: 0.15.3
       ts-morph: 15.1.0
       tsconfig: 7.0.0
+
+  otpauth@9.5.2:
+    dependencies:
+      '@noble/hashes': 2.4.0
 
   own-keys@1.0.1:
     dependencies:
