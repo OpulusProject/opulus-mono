@@ -1,0 +1,106 @@
+# Plaid integration suite — REAL calls to Plaid Sandbox.
+#
+# This is deliberately NOT a merge gate. It exercises the happy paths of the
+# service's Plaid-proxying endpoints against the live Sandbox environment, so it
+# depends on an external provider and can be occasionally flaky. It therefore
+# runs on a schedule and on demand, never on pull_request, and must not be added
+# to branch protection as a required check.
+#
+# Requires two repo secrets holding Plaid SANDBOX credentials:
+#   - PLAID_SANDBOX_CLIENT_ID
+#   - PLAID_SANDBOX_SECRET
+# (GitHub does not expose secrets to fork PRs, which is another reason this is a
+# scheduled/dispatch workflow rather than a PR gate.)
+
+name: Integration (Plaid Sandbox)
+
+on:
+  schedule:
+    # 07:00 UTC daily
+    - cron: "0 7 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  plaid-sandbox:
+    name: Plaid Sandbox integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      BETTER_AUTH_SECRET: ci-integration-secret-not-for-production
+      CLIENT_URL: http://localhost:5173
+      NODE_ENV: test
+      PORT: "8080"
+      # Real Plaid Sandbox credentials — the backend makes genuine calls.
+      PLAID_CLIENT_ID: ${{ secrets.PLAID_SANDBOX_CLIENT_ID }}
+      PLAID_SECRET: ${{ secrets.PLAID_SANDBOX_SECRET }}
+      PLAID_ENV: sandbox
+      TEST_BASE_URL: http://localhost:8080
+
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app_dev
+          POSTGRES_DB: app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v7
+
+      - name: Fail fast if Plaid Sandbox secrets are missing
+        run: |
+          if [ -z "$PLAID_CLIENT_ID" ] || [ -z "$PLAID_SECRET" ]; then
+            echo "PLAID_SANDBOX_CLIENT_ID / PLAID_SANDBOX_SECRET are not configured." >&2
+            echo "Add them as repository secrets to run the Plaid integration suite." >&2
+            exit 1
+          fi
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @opulus/core prisma:generate
+
+      - name: Build core package
+        run: pnpm --filter @opulus/core build
+
+      - name: Apply database migrations
+        run: pnpm --filter @opulus/core exec prisma migrate deploy --schema=./prisma/schema.prisma
+
+      - name: Boot backend service
+        run: |
+          pnpm --filter @opulus/backend exec tsx src/server.ts &
+          echo $! > /tmp/backend.pid
+          for i in $(seq 1 60); do
+            if curl -sf "$TEST_BASE_URL/health" >/dev/null; then
+              echo "Backend is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Backend did not become healthy in time" >&2
+          exit 1
+
+      - name: Run Plaid integration suite
+        run: pnpm --filter @opulus/tests test:integration

@@ -7,6 +7,7 @@
   "scripts": {
     "test:backend": "playwright test --config backend/playwright.config.ts",
     "test:webhooks": "playwright test --config webhooks/playwright.config.ts",
+    "test:integration": "playwright test --config integration/playwright.config.ts",
     "test:report": "playwright show-report"
   },
   "dependencies": {
