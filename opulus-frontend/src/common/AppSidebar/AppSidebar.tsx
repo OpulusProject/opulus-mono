@@ -1,14 +1,5 @@
 'use client';
 
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from '@gems';
 import { Link } from '@tanstack/react-router';
 import {
   GemIcon,
@@ -20,6 +11,15 @@ import {
 } from 'lucide-react';
 import * as React from 'react';
 
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+} from '@/components/ui';
 import { useSession } from '@/hooks/auth/useSession';
 
 import { NavMain, NavSecondary, NavUser } from './components';

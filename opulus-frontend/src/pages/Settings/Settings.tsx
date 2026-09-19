@@ -1,3 +1,7 @@
+import { Link2, Lock, Settings as SettingsIcon } from 'lucide-react';
+import * as React from 'react';
+
+import { AppLayout } from '@/common/AppLayout';
 import {
   SidebarContent,
   SidebarGroup,
@@ -5,11 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from '@gems';
-import { Link2, Lock, Settings as SettingsIcon } from 'lucide-react';
-import * as React from 'react';
-
-import { AppLayout } from '@/common/AppLayout';
+} from '@/components/ui';
 
 const settingsNavItems = [
   {

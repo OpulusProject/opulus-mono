@@ -1,5 +1,9 @@
 'use client';
 
+import type { Transaction } from '@opulus/core';
+import * as React from 'react';
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
+
 import {
   Card,
   CardContent,
@@ -15,11 +19,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@gems';
-import type { Transaction } from '@opulus/core';
-import * as React from 'react';
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
-
+} from '@/components/ui';
 import { useTransactions } from '@/hooks/transactions/useTransactions';
 
 const chartConfig = {

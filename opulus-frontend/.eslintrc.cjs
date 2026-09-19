@@ -93,7 +93,6 @@ module.exports = {
         map: [
           ['@', path.resolve(__dirname, './src')],
           ['@opulus/core', path.resolve(__dirname, '../opulus-core/src/index.ts')],
-          ['@gems', path.resolve(__dirname, '../opulus-gems/src/index.ts')],
         ],
         extensions: ['.ts', '.tsx', '.js', '.jsx'],
       },

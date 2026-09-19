@@ -1,4 +1,4 @@
-import { Separator, SidebarTrigger } from '@gems';
+import { Separator, SidebarTrigger } from '@/components/ui';
 
 interface SiteHeaderProps {
   title?: string;

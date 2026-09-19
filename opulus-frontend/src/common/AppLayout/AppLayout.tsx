@@ -1,8 +1,8 @@
-import { SidebarInset, SidebarProvider } from '@gems';
 import * as React from 'react';
 
 import { SiteHeader } from '@/common/AppLayout/components/SiteHeader';
 import { AppSidebar } from '@/common/AppSidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui';
 
 interface AppLayoutProps {
   children: React.ReactNode;

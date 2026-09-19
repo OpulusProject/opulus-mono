@@ -1,5 +1,8 @@
 'use client';
 
+import * as React from 'react';
+import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
+
 import {
   Card,
   CardAction,
@@ -19,9 +22,7 @@ import {
   ToggleGroup,
   ToggleGroupItem,
   useIsMobile,
-} from '@gems';
-import * as React from 'react';
-import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
+} from '@/components/ui';
 
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile();

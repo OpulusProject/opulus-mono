@@ -16,7 +16,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 # Copy package.json files for all workspaces
 COPY opulus-core/package.json ./opulus-core/
-COPY opulus-gems/package.json ./opulus-gems/
 COPY opulus-frontend/package.json ./opulus-frontend/
 
 # Install dependencies
@@ -24,7 +23,6 @@ RUN pnpm install --frozen-lockfile
 
 # Copy source code
 COPY opulus-core ./opulus-core
-COPY opulus-gems ./opulus-gems
 COPY opulus-frontend ./opulus-frontend
 
 # Generate Prisma client first (needed for opulus-core build)
@@ -32,7 +30,6 @@ RUN pnpm --filter @opulus/core prisma:generate
 
 # Build dependencies first
 RUN pnpm --filter @opulus/core build
-RUN pnpm --filter @opulus/gems build
 
 # Build frontend
 RUN pnpm --filter @opulus/frontend build

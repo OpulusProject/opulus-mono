@@ -29,26 +29,27 @@ frontend.
 ├── opulus-core/                 Shared Prisma, Plaid client, services, DTOs, config
 │   ├── prisma/                  schema and migrations
 │   └── src/services/            item, transaction, Plaid, demo services
-├── opulus-gems/                 Shared Radix/Tailwind component library
 ├── opulus-webhooks/             Plaid webhook receiver + Redis/BullMQ worker
 ├── docs/                        Notes on observability and privacy
 ├── docker-compose.yml           Local Postgres + Redis
 ├── package.json                 pnpm workspace orchestration
-└── pnpm-workspace.yaml          Declares the five workspace packages
+└── pnpm-workspace.yaml          Declares the workspace packages
 ```
 
 ## Stack
 
-| Layer      | Choice                                      |
-| ---------- | ------------------------------------------- |
-| Frontend   | React · Vite · TanStack Router · TanStack Query |
-| UI         | Tailwind CSS · Radix UI · shared `@opulus/gems` package |
-| Backend    | Express · Better Auth · Prisma              |
-| Integrations | Plaid sandbox · Plaid webhooks           |
-| Storage    | PostgreSQL · Redis for webhook jobs         |
-| Queueing   | BullMQ                                      |
-| Tooling    | pnpm workspaces · TypeScript · tsup         |
-| API testing | Bruno collections                          |
+
+| Layer        | Choice                                                  |
+| ------------ | ------------------------------------------------------- |
+| Frontend     | React · Vite · TanStack Router · TanStack Query         |
+| UI           | Tailwind CSS · Radix UI · shadcn/ui components           |
+| Backend      | Express · Better Auth · Prisma                          |
+| Integrations | Plaid sandbox · Plaid webhooks                          |
+| Storage      | PostgreSQL · Redis for webhook jobs                     |
+| Queueing     | BullMQ                                                  |
+| Tooling      | pnpm workspaces · TypeScript · tsup                     |
+| API testing  | Bruno collections                                       |
+
 
 ## Public Repo Notes
 
@@ -57,7 +58,7 @@ things are intentionally scoped that way:
 
 - Plaid should be used in sandbox mode for local development.
 - Transaction privacy work is documented in `docs/TRANSACTION_PRIVACY.md`, but
-  this repo should not be treated as production-ready financial infrastructure.
+this repo should not be treated as production-ready financial infrastructure.
 - Local `.env` files are ignored. Use `.env.example` as the public template.
 
 ## Local Development
@@ -96,7 +97,7 @@ From the repo root:
 
 ```bash
 pnpm dev:backend      # API on http://localhost:8080, core in watch mode
-pnpm dev:frontend     # frontend on http://localhost:5173, gems in watch mode
+pnpm dev:frontend     # frontend on http://localhost:5173
 pnpm dev:webhooks     # webhook receiver on http://localhost:8081, core in watch mode
 ```
 
@@ -107,19 +108,21 @@ also run package scripts directly from each workspace.
 
 Run these from the repo root unless noted.
 
-| Command                 | What                                      |
-| ----------------------- | ----------------------------------------- |
-| `pnpm install`          | Install all workspace dependencies        |
-| `pnpm dev:frontend`     | Run frontend + gems watch mode            |
-| `pnpm dev:backend`      | Run backend + core watch mode             |
-| `pnpm dev:webhooks`     | Run webhook service + core watch mode     |
-| `pnpm build`            | Build core, then all workspace packages   |
-| `pnpm lint`             | Run lint scripts across workspaces        |
-| `pnpm format`           | Run formatting across workspaces          |
-| `pnpm type-check`       | Run TypeScript checks across workspaces   |
-| `pnpm prisma:generate`  | Generate Prisma client via `@opulus/core` |
-| `pnpm prisma:migrate`   | Apply local Prisma migrations             |
-| `pnpm prisma:studio`    | Open Prisma Studio                        |
+
+| Command                | What                                      |
+| ---------------------- | ----------------------------------------- |
+| `pnpm install`         | Install all workspace dependencies        |
+| `pnpm dev:frontend`    | Run the frontend dev server               |
+| `pnpm dev:backend`     | Run backend + core watch mode             |
+| `pnpm dev:webhooks`    | Run webhook service + core watch mode     |
+| `pnpm build`           | Build core, then all workspace packages   |
+| `pnpm lint`            | Run lint scripts across workspaces        |
+| `pnpm format`          | Run formatting across workspaces          |
+| `pnpm type-check`      | Run TypeScript checks across workspaces   |
+| `pnpm prisma:generate` | Generate Prisma client via `@opulus/core` |
+| `pnpm prisma:migrate`  | Apply local Prisma migrations             |
+| `pnpm prisma:studio`   | Open Prisma Studio                        |
+
 
 ## Architecture
 
@@ -146,34 +149,36 @@ and a separate worker process for heavier sync work.
 ### Shared package boundaries
 
 - `@opulus/core` owns Prisma, external clients, business services, config, and
-  DTOs shared between apps.
-- `@opulus/gems` owns reusable UI primitives and styles.
-- App packages consume those shared packages instead of duplicating contracts.
+DTOs shared between apps.
+- UI primitives (shadcn/ui) live in `opulus-frontend/src/components/ui`.
+- App packages consume `@opulus/core` instead of duplicating contracts.
 
 ## Environment
 
 Copy `.env.example` to `.env` and fill in local values.
 
-| Var                    | Default / Example                                      | Notes |
-| ---------------------- | ------------------------------------------------------ | ----- |
-| `DATABASE_URL`         | `postgresql://postgres:password@localhost:5432/opulus?schema=public` | Local Postgres URL |
-| `REDIS_HOST`           | `localhost`                                            | Webhook queue Redis host |
-| `REDIS_PORT`           | `6379`                                                 | Webhook queue Redis port |
-| `BETTER_AUTH_SECRET`   | _none_                                                 | Generate with `openssl rand -base64 32` |
-| `BETTER_AUTH_BASE_URL` | `http://localhost:8080`                                | Backend auth base URL |
-| `PLAID_CLIENT_ID`      | _sandbox client id_                                    | Plaid sandbox credential |
-| `PLAID_SECRET`         | _sandbox secret_                                       | Plaid sandbox credential |
-| `PLAID_ENV`            | `sandbox`                                              | Keep public/demo work in sandbox |
-| `PLAID_WEBHOOK_URL`    | _blank_                                                | Public tunnel URL for local webhook tests |
-| `CLIENT_URL`           | `http://localhost:5173`                                | CORS origin for frontend |
-| `PORT`                 | `8080`                                                 | Backend API port |
-| `WEBHOOK_PORT`         | `8081`                                                 | Webhook receiver port |
+
+| Var                    | Default / Example                                                    | Notes                                     |
+| ---------------------- | -------------------------------------------------------------------- | ----------------------------------------- |
+| `DATABASE_URL`         | `postgresql://postgres:password@localhost:5432/opulus?schema=public` | Local Postgres URL                        |
+| `REDIS_HOST`           | `localhost`                                                          | Webhook queue Redis host                  |
+| `REDIS_PORT`           | `6379`                                                               | Webhook queue Redis port                  |
+| `BETTER_AUTH_SECRET`   | *none*                                                               | Generate with `openssl rand -base64 32`   |
+| `BETTER_AUTH_BASE_URL` | `http://localhost:8080`                                              | Backend auth base URL                     |
+| `PLAID_CLIENT_ID`      | *sandbox client id*                                                  | Plaid sandbox credential                  |
+| `PLAID_SECRET`         | *sandbox secret*                                                     | Plaid sandbox credential                  |
+| `PLAID_ENV`            | `sandbox`                                                            | Keep public/demo work in sandbox          |
+| `PLAID_WEBHOOK_URL`    | *blank*                                                              | Public tunnel URL for local webhook tests |
+| `CLIENT_URL`           | `http://localhost:5173`                                              | CORS origin for frontend                  |
+| `PORT`                 | `8080`                                                               | Backend API port                          |
+| `WEBHOOK_PORT`         | `8081`                                                               | Webhook receiver port                     |
+
+
 ## Service Documentation
 
 - [Backend](./opulus-backend/README.md) - Express API, auth, endpoints, Bruno testing
 - [Frontend](./opulus-frontend/README.md) - React app, routing, query hooks, UI integration
 - [Webhooks](./opulus-webhooks/README.md) - Plaid webhook receiver, queueing, local tunnel setup
 - [Core](./opulus-core/README.md) - Shared services, Prisma, DTOs, Plaid client
-- [Gems](./opulus-gems/README.md) - Shared component library and Storybook notes
 - [Docs](./docs/README.md) - Observability and transaction privacy notes
 
