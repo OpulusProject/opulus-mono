@@ -83,9 +83,33 @@ export async function createItemHandler(event: PlaidWebhookEvent) {
       institution
     );
 
-    // Create item and accounts in a transaction
-    // If any part fails, the entire transaction rolls back
+    // Create item and accounts in a transaction.
+    // If any part fails, the entire transaction rolls back.
+    //
+    // Idempotency: Plaid may re-deliver ITEM_ADD_RESULT for an item we already
+    // created. `plaidItemId` is unique, so a plain create would throw P2002 and
+    // exhaust retries into the failed set. Instead, short-circuit if the item
+    // already exists (its accounts were created in the original successful run).
     await prisma.$transaction(async (tx) => {
+      const existingItem = await tx.item.findUnique({
+        where: { plaidItemId: itemData.plaidItemId },
+      });
+
+      if (existingItem) {
+        logger.info(
+          {
+            event: {
+              webhook_type: event.webhook_type,
+              webhook_code: event.webhook_code,
+              item_id: event.item_id,
+            },
+            plaid_item_id: itemData.plaidItemId,
+          },
+          "Item already exists, skipping creation (idempotent replay)"
+        );
+        return existingItem;
+      }
+
       // Create the item first
       const createdItem = await tx.item.create({ data: itemData });
 
