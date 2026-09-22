@@ -1,4 +1,4 @@
-import { logger } from "@opulus/core";
+import { Prisma, logger, prisma } from "@opulus/core";
 import { Queue, QueueEvents, Worker } from "bullmq";
 import type { PlaidWebhookEvent } from "../types/plaid/webhookSchema.js";
 
@@ -166,7 +166,62 @@ export function createWebhookWorker(handlers: {
     }
   );
 
+  // Dead-letter terminal failures to Postgres so they survive Redis retention
+  // and can be inspected/replayed. Fires on every failed attempt, so we only
+  // persist once all retries are exhausted.
+  worker.on("failed", (job, err) => {
+    if (!job) return;
+    const maxAttempts = job.opts.attempts ?? 3;
+    if (job.attemptsMade < maxAttempts) return; // not terminal yet
+
+    void deadLetterJob(job.id, job.data, err, job.attemptsMade);
+  });
+
   return worker;
+}
+
+/**
+ * Persist a permanently-failed webhook job to the dead-letter table.
+ * Best-effort: a DLQ write failure is logged but never rethrown.
+ */
+async function deadLetterJob(
+  jobId: string | undefined,
+  event: PlaidWebhookEvent,
+  err: Error,
+  attempts: number
+): Promise<void> {
+  try {
+    await prisma.webhookDeadLetter.create({
+      data: {
+        jobId: jobId ?? null,
+        webhookType: event.webhook_type,
+        webhookCode: event.webhook_code,
+        itemId: event.item_id ?? null,
+        payload: event as unknown as Prisma.InputJsonValue,
+        error: err.message,
+        attempts,
+      },
+    });
+    logger.error(
+      {
+        job_id: jobId,
+        webhook_type: event.webhook_type,
+        webhook_code: event.webhook_code,
+        item_id: event.item_id,
+        attempts,
+      },
+      "Webhook job dead-lettered after exhausting retries"
+    );
+  } catch (dlqError) {
+    logger.error(
+      {
+        job_id: jobId,
+        error_message:
+          dlqError instanceof Error ? dlqError.message : String(dlqError),
+      },
+      "Failed to persist dead-letter record"
+    );
+  }
 }
 
 /**
