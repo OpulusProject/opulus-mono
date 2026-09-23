@@ -15,8 +15,7 @@
 import "dotenv/config";
 
 import { itemService, logger, prisma } from "@opulus/core";
-
-import { syncItemTransactions } from "../plaid/handlers/transactions/syncTransactionsHandler.js";
+import { syncItemTransactions } from "../plaid/syncItemTransactions.js";
 
 function parseItemFlag(argv: string[]): string | undefined {
   const args = argv.filter((arg) => arg !== "--");
