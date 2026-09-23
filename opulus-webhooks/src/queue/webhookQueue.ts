@@ -18,7 +18,13 @@ const redisConnection = {
   host: process.env.REDIS_HOST || "localhost",
   port: parseInt(process.env.REDIS_PORT || "6379"),
   password: process.env.REDIS_PASSWORD,
-  maxRetriesPerRequest: 3,
+  // BullMQ requires this to be null on worker connections: blocking commands
+  // (BRPOPLPUSH etc.) must not be aborted mid-flight during a reconnect, or
+  // in-flight jobs can be dropped/stalled. ioredis will keep retrying instead.
+  maxRetriesPerRequest: null,
+  enableReadyCheck: false,
+  // Opt-in TLS for managed Redis providers (Upstash, Elasticache, etc.).
+  ...(process.env.REDIS_TLS === "true" ? { tls: {} } : {}),
   retryStrategy: (times: number) => {
     const delay = Math.min(times * 50, 2000);
     return delay;
