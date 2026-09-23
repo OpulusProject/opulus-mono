@@ -154,11 +154,18 @@ A **temporary share** is perfect for local development and testing. The URL chan
 
 ### Failed Jobs
 
-Failed jobs go to Dead Letter Queue (DLQ):
+A job that exhausts all BullMQ retries is **dead-lettered to Postgres**
+(`webhook_dead_letter` table) so it survives Redis retention and can be
+inspected and replayed:
 
-- Kept for 7 days
-- Can be manually reprocessed
-- Check logs for failure reasons
+- BullMQ's failed set is kept for 7 days (Redis).
+- Each terminal failure is also persisted durably to `webhook_dead_letter`
+  (full payload + error + attempts), and logged at ERROR level.
+- Replay a dead-lettered event back onto the queue:
+
+  ```bash
+  pnpm --filter @opulus/webhooks replay <deadLetterId>
+  ```
 
 ### zrok Issues
 

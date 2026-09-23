@@ -192,4 +192,24 @@ model TwoFactor {
   @@map("two_factor")
 }
 
+// Durable dead-letter store for webhook jobs that exhausted all BullMQ retries.
+// Redis only retains failed jobs for a limited window; persisting terminal
+// failures here makes them queryable, alertable, and replayable.
+model WebhookDeadLetter {
+  id          String    @id @default(cuid())
+  jobId       String? // BullMQ job id, if available
+  webhookType String // e.g. ITEM, LINK, TRANSACTIONS
+  webhookCode String // e.g. SYNC_UPDATES_AVAILABLE
+  itemId      String? // Plaid item_id, when present on the event
+  payload     Json // Full webhook event, for replay
+  error       String // Final failure reason
+  attempts    Int // Attempts made before giving up
+  createdAt   DateTime  @default(now())
+  replayedAt  DateTime? // Set when an operator re-enqueues this event
+
+  @@index([itemId])
+  @@index([createdAt])
+  @@map("webhook_dead_letter")
+}
+
 
