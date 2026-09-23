@@ -6,6 +6,7 @@ import {
   AvatarFallback,
   AvatarImage,
   Badge,
+  Button,
   Card,
   CardContent,
   CardHeader,
@@ -14,9 +15,10 @@ import { calculateTotalBalance } from '@/utils/accounts';
 
 interface ItemCardProps {
   item: ItemPublicDTO;
+  onReconnect: (itemId: string) => void;
 }
 
-export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
+export const ItemCard: React.FC<ItemCardProps> = ({ item, onReconnect }) => {
   // Format base64 logo as data URI if it exists
   const logoUrl = item.institutionLogo
     ? item.institutionLogo.startsWith('data:')
@@ -69,6 +71,14 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item }) => {
           {accountCount} account
           {accountCount !== 1 ? 's' : ''}
         </Badge>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onReconnect(item.id)}
+        >
+          Reconnect
+        </Button>
       </CardContent>
     </Card>
   );

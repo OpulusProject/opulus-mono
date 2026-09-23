@@ -84,6 +84,32 @@ class PlaidService {
     }
   }
 
+  /**
+   * Create a Link token in update mode for an existing item.
+   * Omits products; Plaid uses the access token to repair the item.
+   */
+  async createUpdateLinkToken(accessToken: string, userId: string) {
+    const request: LinkTokenCreateRequest = {
+      user: {
+        client_user_id: userId,
+      },
+      client_name: "Opulus",
+      country_codes: [CountryCode.Ca],
+      language: "en",
+      access_token: accessToken,
+      ...(config.webhookUrl && {
+        webhook: `${config.webhookUrl}/webhook/plaid`,
+      }),
+    };
+
+    try {
+      const response = await this.plaid.linkTokenCreate(request);
+      return response.data;
+    } catch (error) {
+      throw handlePlaidError(error);
+    }
+  }
+
   // ============================================================================
   // Item Management
   // ============================================================================

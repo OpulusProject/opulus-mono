@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { createLinkTokenController } from "@/controllers/plaid/createLinkTokenController.js";
+import { createUpdateLinkTokenController } from "@/controllers/plaid/createUpdateLinkTokenController.js";
 import { getInstitutionsController } from "@/controllers/plaid/getInstitutionsController.js";
 import { refreshTransactionsController } from "@/controllers/plaid/refreshTransactionsController.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
@@ -13,6 +14,11 @@ const router: ReturnType<typeof Router> = Router();
  * All routes require authentication
  */
 router.post("/link-token", requireSession, createLinkTokenController);
+router.post(
+  "/link-token/update",
+  requireSession,
+  createUpdateLinkTokenController
+);
 
 router.get("/institutions", requireSession, getInstitutionsController);
 

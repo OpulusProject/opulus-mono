@@ -20,6 +20,7 @@ import { AddAccountCard, EmptyAccountsView, ItemCard } from './components';
 
 export const Accounts: React.FC = () => {
   const [isLinkOpen, setIsLinkOpen] = useState(false);
+  const [updateItemId, setUpdateItemId] = useState<string | undefined>();
   const { data: itemsData, isLoading } = useItems();
 
   const handleLinkSuccess = (publicToken: string, metadata: unknown) => {
@@ -65,9 +66,21 @@ export const Accounts: React.FC = () => {
         ) : itemsData && itemsData.items.length > 0 ? (
           <div className="flex flex-wrap gap-8">
             {itemsData.items.map((item) => (
-              <ItemCard key={item.id} item={item} />
+              <ItemCard
+                key={item.id}
+                item={item}
+                onReconnect={(itemId) => {
+                  setUpdateItemId(itemId);
+                  setIsLinkOpen(true);
+                }}
+              />
             ))}
-            <AddAccountCard onAddAccount={() => setIsLinkOpen(true)} />
+            <AddAccountCard
+              onAddAccount={() => {
+                setUpdateItemId(undefined);
+                setIsLinkOpen(true);
+              }}
+            />
           </div>
         ) : (
           <div
@@ -81,7 +94,11 @@ export const Accounts: React.FC = () => {
       </div>
       {isLinkOpen && (
         <LaunchLink
-          onClose={() => setIsLinkOpen(false)}
+          itemId={updateItemId}
+          onClose={() => {
+            setIsLinkOpen(false);
+            setUpdateItemId(undefined);
+          }}
           onSuccess={handleLinkSuccess}
           onExit={handleLinkExit}
         />
