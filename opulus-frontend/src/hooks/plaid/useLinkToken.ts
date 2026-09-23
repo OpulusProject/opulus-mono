@@ -14,7 +14,7 @@ export function useLinkToken(itemId?: string) {
     queryKey: ['plaid', 'linkToken', itemId ?? 'new'],
     queryFn: async () => {
       const response = await apiClient.post<LinkTokenResponse>(
-        itemId ? '/api/plaid/link-token/update' : '/api/plaid/link-token',
+        `/api/plaid/link-token${itemId ? '/update' : ''}`,
         itemId ? { itemId } : undefined
       );
       return response.data.data;
