@@ -1,9 +1,9 @@
 import { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
-import { AppError, logger, transactionService } from "@opulus/core";
+import { AppError, logger } from "@opulus/core";
+import { syncItemTransactions } from "../../syncItemTransactions.js";
 
 /**
  * Handle transaction sync webhook events.
- * Domain work lives in transactionService.syncForItem.
  */
 export async function syncTransactionsHandler(
   event: PlaidWebhookEvent
@@ -13,7 +13,7 @@ export async function syncTransactionsHandler(
   }
 
   try {
-    await transactionService.syncForItem(event.item_id);
+    await syncItemTransactions(event.item_id);
   } catch (error) {
     logger.error(
       {
