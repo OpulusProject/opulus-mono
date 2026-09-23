@@ -1,7 +1,10 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/server.ts"],
+  entry: {
+    server: "src/server.ts",
+    reconcile: "src/scripts/reconcile.ts",
+  },
   format: ["esm"],
   target: "es2022",
   outDir: "dist",
