@@ -166,6 +166,33 @@ class ItemService {
    * @returns Array of items with bank accounts (excluding credit accounts)
    * @throws AppError if database error occurs
    */
+  /**
+   * List every item. Used by the reconcile CLI to walk the full catalog.
+   */
+  async listAll() {
+    try {
+      return await this.prisma.item.findMany({
+        select: {
+          id: true,
+          plaidItemId: true,
+          institutionName: true,
+          userId: true,
+        },
+        orderBy: { createdAt: "asc" },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to list items: ${error.message}`
+          : "An unexpected error occurred while listing items";
+      throw new AppError(message, 500);
+    }
+  }
+
   async getAllByUserId(userId: string) {
     try {
       const items = await this.prisma.item.findMany({

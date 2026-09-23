@@ -194,6 +194,56 @@ opulus-webhooks/
 - `bullmq` - Queue processing for async webhook handling
 - `ioredis` - Redis client for queue backend
 
+## Transaction reconcile
+
+Plaid does not redeliver webhooks after ~24 hours. If the receiver was down
+longer than that, run a cursor-based catch-up against every item. This talks
+to Plaid and Postgres directly — it does not need the HTTP server or Redis.
+
+```bash
+# All items
+pnpm --filter @opulus/webhooks reconcile
+
+# One item
+pnpm --filter @opulus/webhooks reconcile -- --item <plaidItemId>
+```
+
+Needs `DATABASE_URL` and the same Plaid credentials the webhooks service uses.
+
+### Railway (production)
+
+Preferred: run from a local checkout of this repo so you get the source + `tsx`.
+`railway run` injects the **webhooks service** env (prod DB + Plaid) into that
+local process. Confirm the service name with `railway status`.
+
+```bash
+# link the CLI to the project once
+railway link
+
+# production catch-up (uses the webhooks service env)
+railway run --service <webhooks-service> --environment production -- \
+  pnpm --filter @opulus/webhooks reconcile
+```
+
+One item:
+
+```bash
+railway run --service <webhooks-service> --environment production -- \
+  pnpm --filter @opulus/webhooks reconcile -- --item <plaidItemId>
+```
+
+If you would rather exec inside the running container (image has `dist/` only):
+
+```bash
+railway ssh --service <webhooks-service> --environment production
+# from /app
+node opulus-webhooks/dist/reconcile.js
+# or
+node opulus-webhooks/dist/reconcile.js --item <plaidItemId>
+```
+
+The CLI continues past a single-item failure and exits `1` if any item failed.
+
 ## Related Documentation
 
 - [Main README](../README.md) - Repo-wide setup and prerequisites

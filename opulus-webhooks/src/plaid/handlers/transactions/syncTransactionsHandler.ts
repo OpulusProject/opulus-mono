@@ -9,26 +9,21 @@ import {
   type RemovedTransaction,
 } from "@opulus/core";
 
+export interface SyncItemResult {
+  added: number;
+  modified: number;
+  removed: number;
+}
+
 /**
- * Handle transaction sync webhook events
- * Syncs transactions for an item using Plaid's /transactions/sync endpoint
- * Handles pagination automatically and updates the item's transaction cursor
- *
- * @param event - Plaid webhook event
- * @throws AppError if item not found or sync fails
+ * Sync transactions for a Plaid item from its stored cursor.
+ * Shared by the TRANSACTIONS webhook handler and the reconcile CLI.
  */
-export async function syncTransactionsHandler(
-  event: PlaidWebhookEvent
-): Promise<void> {
-  const itemId = event.item_id;
-
-  if (!itemId) {
-    throw new AppError("item_id is required for TRANSACTIONS webhook", 400);
-  }
-
-  try {
+export async function syncItemTransactions(
+  plaidItemId: string
+): Promise<SyncItemResult> {
     // Get the item from database
-    const item = await itemService.getByPlaidItemId(itemId);
+    const item = await itemService.getByPlaidItemId(plaidItemId);
 
     // Sync transactions from Plaid
     // This handles pagination automatically
@@ -145,19 +140,38 @@ export async function syncTransactionsHandler(
       });
     });
 
+    const result: SyncItemResult = {
+      added: added.length,
+      modified: modified.length,
+      removed: removed.length,
+    };
+
     logger.info(
       {
-        event: {
-          webhook_type: event.webhook_type,
-          webhook_code: event.webhook_code,
-          item_id: event.item_id,
-        },
-        added_count: added.length,
-        modified_count: modified.length,
-        removed_count: removed.length,
+        item_id: plaidItemId,
+        added_count: result.added,
+        modified_count: result.modified,
+        removed_count: result.removed,
       },
       "Transactions synced successfully"
     );
+
+    return result;
+}
+
+/**
+ * Handle transaction sync webhook events.
+ * Delegates to syncItemTransactions so webhook and reconcile share one path.
+ */
+export async function syncTransactionsHandler(
+  event: PlaidWebhookEvent
+): Promise<void> {
+  if (!event.item_id) {
+    throw new AppError("item_id is required for TRANSACTIONS webhook", 400);
+  }
+
+  try {
+    await syncItemTransactions(event.item_id);
   } catch (error) {
     logger.error(
       {
@@ -174,12 +188,10 @@ export async function syncTransactionsHandler(
       "Handler execution failed"
     );
 
-    // Re-throw AppError as-is
     if (error instanceof AppError) {
       throw error;
     }
 
-    // Wrap other errors with full details
     const message =
       error instanceof Error
         ? `Failed to sync transactions: ${error.message}`
