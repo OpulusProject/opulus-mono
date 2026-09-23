@@ -14,9 +14,7 @@
  */
 import "dotenv/config";
 
-import { itemService, logger, prisma } from "@opulus/core";
-
-import { syncItemTransactions } from "../plaid/handlers/transactions/syncTransactionsHandler.js";
+import { itemService, logger, prisma, transactionService } from "@opulus/core";
 
 function parseItemFlag(argv: string[]): string | undefined {
   const args = argv.filter((arg) => arg !== "--");
@@ -54,7 +52,7 @@ async function main(): Promise<void> {
 
   for (const item of items) {
     try {
-      const result = await syncItemTransactions(item.plaidItemId);
+      const result = await transactionService.syncForItem(item.plaidItemId);
       succeeded += 1;
       logger.info(
         {

@@ -1,7 +1,11 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import type { Transaction as PlaidTransaction } from "plaid";
+import type { RemovedTransaction } from "../client/plaid.js";
 import prisma from "../client/prisma.js";
+import { logger } from "../utils/logger.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
+import { itemService } from "./itemService.js";
+import { plaidService } from "./plaidService.js";
 
 export interface CreateTransactionData {
   providerTransactionId: string;
@@ -32,6 +36,12 @@ export interface CreateTransactionData {
 export interface UpdateTransactionData extends Partial<CreateTransactionData> {
   providerTransactionId: string;
   accountId: string;
+}
+
+export interface SyncItemResult {
+  added: number;
+  modified: number;
+  removed: number;
 }
 
 /**
@@ -319,6 +329,145 @@ class TransactionService {
         error instanceof Error
           ? `Failed to get transactions: ${error.message}`
           : "An unexpected error occurred while getting transactions";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * Sync transactions for a Plaid item from its stored cursor.
+   * Shared by the TRANSACTIONS webhook handler and the reconcile CLI.
+   */
+  async syncForItem(plaidItemId: string): Promise<SyncItemResult> {
+    try {
+      const item = await itemService.getByPlaidItemId(plaidItemId);
+
+    const syncResult = await plaidService.transactionsSync(
+      item.accessToken,
+      item.transactionCursor
+    );
+
+    const { added, modified, removed, nextCursor } = syncResult;
+
+    const bankAccounts = await this.prisma.bankAccount.findMany({
+      where: { itemId: item.id },
+      select: {
+        id: true,
+        providerAccountId: true,
+      },
+    });
+
+    const accountIdMap = new Map(
+      bankAccounts.map((acc) => [acc.providerAccountId, acc.id])
+    );
+
+    await this.prisma.$transaction(async (tx) => {
+      if (added.length > 0) {
+        const transactionsToCreate = added
+          .map((plaidTransaction) => {
+            const accountId = accountIdMap.get(plaidTransaction.account_id);
+            if (!accountId) {
+              return null;
+            }
+
+            return normalizePlaidTransaction(
+              plaidTransaction,
+              accountId,
+              item.id,
+              item.userId
+            );
+          })
+          .filter((t): t is NonNullable<typeof t> => t !== null);
+
+        if (transactionsToCreate.length > 0) {
+          await tx.transaction.createMany({
+            data: transactionsToCreate,
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      if (modified.length > 0) {
+        const updatePromises = modified.map(async (plaidTransaction) => {
+          const accountId = accountIdMap.get(plaidTransaction.account_id);
+          if (!accountId) {
+            return;
+          }
+
+          const transactionData = normalizePlaidTransaction(
+            plaidTransaction,
+            accountId,
+            item.id,
+            item.userId
+          );
+
+          const {
+            providerTransactionId,
+            accountId: txAccountId,
+            ...updateData
+          } = transactionData;
+
+          await tx.transaction.update({
+            where: {
+              providerTransactionId_accountId: {
+                providerTransactionId,
+                accountId: txAccountId,
+              },
+            },
+            data: updateData,
+          });
+        });
+
+        await Promise.all(updatePromises);
+      }
+
+      if (removed.length > 0) {
+        const transactionIdsToDelete = (removed as RemovedTransaction[]).map(
+          (removedTx) => removedTx.transaction_id
+        );
+
+        if (transactionIdsToDelete.length > 0) {
+          await tx.transaction.deleteMany({
+            where: {
+              providerTransactionId: {
+                in: transactionIdsToDelete,
+              },
+            },
+          });
+        }
+      }
+
+      await tx.item.update({
+        where: { id: item.id },
+        data: { transactionCursor: nextCursor },
+      });
+    });
+
+    const result: SyncItemResult = {
+      added: added.length,
+      modified: modified.length,
+      removed: removed.length,
+    };
+
+    logger.info(
+      {
+        item_id: plaidItemId,
+        added_count: result.added,
+        modified_count: result.modified,
+        removed_count: result.removed,
+      },
+      "Transactions synced successfully"
+    );
+
+      return result;
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to sync transactions: ${error.message}`
+          : "An unexpected error occurred while syncing transactions";
       throw new AppError(message, 500);
     }
   }
