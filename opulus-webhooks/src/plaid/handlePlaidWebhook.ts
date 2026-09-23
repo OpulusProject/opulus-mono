@@ -1,7 +1,14 @@
 import { logger } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
+import { webhookFingerprint } from "../queue/fingerprint.js";
 import { webhookQueue } from "../queue/webhookQueue.js";
 import type { PlaidWebhookEvent } from "../types/plaid/webhookSchema.js";
+
+/**
+ * How long a duplicate delivery of the same event is suppressed. Sized to
+ * absorb Plaid's re-delivery retries without dropping legitimate repeat events.
+ */
+const DEDUP_TTL_MS = 60_000;
 
 /**
  * Handler for processing webhook events
@@ -32,11 +39,14 @@ export async function handlePlaidWebhook(
     // Acknowledge immediately (Plaid requires fast response)
     res.status(200).json({ received: true });
 
-    // Enqueue for async processing with retry support
-    // Uses defaultJobOptions from queue configuration (no need to duplicate)
+    // Enqueue for async processing with retry support.
+    // Uses defaultJobOptions from queue configuration (no need to duplicate).
+    // Deduplication collapses Plaid's rapid re-deliveries of the same event
+    // (identical payload within DEDUP_TTL_MS) into a single job.
     const job = await webhookQueue.add(
       `process-${event.webhook_type.toLowerCase()}`,
-      event
+      event,
+      { deduplication: { id: webhookFingerprint(event), ttl: DEDUP_TTL_MS } }
     );
 
     // Log webhook enqueued
