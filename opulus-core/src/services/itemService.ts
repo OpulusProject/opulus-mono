@@ -98,6 +98,31 @@ class ItemService {
    * @throws NotFoundError if item not found
    * @throws AppError if database error occurs
    */
+  async getById(id: string) {
+    try {
+      return await this.prisma.item.findUniqueOrThrow({
+        where: { id },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2025"
+      ) {
+        throw new NotFoundError("Item not found");
+      }
+
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get item: ${error.message}`
+          : "An unexpected error occurred while fetching item";
+      throw new AppError(message, 500);
+    }
+  }
+
   async getByPlaidItemId(plaidItemId: string) {
     try {
       const item = await this.prisma.item.findUniqueOrThrow({

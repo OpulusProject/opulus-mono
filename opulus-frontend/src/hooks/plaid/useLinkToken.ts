@@ -9,12 +9,13 @@ import { apiClient } from '@/lib/api/client';
  *
  * @returns TanStack Query result with linkToken
  */
-export function useLinkToken() {
+export function useLinkToken(itemId?: string) {
   return useQuery<LinkTokenResponse['data'], Error>({
-    queryKey: ['plaid', 'linkToken'],
+    queryKey: ['plaid', 'linkToken', itemId ?? 'new'],
     queryFn: async () => {
       const response = await apiClient.post<LinkTokenResponse>(
-        '/api/plaid/link-token'
+        itemId ? '/api/plaid/link-token/update' : '/api/plaid/link-token',
+        itemId ? { itemId } : undefined
       );
       return response.data.data;
     },

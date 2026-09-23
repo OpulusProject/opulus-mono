@@ -17,6 +17,10 @@ import { useLinkToken } from '@/hooks/plaid/useLinkToken';
 
 interface LaunchLinkProps {
   /**
+   * Existing item id. When set, Link opens in update mode for that item.
+   */
+  itemId?: string;
+  /**
    * Callback when Link is closed (successfully or with error)
    */
   onClose: () => void;
@@ -61,6 +65,7 @@ interface LaunchLinkProps {
  * ```
  */
 export const LaunchLink: React.FC<LaunchLinkProps> = ({
+  itemId,
   onClose,
   onSuccess,
   onExit,
@@ -71,7 +76,7 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
     isLoading: isLinkTokenLoading,
     isError: isLinkTokenError,
     error: linkTokenError,
-  } = useLinkToken();
+  } = useLinkToken(itemId);
 
   // Default success handler
   const handleSuccess: PlaidLinkOnSuccess = (
