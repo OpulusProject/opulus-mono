@@ -52,23 +52,28 @@ async function startZrokShare() {
   children.push(child);
 
   let url = "";
-  const urlRe = /https:\/\/[^\s"]+\.zrok\.io/;
+  let buffer = "";
+  // Matches https://<slug>.share.zrok.io even when wrapped in zrok's JSON log output.
+  const urlRe = /https:\/\/[A-Za-z0-9-]+\.share\.zrok\.io/;
 
-  const pipe = (stream, prefix) => {
+  const pipe = (stream) => {
     stream.setEncoding("utf8");
     stream.on("data", (chunk) => {
       process.stdout.write(`[zrok] ${chunk}`);
-      if (!url) {
-        const match = chunk.match(urlRe);
-        if (match) {
-          url = match[0];
-          child.emit("url", url);
-        }
+      if (url) return;
+      buffer += chunk;
+      const match = buffer.match(urlRe);
+      if (match) {
+        url = match[0];
+        buffer = "";
+        child.emit("url", url);
       }
+      // Prevent the buffer from growing unbounded while we wait.
+      if (buffer.length > 4096) buffer = buffer.slice(-2048);
     });
   };
-  pipe(child.stdout, "stdout");
-  pipe(child.stderr, "stderr");
+  pipe(child.stdout);
+  pipe(child.stderr);
 
   child.on("exit", (code) => {
     if (!shuttingDown) {
