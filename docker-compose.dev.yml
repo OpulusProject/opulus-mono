@@ -1,0 +1,116 @@
+name: opulus-dev
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile.dev
+  env_file:
+    - .env
+  environment:
+    DATABASE_URL: postgresql://postgres:password@db:5432/opulus?schema=public
+    REDIS_HOST: redis
+    REDIS_PORT: "6379"
+    CLIENT_URL: http://localhost:5173
+    BETTER_AUTH_BASE_URL: http://localhost:8080
+    CHOKIDAR_USEPOLLING: "1"
+    CHOKIDAR_INTERVAL: "1000"
+  volumes:
+    - .:/app
+    - dev_node_modules:/app/node_modules
+    - dev_core_node_modules:/app/opulus-core/node_modules
+    - dev_backend_node_modules:/app/opulus-backend/node_modules
+    - dev_frontend_node_modules:/app/opulus-frontend/node_modules
+    - dev_webhooks_node_modules:/app/opulus-webhooks/node_modules
+    - dev_tests_node_modules:/app/opulus-tests/node_modules
+    - ./.dev:/shared
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: opulus
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./ops/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+
+  core:
+    <<: *app
+    command: >
+      sh -c "pnpm --filter @opulus/core exec prisma generate --schema=./prisma/schema.prisma
+      && pnpm --filter @opulus/core exec tsc --watch --preserveWatchOutput --watchFile UsePolling --watchDirectory UsePolling"
+    depends_on:
+      - db
+
+  webhooks:
+    <<: *app
+    command: >
+      sh -c "until [ -f /app/opulus-core/dist/index.js ]; do sleep 1; done
+      && cd /app/opulus-webhooks
+      && exec pnpm exec tsx watch src/server.ts"
+    ports:
+      - "8081:8081"
+    depends_on:
+      - db
+      - redis
+      - core
+
+  zrok:
+    image: openziti/zrok
+    entrypoint: ["/bin/sh", "/scripts/zrok-share.sh"]
+    env_file:
+      - .env
+    volumes:
+      - ./scripts/zrok-share.sh:/scripts/zrok-share.sh:ro
+      - ./.dev:/shared
+      - zrok_home:/root/.zrok
+    depends_on:
+      - webhooks
+
+  backend:
+    <<: *app
+    command: >
+      sh -c "until [ -s /shared/plaid-webhook-url.env ]; do sleep 1; done
+      && set -a && . /shared/plaid-webhook-url.env && set +a
+      && until [ -f /app/opulus-core/dist/index.js ]; do sleep 1; done
+      && cd /app/opulus-core
+      && pnpm exec prisma migrate deploy --schema=./prisma/schema.prisma
+      && cd /app/opulus-backend
+      && exec pnpm exec tsx watch src/server.ts"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - core
+      - zrok
+
+  frontend:
+    <<: *app
+    command: >
+      sh -c "cd /app/opulus-frontend
+      && exec pnpm exec vite --host 0.0.0.0 --port 5173"
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:
+  zrok_home:
+  dev_node_modules:
+  dev_core_node_modules:
+  dev_backend_node_modules:
+  dev_frontend_node_modules:
+  dev_webhooks_node_modules:
+  dev_tests_node_modules:

@@ -93,7 +93,15 @@ pnpm prisma:migrate
 
 ### Run
 
-From the repo root:
+One command builds the app containers, opens a zrok tunnel, and sets `PLAID_WEBHOOK_URL` to `https://<tunnel>/webhook/plaid` before the backend starts. File edits reload the core, backend, webhooks, and frontend processes.
+
+```bash
+pnpm dev
+```
+
+The app is at http://localhost:5173, the API at http://localhost:8080, and webhooks at http://localhost:8081. Put a zrok enable token in `ZROK_ENABLE_TOKEN` the first time.
+
+From the repo root, without Docker:
 
 ```bash
 pnpm dev:backend      # API on http://localhost:8080, core in watch mode
@@ -168,7 +176,7 @@ Copy `.env.example` to `.env` and fill in local values.
 | `PLAID_CLIENT_ID`      | *sandbox client id*                                                  | Plaid sandbox credential                  |
 | `PLAID_SECRET`         | *sandbox secret*                                                     | Plaid sandbox credential                  |
 | `PLAID_ENV`            | `sandbox`                                                            | Keep public/demo work in sandbox          |
-| `PLAID_WEBHOOK_URL`    | *blank*                                                              | Public tunnel URL for local webhook tests |
+| `PLAID_WEBHOOK_URL`    | *blank*                                                              | Full callback URL, including `/webhook/plaid`. `pnpm dev` sets this from zrok |
 | `CLIENT_URL`           | `http://localhost:5173`                                              | CORS origin for frontend                  |
 | `PORT`                 | `8080`                                                               | Backend API port                          |
 | `WEBHOOK_PORT`         | `8081`                                                               | Webhook receiver port                     |
