@@ -93,15 +93,15 @@ pnpm prisma:migrate
 
 ### Run
 
-One command builds the app containers, opens a zrok tunnel, and sets `PLAID_WEBHOOK_URL` to `https://<tunnel>/webhook/plaid` before the backend starts. File edits reload the core, backend, webhooks, and frontend processes.
+One command brings up Postgres and Redis (via `docker compose up -d`), opens a zrok tunnel to the webhooks port, exports `PLAID_WEBHOOK_URL=https://<tunnel>/webhook/plaid`, and runs core, backend, webhooks, and frontend in watch mode:
 
 ```bash
 pnpm dev
 ```
 
-The app is at http://localhost:5173, the API at http://localhost:8080, and webhooks at http://localhost:8081. Put a zrok enable token in `ZROK_ENABLE_TOKEN` the first time.
+The app is at http://localhost:5173, the API at http://localhost:8080, and the webhooks receiver at http://localhost:8081. The first time only, enable zrok: `zrok enable <token>` (or set `ZROK_ENABLE_TOKEN` in `.env`).
 
-From the repo root, without Docker:
+From the repo root, if you want each service in its own shell:
 
 ```bash
 pnpm dev:backend      # API on http://localhost:8080, core in watch mode

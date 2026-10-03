@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "bash scripts/dev.sh",
+    "dev": "sh scripts/dev.sh",
     "dev:frontend": "pnpm --filter @opulus/frontend dev",
     "dev:backend": "concurrently \"pnpm --filter @opulus/core dev\" \"pnpm --filter @opulus/backend dev\" --names \"core,backend\" --prefix-colors \"blue,green\"",
     "dev:webhooks": "concurrently \"pnpm --filter @opulus/core dev\" \"pnpm --filter @opulus/webhooks dev\" --names \"core,webhooks\" --prefix-colors \"blue,yellow\"",
