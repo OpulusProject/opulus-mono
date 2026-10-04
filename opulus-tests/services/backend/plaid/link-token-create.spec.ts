@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { test } from "@playwright/test";
+import { expectStatus } from "../../../shared/assertions.js";
 
 /**
  * This file: the Plaid link-token create endpoint. Its happy path proxies the
@@ -9,6 +10,6 @@ import { expect, test } from "@playwright/test";
 test.describe("POST /api/plaid/link-token", () => {
   test("requires authentication (401)", async ({ request }) => {
     const res = await request.post("/api/plaid/link-token", { data: {} });
-    expect(res.status()).toBe(401);
+    await expectStatus(res, 401);
   });
 });

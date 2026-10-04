@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { test } from "@playwright/test";
+import { expectStatus } from "../../../shared/assertions.js";
 
 /**
  * This file: the Plaid institutions list endpoint. Its happy path proxies the
@@ -8,6 +9,6 @@ import { expect, test } from "@playwright/test";
 test.describe("GET /api/plaid/institutions", () => {
   test("requires authentication (401)", async ({ request }) => {
     const res = await request.get("/api/plaid/institutions");
-    expect(res.status()).toBe(401);
+    await expectStatus(res, 401);
   });
 });

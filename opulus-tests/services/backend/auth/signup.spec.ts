@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { extractSessionCookie, uniqueEmail, withSession } from "../../../shared/client.js";
-import { expectOk } from "../../../shared/assertions.js";
+import {
+  expectErrorCode,
+  expectOk,
+  expectStatus,
+} from "../../../shared/assertions.js";
 import { TEST_PASSWORD, signUp } from "../../../shared/fixtures/index.js";
 
 /**
@@ -31,36 +35,36 @@ test.describe("POST /api/auth/sign-up/email", () => {
     expect((await session.json()).data.user.email).toBe(email);
   });
 
-  test("rejects a malformed email", async ({ request }) => {
+  test("rejects a malformed email (400, INVALID_EMAIL)", async ({ request }) => {
     const res = await request.post("/api/auth/sign-up/email", {
       data: { email: "not-an-email", password: TEST_PASSWORD, name: "Nope" },
     });
 
-    expect(res.status()).toBeGreaterThanOrEqual(400);
-    expect(res.status()).toBeLessThan(500);
+    await expectStatus(res, 400);
+    await expectErrorCode(res, "INVALID_EMAIL");
   });
 
-  test("rejects a password below the minimum length (boundary)", async ({
+  test("rejects a password below the minimum length (400, PASSWORD_TOO_SHORT)", async ({
     request,
   }) => {
     const res = await request.post("/api/auth/sign-up/email", {
       data: { email: uniqueEmail(), password: "x", name: "Shorty" },
     });
 
-    expect(res.status()).toBeGreaterThanOrEqual(400);
-    expect(res.status()).toBeLessThan(500);
+    await expectStatus(res, 400);
+    await expectErrorCode(res, "PASSWORD_TOO_SHORT");
   });
 
-  test("rejects a duplicate email (conflict)", async ({ request }) => {
-    // Arrange: an account that already exists.
+  test("rejects a duplicate email (422, USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL)", async ({
+    request,
+  }) => {
     const existing = await signUp(request);
 
-    // Act
     const res = await request.post("/api/auth/sign-up/email", {
       data: { email: existing.email, password: TEST_PASSWORD, name: "Twin" },
     });
 
-    // Assert
-    expect([400, 409, 422]).toContain(res.status());
+    await expectStatus(res, 422);
+    await expectErrorCode(res, "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL");
   });
 });

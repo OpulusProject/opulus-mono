@@ -1,6 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { test } from "@playwright/test";
 import { withSession } from "../../../shared/client.js";
-import { expectValidationError } from "../../../shared/assertions.js";
+import {
+  expectStatus,
+  expectValidationError,
+} from "../../../shared/assertions.js";
 import { createAuthedUser } from "../../../shared/fixtures/index.js";
 
 /**
@@ -13,7 +16,7 @@ test.describe("POST /api/plaid/transactions/refresh", () => {
     const res = await request.post("/api/plaid/transactions/refresh", {
       data: { itemId: "whatever" },
     });
-    expect(res.status()).toBe(401);
+    await expectStatus(res, 401);
   });
 
   test("rejects a missing itemId before contacting Plaid (validation)", async ({

@@ -2,6 +2,13 @@ import { expect, type APIResponse } from "@playwright/test";
 
 /**
  * Standardized response assertions for the webhooks receiver.
+ *
+ * Why this lives beside the webhooks suite instead of in opulus-tests/shared/:
+ * the receiver's error envelope is `{ message: string }`, intentionally
+ * different from the backend's `{ error, message, code }`. Keeping its
+ * helpers local keeps the envelope-mismatch out of the shared surface so
+ * backend specs can't accidentally import a webhook-shaped assertion (and
+ * vice versa). Generic plumbing (client baseURL, uniqueId) is shared.
  */
 
 /** Assert a 2xx response, with a failure that dumps status + body for triage. */

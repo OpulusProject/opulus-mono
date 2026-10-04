@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { uniqueEmail } from "../../../shared/client.js";
-import { expectStatus } from "../../../shared/assertions.js";
+import { expectErrorCode, expectStatus } from "../../../shared/assertions.js";
 import {
   TEST_PASSWORD,
   createUserWithTwoFactor,
@@ -28,7 +28,9 @@ test.describe("POST /api/auth/sign-in/email", () => {
     expect(body.user.email).toBe(user.email);
   });
 
-  test("rejects a wrong password (401)", async ({ request }) => {
+  test("rejects a wrong password (401, INVALID_EMAIL_OR_PASSWORD)", async ({
+    request,
+  }) => {
     const user = await signUp(request);
 
     const res = await request.post("/api/auth/sign-in/email", {
@@ -36,14 +38,18 @@ test.describe("POST /api/auth/sign-in/email", () => {
     });
 
     await expectStatus(res, 401);
+    await expectErrorCode(res, "INVALID_EMAIL_OR_PASSWORD");
   });
 
-  test("rejects an unknown account (401)", async ({ request }) => {
+  test("rejects an unknown account with the same shape as a wrong password (401, INVALID_EMAIL_OR_PASSWORD)", async ({
+    request,
+  }) => {
     const res = await request.post("/api/auth/sign-in/email", {
       data: { email: uniqueEmail(), password: TEST_PASSWORD },
     });
 
     await expectStatus(res, 401);
+    await expectErrorCode(res, "INVALID_EMAIL_OR_PASSWORD");
   });
 
   test("returns a 2FA challenge instead of a session once 2FA is enabled", async ({
