@@ -155,7 +155,18 @@ DTOs shared between apps.
 
 ## Environment
 
-Copy `.env.example` to `.env` and fill in local values.
+Keep a single `.env` at the monorepo root. The backend and webhooks services
+read it via symlinks so there's only one file to edit:
+
+```bash
+cp .env.example .env               # fill in local values
+ln -s ../.env opulus-backend/.env
+ln -s ../.env opulus-webhooks/.env
+```
+
+Each service still loads env with plain `import "dotenv/config"`; the symlink
+means every process ends up reading the root file. Production (Railway)
+containers have no `.env` and env comes from the platform — no symlinks there.
 
 
 | Var                    | Default / Example                                                    | Notes                                     |
