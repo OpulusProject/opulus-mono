@@ -8,52 +8,85 @@ import {
 
 /**
  * Reconcile a persisted Item's bank accounts with Plaid's current view
- * (`/accounts/get`). Used after a Link update-mode session (reconnect or
- * add-accounts), where Plaid does not fire a webhook for the completion.
+ * (`/accounts/get`). Called after a Link update-mode session (reconnect or
+ * add-accounts) since Plaid does not fire a webhook for update mode. Also
+ * called from `createItem` when the user re-links an already-known Item.
  *
- * Upsert-only: new Plaid accounts are inserted, existing ones have their
- * mutable fields refreshed. Accounts the user *de-selected* are left in
- * the DB untouched to avoid cascade-deleting historical Transaction rows;
- * soft-deletion is a future change.
+ * Behavior:
+ *   - new Plaid account       → inserted
+ *   - existing Plaid account  → mutable fields refreshed (balances, name, ...)
+ *   - account not in response → soft-deleted (`deletedAt = now`)
+ *
+ * We soft-delete rather than hard-delete to preserve historical Transaction
+ * rows (which cascade-delete via the FK). Read sites must filter on
+ * `deletedAt IS NULL`.
  */
-export async function updateItemAccountsForUser(itemId: string) {
+export async function updateItemAccounts(itemId: string) {
   const item = await itemService.getById(itemId);
   const accountsResponse = await plaidService.getAccounts(item.accessToken);
+  const now = new Date();
+
+  const plaidProviderIds = new Set(
+    accountsResponse.accounts.map((a) => a.account_id)
+  );
 
   let created = 0;
   let updated = 0;
+  let restored = 0;
+  let softDeleted = 0;
 
   await prisma.$transaction(async (tx) => {
     for (const plaidAccount of accountsResponse.accounts) {
       const data = normalizePlaidAccount(plaidAccount, item.id, item.userId);
-      const existing = await tx.bankAccount.findFirst({
-        where: { itemId: item.id, providerAccountId: data.providerAccountId },
-        select: { id: true },
+      const existing = await tx.bankAccount.findUnique({
+        where: {
+          providerAccountId_itemId: {
+            providerAccountId: data.providerAccountId,
+            itemId: item.id,
+          },
+        },
+        select: { id: true, deletedAt: true },
       });
 
-      if (existing) {
-        await tx.bankAccount.update({
-          where: { id: existing.id },
-          data: {
-            name: data.name,
-            officialName: data.officialName,
-            type: data.type,
-            subtype: data.subtype,
-            mask: data.mask,
-            balanceAvailable: data.balanceAvailable,
-            balanceCurrent: data.balanceCurrent,
-            balanceLimit: data.balanceLimit,
-            isoCurrencyCode: data.isoCurrencyCode,
-            unofficialCurrencyCode: data.unofficialCurrencyCode,
-            persistentAccountId: data.persistentAccountId,
-          },
-        });
-        updated += 1;
-      } else {
+      if (!existing) {
         await tx.bankAccount.create({ data });
         created += 1;
+        continue;
       }
+
+      if (existing.deletedAt) restored += 1;
+      else updated += 1;
+
+      await tx.bankAccount.update({
+        where: { id: existing.id },
+        data: {
+          name: data.name,
+          officialName: data.officialName,
+          type: data.type,
+          subtype: data.subtype,
+          mask: data.mask,
+          balanceAvailable: data.balanceAvailable,
+          balanceCurrent: data.balanceCurrent,
+          balanceLimit: data.balanceLimit,
+          isoCurrencyCode: data.isoCurrencyCode,
+          unofficialCurrencyCode: data.unofficialCurrencyCode,
+          persistentAccountId: data.persistentAccountId,
+          deletedAt: null,
+        },
+      });
     }
+
+    // Soft-delete rows for accounts the user de-selected (not present in the
+    // current Plaid response). Transactions remain intact for history.
+    const deletion = await tx.bankAccount.updateMany({
+      where: {
+        itemId: item.id,
+        deletedAt: null,
+        providerAccountId: { notIn: Array.from(plaidProviderIds) },
+      },
+      data: { deletedAt: now },
+    });
+    softDeleted = deletion.count;
   });
 
   logger.info(
@@ -64,9 +97,11 @@ export async function updateItemAccountsForUser(itemId: string) {
       accounts_total: accountsResponse.accounts.length,
       accounts_created: created,
       accounts_updated: updated,
+      accounts_restored: restored,
+      accounts_soft_deleted: softDeleted,
     },
-    "Item accounts updated from Plaid"
+    "Item accounts reconciled with Plaid"
   );
 
-  return { itemId: item.id, created, updated };
+  return { itemId: item.id, created, updated, restored, softDeleted };
 }

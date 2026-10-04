@@ -1,5 +1,5 @@
 import { getSession } from "@/services/session/getSession.js";
-import { updateItemAccountsForUser } from "@/services/plaid/updateItemAccounts.js";
+import { updateItemAccounts } from "@/services/plaid/updateItemAccounts.js";
 import { itemService, UnauthorizedError } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 
@@ -27,7 +27,7 @@ export async function updateItemAccountsController(
       throw new UnauthorizedError("You do not have access to this item");
     }
 
-    const result = await updateItemAccountsForUser(itemId);
+    const result = await updateItemAccounts(itemId);
     res.status(200).json({ data: result });
   } catch (error) {
     next(error);

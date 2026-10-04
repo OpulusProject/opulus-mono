@@ -129,6 +129,7 @@ model BankAccount {
   balanceLimit           Decimal? // Credit limit (for credit accounts)
   isoCurrencyCode        String? // ISO 4217 currency code (e.g., "USD", "CAD")
   unofficialCurrencyCode String? // Unofficial currency code (used when ISO currency unavailable)
+  deletedAt              DateTime? // Soft-delete marker: set when Plaid stops returning the account (user de-selected via update mode or re-link). Transactions are preserved for historical reporting.
   createdAt              DateTime      @default(now())
   updatedAt              DateTime      @updatedAt
   user                   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -139,6 +140,7 @@ model BankAccount {
   // Index for stable account lookups
   @@unique([providerAccountId, itemId])
   @@index([persistentAccountId])
+  @@index([deletedAt])
   @@map("bank_account")
 }
 

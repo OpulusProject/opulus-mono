@@ -22,8 +22,6 @@ router.post(
   createUpdateLinkTokenController
 );
 
-// Item creation is driven by the frontend's Link onSuccess callback (not a
-// Plaid webhook) now that we no longer use Multi-Item Link.
 router.post("/items", requireSession, createItemController);
 router.post(
   "/items/:id/update-accounts",
