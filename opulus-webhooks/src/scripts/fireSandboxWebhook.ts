@@ -13,7 +13,7 @@
  *
  * Requires `PLAID_ENV=sandbox` and valid sandbox credentials in the env.
  */
-import "dotenv/config";
+import "../env.js";
 
 import { plaidClient, logger } from "@opulus/core";
 import {

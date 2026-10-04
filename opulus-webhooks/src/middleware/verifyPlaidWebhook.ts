@@ -1,4 +1,3 @@
-import "dotenv/config";
 import { config, plaid, type JWKPublicKey } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import { importJWK, jwtVerify } from "jose";

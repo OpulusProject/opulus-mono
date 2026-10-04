@@ -12,7 +12,7 @@
  * Railway (see README):
  *   railway run --service <webhooks-service> -- pnpm --filter @opulus/webhooks reconcile
  */
-import "dotenv/config";
+import "../env.js";
 
 import { itemService, logger, prisma } from "@opulus/core";
 import { syncItemTransactions } from "../plaid/syncItemTransactions.js";

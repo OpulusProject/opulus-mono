@@ -1,5 +1,6 @@
-// Load .env FIRST, before any other imports that depend on environment variables
-import "dotenv/config";
+// Load env FIRST, before any other imports that depend on environment variables.
+// Service `.env` wins; in non-prod the monorepo root `.env` is a fallback.
+import "./env.js";
 
 import {
   logger,

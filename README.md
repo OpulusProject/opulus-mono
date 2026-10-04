@@ -155,7 +155,35 @@ DTOs shared between apps.
 
 ## Environment
 
+### Local
+
+Keep a **single `.env` at the monorepo root**. Every service imports a small
+loader (`src/env.ts`) that walks up from its CWD and loads the nearest `.env`,
+so `pnpm --filter @opulus/backend dev`, `pnpm --filter @opulus/webhooks dev`,
+etc. all read the same file. Existing `process.env` is never overridden, and
+file loading is skipped entirely when `NODE_ENV=production`.
+
 Copy `.env.example` to `.env` and fill in local values.
+
+### Railway
+
+Env is provided by the platform in production — the loader never touches a
+file. Set shared config once at the project level and reference it from each
+service:
+
+- **Project → Shared Variables**: `DATABASE_URL`, `REDIS_HOST`, `REDIS_PORT`,
+  `BETTER_AUTH_SECRET`, `PLAID_CLIENT_ID`, `PLAID_SECRET`, `PLAID_ENV`,
+  `PLAID_VERSION`. On each service, click **Shared Variable** and pick the
+  keys you need (adds `${{ shared.NAME }}` references automatically).
+- **Service-level variables**: anything specific to that service.
+  - `backend`: `PORT`, `CLIENT_URL`, `BETTER_AUTH_BASE_URL`,
+    `PLAID_WEBHOOK_URL=https://${{webhooks.RAILWAY_PUBLIC_DOMAIN}}/webhook/plaid`
+    (reference variable — no copy/paste needed)
+  - `webhooks`: `WEBHOOK_PORT`
+- **Database/Redis**: use `${{ Postgres.DATABASE_URL }}` and
+  `${{ Redis.REDIS_HOST }}` reference variables instead of hard-coding.
+
+See [Railway → Using Variables](https://docs.railway.com/variables) for syntax.
 
 
 | Var                    | Default / Example                                                    | Notes                                     |
