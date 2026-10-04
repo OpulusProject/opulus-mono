@@ -65,6 +65,16 @@ class PlaidService {
         client_user_id: userId,
       },
       client_name: "Opulus",
+      // Opulus persists linked items from the Plaid webhook `ITEM_ADD_RESULT`
+      // (see opulus-webhooks/src/plaid/handlers/link/createItemHandler.ts).
+      // Plaid only fires that webhook for Hosted Link, async, or Multi-Item
+      // Link sessions. Enabling multi-item here is what makes the webhook
+      // route work for our embedded react-plaid-link flow.
+      //
+      // Do NOT combine with `institution_id` on this request — Plaid rejects
+      // multi-item + institution-pinned together, which is how this flag was
+      // accidentally dropped once before.
+      enable_multi_item_link: true,
       products,
       country_codes: countryCodes,
       language: "en",
