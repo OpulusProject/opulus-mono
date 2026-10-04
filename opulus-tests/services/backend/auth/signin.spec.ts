@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { uniqueEmail } from "../../shared/client.js";
-import { expectStatus } from "../../shared/assertions.js";
+import { uniqueEmail } from "../../../shared/client.js";
+import { expectStatus } from "../../../shared/assertions.js";
 import {
   TEST_PASSWORD,
   createUserWithTwoFactor,
   signUp,
-} from "../../shared/fixtures/index.js";
+} from "../../../shared/fixtures/index.js";
 
 /**
  * This file: the better-auth email sign-in endpoint.

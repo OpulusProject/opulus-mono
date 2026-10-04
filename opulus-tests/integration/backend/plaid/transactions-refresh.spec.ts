@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-import { expectOk, expectStatus } from "../../shared/assertions.js";
-import { withSession } from "../../shared/client.js";
-import { testDb } from "../../shared/db.js";
-import { createAuthedUser } from "../../shared/fixtures/auth.js";
+import { expectOk, expectStatus } from "../../../shared/assertions.js";
+import { withSession } from "../../../shared/client.js";
+import { testDb } from "../../../shared/db.js";
+import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
   createSandboxItem,
   requireSandboxCredentials,

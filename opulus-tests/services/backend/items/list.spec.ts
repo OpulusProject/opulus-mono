@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { withSession } from "../../shared/client.js";
-import { expectOk, expectStatus } from "../../shared/assertions.js";
-import { createAuthedUser, seedItemWithAccount } from "../../shared/fixtures/index.js";
+import { withSession } from "../../../shared/client.js";
+import { expectOk, expectStatus } from "../../../shared/assertions.js";
+import { createAuthedUser, seedItemWithAccount } from "../../../shared/fixtures/index.js";
 
 /**
  * This file: the linked-items list endpoint. Items have no create endpoint —

@@ -1,8 +1,8 @@
 import { test } from "@playwright/test";
 
-import { expectStatus } from "../../shared/assertions.js";
-import { withSession } from "../../shared/client.js";
-import { createAuthedUser } from "../../shared/fixtures/auth.js";
+import { expectStatus } from "../../../shared/assertions.js";
+import { withSession } from "../../../shared/client.js";
+import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 
 /**
  * POST /api/plaid/items — service-owned boundaries only.

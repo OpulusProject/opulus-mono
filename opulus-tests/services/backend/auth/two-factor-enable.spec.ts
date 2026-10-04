@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { withSession } from "../../shared/client.js";
-import { expectOk, expectStatus } from "../../shared/assertions.js";
-import { TEST_PASSWORD, createAuthedUser } from "../../shared/fixtures/index.js";
+import { withSession } from "../../../shared/client.js";
+import { expectOk, expectStatus } from "../../../shared/assertions.js";
+import { TEST_PASSWORD, createAuthedUser } from "../../../shared/fixtures/index.js";
 
 /**
  * This file: the better-auth 2FA enable endpoint. Enable provisions a TOTP

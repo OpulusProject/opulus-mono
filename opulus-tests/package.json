@@ -5,9 +5,9 @@
   "type": "module",
   "description": "Black-box REST regression suites for the Opulus HTTP services.",
   "scripts": {
-    "test:backend": "playwright test --config backend/playwright.config.ts",
-    "test:backend-integration": "playwright test --config backend-integration/playwright.config.ts",
-    "test:webhooks": "playwright test --config webhooks/playwright.config.ts",
+    "test:services-backend": "playwright test --config services/backend/playwright.config.ts",
+    "test:services-webhooks": "playwright test --config services/webhooks/playwright.config.ts",
+    "test:integration-backend": "playwright test --config integration/backend/playwright.config.ts",
     "test:report": "playwright show-report"
   },
   "dependencies": {

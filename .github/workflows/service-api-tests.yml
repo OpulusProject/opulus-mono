@@ -108,7 +108,7 @@ jobs:
           exit 1
 
       - name: Run backend service-api tests
-        run: pnpm --filter @opulus/tests test:backend
+        run: pnpm --filter @opulus/tests test:services-backend
 
   # ---------------------------------------------------------------------------
   # Branch protection matches this job by NAME ("Webhooks service-api tests").
@@ -192,4 +192,4 @@ jobs:
           exit 1
 
       - name: Run webhooks service-api tests
-        run: pnpm --filter @opulus/tests test:webhooks
+        run: pnpm --filter @opulus/tests test:services-webhooks

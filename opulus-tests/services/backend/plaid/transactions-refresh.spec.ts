@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { withSession } from "../../shared/client.js";
-import { expectValidationError } from "../../shared/assertions.js";
-import { createAuthedUser } from "../../shared/fixtures/index.js";
+import { withSession } from "../../../shared/client.js";
+import { expectValidationError } from "../../../shared/assertions.js";
+import { createAuthedUser } from "../../../shared/fixtures/index.js";
 
 /**
  * This file: the Plaid transactions-refresh endpoint. The happy path triggers an

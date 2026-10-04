@@ -1,15 +1,15 @@
 import { expect, test } from "@playwright/test";
-import { withSession } from "../../shared/client.js";
+import { withSession } from "../../../shared/client.js";
 import {
   expectOk,
   expectStatus,
   expectValidationError,
-} from "../../shared/assertions.js";
+} from "../../../shared/assertions.js";
 import {
   createAuthedUser,
   seedItemWithAccount,
   seedTransactions,
-} from "../../shared/fixtures/index.js";
+} from "../../../shared/fixtures/index.js";
 
 /**
  * This file: the transactions list endpoint (authenticated, query-validated).

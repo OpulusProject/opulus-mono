@@ -1,4 +1,4 @@
-import { disconnectDb } from "../shared/db.js";
+import { disconnectDb } from "../../shared/db.js";
 
 /**
  * Disconnect the seeding-only test-DB client (if any spec opened one) so the

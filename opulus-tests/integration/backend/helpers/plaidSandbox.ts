@@ -15,8 +15,8 @@
 
 import { test, type APIRequestContext } from "@playwright/test";
 
-import { expectStatus } from "../../shared/assertions.js";
-import { withSession } from "../../shared/client.js";
+import { expectStatus } from "../../../shared/assertions.js";
+import { withSession } from "../../../shared/client.js";
 
 export const PLAID_SANDBOX_URL = "https://sandbox.plaid.com";
 

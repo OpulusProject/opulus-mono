@@ -1,11 +1,11 @@
 import { test } from "@playwright/test";
-import { withSession } from "../../shared/client.js";
-import { expectOk, expectStatus } from "../../shared/assertions.js";
+import { withSession } from "../../../shared/client.js";
+import { expectOk, expectStatus } from "../../../shared/assertions.js";
 import {
   createAuthedUser,
   currentTotp,
   enableTwoFactor,
-} from "../../shared/fixtures/index.js";
+} from "../../../shared/fixtures/index.js";
 
 /**
  * This file: the better-auth 2FA verify-totp endpoint. With an authenticated

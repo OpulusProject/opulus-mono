@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-import { expectOk } from "../../shared/assertions.js";
-import { withSession } from "../../shared/client.js";
-import { createAuthedUser } from "../../shared/fixtures/auth.js";
+import { expectOk } from "../../../shared/assertions.js";
+import { withSession } from "../../../shared/client.js";
+import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import { requireSandboxCredentials } from "../helpers/plaidSandbox.js";
 
 /**
