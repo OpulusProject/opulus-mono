@@ -71,8 +71,8 @@ class PlaidService {
       transactions: {
         days_requested: 730,
       },
-      ...(config.webhookUrl && {
-        webhook: `${config.webhookUrl}/webhook/plaid`,
+      ...(config.plaidWebhookUrl && {
+        webhook: config.plaidWebhookUrl,
       }),
     };
 
@@ -97,8 +97,8 @@ class PlaidService {
       country_codes: [CountryCode.Ca],
       language: "en",
       access_token: accessToken,
-      ...(config.webhookUrl && {
-        webhook: `${config.webhookUrl}/webhook/plaid`,
+      ...(config.plaidWebhookUrl && {
+        webhook: config.plaidWebhookUrl,
       }),
     };
 
