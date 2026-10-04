@@ -102,10 +102,6 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
       {
         publicToken,
         institutionId: metadata.institution?.institution_id ?? null,
-        accounts: metadata.accounts.map((a) => ({
-          name: a.name,
-          mask: a.mask,
-        })),
       },
       {
         onSuccess: (result) => {

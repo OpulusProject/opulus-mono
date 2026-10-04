@@ -6,22 +6,10 @@ import { z } from "zod";
 
 export const createItemBodySchema = z.object({
   publicToken: z.string().min(1, "publicToken is required"),
-  // Subset of Plaid's Link onSuccess metadata used for duplicate detection
-  // (per https://plaid.com/docs/link/duplicate-items/).
   institutionId: z.string().nullable(),
-  accounts: z.array(
-    z.object({
-      name: z.string(),
-      mask: z.string().nullable(),
-    })
-  ),
 });
 
 /**
- * Create a new Plaid Item from the public_token returned by Link.
- * Short-circuits with 409 if the Link metadata matches an Item the user has
- * already linked (per Plaid's duplicate-items guidance).
- *
  * POST /api/plaid/items
  */
 export async function createItemController(
@@ -35,12 +23,10 @@ export async function createItemController(
       throw new UnauthorizedError("Authentication required");
     }
 
-    const { publicToken, institutionId, accounts } =
-      createItemBodySchema.parse(req.body);
+    const { publicToken, institutionId } = createItemBodySchema.parse(req.body);
 
     const result = await createItem(session.user.id, publicToken, {
       institutionId,
-      accounts,
     });
 
     if (result.duplicate) {
@@ -51,7 +37,9 @@ export async function createItemController(
       return;
     }
 
-    res.status(201).json({ data: { itemId: result.item.id, duplicate: false } });
+    res
+      .status(201)
+      .json({ data: { itemId: result.item.id, duplicate: false } });
   } catch (error) {
     next(error);
   }
