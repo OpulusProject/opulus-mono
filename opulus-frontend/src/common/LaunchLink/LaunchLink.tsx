@@ -11,8 +11,6 @@ import {
   PlaidLinkStableEvent,
   usePlaidLink,
 } from 'react-plaid-link';
-import { toast } from 'sonner';
-
 import { useCreateItem } from '@/hooks/plaid/useCreateItem';
 import { useLinkToken } from '@/hooks/plaid/useLinkToken';
 import { useUpdateItemAccounts } from '@/hooks/plaid/useUpdateItemAccounts';
@@ -90,32 +88,35 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
     if (itemId) {
       updateItemAccounts.mutate(itemId, {
         onError: (error) =>
-          toast.error('Failed to update your accounts.', {
-            description: error.message,
-          }),
+          console.error('Failed to update item accounts:', error),
         onSettled: onClose,
       });
+      return;
+    }
+
+    if (!metadata.institution?.institution_id) {
+      console.error(
+        'Plaid Link onSuccess returned no institution_id; skipping create.'
+      );
+      onClose();
       return;
     }
 
     createItem.mutate(
       {
         publicToken,
-        institutionId: metadata.institution?.institution_id ?? null,
+        institutionId: metadata.institution.institution_id,
       },
       {
         onSuccess: (result) => {
           if (result.data.duplicate) {
-            toast.info(
+            console.info(
               result.message ??
                 'This institution is already linked to your account.'
             );
           }
         },
-        onError: (error) =>
-          toast.error('Failed to link account.', {
-            description: error.message,
-          }),
+        onError: (error) => console.error('Failed to create item:', error),
         onSettled: onClose,
       }
     );

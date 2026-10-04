@@ -9,7 +9,7 @@ import {
 import { findDuplicateItem } from "./findDuplicateItem.js";
 
 export interface CreateItemInput {
-  institutionId: string | null;
+  institutionId: string;
 }
 
 export async function createItem(

@@ -6,10 +6,8 @@ import { prisma } from "@opulus/core";
  */
 export async function findDuplicateItem(
   userId: string,
-  institutionId: string | null
+  institutionId: string
 ): Promise<string | null> {
-  if (!institutionId) return null;
-
   const existing = await prisma.item.findFirst({
     where: { userId, institutionId },
     select: { id: true },

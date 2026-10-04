@@ -6,7 +6,7 @@ import { z } from "zod";
 
 export const createItemBodySchema = z.object({
   publicToken: z.string().min(1, "publicToken is required"),
-  institutionId: z.string().nullable(),
+  institutionId: z.string().min(1, "institutionId is required"),
 });
 
 /**

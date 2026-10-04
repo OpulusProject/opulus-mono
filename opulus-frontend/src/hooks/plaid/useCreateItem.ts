@@ -5,7 +5,7 @@ import { apiClient } from '@/lib/api/client';
 
 export interface CreateItemInput {
   publicToken: string;
-  institutionId: string | null;
+  institutionId: string;
 }
 
 export interface CreateItemResponse {
