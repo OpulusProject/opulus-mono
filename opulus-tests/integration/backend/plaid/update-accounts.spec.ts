@@ -31,18 +31,13 @@ test.describe("POST /api/plaid/items/:id/update-accounts (sandbox)", () => {
     await expectOk(res);
 
     const body = (await res.json()) as {
-      data: Record<string, number>;
+      data: { itemId: string; created: number; updated: number };
     };
-    // We don't pin the exact shape (the service's reconcile result shape may
-    // evolve), but the counts should be numeric and non-negative, and no new
-    // accounts should have appeared since initial link.
-    for (const [key, value] of Object.entries(body.data)) {
-      expect(typeof value, `${key} should be numeric`).toBe("number");
-      expect(value).toBeGreaterThanOrEqual(0);
-    }
-    if ("created" in body.data) {
-      expect(body.data.created).toBe(0);
-    }
+    expect(body.data.itemId).toBe(itemId);
+    // No new accounts should have appeared since the initial link; every
+    // Plaid-reported account should map to the existing rows we just wrote.
+    expect(body.data.created).toBe(0);
+    expect(body.data.updated).toBeGreaterThan(0);
   });
 
   test("rejects an item owned by a different user (401)", async ({ request }) => {

@@ -1,5 +1,8 @@
 import { Router } from "express";
-import { createItemController } from "@/controllers/plaid/createItemController.js";
+import {
+  createItemController,
+  createItemBodySchema,
+} from "@/controllers/plaid/createItemController.js";
 import { createLinkTokenController } from "@/controllers/plaid/createLinkTokenController.js";
 import { createUpdateLinkTokenController } from "@/controllers/plaid/createUpdateLinkTokenController.js";
 import { getInstitutionsController } from "@/controllers/plaid/getInstitutionsController.js";
@@ -22,7 +25,12 @@ router.post(
   createUpdateLinkTokenController
 );
 
-router.post("/items", requireSession, createItemController);
+router.post(
+  "/items",
+  requireSession,
+  validate(createItemBodySchema),
+  createItemController
+);
 router.post(
   "/items/:id/update-accounts",
   requireSession,

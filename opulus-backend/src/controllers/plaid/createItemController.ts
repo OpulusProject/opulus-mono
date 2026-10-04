@@ -23,7 +23,9 @@ export async function createItemController(
       throw new UnauthorizedError("Authentication required");
     }
 
-    const { publicToken, institutionId } = createItemBodySchema.parse(req.body);
+    const { publicToken, institutionId } = req.body as z.infer<
+      typeof createItemBodySchema
+    >;
 
     const result = await createItem(session.user.id, publicToken, {
       institutionId,

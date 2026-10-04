@@ -3,20 +3,19 @@ import { expect, test } from "@playwright/test";
 import { expectOk } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
-import {
-  DEFAULT_SANDBOX_INSTITUTION_ID,
-  requireSandboxCredentials,
-} from "../helpers/plaidSandbox.js";
+import { requireSandboxCredentials } from "../helpers/plaidSandbox.js";
 
 /**
  * GET /api/plaid/institutions — Plaid Sandbox round-trip.
  *
  * The 401 case lives in the service suite. Here we assert the backend
- * actually proxies Plaid: an authenticated caller gets a non-empty list and
- * the default sandbox institution (`ins_109508`) is present.
+ * actually proxies Plaid: an authenticated caller gets a non-empty paginated
+ * list with the expected shape. We intentionally do NOT assert on a specific
+ * institution_id (the backend's getInstitutions passes a page/count so a
+ * given sandbox institution may or may not appear in the first page).
  */
 test.describe("GET /api/plaid/institutions (sandbox)", () => {
-  test("returns a non-empty institutions list that includes the default sandbox institution", async ({
+  test("returns a non-empty institutions list for an authenticated user", async ({
     request,
   }) => {
     requireSandboxCredentials();
@@ -36,7 +35,11 @@ test.describe("GET /api/plaid/institutions (sandbox)", () => {
     };
     expect(body.data.institutions.length).toBeGreaterThan(0);
     expect(body.data.count).toBe(body.data.institutions.length);
-    const ids = body.data.institutions.map((i) => i.institution_id);
-    expect(ids).toContain(DEFAULT_SANDBOX_INSTITUTION_ID);
+    // Shape check against the Plaid Institution contract.
+    for (const inst of body.data.institutions) {
+      expect(typeof inst.institution_id).toBe("string");
+      expect(typeof inst.name).toBe("string");
+      expect(inst.name.length).toBeGreaterThan(0);
+    }
   });
 });
