@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect } from 'react';
 import {
   PlaidLinkError,
@@ -12,8 +11,9 @@ import {
   PlaidLinkStableEvent,
   usePlaidLink,
 } from 'react-plaid-link';
-
+import { useCreateItem } from '@/hooks/plaid/useCreateItem';
 import { useLinkToken } from '@/hooks/plaid/useLinkToken';
+import { useUpdateItemAccounts } from '@/hooks/plaid/useUpdateItemAccounts';
 
 interface LaunchLinkProps {
   /**
@@ -70,27 +70,56 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
   onSuccess,
   onExit,
 }) => {
-  const queryClient = useQueryClient();
   const {
     data: tokenData,
     isLoading: isLinkTokenLoading,
     isError: isLinkTokenError,
     error: linkTokenError,
   } = useLinkToken(itemId);
+  const createItem = useCreateItem();
+  const updateItemAccounts = useUpdateItemAccounts();
 
-  // Default success handler
   const handleSuccess: PlaidLinkOnSuccess = (
     publicToken: string,
     metadata: PlaidLinkOnSuccessMetadata
   ) => {
-    // Call custom success handler if provided
     onSuccess?.(publicToken, metadata);
 
-    // Invalidate items query to refresh the list with new item(s)
-    void queryClient.invalidateQueries({ queryKey: ['items'] });
+    if (itemId) {
+      updateItemAccounts.mutate(itemId, {
+        onError: (error) =>
+          console.error('Failed to update item accounts:', error),
+        onSettled: onClose,
+      });
+      return;
+    }
 
-    // Always close Link after success
-    onClose();
+    if (!metadata.institution?.institution_id) {
+      console.error(
+        'Plaid Link onSuccess returned no institution_id; skipping create.'
+      );
+      onClose();
+      return;
+    }
+
+    createItem.mutate(
+      {
+        publicToken,
+        institutionId: metadata.institution.institution_id,
+      },
+      {
+        onSuccess: (result) => {
+          if (result.data.duplicate) {
+            console.info(
+              result.message ??
+                'This institution is already linked to your account.'
+            );
+          }
+        },
+        onError: (error) => console.error('Failed to create item:', error),
+        onSettled: onClose,
+      }
+    );
   };
 
   // Default exit handler

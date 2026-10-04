@@ -85,11 +85,9 @@ export const webhookQueue = new Queue<PlaidWebhookEvent>("webhooks", {
  */
 export function createWebhookWorker(handlers: {
   handleItemWebhook: WebhookHandler;
-  handleLinkWebhook: WebhookHandler;
   handleTransactionsWebhook: WebhookHandler;
 }): Worker<PlaidWebhookEvent> {
-  const { handleItemWebhook, handleLinkWebhook, handleTransactionsWebhook } =
-    handlers;
+  const { handleItemWebhook, handleTransactionsWebhook } = handlers;
 
   const worker = new Worker<PlaidWebhookEvent>(
     "webhooks",
@@ -115,9 +113,6 @@ export function createWebhookWorker(handlers: {
         switch (webhook_type) {
           case "ITEM":
             await handleItemWebhook(webhook_code, event);
-            break;
-          case "LINK":
-            await handleLinkWebhook(webhook_code, event);
             break;
           case "TRANSACTIONS":
             await handleTransactionsWebhook(webhook_code, event);

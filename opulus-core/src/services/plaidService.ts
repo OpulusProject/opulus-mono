@@ -65,7 +65,6 @@ class PlaidService {
         client_user_id: userId,
       },
       client_name: "Opulus",
-      enable_multi_item_link: true,
       products,
       country_codes: countryCodes,
       language: "en",

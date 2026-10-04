@@ -12,7 +12,6 @@ import { errorHandler } from "./middleware/errorHandler.js";
 import { verifyPlaidWebhook } from "./middleware/verifyPlaidWebhook.js";
 import { handlePlaidWebhook } from "./plaid/handlePlaidWebhook.js";
 import { handleItemWebhook } from "./plaid/handlers/item/index.js";
-import { handleLinkWebhook } from "./plaid/handlers/link/index.js";
 import { handleTransactionsWebhook } from "./plaid/handlers/transactions/index.js";
 import {
   checkRedisConnection,
@@ -40,7 +39,6 @@ const router = Router();
 // Worker is created with handlers directly, ensuring they're set before processing starts
 const webhookWorker = createWebhookWorker({
   handleItemWebhook,
-  handleLinkWebhook,
   handleTransactionsWebhook,
 });
 

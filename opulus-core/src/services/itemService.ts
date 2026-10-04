@@ -256,3 +256,4 @@ class ItemService {
 
 // Export singleton instance
 export const itemService = new ItemService(prisma);
+
