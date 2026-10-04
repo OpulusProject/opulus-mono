@@ -1,23 +1,20 @@
 # Backend INTEGRATION test suite — round-trips through the real Plaid Sandbox.
 #
-# Separate from the service-api-tests workflow because:
-#   - these specs depend on an external service (Plaid Sandbox) and can be
-#     flaky when it has issues, which should NOT block merges on unrelated PRs;
-#   - they require real sandbox credentials (`PLAID_SANDBOX_CLIENT_ID` /
-#     `PLAID_SANDBOX_SECRET`) that fork PRs can't access, so the suite needs
-#     to gracefully skip rather than hard-fail;
-#   - keeping gating independent lets us promote this to a required check
-#     later (once stable) without entangling it with the service suite.
+# Separate from the service-api-tests workflow because these specs depend on
+# the real Plaid Sandbox and require sandbox credentials
+# (`PLAID_SANDBOX_CLIENT_ID` / `PLAID_SANDBOX_SECRET`). Keeping the gate
+# independent lets a Plaid outage show up as one failed check, not two.
 #
 # Triggers:
-#   - pull_request: runs on PRs targeting main. On fork PRs the secrets are
-#     absent and every sandbox test self-skips via requireSandboxCredentials().
+#   - pull_request: runs on PRs targeting main. Fork PRs that don't have
+#     access to the secrets will fail — contributors from forks should open
+#     the PR from a branch in the main repo.
 #   - schedule: nightly run against main so regressions surface even on days
 #     with no PR traffic.
 #   - workflow_dispatch: on-demand runs from the Actions tab.
 #
-# NOT currently a required status check — add it to branch protection only
-# after it has run cleanly for a few weeks.
+# This job is a required status check — add "Backend integration tests" to
+# the branch protection rule for `main`.
 
 name: Integration Tests
 
@@ -48,12 +45,11 @@ jobs:
       CLIENT_URL: http://localhost:5173
       NODE_ENV: test
       PORT: "8080"
-      # Real Plaid Sandbox creds. When these secrets are absent (fork PRs,
-      # account-less workflow_dispatch, etc.) the backend still boots with
-      # the dummies — individual tests self-skip via
-      # requireSandboxCredentials() — so the job stays green.
-      PLAID_CLIENT_ID: ${{ secrets.PLAID_SANDBOX_CLIENT_ID || 'ci-test' }}
-      PLAID_SECRET: ${{ secrets.PLAID_SANDBOX_SECRET || 'ci-test' }}
+      # Real Plaid Sandbox creds — required. Backend-under-test and the test
+      # helper must point at the same sandbox account for the exchange to
+      # succeed, so we source both pairs from the same secrets.
+      PLAID_CLIENT_ID: ${{ secrets.PLAID_SANDBOX_CLIENT_ID }}
+      PLAID_SECRET: ${{ secrets.PLAID_SANDBOX_SECRET }}
       PLAID_ENV: sandbox
       PLAID_SANDBOX_CLIENT_ID: ${{ secrets.PLAID_SANDBOX_CLIENT_ID }}
       PLAID_SANDBOX_SECRET: ${{ secrets.PLAID_SANDBOX_SECRET }}

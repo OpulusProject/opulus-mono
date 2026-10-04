@@ -7,13 +7,13 @@
  * public_token without going through Link's UI and requires real sandbox
  * credentials (NOT the `ci-test` dummies the service suite CI job uses).
  *
- * Design: tests opt in via `requireSandboxCredentials()`, which returns the
- * creds or `test.skip()`s the current test. Keeps the suite green in
- * environments where no secrets are provided and lights up full validation
- * when `PLAID_SANDBOX_CLIENT_ID` + `PLAID_SANDBOX_SECRET` are set.
+ * The integration suite is a required check: specs call
+ * `requireSandboxCredentials()` which hard-fails fast when the secrets are
+ * missing. If you're triggering CI from a fork or a branch where the
+ * `PLAID_SANDBOX_*` secrets aren't accessible, this suite will fail.
  */
 
-import { test, type APIRequestContext } from "@playwright/test";
+import { type APIRequestContext } from "@playwright/test";
 
 import { expectStatus } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
@@ -29,21 +29,20 @@ export interface SandboxCredentials {
 }
 
 /**
- * Returns sandbox credentials from env, or marks the current test as skipped.
- * Call at the top of each sandbox-touching test.
+ * Returns sandbox credentials from env, or throws. The integration suite is a
+ * required check; if the secrets are missing we fail loudly rather than
+ * silently passing a suite that didn't exercise anything.
  */
 export function requireSandboxCredentials(): SandboxCredentials {
   const clientId = process.env.PLAID_SANDBOX_CLIENT_ID;
   const secret = process.env.PLAID_SANDBOX_SECRET;
 
   if (!clientId || !secret || clientId === "ci-test" || secret === "ci-test") {
-    test.skip(
-      true,
-      "PLAID_SANDBOX_CLIENT_ID / PLAID_SANDBOX_SECRET not configured; " +
-        "skipping Plaid Sandbox round-trip test.",
+    throw new Error(
+      "PLAID_SANDBOX_CLIENT_ID / PLAID_SANDBOX_SECRET are required to run " +
+        "the backend integration suite. Set them in the environment (or, in " +
+        "CI, as repository secrets).",
     );
-    // test.skip throws, so this is unreachable, but TS wants a return.
-    throw new Error("unreachable");
   }
 
   return { clientId, secret };
