@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "DOTENV_CONFIG_PATH=../.env tsx watch src/server.ts",
     "build": "tsup",
-    "start": "node dist/server.js",
+    "start": "DOTENV_CONFIG_PATH=../.env node dist/server.js",
     "prisma:generate": "pnpm --filter @opulus/core prisma:generate",
     "prisma:studio": "pnpm --filter @opulus/core prisma:studio",
     "prisma:migrate": "pnpm --filter @opulus/core prisma:migrate",
