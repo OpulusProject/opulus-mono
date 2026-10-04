@@ -1,17 +1,4 @@
-import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect } from 'react';
-import {
-  PlaidLinkError,
-  PlaidLinkOnEvent,
-  PlaidLinkOnEventMetadata,
-  PlaidLinkOnExit,
-  PlaidLinkOnExitMetadata,
-  PlaidLinkOnSuccess,
-  PlaidLinkOnSuccessMetadata,
-  PlaidLinkOptionsWithLinkToken,
-  PlaidLinkStableEvent,
-  usePlaidLink,
-} from 'react-plaid-link';
 
 import { useLinkToken } from '@/hooks/plaid/useLinkToken';
 
@@ -21,132 +8,37 @@ interface LaunchLinkProps {
    */
   itemId?: string;
   /**
-   * Callback when Link is closed (successfully or with error)
+   * Called if we fail to obtain a hosted Link URL (network / Plaid error).
+   * The caller is expected to close its "linking" UI state.
    */
-  onClose: () => void;
-  /**
-   * Callback when user successfully links an account
-   * @param publicToken - Public token to exchange for access token
-   * @param metadata - Metadata about the linked account
-   */
-  onSuccess?: (
-    publicToken: string,
-    metadata: PlaidLinkOnSuccessMetadata
-  ) => void;
-  /**
-   * Callback when user exits Link without completing
-   * @param error - Error if any occurred
-   * @param metadata - Metadata about the exit
-   */
-  onExit?: (
-    error: PlaidLinkError | null,
-    metadata: PlaidLinkOnExitMetadata
-  ) => void;
+  onError?: (error: Error) => void;
 }
 
 /**
- * LaunchLink Component
+ * LaunchLink
  *
- * Handles Plaid Link initialization and opening.
- * Follows Plaid best practices:
- * - Only opens Link when token is ready
- * - Handles loading and error states
- * - Provides callbacks for success/exit events
- * - Automatically opens Link when ready
+ * Opulus uses Plaid Hosted Link. The browser is redirected to Plaid's hosted
+ * UI; the public_token is delivered server-side to our webhook
+ * (ITEM_ADD_RESULT), and the user is redirected back to `${CLIENT_URL}/accounts`
+ * when the session completes. There is no `onSuccess` / `onExit` callback —
+ * those only exist for the embedded (`react-plaid-link`) flow.
  *
- * @example
- * ```tsx
- * <LaunchLink
- *   onClose={() => setIsOpen(false)}
- *   onSuccess={(publicToken, metadata) => {
- *     // Exchange public token for access token
- *   }}
- * />
- * ```
+ * Render this component conditionally when the user clicks "Add Account" or
+ * "Reconnect". It mounts, requests a link token, and performs a full-page
+ * navigation to Plaid as soon as the token is ready.
  */
-export const LaunchLink: React.FC<LaunchLinkProps> = ({
-  itemId,
-  onClose,
-  onSuccess,
-  onExit,
-}) => {
-  const queryClient = useQueryClient();
-  const {
-    data: tokenData,
-    isLoading: isLinkTokenLoading,
-    isError: isLinkTokenError,
-    error: linkTokenError,
-  } = useLinkToken(itemId);
+export const LaunchLink: React.FC<LaunchLinkProps> = ({ itemId, onError }) => {
+  const { data, isError, error } = useLinkToken(itemId);
 
-  // Default success handler
-  const handleSuccess: PlaidLinkOnSuccess = (
-    publicToken: string,
-    metadata: PlaidLinkOnSuccessMetadata
-  ) => {
-    // Call custom success handler if provided
-    onSuccess?.(publicToken, metadata);
-
-    // Invalidate items query to refresh the list with new item(s)
-    void queryClient.invalidateQueries({ queryKey: ['items'] });
-
-    // Always close Link after success
-    onClose();
-  };
-
-  // Default exit handler
-  const handleExit: PlaidLinkOnExit = (
-    error: PlaidLinkError | null,
-    metadata: PlaidLinkOnExitMetadata
-  ) => {
-    // Call custom exit handler if provided
-    onExit?.(error, metadata);
-
-    // Always close Link after exit
-    onClose();
-  };
-
-  // Event handler for Link events (for analytics/logging)
-  const handleEvent: PlaidLinkOnEvent = (
-    eventName: PlaidLinkStableEvent | string,
-    metadata: PlaidLinkOnEventMetadata
-  ) => {
-    // Log events for debugging/analytics
-    // TODO: Implement proper event logging
-    console.log('Plaid Link Event:', eventName, metadata);
-  };
-
-  // Configure Plaid Link
-  const config: PlaidLinkOptionsWithLinkToken = {
-    token: tokenData?.linkToken || null,
-    onSuccess: handleSuccess,
-    onExit: handleExit,
-    onEvent: handleEvent,
-  };
-
-  // Initialize Plaid Link hook
-  const { open, ready } = usePlaidLink(config);
-
-  // Open Link when ready and token is available
   useEffect(() => {
-    if (ready && tokenData?.linkToken) {
-      open();
+    if (isError) {
+      onError?.(error ?? new Error('Failed to create Plaid Link token'));
+      return;
     }
-  }, [ready, tokenData?.linkToken, open]);
+    if (data?.hostedLinkUrl) {
+      window.location.assign(data.hostedLinkUrl);
+    }
+  }, [data?.hostedLinkUrl, isError, error, onError]);
 
-  // Handle loading state
-  if (isLinkTokenLoading) {
-    return null; // Or return a loading spinner if desired
-  }
-
-  // Handle error state
-  if (isLinkTokenError) {
-    console.error('Failed to create link token:', linkTokenError);
-    // Close immediately on error
-    onClose();
-    return null;
-  }
-
-  // Component doesn't render anything visible
-  // Plaid Link opens as a modal overlay
   return null;
 };

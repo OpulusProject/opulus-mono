@@ -41,6 +41,7 @@ export async function createUpdateLinkTokenController(
     res.status(200).json({
       data: {
         linkToken: linkTokenResponse.link_token,
+        hostedLinkUrl: linkTokenResponse.hosted_link_url ?? undefined,
       },
     });
   } catch (error) {

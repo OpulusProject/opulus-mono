@@ -74,6 +74,13 @@ class PlaidService {
       ...(config.plaidWebhookUrl && {
         webhook: config.plaidWebhookUrl,
       }),
+      // Hosted Link: Plaid hosts the Link UI; the public_token is delivered to
+      // our webhook (ITEM_ADD_RESULT) rather than to a frontend onSuccess
+      // callback. After the user finishes, Plaid redirects them to
+      // completion_redirect_uri.
+      hosted_link: {
+        completion_redirect_uri: `${config.clientUrl}/accounts`,
+      },
     };
 
     try {
@@ -100,6 +107,9 @@ class PlaidService {
       ...(config.plaidWebhookUrl && {
         webhook: config.plaidWebhookUrl,
       }),
+      hosted_link: {
+        completion_redirect_uri: `${config.clientUrl}/accounts`,
+      },
     };
 
     try {

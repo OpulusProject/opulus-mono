@@ -23,17 +23,10 @@ export const Accounts: React.FC = () => {
   const [updateItemId, setUpdateItemId] = useState<string | undefined>();
   const { data: itemsData, isLoading } = useItems();
 
-  const handleLinkSuccess = (publicToken: string, metadata: unknown) => {
-    console.log('Plaid Link Success:', { publicToken, metadata });
-    // TODO: Exchange public token for access token
-    // TODO: Store account information
-  };
-
-  const handleLinkExit = (error: unknown, metadata: unknown) => {
-    if (error) {
-      console.error('Plaid Link Error:', error);
-    }
-    console.log('Plaid Link Exit:', metadata);
+  const handleLinkError = (error: Error) => {
+    console.error('Plaid Link error:', error);
+    setIsLinkOpen(false);
+    setUpdateItemId(undefined);
   };
 
   return (
@@ -93,15 +86,7 @@ export const Accounts: React.FC = () => {
         )}
       </div>
       {isLinkOpen && (
-        <LaunchLink
-          itemId={updateItemId}
-          onClose={() => {
-            setIsLinkOpen(false);
-            setUpdateItemId(undefined);
-          }}
-          onSuccess={handleLinkSuccess}
-          onExit={handleLinkExit}
-        />
+        <LaunchLink itemId={updateItemId} onError={handleLinkError} />
       )}
     </AppLayout>
   );

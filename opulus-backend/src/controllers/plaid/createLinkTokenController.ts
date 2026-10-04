@@ -52,6 +52,7 @@ export async function createLinkTokenController(
       userId
     );
     const linkToken = linkTokenResponse.link_token;
+    const hostedLinkUrl = linkTokenResponse.hosted_link_url ?? undefined;
 
     // Store link session in database
     await linkSessionService.create({
@@ -62,6 +63,7 @@ export async function createLinkTokenController(
     res.status(200).json({
       data: {
         linkToken,
+        hostedLinkUrl,
       },
     });
   } catch (error) {
