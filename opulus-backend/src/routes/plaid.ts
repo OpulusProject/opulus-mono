@@ -1,8 +1,10 @@
 import { Router } from "express";
+import { createItemController } from "@/controllers/plaid/createItemController.js";
 import { createLinkTokenController } from "@/controllers/plaid/createLinkTokenController.js";
 import { createUpdateLinkTokenController } from "@/controllers/plaid/createUpdateLinkTokenController.js";
 import { getInstitutionsController } from "@/controllers/plaid/getInstitutionsController.js";
 import { refreshTransactionsController } from "@/controllers/plaid/refreshTransactionsController.js";
+import { syncItemAccountsController } from "@/controllers/plaid/syncItemAccountsController.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
 import { validate } from "@/middleware/validation.js";
 import { refreshTransactionsBodySchema } from "@/controllers/plaid/refreshTransactionsController.js";
@@ -18,6 +20,15 @@ router.post(
   "/link-token/update",
   requireSession,
   createUpdateLinkTokenController
+);
+
+// Item creation is driven by the frontend's Link onSuccess callback (not a
+// Plaid webhook) now that we no longer use Multi-Item Link.
+router.post("/items", requireSession, createItemController);
+router.post(
+  "/items/:id/sync-accounts",
+  requireSession,
+  syncItemAccountsController
 );
 
 router.get("/institutions", requireSession, getInstitutionsController);

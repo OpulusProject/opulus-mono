@@ -8,11 +8,11 @@ import {
 
 /**
  * This file: the Plaid webhook ingest endpoint — the service's only inbound
- * write surface. Its accepted create happy-path (item creation) requires a
- * genuinely Plaid-signed webhook (asymmetric ES256, key fetched from Plaid),
- * which cannot be produced offline; that path needs real Plaid and is out of
- * scope for this black-box suite. What this single service owns and can answer
- * deterministically is the verification boundary, covered exhaustively below.
+ * write surface. Item creation is no longer webhook-driven (handled via the
+ * frontend's Link onSuccess → POST /api/plaid/items), so the only paths this
+ * service still owns are signature verification (covered deterministically
+ * below) and queue dispatch for ITEM / TRANSACTIONS webhooks (requires a
+ * genuinely Plaid-signed ES256 payload, out of scope for black-box tests).
  */
 test.describe("POST /webhook/plaid", () => {
   test("rejects a request missing the plaid-verification header (401)", async ({

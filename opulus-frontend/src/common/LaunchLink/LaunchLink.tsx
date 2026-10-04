@@ -14,6 +14,7 @@ import {
 } from 'react-plaid-link';
 
 import { useLinkToken } from '@/hooks/plaid/useLinkToken';
+import { apiClient } from '@/lib/api/client';
 
 interface LaunchLinkProps {
   /**
@@ -78,19 +79,43 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
     error: linkTokenError,
   } = useLinkToken(itemId);
 
-  // Default success handler
+  // Default success handler.
+  //
+  // Plaid does not fire a webhook for the completion of a standard embedded
+  // Link session (we removed Multi-Item Link + ITEM_ADD_RESULT), so the
+  // onSuccess callback is the authoritative signal to persist/refresh server
+  // state. There are two cases:
+  //
+  //   1. New item (no `itemId` prop):   POST /api/plaid/items { publicToken }
+  //      Backend exchanges the public_token for an access_token and persists
+  //      the Item + its initial accounts. Idempotent on plaidItemId.
+  //
+  //   2. Update mode (itemId present):  POST /api/plaid/items/:id/sync-accounts
+  //      Access token didn't change (per Plaid's update-mode docs), so we
+  //      don't exchange anything — we just reconcile the account set. Safe
+  //      no-op for pure reconnects, and the only way the backend learns
+  //      about new accounts picked up in an "add accounts" session.
   const handleSuccess: PlaidLinkOnSuccess = (
     publicToken: string,
     metadata: PlaidLinkOnSuccessMetadata
   ) => {
-    // Call custom success handler if provided
     onSuccess?.(publicToken, metadata);
 
-    // Invalidate items query to refresh the list with new item(s)
-    void queryClient.invalidateQueries({ queryKey: ['items'] });
+    const persist = itemId
+      ? apiClient.post(`/api/plaid/items/${itemId}/sync-accounts`)
+      : apiClient.post('/api/plaid/items', { publicToken });
 
-    // Always close Link after success
-    onClose();
+    void persist
+      .catch((error: unknown) => {
+        // TODO: surface a toast + retry UI. For now, log so the user can
+        // report; the publicToken is already lost from Plaid's side so a
+        // one-shot server failure requires the user to re-link.
+        console.error('Failed to persist Plaid Link result:', error);
+      })
+      .finally(() => {
+        void queryClient.invalidateQueries({ queryKey: ['items'] });
+        onClose();
+      });
   };
 
   // Default exit handler

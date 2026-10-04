@@ -85,11 +85,9 @@ export const webhookQueue = new Queue<PlaidWebhookEvent>("webhooks", {
  */
 export function createWebhookWorker(handlers: {
   handleItemWebhook: WebhookHandler;
-  handleLinkWebhook: WebhookHandler;
   handleTransactionsWebhook: WebhookHandler;
 }): Worker<PlaidWebhookEvent> {
-  const { handleItemWebhook, handleLinkWebhook, handleTransactionsWebhook } =
-    handlers;
+  const { handleItemWebhook, handleTransactionsWebhook } = handlers;
 
   const worker = new Worker<PlaidWebhookEvent>(
     "webhooks",
@@ -117,7 +115,15 @@ export function createWebhookWorker(handlers: {
             await handleItemWebhook(webhook_code, event);
             break;
           case "LINK":
-            await handleLinkWebhook(webhook_code, event);
+            // LINK webhooks (ITEM_ADD_RESULT, SESSION_FINISHED, EVENTS) only
+            // fire for Hosted Link / Multi-Item Link / accounts opted into
+            // Link events. We use embedded react-plaid-link and persist via
+            // the frontend onSuccess callback (POST /api/plaid/items), so no
+            // LINK webhook action is required. Log and ack.
+            logger.info(
+              { job_id: job.id, webhook_type, webhook_code },
+              "LINK webhook received but intentionally not handled"
+            );
             break;
           case "TRANSACTIONS":
             await handleTransactionsWebhook(webhook_code, event);
