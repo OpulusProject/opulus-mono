@@ -6,37 +6,103 @@ import {
   prisma,
 } from "@opulus/core";
 
-import { updateItemAccounts } from "./updateItemAccounts.js";
+export interface LinkAccountMetadata {
+  name: string;
+  mask: string | null;
+}
+
+export interface DuplicateCheckInput {
+  institutionId: string | null;
+  accounts: LinkAccountMetadata[];
+}
+
+export type CreateItemResult =
+  | { duplicate: false; item: Awaited<ReturnType<typeof persistNewItem>> }
+  | { duplicate: true; existingItemId: string };
 
 /**
  * Exchange a Plaid public_token for an access_token and persist the Item
  * and its initial accounts.
  *
- * ## Duplicate / re-link handling
+ * Per Plaid's [duplicate items guidance](https://plaid.com/docs/link/duplicate-items/):
  *
- * Plaid's recommendation (https://plaid.com/docs/link/duplicate-items/) is
- * that if a user re-links an institution they're already connected to, the
- * exchange will return the *same* `item_id` with a *new* `access_token`
- * (the old one is invalidated). The app should detect this and either
- * surface a "already linked" message, remove the old Item, or treat the new
- * exchange as the source of truth.
+ * > Then, before requesting an access_token, examine and compare the onSuccess
+ * > callback metadata to the user's existing Items. You can compare a
+ * > combination of the accounts' institution_id, account name, and account
+ * > mask to determine whether an end user has previously linked an account to
+ * > your application. Do not exchange a public token for an access token if
+ * > you detect a duplicate Item.
  *
- * We treat the new exchange as the source of truth:
- *   1. Refresh the stored `accessToken` so the old (now dead) token isn't
- *      used by downstream syncs.
- *   2. Delegate account reconciliation to `updateItemAccounts`, which
- *      upserts the current Plaid selection and soft-deletes anything the
- *      user de-selected on this re-link.
- *
- * Example from the review question: user initially linked 5 accounts, then
- * re-links the same institution and picks only 2. Idempotency hits, access
- * token is rotated, and `updateItemAccounts` soft-deletes the 3 omitted
- * accounts (their transactions stay for history).
+ * The frontend forwards the Link onSuccess metadata (institution id + per-
+ * account name/mask) alongside the public token. We check for a duplicate
+ * *before* calling /item/public_token/exchange so we don't rotate a working
+ * access token or burn an exchange on something we won't persist.
  */
-export async function createItem(userId: string, publicToken: string) {
-  const exchange = await plaidService.exchangePublicToken(publicToken);
-  const accessToken = exchange.access_token;
+export async function createItem(
+  userId: string,
+  publicToken: string,
+  linkMetadata: DuplicateCheckInput
+) {
+  const duplicate = await findDuplicateItemId(userId, linkMetadata);
+  if (duplicate) {
+    logger.info(
+      {
+        user_id: userId,
+        existing_item_id: duplicate,
+        institution_id: linkMetadata.institutionId,
+      },
+      "Duplicate Item detected via Link metadata; skipping public_token exchange"
+    );
+    return { duplicate: true as const, existingItemId: duplicate };
+  }
 
+  const exchange = await plaidService.exchangePublicToken(publicToken);
+  const item = await persistNewItem(userId, exchange.access_token);
+  return { duplicate: false as const, item };
+}
+
+/**
+ * Returns the id of a persisted Item that matches the Link metadata, or null.
+ *
+ * Match criteria: same user + same `institutionId` + at least one account
+ * sharing both `name` and `mask`. The combo of (name, mask) is deterministic
+ * on the Plaid side for a given underlying account and is what Plaid's doc
+ * recommends. We only consult DB rows (no Plaid API calls).
+ */
+async function findDuplicateItemId(
+  userId: string,
+  linkMetadata: DuplicateCheckInput
+): Promise<string | null> {
+  if (!linkMetadata.institutionId || linkMetadata.accounts.length === 0) {
+    return null;
+  }
+
+  const candidates = await prisma.item.findMany({
+    where: {
+      userId,
+      institutionId: linkMetadata.institutionId,
+    },
+    select: {
+      id: true,
+      bankAccounts: { select: { name: true, mask: true } },
+    },
+  });
+
+  for (const candidate of candidates) {
+    const persistedKeys = new Set(
+      candidate.bankAccounts.map((a) => `${a.name}|${a.mask ?? ""}`)
+    );
+    const matches = linkMetadata.accounts.some((a) =>
+      persistedKeys.has(`${a.name}|${a.mask ?? ""}`)
+    );
+    if (matches) return candidate.id;
+  }
+
+  return null;
+}
+
+/** Exchange the public token, fetch item + institution + accounts, persist. */
+async function persistNewItem(userId: string, accessToken: string) {
   const { item } = await plaidService.getItem(accessToken);
 
   let institution: {
@@ -65,23 +131,6 @@ export async function createItem(userId: string, publicToken: string) {
 
   const accountsResponse = await plaidService.getAccounts(accessToken);
   const itemData = normalizePlaidItem(item, userId, accessToken, institution);
-
-  const existing = await prisma.item.findUnique({
-    where: { plaidItemId: itemData.plaidItemId },
-  });
-
-  if (existing) {
-    const refreshed = await prisma.item.update({
-      where: { id: existing.id },
-      data: { accessToken },
-    });
-    const reconciliation = await updateItemAccounts(existing.id);
-    logger.info(
-      { plaid_item_id: itemData.plaidItemId, item_id: existing.id, ...reconciliation },
-      "Item already exists; refreshed access token and reconciled accounts"
-    );
-    return refreshed;
-  }
 
   return prisma.$transaction(async (tx) => {
     const createdItem = await tx.item.create({ data: itemData });

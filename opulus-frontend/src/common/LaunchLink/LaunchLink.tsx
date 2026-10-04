@@ -1,4 +1,3 @@
-import { useQueryClient } from '@tanstack/react-query';
 import React, { useEffect } from 'react';
 import {
   PlaidLinkError,
@@ -12,9 +11,11 @@ import {
   PlaidLinkStableEvent,
   usePlaidLink,
 } from 'react-plaid-link';
+import { toast } from 'sonner';
 
+import { useCreateItem } from '@/hooks/plaid/useCreateItem';
 import { useLinkToken } from '@/hooks/plaid/useLinkToken';
-import { apiClient } from '@/lib/api/client';
+import { useUpdateItemAccounts } from '@/hooks/plaid/useUpdateItemAccounts';
 
 interface LaunchLinkProps {
   /**
@@ -71,13 +72,14 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
   onSuccess,
   onExit,
 }) => {
-  const queryClient = useQueryClient();
   const {
     data: tokenData,
     isLoading: isLinkTokenLoading,
     isError: isLinkTokenError,
     error: linkTokenError,
   } = useLinkToken(itemId);
+  const createItem = useCreateItem();
+  const updateItemAccounts = useUpdateItemAccounts();
 
   const handleSuccess: PlaidLinkOnSuccess = (
     publicToken: string,
@@ -85,19 +87,42 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
   ) => {
     onSuccess?.(publicToken, metadata);
 
-    const persist = itemId
-      ? apiClient.post(`/api/plaid/items/${itemId}/update-accounts`)
-      : apiClient.post('/api/plaid/items', { publicToken });
-
-    void persist
-      .catch((error: unknown) => {
-        // TODO: surface a toast + retry UI.
-        console.error('Failed to persist Plaid Link result:', error);
-      })
-      .finally(() => {
-        void queryClient.invalidateQueries({ queryKey: ['items'] });
-        onClose();
+    if (itemId) {
+      updateItemAccounts.mutate(itemId, {
+        onError: (error) =>
+          toast.error('Failed to update your accounts.', {
+            description: error.message,
+          }),
+        onSettled: onClose,
       });
+      return;
+    }
+
+    createItem.mutate(
+      {
+        publicToken,
+        institutionId: metadata.institution?.institution_id ?? null,
+        accounts: metadata.accounts.map((a) => ({
+          name: a.name,
+          mask: a.mask,
+        })),
+      },
+      {
+        onSuccess: (result) => {
+          if (result.data.duplicate) {
+            toast.info(
+              result.message ??
+                'This institution is already linked to your account.'
+            );
+          }
+        },
+        onError: (error) =>
+          toast.error('Failed to link account.', {
+            description: error.message,
+          }),
+        onSettled: onClose,
+      }
+    );
   };
 
   // Default exit handler

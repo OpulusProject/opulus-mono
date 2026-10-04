@@ -6,12 +6,21 @@ import { z } from "zod";
 
 export const createItemBodySchema = z.object({
   publicToken: z.string().min(1, "publicToken is required"),
+  // Subset of Plaid's Link onSuccess metadata used for duplicate detection
+  // (per https://plaid.com/docs/link/duplicate-items/).
+  institutionId: z.string().nullable(),
+  accounts: z.array(
+    z.object({
+      name: z.string(),
+      mask: z.string().nullable(),
+    })
+  ),
 });
 
 /**
- * Exchange a Plaid Link public_token (from the Link onSuccess callback) for
- * an access token, and persist the Item + its initial accounts. Idempotent
- * on the Plaid item_id, so safe to retry if the frontend network call fails.
+ * Create a new Plaid Item from the public_token returned by Link.
+ * Short-circuits with 409 if the Link metadata matches an Item the user has
+ * already linked (per Plaid's duplicate-items guidance).
  *
  * POST /api/plaid/items
  */
@@ -26,10 +35,23 @@ export async function createItemController(
       throw new UnauthorizedError("Authentication required");
     }
 
-    const { publicToken } = createItemBodySchema.parse(req.body);
-    const item = await createItem(session.user.id, publicToken);
+    const { publicToken, institutionId, accounts } =
+      createItemBodySchema.parse(req.body);
 
-    res.status(201).json({ data: { itemId: item.id } });
+    const result = await createItem(session.user.id, publicToken, {
+      institutionId,
+      accounts,
+    });
+
+    if (result.duplicate) {
+      res.status(409).json({
+        data: { itemId: result.existingItemId, duplicate: true },
+        message: "This institution is already linked to your account.",
+      });
+      return;
+    }
+
+    res.status(201).json({ data: { itemId: result.item.id, duplicate: false } });
   } catch (error) {
     next(error);
   }

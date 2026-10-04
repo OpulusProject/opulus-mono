@@ -224,7 +224,6 @@ class ItemService {
         where: { userId },
         include: {
           bankAccounts: {
-            where: { deletedAt: null },
             select: {
               id: true,
               name: true,
