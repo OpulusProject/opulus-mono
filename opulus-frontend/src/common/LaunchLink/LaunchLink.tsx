@@ -102,7 +102,7 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
     onSuccess?.(publicToken, metadata);
 
     const persist = itemId
-      ? apiClient.post(`/api/plaid/items/${itemId}/sync-accounts`)
+      ? apiClient.post(`/api/plaid/items/${itemId}/update-accounts`)
       : apiClient.post('/api/plaid/items', { publicToken });
 
     void persist

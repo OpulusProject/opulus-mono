@@ -1,5 +1,6 @@
 import { getSession } from "@/services/session/getSession.js";
-import { createItemFromPublicToken, UnauthorizedError } from "@opulus/core";
+import { createItemForUser } from "@/services/plaid/createItem.js";
+import { UnauthorizedError } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
@@ -26,7 +27,7 @@ export async function createItemController(
     }
 
     const { publicToken } = createItemBodySchema.parse(req.body);
-    const item = await createItemFromPublicToken(session.user.id, publicToken);
+    const item = await createItemForUser(session.user.id, publicToken);
 
     res.status(201).json({ data: { itemId: item.id } });
   } catch (error) {

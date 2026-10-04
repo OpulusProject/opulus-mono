@@ -1,19 +1,16 @@
 import { getSession } from "@/services/session/getSession.js";
-import {
-  itemService,
-  syncItemAccountsFromPlaid,
-  UnauthorizedError,
-} from "@opulus/core";
+import { updateItemAccountsForUser } from "@/services/plaid/updateItemAccounts.js";
+import { itemService, UnauthorizedError } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 
 /**
  * Reconcile a persisted Item's bank accounts with Plaid's current view.
- * Called by the frontend after a Link update-mode "add accounts" session
- * completes (Plaid does not fire a webhook for that flow).
+ * Called by the frontend after a Link update-mode session completes (Plaid
+ * does not fire a webhook for that flow).
  *
- * POST /api/plaid/items/:id/sync-accounts
+ * POST /api/plaid/items/:id/update-accounts
  */
-export async function syncItemAccountsController(
+export async function updateItemAccountsController(
   req: Request,
   res: Response,
   next: NextFunction
@@ -30,7 +27,7 @@ export async function syncItemAccountsController(
       throw new UnauthorizedError("You do not have access to this item");
     }
 
-    const result = await syncItemAccountsFromPlaid(itemId);
+    const result = await updateItemAccountsForUser(itemId);
     res.status(200).json({ data: result });
   } catch (error) {
     next(error);

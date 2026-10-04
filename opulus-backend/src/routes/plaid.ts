@@ -4,7 +4,7 @@ import { createLinkTokenController } from "@/controllers/plaid/createLinkTokenCo
 import { createUpdateLinkTokenController } from "@/controllers/plaid/createUpdateLinkTokenController.js";
 import { getInstitutionsController } from "@/controllers/plaid/getInstitutionsController.js";
 import { refreshTransactionsController } from "@/controllers/plaid/refreshTransactionsController.js";
-import { syncItemAccountsController } from "@/controllers/plaid/syncItemAccountsController.js";
+import { updateItemAccountsController } from "@/controllers/plaid/updateItemAccountsController.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
 import { validate } from "@/middleware/validation.js";
 import { refreshTransactionsBodySchema } from "@/controllers/plaid/refreshTransactionsController.js";
@@ -26,9 +26,9 @@ router.post(
 // Plaid webhook) now that we no longer use Multi-Item Link.
 router.post("/items", requireSession, createItemController);
 router.post(
-  "/items/:id/sync-accounts",
+  "/items/:id/update-accounts",
   requireSession,
-  syncItemAccountsController
+  updateItemAccountsController
 );
 
 router.get("/institutions", requireSession, getInstitutionsController);
