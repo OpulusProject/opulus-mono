@@ -1,4 +1,5 @@
 import { ItemPublicDTO } from '@opulus/core';
+import { MoreHorizontal, Plus, RefreshCw } from 'lucide-react';
 import React from 'react';
 
 import {
@@ -8,17 +9,22 @@ import {
   Badge,
   Button,
   Card,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   Status,
 } from '@/components/ui';
+import type { UpdateMode } from '@/hooks/plaid/useLinkToken';
 import { getItemStatus } from '@/pages/Accounts/utils/itemStatus';
 import { calculateTotalBalance } from '@/utils/accounts';
 
 interface ItemCardProps {
   item: ItemPublicDTO;
-  onReconnect: (itemId: string) => void;
+  onUpdate: (itemId: string, mode: UpdateMode) => void;
 }
 
-export const ItemCard: React.FC<ItemCardProps> = ({ item, onReconnect }) => {
+export const ItemCard: React.FC<ItemCardProps> = ({ item, onUpdate }) => {
   const logoUrl = item.institutionLogo
     ? item.institutionLogo.startsWith('data:')
       ? item.institutionLogo
@@ -67,17 +73,35 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onReconnect }) => {
         <div className="text-xs text-muted-foreground">CAD</div>
       </div>
 
-      {status.needsReconnect && (
-        <Button
-          type="button"
-          variant={status.variant === 'offline' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => onReconnect(item.id)}
-          className="shrink-0"
-        >
-          Reconnect
-        </Button>
-      )}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="shrink-0"
+            aria-label={`Actions for ${item.institutionName || 'this institution'}`}
+          >
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          {status.needsReconnect && (
+            <DropdownMenuItem onSelect={() => onUpdate(item.id, 'reconnect')}>
+              <RefreshCw className="size-4" />
+              Reconnect
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuItem onSelect={() => onUpdate(item.id, 'add-accounts')}>
+            <Plus className="size-4" />
+            Add accounts
+          </DropdownMenuItem>
+          {/*
+            Future: Disconnect action goes here. Keep as the last item and use
+            `variant="destructive"` on the DropdownMenuItem.
+          */}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </Card>
   );
 };

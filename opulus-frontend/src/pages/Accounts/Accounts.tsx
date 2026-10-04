@@ -15,12 +15,18 @@ import {
   Spinner,
 } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
+import type { UpdateMode } from '@/hooks/plaid/useLinkToken';
 
 import { AddAccountCard, EmptyAccountsView, ItemCard } from './components';
 
+interface UpdateTarget {
+  itemId: string;
+  mode: UpdateMode;
+}
+
 export const Accounts: React.FC = () => {
   const [isLinkOpen, setIsLinkOpen] = useState(false);
-  const [updateItemId, setUpdateItemId] = useState<string | undefined>();
+  const [updateTarget, setUpdateTarget] = useState<UpdateTarget | undefined>();
   const { data: itemsData, isLoading } = useItems();
 
   const handleLinkSuccess = (publicToken: string, metadata: unknown) => {
@@ -69,15 +75,15 @@ export const Accounts: React.FC = () => {
               <ItemCard
                 key={item.id}
                 item={item}
-                onReconnect={(itemId) => {
-                  setUpdateItemId(itemId);
+                onUpdate={(itemId, mode) => {
+                  setUpdateTarget({ itemId, mode });
                   setIsLinkOpen(true);
                 }}
               />
             ))}
             <AddAccountCard
               onAddAccount={() => {
-                setUpdateItemId(undefined);
+                setUpdateTarget(undefined);
                 setIsLinkOpen(true);
               }}
             />
@@ -94,10 +100,11 @@ export const Accounts: React.FC = () => {
       </div>
       {isLinkOpen && (
         <LaunchLink
-          itemId={updateItemId}
+          itemId={updateTarget?.itemId}
+          updateMode={updateTarget?.mode}
           onClose={() => {
             setIsLinkOpen(false);
-            setUpdateItemId(undefined);
+            setUpdateTarget(undefined);
           }}
           onSuccess={handleLinkSuccess}
           onExit={handleLinkExit}
