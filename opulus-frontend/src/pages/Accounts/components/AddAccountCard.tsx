@@ -1,13 +1,7 @@
 import { Plus } from 'lucide-react';
 import React from 'react';
 
-import {
-  Avatar,
-  AvatarFallback,
-  Card,
-  CardContent,
-  CardHeader,
-} from '@/components/ui';
+import { Avatar, AvatarFallback, Card } from '@/components/ui';
 
 interface AddAccountCardProps {
   onAddAccount: () => void;
@@ -18,19 +12,23 @@ export const AddAccountCard: React.FC<AddAccountCardProps> = ({
 }) => {
   return (
     <Card
-      className="w-[310px] p-8 cursor-pointer hover:opacity-80 transition-opacity flex flex-col items-center justify-center"
+      className="flex cursor-pointer flex-row items-center gap-4 p-4 transition-opacity hover:opacity-80"
       onClick={onAddAccount}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onAddAccount();
+        }
+      }}
     >
-      <CardHeader className="flex items-center justify-center">
-        <Avatar className="size-14 border-2 border-dashed">
-          <AvatarFallback>
-            <Plus className="size-8" />
-          </AvatarFallback>
-        </Avatar>
-      </CardHeader>
-      <CardContent className="flex flex-col items-center gap-4">
-        <div className="text-sm">Add Account</div>
-      </CardContent>
+      <Avatar className="size-10 shrink-0 border-2 border-dashed">
+        <AvatarFallback>
+          <Plus className="size-5" />
+        </AvatarFallback>
+      </Avatar>
+      <div className="text-sm font-medium">Add account</div>
     </Card>
   );
 };

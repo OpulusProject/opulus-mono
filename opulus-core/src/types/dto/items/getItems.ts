@@ -14,6 +14,7 @@ export interface ItemPublicDTO {
   institutionLogo: string | null;
   institutionColor: string | null;
   error: string | null;
+  errorCode: string | null;
   accounts: Account[];
 }
 
@@ -47,12 +48,25 @@ export function toItemPublicDTO(item: {
     balanceLimit: any; // Prisma Decimal
   }>;
 }): ItemPublicDTO {
+  let errorCode: string | null = null;
+  if (item.error) {
+    try {
+      const parsed = JSON.parse(item.error) as { error_code?: unknown };
+      if (typeof parsed.error_code === "string") {
+        errorCode = parsed.error_code;
+      }
+    } catch {
+      // Stored error is not valid JSON; leave errorCode null.
+    }
+  }
+
   return {
     id: item.id,
     institutionName: item.institutionName,
     institutionLogo: item.institutionLogo,
     institutionColor: item.institutionColor,
     error: item.error,
+    errorCode,
     accounts: item.bankAccounts.map((account) => ({
       id: account.id,
       name: account.name,

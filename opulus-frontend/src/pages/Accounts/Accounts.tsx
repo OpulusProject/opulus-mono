@@ -64,7 +64,7 @@ export const Accounts: React.FC = () => {
             <Spinner className="size-6" />
           </div>
         ) : itemsData && itemsData.items.length > 0 ? (
-          <div className="flex flex-wrap gap-8">
+          <div className="flex flex-col gap-3">
             {itemsData.items.map((item) => (
               <ItemCard
                 key={item.id}

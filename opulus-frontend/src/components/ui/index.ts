@@ -192,6 +192,9 @@ export { Skeleton } from './skeleton';
 // Spinner component
 export { Spinner } from './spinner';
 
+// Status component
+export { Status, statusVariants, type StatusVariant } from './status';
+
 // Table components
 export {
   Table,
