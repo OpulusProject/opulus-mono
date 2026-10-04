@@ -45,9 +45,17 @@ jobs:
       CLIENT_URL: http://localhost:5173
       NODE_ENV: test
       PORT: "8080"
-      PLAID_CLIENT_ID: ci-test
-      PLAID_SECRET: ci-test
+      # Real Plaid Sandbox creds when the repo secrets are set, dummies
+      # otherwise. The Items create spec round-trips through
+      # /sandbox/public_token/create and needs the backend AND the test
+      # helper to be pointed at the same sandbox account, so both read from
+      # the same pair. Tests requiring sandbox self-skip when the secrets
+      # are absent; auth/validation cases always run.
+      PLAID_CLIENT_ID: ${{ secrets.PLAID_SANDBOX_CLIENT_ID || 'ci-test' }}
+      PLAID_SECRET: ${{ secrets.PLAID_SANDBOX_SECRET || 'ci-test' }}
       PLAID_ENV: sandbox
+      PLAID_SANDBOX_CLIENT_ID: ${{ secrets.PLAID_SANDBOX_CLIENT_ID }}
+      PLAID_SANDBOX_SECRET: ${{ secrets.PLAID_SANDBOX_SECRET }}
       TEST_BASE_URL: http://localhost:8080
 
     services:

@@ -5,4 +5,5 @@
 export * from "./auth.js";
 export * from "./two-factor.js";
 export * from "./items.js";
+export * from "./plaidSandbox.js";
 export * from "./transactions.js";
