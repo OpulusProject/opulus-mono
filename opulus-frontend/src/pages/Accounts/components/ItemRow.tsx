@@ -156,12 +156,7 @@ export const ItemRow: React.FC<ItemRowProps> = ({ item, onUpdate }) => {
               type="button"
               variant="destructive"
               disabled={isDeleting}
-              onClick={() =>
-                deleteItem(
-                  { itemId: item.id },
-                  { onSuccess: () => setConfirmOpen(false) }
-                )
-              }
+              onClick={() => deleteItem({ itemId: item.id })}
             >
               {isDeleting ? 'Disconnecting…' : 'Disconnect'}
             </Button>

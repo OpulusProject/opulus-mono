@@ -3,6 +3,7 @@ import {
   bankAccountService,
   itemService,
   plaidService,
+  prisma,
   transactionService,
   UnauthorizedError,
 } from "@opulus/core";
@@ -32,23 +33,18 @@ export async function deleteItemController(
     }
 
     // Disconnect the item from Plaid
-    const removeItemResponse = await plaidService.removeItem(item.accessToken);
+    await plaidService.removeItem(item.accessToken);
 
-    // Delete transactions linked to item
-    const deleteTransactionsResponse =
-      await transactionService.deleteByItemId(itemId);
-
-    // Delete accounts linked to item
-    const deleteAccountsResponse =
-      await bankAccountService.deleteByItemId(itemId);
-
-    // Delete item
-    const deleteItemResponse =
-      await itemService.delete(itemId);
+    // Delete the item and everything linked to it atomically
+    await prisma.$transaction(async (tx) => {
+      await transactionService.deleteByItemId(itemId, tx);
+      await bankAccountService.deleteByItemId(itemId, tx);
+      await itemService.delete(itemId, tx);
+    });
 
     // TODO: record deletion of item
 
-    res.status(204).send()
+    res.status(204).send();
   } catch (error) {
     next(error);
   }

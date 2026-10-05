@@ -241,12 +241,16 @@ class TransactionService {
   /**
    * Delete transactions by item ID
    * @param itemId - the item ID to remove the transactions for
+   * @param client - Optional transaction client to run the delete inside a transaction
    * @returns Count of deleted transactions
    */
-  async deleteByItemId(itemId: string) {
+  async deleteByItemId(
+    itemId: string,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
     try {
-      return await this.prisma.transaction.deleteMany({
-        where: {id: itemId},
+      return await client.transaction.deleteMany({
+        where: { itemId },
       });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {

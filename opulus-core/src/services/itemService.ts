@@ -194,11 +194,12 @@ class ItemService {
   /**
    * Deletes an item by ID
    * @param itemId - the item ID
+   * @param client - Optional transaction client to run the delete inside a transaction
    * @returns Deleted item
    */
-  async delete(itemId: string) {
+  async delete(itemId: string, client: Prisma.TransactionClient = this.prisma) {
     try {
-      return await this.prisma.item.delete({
+      return await client.item.delete({
         where: { id: itemId },
       });
     } catch (error) {

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { withSession } from "../../../shared/client.js";
-import { expectErrorCode, expectOk, expectStatus } from "../../../shared/assertions.js";
+import { BASE_URL, withSession } from "../../../shared/client.js";
+import { expectOk, expectStatus } from "../../../shared/assertions.js";
 import {
   createAuthedUser,
   seedItemWithAccount,
@@ -23,13 +23,19 @@ test.describe("DELETE /api/items/:id", () => {
 
   test("rejects an unauthenticated delete without touching the item", async ({
     request,
+    playwright,
   }) => {
-    // Arrange
+    // Arrange: sign-up stores the session in `request`'s cookie jar, so the
+    // unauthenticated call needs its own cookie-less context.
     const owner = await createAuthedUser(request);
     const seeded = await seedItemWithAccount(owner.userId);
+    const anonymous = await playwright.request.newContext({
+      baseURL: BASE_URL,
+    });
 
     // Act
-    const res = await request.delete(`/api/items/${seeded.itemId}`);
+    const res = await anonymous.delete(`/api/items/${seeded.itemId}`);
+    await anonymous.dispose();
 
     // Assert: rejected, and the item is still there for its owner.
     await expectStatus(res, 401);
@@ -64,7 +70,7 @@ test.describe("DELETE /api/items/:id", () => {
 
     // Assert: forbidden, and the owner's item, account and transactions survive.
     await expectStatus(res, 401);
-    await expectErrorCode(res, "UNAUTHORIZED");
+    expect((await res.json()).error).toBe("Unauthorized");
 
     const items = await request.get("/api/items", {
       headers: withSession(owner.cookie),
@@ -79,9 +85,12 @@ test.describe("DELETE /api/items/:id", () => {
       ownerItems.find((i) => i.id === seeded.itemId)?.accounts.map((a) => a.id),
     ).toContain(seeded.accountId);
 
-    const txns = await request.get(`/api/transactions?itemId=${seeded.itemId}`, {
-      headers: withSession(owner.cookie),
-    });
+    const txns = await request.get(
+      `/api/transactions?itemId=${seeded.itemId}`,
+      {
+        headers: withSession(owner.cookie),
+      },
+    );
     await expectOk(txns);
     const txnNames = (
       (await txns.json()).data.transactions as Array<{ name: string }>
@@ -100,6 +109,6 @@ test.describe("DELETE /api/items/:id", () => {
 
     // Assert
     await expectStatus(res, 404);
-    await expectErrorCode(res, "NOT_FOUND");
+    expect((await res.json()).error).toBe("Not found");
   });
 });

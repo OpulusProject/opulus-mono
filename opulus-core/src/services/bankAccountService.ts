@@ -70,28 +70,32 @@ class BankAccountService {
     }
   }
 
-    /**
-     * Delete bank accounts by item ID
-     * @param itemId - the item ID to remove the bank accounts for
-     * @returns Count of deleted bank accounts
-     */
-    async deleteByItemId(itemId: string) {
-      try {
-        return await this.prisma.bankAccount.deleteMany({
-          where: {id: itemId},
-        });
-      } catch (error) {
-        if (error instanceof Prisma.PrismaClientKnownRequestError) {
-          throw new AppError(`Database error: ${error.message}`, 500, error.code);
-        }
-  
-        const message =
-          error instanceof Error
-            ? `Failed to delete bank accounts: ${error.message}`
-            : "An unexpected error occurred while deleting bank accounts";
-        throw new AppError(message, 500);
+  /**
+   * Delete bank accounts by item ID
+   * @param itemId - the item ID to remove the bank accounts for
+   * @param client - Optional transaction client to run the delete inside a transaction
+   * @returns Count of deleted bank accounts
+   */
+  async deleteByItemId(
+    itemId: string,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
+    try {
+      return await client.bankAccount.deleteMany({
+        where: { itemId },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
       }
+
+      const message =
+        error instanceof Error
+          ? `Failed to delete bank accounts: ${error.message}`
+          : "An unexpected error occurred while deleting bank accounts";
+      throw new AppError(message, 500);
     }
+  }
 }
 
 // Export singleton instance

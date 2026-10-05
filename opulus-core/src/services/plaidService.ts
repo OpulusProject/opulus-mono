@@ -154,18 +154,26 @@ class PlaidService {
 
   /**
    * Remove a Plaid item by access token
+   * Treats an item Plaid no longer knows about (e.g. the user disconnected it
+   * directly through Plaid) as already removed
    * @param accessToken - The access token for the specified item
-   * @returns Unique identifier for the request
+   * @returns Unique identifier for the request, or null if the item was already removed
    */
   async removeItem(accessToken: string) {
     const request: ItemRemoveRequest = {
       access_token: accessToken,
-    }
+    };
 
     try {
       const response = await this.plaid.itemRemove(request);
       return response.data;
     } catch (error) {
+      const plaidErrorCode = (
+        error as { response?: { data?: { error_code?: string } } }
+      )?.response?.data?.error_code;
+      if (plaidErrorCode === "ITEM_NOT_FOUND") {
+        return null;
+      }
       throw handlePlaidError(error);
     }
   }
@@ -201,8 +209,7 @@ class PlaidService {
    * Supports pagination to retrieve all available institutions
    * @returns List of institutions with total count
    */
-  async getInstitutions(
-  ) {
+  async getInstitutions() {
     const request: InstitutionsGetRequest = {
       count: 500, // Plaid max is 500
       offset: 0,
