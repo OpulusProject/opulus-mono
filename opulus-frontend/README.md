@@ -38,7 +38,7 @@ opulus-frontend/
 │   ├── hooks/               # React hooks
 │   │   ├── auth/           # Authentication hooks
 │   │   ├── items/          # Items hooks
-│   │   ├── plaid/          # Plaid hooks
+│   │   ├── linkTokens/     # Plaid Link token hooks
 │   │   └── transactions/   # Transactions hooks
 │   ├── lib/                 # Utilities
 │   │   ├── api/            # API client

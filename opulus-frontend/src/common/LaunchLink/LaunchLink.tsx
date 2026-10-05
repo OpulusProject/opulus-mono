@@ -11,9 +11,10 @@ import {
   PlaidLinkStableEvent,
   usePlaidLink,
 } from 'react-plaid-link';
-import { useCreateItem } from '@/hooks/plaid/useCreateItem';
-import { type UpdateMode, useLinkToken } from '@/hooks/plaid/useLinkToken';
-import { useUpdateItemAccounts } from '@/hooks/plaid/useUpdateItemAccounts';
+
+import { useCreateItem } from '@/hooks/items/useCreateItem';
+import { useUpdateItemAccounts } from '@/hooks/items/useUpdateItemAccounts';
+import { type UpdateMode, useLinkToken } from '@/hooks/linkTokens/useLinkToken';
 
 interface LaunchLinkProps {
   /**

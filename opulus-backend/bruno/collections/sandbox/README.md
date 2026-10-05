@@ -5,7 +5,7 @@ Connects a Plaid Sandbox item to your Opulus user without going through the UI. 
 ## Requests
 
 1. **1 Create Sandbox Public Token** - mints a public token directly from Plaid Sandbox
-2. **2 Connect Sandbox Item** - exchanges it through `POST /api/plaid/items` and stores `item_id`
+2. **2 Connect Sandbox Item** - exchanges it through `POST /api/items` and stores `item_id`
 
 ## Setup
 

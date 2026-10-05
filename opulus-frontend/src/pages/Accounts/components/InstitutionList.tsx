@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { LaunchLink } from '@/common/LaunchLink';
 import { Button, Spinner } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
-import type { UpdateMode } from '@/hooks/plaid/useLinkToken';
+import type { UpdateMode } from '@/hooks/linkTokens/useLinkToken';
 
 import { EmptyAccountsView } from './EmptyAccountsView';
 import { ItemRow } from './ItemRow';

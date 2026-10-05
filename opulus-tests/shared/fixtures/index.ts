@@ -5,7 +5,7 @@
  * "../../shared/fixtures/index.js" (integration suite) and stay decoupled from
  * the layout.
  *
- * Plaid Sandbox helpers live in opulus-tests/backend-integration/helpers/ and
+ * Plaid Sandbox helpers live in opulus-tests/integration/backend/helpers/ and
  * are intentionally NOT exported here — they are only consumed by the
  * integration suite, which gates on sandbox credentials.
  */

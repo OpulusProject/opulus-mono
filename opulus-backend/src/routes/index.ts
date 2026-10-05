@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { sessionController } from "@/controllers/session/sessionController.js";
-import plaidRouter from "./plaid.js";
+import institutionsRouter from "./institutions.js";
 import itemsRouter from "./items.js";
+import linkTokensRouter from "./linkTokens.js";
 import transactionsRouter from "./transactions.js";
 
 const router: ReturnType<typeof Router> = Router();
@@ -17,11 +18,14 @@ router.get("/healthcheck", (req, res) => {
 
 router.get("/session", sessionController);
 
-// Plaid routes
-router.use("/plaid", plaidRouter);
+// Institutions routes
+router.use("/institutions", institutionsRouter);
 
 // Items routes
 router.use("/items", itemsRouter);
+
+// Link token routes
+router.use("/link-tokens", linkTokensRouter);
 
 // Transactions routes
 router.use("/transactions", transactionsRouter);

@@ -29,18 +29,27 @@ All authentication routes are handled by Better Auth at `/api/auth/*`:
 
 - `GET /api/session` - Get current user session
 
-### Plaid
+### Link Tokens
 
-- `POST /api/plaid/link-token` - Create Plaid Link token (requires authentication)
+- `POST /api/link-tokens` - Create Plaid Link token (requires authentication)
+- `POST /api/link-tokens/update` - Create Plaid Link token in update mode for an existing item (requires authentication)
+
+### Institutions
+
+- `GET /api/institutions` - Search Plaid institutions (requires authentication)
 
 ### Items
 
 - `GET /api/items` - Get all connected items for current user (requires authentication)
+- `POST /api/items` - Exchange a Plaid public token and connect a new item (requires authentication)
+- `POST /api/items/:id/update-accounts` - Re-sync an item's accounts with Plaid (requires authentication)
+- `DELETE /api/items/:id` - Disconnect an item and delete its accounts and transactions (requires authentication)
 
 ### Transactions
 
 - `GET /api/transactions` - Get transactions for current user (requires authentication)
   - Query params: `startDate`, `endDate`, `accountId` (optional)
+- `POST /api/transactions/refresh` - Ask Plaid to refresh an item's transactions (requires authentication)
 
 ### Health Checks
 
@@ -131,8 +140,9 @@ opulus-backend/
 │   │   └── auth.ts          # Better Auth configuration
 │   ├── controllers/         # Request handlers
 │   │   ├── auth/
+│   │   ├── institutions/
 │   │   ├── items/
-│   │   ├── plaid/
+│   │   ├── linkTokens/
 │   │   ├── session/
 │   │   └── transactions/
 │   ├── middleware/          # Express middleware
@@ -141,8 +151,9 @@ opulus-backend/
 │   │   └── validation.ts
 │   ├── routes/              # API routes
 │   │   ├── index.ts
+│   │   ├── institutions.ts
 │   │   ├── items.ts
-│   │   ├── plaid.ts
+│   │   ├── linkTokens.ts
 │   │   └── transactions.ts
 │   └── server.ts           # Express app entry point
 ├── bruno/                  # Bruno API collections

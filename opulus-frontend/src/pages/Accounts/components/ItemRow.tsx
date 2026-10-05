@@ -21,7 +21,7 @@ import {
 } from '@/components/ui';
 import type { StatusVariant } from '@/components/ui';
 import { useDeleteItem } from '@/hooks/items/useDeleteItem';
-import type { UpdateMode } from '@/hooks/plaid/useLinkToken';
+import type { UpdateMode } from '@/hooks/linkTokens/useLinkToken';
 import { cn } from '@/lib/utils';
 import { formatRelativeTime } from '@/utils/date';
 import { getInstitutionLogo } from '@/utils/institution';

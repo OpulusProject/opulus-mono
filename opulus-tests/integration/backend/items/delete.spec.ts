@@ -46,7 +46,7 @@ async function listTransactionNames(
  * Deleting an item first revokes its access token with Plaid (/item/remove), so
  * the happy path needs a real sandbox-backed item: a seeded item with a fake
  * access token would be rejected by Plaid. The item and its accounts are
- * created through the backend's own POST /api/plaid/items. Transactions have no
+ * created through the backend's own POST /api/items. Transactions have no
  * create endpoint (they arrive via the Plaid webhook sync path), so they are
  * seeded into the isolated test DB against the real item's account. All
  * verification happens over HTTP.
