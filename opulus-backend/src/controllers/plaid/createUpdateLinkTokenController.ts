@@ -26,7 +26,10 @@ export async function createUpdateLinkTokenController(
       throw new UnauthorizedError("Authentication required");
     }
 
-    const { itemId } = req.body as z.infer<typeof updateLinkTokenBodySchema>;
+    // Belt-and-suspenders: validate() middleware already parsed this, but we
+    // re-parse here so the controller is self-defending if the route config
+    // ever drops the middleware. Matches refreshTransactionsController.
+    const { itemId } = updateLinkTokenBodySchema.parse(req.body);
     const item = await itemService.getById(itemId);
 
     if (item.userId !== session.user.id) {
