@@ -1,4 +1,5 @@
 import {
+  liabilityService,
   logger,
   normalizePlaidAccount,
   normalizePlaidItem,
@@ -88,6 +89,14 @@ export async function createItem(
     );
 
     return created;
+  });
+
+  // Liabilities (APRs, due dates, loan terms) are a bonus: fetch them now, but
+  // never fail linking over them. A LIABILITIES webhook refreshes them later.
+  await liabilityService.trySyncForItem({
+    id: createdItem.id,
+    userId,
+    accessToken,
   });
 
   return { duplicate: false as const, item: createdItem };
