@@ -4,14 +4,21 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 
 /**
- * Hook to fetch a Plaid Link token
- * The token is used to initialize Plaid Link on the frontend
- *
- * @returns TanStack Query result with linkToken
+ * Update-mode flavors. Reserved for distinguishing future entry points
+ * (e.g. a "new accounts available" nudge driven by Plaid's webhook signal)
+ * from standard reconnect. All flavors currently resolve to a plain update-
+ * mode Link token server-side.
  */
-export function useLinkToken(itemId?: string) {
+export type UpdateMode = 'reconnect' | 'add-accounts';
+
+/**
+ * Hook to fetch a Plaid Link token.
+ * - No `itemId` => new-item flow.
+ * - `itemId` + `mode` => update-mode flow for that item.
+ */
+export function useLinkToken(itemId?: string, mode: UpdateMode = 'reconnect') {
   return useQuery<LinkTokenResponse['data'], Error>({
-    queryKey: ['plaid', 'linkToken', itemId ?? 'new'],
+    queryKey: ['plaid', 'linkToken', itemId ?? 'new', mode],
     queryFn: async () => {
       const response = await apiClient.post<LinkTokenResponse>(
         `/api/plaid/link-token${itemId ? '/update' : ''}`,

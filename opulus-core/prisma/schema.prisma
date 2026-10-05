@@ -97,13 +97,17 @@ model Item {
   institutionColor      String? // Primary brand color from Plaid
   institutionLogo       String? // Logo URL from Plaid
   webhook               String?
-  error                 String? // JSON stringified PlaidError
+  errorType             String?
+  errorCode             String?
+  errorMessage          String?
+  displayMessage        String?
   availableProducts     String[]      @default([])
   billedProducts        String[]      @default([])
   products              String[]      @default([])
   updateType            String // "background" | "user_present_required"
   consentExpirationTime DateTime?
   transactionCursor     String? // Cursor for /transactions/sync pagination
+  syncedAt              DateTime? // Set only after a successful transactions_sync
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)

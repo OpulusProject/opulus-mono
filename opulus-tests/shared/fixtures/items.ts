@@ -25,7 +25,15 @@ export interface SeededItem {
  */
 export async function seedItemWithAccount(
   userId: string,
-  overrides: Partial<{ institutionName: string; accountName: string }> = {},
+  overrides: Partial<{
+    institutionName: string;
+    accountName: string;
+    errorType: string | null;
+    errorCode: string | null;
+    errorMessage: string | null;
+    displayMessage: string | null;
+    syncedAt: Date | null;
+  }> = {},
 ): Promise<SeededItem> {
   const db = testDb();
   const institutionName = overrides.institutionName ?? uniqueId("Bank");
@@ -42,6 +50,21 @@ export async function seedItemWithAccount(
       availableProducts: ["transactions"],
       billedProducts: ["transactions"],
       products: ["transactions"],
+      ...(overrides.errorType !== undefined
+        ? { errorType: overrides.errorType }
+        : {}),
+      ...(overrides.errorCode !== undefined
+        ? { errorCode: overrides.errorCode }
+        : {}),
+      ...(overrides.errorMessage !== undefined
+        ? { errorMessage: overrides.errorMessage }
+        : {}),
+      ...(overrides.displayMessage !== undefined
+        ? { displayMessage: overrides.displayMessage }
+        : {}),
+      ...(overrides.syncedAt !== undefined
+        ? { syncedAt: overrides.syncedAt }
+        : {}),
     },
   });
 

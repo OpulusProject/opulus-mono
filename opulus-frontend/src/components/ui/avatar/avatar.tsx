@@ -12,10 +12,7 @@ function Avatar({
   return (
     <AvatarPrimitive.Root
       data-slot="avatar"
-      className={cn(
-        'relative flex size-8 shrink-0 overflow-hidden rounded-full',
-        className
-      )}
+      className={cn('relative flex size-8 shrink-0 rounded-full', className)}
       {...props}
     />
   );
@@ -28,7 +25,7 @@ function AvatarImage({
   return (
     <AvatarPrimitive.Image
       data-slot="avatar-image"
-      className={cn('aspect-square size-full', className)}
+      className={cn('aspect-square size-full rounded-[inherit]', className)}
       {...props}
     />
   );
@@ -50,4 +47,17 @@ function AvatarFallback({
   );
 }
 
-export { Avatar, AvatarFallback, AvatarImage };
+function AvatarBadge({ className, ...props }: React.ComponentProps<'span'>) {
+  return (
+    <span
+      data-slot="avatar-badge"
+      className={cn(
+        'bg-primary text-primary-foreground ring-background absolute right-0 bottom-0 z-10 inline-flex size-3 items-center justify-center rounded-full ring-2 select-none',
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+export { Avatar, AvatarBadge, AvatarFallback, AvatarImage };

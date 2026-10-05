@@ -3,7 +3,7 @@
 // ============================================================================
 
 // Avatar component
-export { Avatar, AvatarFallback, AvatarImage } from './avatar';
+export { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from './avatar';
 
 // Badge component
 export { Badge, badgeVariants } from './badge';
@@ -191,6 +191,9 @@ export { Skeleton } from './skeleton';
 
 // Spinner component
 export { Spinner } from './spinner';
+
+// Status component
+export { Status, statusVariants, type StatusVariant } from './status';
 
 // Table components
 export {

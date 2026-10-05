@@ -12,7 +12,7 @@ import {
   usePlaidLink,
 } from 'react-plaid-link';
 import { useCreateItem } from '@/hooks/plaid/useCreateItem';
-import { useLinkToken } from '@/hooks/plaid/useLinkToken';
+import { type UpdateMode, useLinkToken } from '@/hooks/plaid/useLinkToken';
 import { useUpdateItemAccounts } from '@/hooks/plaid/useUpdateItemAccounts';
 
 interface LaunchLinkProps {
@@ -20,6 +20,11 @@ interface LaunchLinkProps {
    * Existing item id. When set, Link opens in update mode for that item.
    */
   itemId?: string;
+  /**
+   * Update-mode flavor (only meaningful when `itemId` is set).
+   * Defaults to `reconnect` (standard repair flow).
+   */
+  updateMode?: UpdateMode;
   /**
    * Callback when Link is closed (successfully or with error)
    */
@@ -66,6 +71,7 @@ interface LaunchLinkProps {
  */
 export const LaunchLink: React.FC<LaunchLinkProps> = ({
   itemId,
+  updateMode,
   onClose,
   onSuccess,
   onExit,
@@ -75,7 +81,7 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
     isLoading: isLinkTokenLoading,
     isError: isLinkTokenError,
     error: linkTokenError,
-  } = useLinkToken(itemId);
+  } = useLinkToken(itemId, updateMode);
   const createItem = useCreateItem();
   const updateItemAccounts = useUpdateItemAccounts();
 

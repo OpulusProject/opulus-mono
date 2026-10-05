@@ -2,6 +2,8 @@
  * Get Items endpoint DTOs
  */
 
+import type { PlaidErrorType } from "plaid";
+
 import { Account } from "./bankAccount.js";
 
 /**
@@ -13,7 +15,11 @@ export interface ItemPublicDTO {
   institutionName: string | null;
   institutionLogo: string | null;
   institutionColor: string | null;
-  error: string | null;
+  errorType: PlaidErrorType | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  displayMessage: string | null;
+  syncedAt: string | null;
   accounts: Account[];
 }
 
@@ -37,7 +43,11 @@ export function toItemPublicDTO(item: {
   institutionName: string | null;
   institutionLogo: string | null;
   institutionColor: string | null;
-  error: string | null;
+  errorType: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  displayMessage: string | null;
+  syncedAt: Date | null;
   bankAccounts: Array<{
     id: string;
     name: string;
@@ -52,7 +62,11 @@ export function toItemPublicDTO(item: {
     institutionName: item.institutionName,
     institutionLogo: item.institutionLogo,
     institutionColor: item.institutionColor,
-    error: item.error,
+    errorType: (item.errorType as PlaidErrorType | null) ?? null,
+    errorCode: item.errorCode,
+    errorMessage: item.errorMessage,
+    displayMessage: item.displayMessage,
+    syncedAt: item.syncedAt ? item.syncedAt.toISOString() : null,
     accounts: item.bankAccounts.map((account) => ({
       id: account.id,
       name: account.name,

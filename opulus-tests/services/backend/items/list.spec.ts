@@ -50,10 +50,56 @@ test.describe("GET /api/items", () => {
     expect(items[0]).toMatchObject({
       id: seeded.itemId,
       institutionName: seeded.institutionName,
+      errorType: null,
+      errorCode: null,
+      errorMessage: null,
+      displayMessage: null,
+      syncedAt: null,
     });
     expect(items[0].accounts).toEqual([
       expect.objectContaining({ id: seeded.accountId, name: seeded.accountName }),
     ]);
+  });
+
+  test("returns stored Plaid error columns", async ({ request }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    await seedItemWithAccount(userId, {
+      errorType: "ITEM_ERROR",
+      errorCode: "ITEM_LOGIN_REQUIRED",
+      errorMessage: "the login details of this item have changed",
+    });
+
+    // Act
+    const res = await request.get("/api/items", { headers: withSession(cookie) });
+
+    // Assert
+    await expectOk(res);
+    const items = (await res.json()).data.items as Array<{
+      errorType: string | null;
+      errorCode: string | null;
+      errorMessage: string | null;
+    }>;
+    expect(items[0]).toMatchObject({
+      errorType: "ITEM_ERROR",
+      errorCode: "ITEM_LOGIN_REQUIRED",
+      errorMessage: "the login details of this item have changed",
+    });
+  });
+
+  test("exposes syncedAt as an ISO timestamp when set", async ({ request }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const syncedAt = new Date("2026-03-15T12:00:00.000Z");
+    await seedItemWithAccount(userId, { syncedAt });
+
+    // Act
+    const res = await request.get("/api/items", { headers: withSession(cookie) });
+
+    // Assert
+    await expectOk(res);
+    const items = (await res.json()).data.items as Array<{ syncedAt: string | null }>;
+    expect(items[0].syncedAt).toBe(syncedAt.toISOString());
   });
 
   test("scopes results to the requesting user (does not leak another user's items)", async ({
