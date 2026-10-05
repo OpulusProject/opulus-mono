@@ -9,6 +9,7 @@ import {
   createAuthedUser,
   currentTotp,
   enableTwoFactor,
+  wrongTotp,
 } from "../../../shared/fixtures/index.js";
 
 /**
@@ -31,12 +32,12 @@ test.describe("POST /api/auth/two-factor/verify-totp", () => {
   test("rejects an invalid TOTP code (401)", async ({ request }) => {
     // Arrange: authenticated user with a freshly-enabled 2FA secret.
     const { cookie } = await createAuthedUser(request);
-    await enableTwoFactor(request, cookie);
+    const { totpUri } = await enableTwoFactor(request, cookie);
 
-    // Act
+    // Act: a guaranteed-wrong code for the current window (never the real one).
     const res = await request.post("/api/auth/two-factor/verify-totp", {
       headers: withSession(cookie),
-      data: { code: "000000" },
+      data: { code: wrongTotp(totpUri) },
     });
 
     // Assert

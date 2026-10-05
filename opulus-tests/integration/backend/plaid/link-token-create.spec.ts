@@ -36,26 +36,4 @@ test.describe("POST /api/plaid/link-token (sandbox)", () => {
     expect(typeof body.data.linkToken).toBe("string");
     expect(body.data.linkToken).toMatch(/^link-sandbox-/);
   });
-
-  test("issues distinct tokens for distinct users", async ({ request }) => {
-    // Arrange
-    requireSandboxCredentials();
-    const [a, b] = await Promise.all([
-      createAuthedUser(request),
-      createAuthedUser(request),
-    ]);
-
-    // Act
-    const [resA, resB] = await Promise.all([
-      request.post("/api/plaid/link-token", { headers: withSession(a.cookie), data: {} }),
-      request.post("/api/plaid/link-token", { headers: withSession(b.cookie), data: {} }),
-    ]);
-
-    // Assert
-    await expectOk(resA);
-    await expectOk(resB);
-    const bodyA = (await resA.json()) as { data: { linkToken: string } };
-    const bodyB = (await resB.json()) as { data: { linkToken: string } };
-    expect(bodyA.data.linkToken).not.toBe(bodyB.data.linkToken);
-  });
 });

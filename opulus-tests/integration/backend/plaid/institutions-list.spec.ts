@@ -18,14 +18,17 @@ test.describe("GET /api/plaid/institutions (sandbox)", () => {
   test("returns a non-empty institutions list for an authenticated user", async ({
     request,
   }) => {
+    // Arrange
     requireSandboxCredentials();
     const { cookie } = await createAuthedUser(request);
 
+    // Act
     const res = await request.get("/api/plaid/institutions", {
       headers: withSession(cookie),
     });
-    await expectOk(res);
 
+    // Assert
+    await expectOk(res);
     const body = (await res.json()) as {
       data: {
         institutions: Array<{ institution_id: string; name: string }>;

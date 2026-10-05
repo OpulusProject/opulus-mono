@@ -18,6 +18,17 @@ export function currentTotp(totpUri: string): string {
 }
 
 /**
+ * A guaranteed-wrong TOTP code for the current window. Flips the last digit of
+ * the real code so we never accidentally submit the right one (which a fixed
+ * literal like "000000" could rarely be).
+ */
+export function wrongTotp(totpUri: string): string {
+  const code = currentTotp(totpUri);
+  const last = Number(code[5]);
+  return code.slice(0, 5) + ((last + 1) % 10).toString();
+}
+
+/**
  * Enable 2FA for an authenticated user. This only provisions the secret — the
  * account is not actually protected until a verify-totp confirms it. Returns the
  * otpauth URI and backup codes.

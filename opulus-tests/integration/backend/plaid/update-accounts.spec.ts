@@ -15,6 +15,15 @@ import {
  * for 401. Here we create a real sandbox item and immediately re-sync its
  * accounts; since Plaid's view hasn't changed, we expect every account to be
  * reported as `updated` (or `unchanged`) and none as `created`.
+ *
+ * TODO: coverage gaps — both require seeding our DB out of sync with Plaid
+ * (sandbox items are fixed on the Plaid side, so divergence has to come from
+ * our side via testDb()):
+ *   - "new accounts appear": delete one account row for the item post-link,
+ *     re-sync, assert created === 1.
+ *   - "accounts are unlinked": insert a bogus extra account row, re-sync,
+ *     assert it's removed (or marked inactive, per whichever semantics the
+ *     controller lands on).
  */
 test.describe("POST /api/plaid/items/:id/update-accounts (sandbox)", () => {
   test("reconciles a persisted item's accounts against Plaid's current view", async ({
