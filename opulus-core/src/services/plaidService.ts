@@ -88,11 +88,7 @@ class PlaidService {
    * Create a Link token in update mode for an existing item.
    * Omits products; Plaid uses the access token to repair the item.
    */
-  async createUpdateLinkToken(
-    accessToken: string,
-    userId: string,
-    options: { accountSelectionEnabled?: boolean } = {}
-  ) {
+  async createUpdateLinkToken(accessToken: string, userId: string) {
     const request: LinkTokenCreateRequest = {
       user: {
         client_user_id: userId,
@@ -101,9 +97,6 @@ class PlaidService {
       country_codes: [CountryCode.Ca],
       language: "en",
       access_token: accessToken,
-      ...(options.accountSelectionEnabled && {
-        update: { account_selection_enabled: true },
-      }),
       ...(config.plaidWebhookUrl && {
         webhook: config.plaidWebhookUrl,
       }),

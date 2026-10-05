@@ -4,10 +4,10 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 
 /**
- * Update-mode flavors backed by Plaid's Link update mode:
- * - `reconnect`: default update mode — repair auth errors.
- * - `add-accounts`: update mode with `update.account_selection_enabled: true`
- *   so the user can add additional accounts to an existing Item.
+ * Update-mode flavors. Reserved for distinguishing future entry points
+ * (e.g. a "new accounts available" nudge driven by Plaid's webhook signal)
+ * from standard reconnect. All flavors currently resolve to a plain update-
+ * mode Link token server-side.
  */
 export type UpdateMode = 'reconnect' | 'add-accounts';
 
@@ -22,7 +22,7 @@ export function useLinkToken(itemId?: string, mode: UpdateMode = 'reconnect') {
     queryFn: async () => {
       const response = await apiClient.post<LinkTokenResponse>(
         `/api/plaid/link-token${itemId ? '/update' : ''}`,
-        itemId ? { itemId, addAccounts: mode === 'add-accounts' } : undefined
+        itemId ? { itemId } : undefined
       );
       return response.data.data;
     },

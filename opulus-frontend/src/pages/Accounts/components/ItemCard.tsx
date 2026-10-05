@@ -1,5 +1,5 @@
 import { ItemPublicDTO } from '@opulus/core';
-import { MoreHorizontal, Plus, RefreshCw } from 'lucide-react';
+import { MoreHorizontal, RefreshCw } from 'lucide-react';
 import React from 'react';
 
 import {
@@ -73,35 +73,32 @@ export const ItemCard: React.FC<ItemCardProps> = ({ item, onUpdate }) => {
         <div className="text-xs text-muted-foreground">CAD</div>
       </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="shrink-0"
-            aria-label={`Actions for ${item.institutionName || 'this institution'}`}
-          >
-            <MoreHorizontal className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          {status.needsReconnect && (
+      {/*
+        Reconnect is currently the only per-item action, so the kebab menu
+        is hidden until the item needs it. Future actions (add-accounts on
+        a Plaid webhook signal, destructive disconnect) will slot in here.
+      */}
+      {status.needsReconnect && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="shrink-0"
+              aria-label={`Actions for ${item.institutionName || 'this institution'}`}
+            >
+              <MoreHorizontal className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
             <DropdownMenuItem onSelect={() => onUpdate(item.id, 'reconnect')}>
               <RefreshCw className="size-4" />
               Reconnect
             </DropdownMenuItem>
-          )}
-          <DropdownMenuItem onSelect={() => onUpdate(item.id, 'add-accounts')}>
-            <Plus className="size-4" />
-            Add accounts
-          </DropdownMenuItem>
-          {/*
-            Future: Disconnect action goes here. Keep as the last item and use
-            `variant="destructive"` on the DropdownMenuItem.
-          */}
-        </DropdownMenuContent>
-      </DropdownMenu>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </Card>
   );
 };

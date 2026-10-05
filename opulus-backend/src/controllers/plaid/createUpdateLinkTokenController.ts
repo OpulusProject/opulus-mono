@@ -9,9 +9,6 @@ import { z } from "zod";
 
 export const updateLinkTokenBodySchema = z.object({
   itemId: z.string().min(1, "itemId is required"),
-  // When true, Link opens in update mode with the account-selection screen
-  // enabled so the user can add additional accounts to an existing Item.
-  addAccounts: z.boolean().optional(),
 });
 
 /**
@@ -29,7 +26,7 @@ export async function createUpdateLinkTokenController(
       throw new UnauthorizedError("Authentication required");
     }
 
-    const { itemId, addAccounts } = updateLinkTokenBodySchema.parse(req.body);
+    const { itemId } = updateLinkTokenBodySchema.parse(req.body);
     const item = await itemService.getById(itemId);
 
     if (item.userId !== session.user.id) {
@@ -38,8 +35,7 @@ export async function createUpdateLinkTokenController(
 
     const linkTokenResponse = await plaidService.createUpdateLinkToken(
       item.accessToken,
-      session.user.id,
-      { accountSelectionEnabled: addAccounts === true }
+      session.user.id
     );
 
     res.status(200).json({
