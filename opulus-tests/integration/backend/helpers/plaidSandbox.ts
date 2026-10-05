@@ -63,7 +63,8 @@ export async function createSandboxPublicToken(
       client_id: creds.clientId,
       secret: creds.secret,
       institution_id: institutionId,
-      initial_products: ["transactions"],
+      // Mirror production Link, which also requests liabilities where supported.
+      initial_products: ["transactions", "liabilities"],
     }),
   });
 

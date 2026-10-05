@@ -1,7 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { withSession } from "../../../shared/client.js";
 import { expectOk, expectStatus } from "../../../shared/assertions.js";
-import { createAuthedUser, seedItemWithAccount } from "../../../shared/fixtures/index.js";
+import {
+  createAuthedUser,
+  seedCreditLiability,
+  seedItemWithAccount,
+} from "../../../shared/fixtures/index.js";
 
 /**
  * This file: the linked-items list endpoint. Items have no create endpoint —
@@ -59,6 +63,52 @@ test.describe("GET /api/items", () => {
     expect(items[0].accounts).toEqual([
       expect.objectContaining({ id: seeded.accountId, name: seeded.accountName }),
     ]);
+  });
+
+  test("returns liability details for an account that has them, and null otherwise", async ({
+    request,
+  }) => {
+    // Arrange: one credit card with a stored liability, one checking account without.
+    const { cookie, userId } = await createAuthedUser(request);
+    const card = await seedItemWithAccount(userId, {
+      account: { type: "credit", subtype: "credit card", mask: "4242" },
+    });
+    const liability = await seedCreditLiability({
+      userId,
+      itemId: card.itemId,
+      accountId: card.accountId,
+    });
+    const checking = await seedItemWithAccount(userId);
+
+    // Act
+    const res = await request.get("/api/items", { headers: withSession(cookie) });
+
+    // Assert
+    await expectOk(res);
+    const items = (await res.json()).data.items as Array<{
+      id: string;
+      accounts: Array<{ id: string; liability: Record<string, unknown> | null }>;
+    }>;
+    const cardAccount = items
+      .find((i) => i.id === card.itemId)
+      ?.accounts.find((a) => a.id === card.accountId);
+    expect(cardAccount?.liability).toMatchObject({
+      kind: "credit",
+      isOverdue: false,
+      nextPaymentDueDate: liability.nextPaymentDueDate.toISOString(),
+      minimumPayment: liability.minimumPayment,
+      lastStatementBalance: liability.lastStatementBalance,
+      aprs: [
+        expect.objectContaining({
+          type: "purchase_apr",
+          percentage: liability.aprPercentage,
+        }),
+      ],
+    });
+    const checkingAccount = items
+      .find((i) => i.id === checking.itemId)
+      ?.accounts.find((a) => a.id === checking.accountId);
+    expect(checkingAccount?.liability).toBeNull();
   });
 
   test("returns stored Plaid error columns", async ({ request }) => {

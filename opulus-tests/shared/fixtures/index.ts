@@ -12,4 +12,5 @@
 export * from "./auth.js";
 export * from "./two-factor.js";
 export * from "./items.js";
+export * from "./liabilities.js";
 export * from "./transactions.js";

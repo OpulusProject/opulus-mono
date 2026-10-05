@@ -33,6 +33,17 @@ export async function seedItemWithAccount(
     errorMessage: string | null;
     displayMessage: string | null;
     syncedAt: Date | null;
+    /** Overrides for the seeded bank account (defaults to a CAD checking account). */
+    account: Partial<{
+      officialName: string | null;
+      type: string;
+      subtype: string | null;
+      mask: string | null;
+      balanceCurrent: number | null;
+      balanceAvailable: number | null;
+      balanceLimit: number | null;
+      isoCurrencyCode: string | null;
+    }>;
   }> = {},
 ): Promise<SeededItem> {
   const db = testDb();
@@ -80,6 +91,7 @@ export async function seedItemWithAccount(
       balanceCurrent: 1000,
       balanceAvailable: 950,
       isoCurrencyCode: "CAD",
+      ...overrides.account,
     },
   });
 
