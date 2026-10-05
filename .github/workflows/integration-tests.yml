@@ -1,0 +1,112 @@
+# Backend INTEGRATION test suite — round-trips through the real Plaid Sandbox.
+#
+# Separate from the service-api-tests workflow because these specs depend on
+# the real Plaid Sandbox and require sandbox credentials
+# (`PLAID_SANDBOX_CLIENT_ID` / `PLAID_SANDBOX_SECRET`). Keeping the gate
+# independent lets a Plaid outage show up as one failed check, not two.
+#
+# Triggers:
+#   - pull_request: runs on PRs targeting main. Fork PRs that don't have
+#     access to the secrets will fail — contributors from forks should open
+#     the PR from a branch in the main repo.
+#   - schedule: nightly run against main so regressions surface even on days
+#     with no PR traffic.
+#   - workflow_dispatch: on-demand runs from the Actions tab.
+#
+# This job is a required status check — add "Backend integration tests" to
+# the branch protection rule for `main`.
+
+name: Integration Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  schedule:
+    - cron: "0 7 * * *" # 07:00 UTC nightly
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend-integration-tests:
+    name: Backend integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    env:
+      DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      # Integration specs occasionally read a derived field (e.g. plaidItemId)
+      # from the test DB that is intentionally not exposed over HTTP. Writes
+      # are never performed; verification stays over HTTP.
+      TEST_DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      BETTER_AUTH_SECRET: ci-integration-tests-secret-not-for-production
+      CLIENT_URL: http://localhost:5173
+      NODE_ENV: test
+      PORT: "8080"
+      # Real Plaid Sandbox creds — required. Backend-under-test and the test
+      # helper must point at the same sandbox account for the exchange to
+      # succeed, so we source both pairs from the same secrets.
+      PLAID_CLIENT_ID: ${{ secrets.PLAID_SANDBOX_CLIENT_ID }}
+      PLAID_SECRET: ${{ secrets.PLAID_SANDBOX_SECRET }}
+      PLAID_ENV: sandbox
+      PLAID_SANDBOX_CLIENT_ID: ${{ secrets.PLAID_SANDBOX_CLIENT_ID }}
+      PLAID_SANDBOX_SECRET: ${{ secrets.PLAID_SANDBOX_SECRET }}
+      TEST_BASE_URL: http://localhost:8080
+
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app_dev
+          POSTGRES_DB: app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @opulus/core prisma:generate
+
+      - name: Build core package
+        run: pnpm --filter @opulus/core build
+
+      - name: Apply database migrations
+        run: pnpm --filter @opulus/core exec prisma migrate deploy --schema=./prisma/schema.prisma
+
+      - name: Boot backend service
+        run: |
+          pnpm --filter @opulus/backend exec tsx src/server.ts &
+          echo $! > /tmp/backend.pid
+          for i in $(seq 1 60); do
+            if curl -sf "$TEST_BASE_URL/health" >/dev/null; then
+              echo "Backend is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Backend did not become healthy in time" >&2
+          exit 1
+
+      - name: Run backend integration tests
+        run: pnpm --filter @opulus/tests test:integration-backend

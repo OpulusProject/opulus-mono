@@ -1,7 +1,13 @@
 import { Router } from "express";
-import { createItemController } from "@/controllers/plaid/createItemController.js";
+import {
+  createItemController,
+  createItemBodySchema,
+} from "@/controllers/plaid/createItemController.js";
 import { createLinkTokenController } from "@/controllers/plaid/createLinkTokenController.js";
-import { createUpdateLinkTokenController } from "@/controllers/plaid/createUpdateLinkTokenController.js";
+import {
+  createUpdateLinkTokenController,
+  updateLinkTokenBodySchema,
+} from "@/controllers/plaid/createUpdateLinkTokenController.js";
 import { getInstitutionsController } from "@/controllers/plaid/getInstitutionsController.js";
 import { refreshTransactionsController } from "@/controllers/plaid/refreshTransactionsController.js";
 import { updateItemAccountsController } from "@/controllers/plaid/updateItemAccountsController.js";
@@ -19,10 +25,16 @@ router.post("/link-token", requireSession, createLinkTokenController);
 router.post(
   "/link-token/update",
   requireSession,
+  validate(updateLinkTokenBodySchema),
   createUpdateLinkTokenController
 );
 
-router.post("/items", requireSession, createItemController);
+router.post(
+  "/items",
+  requireSession,
+  validate(createItemBodySchema),
+  createItemController
+);
 router.post(
   "/items/:id/update-accounts",
   requireSession,
