@@ -8,6 +8,7 @@ import {
   createUpdateLinkTokenController,
   updateLinkTokenBodySchema,
 } from "@/controllers/plaid/createUpdateLinkTokenController.js";
+import { getInstitutionsController } from "@/controllers/plaid/getInstitutionsController.js";
 import { refreshTransactionsController } from "@/controllers/plaid/refreshTransactionsController.js";
 import { updateItemAccountsController } from "@/controllers/plaid/updateItemAccountsController.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
@@ -39,6 +40,8 @@ router.post(
   requireSession,
   updateItemAccountsController
 );
+
+router.get("/institutions", requireSession, getInstitutionsController);
 
 router.post(
   "/transactions/refresh",
