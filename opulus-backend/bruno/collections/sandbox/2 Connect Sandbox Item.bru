@@ -18,7 +18,7 @@ headers {
 body:json {
   {
     "publicToken": "{{plaid_public_token}}",
-    "institutionId": "{{plaid_sandbox_institution_id}}"
+    "institutionId": "ins_109508"
   }
 }
 
@@ -40,7 +40,7 @@ docs {
   ## Request Body
 
   - `publicToken` (string, required): Filled from `plaid_public_token`, set by **1 Create Sandbox Public Token**
-  - `institutionId` (string, required): Filled from `plaid_sandbox_institution_id`
+  - `institutionId` (string, required): Hardcoded to `ins_109508` (First Platypus Bank), matching the integration tests
 
   ## Success Response (201)
 
@@ -59,7 +59,7 @@ docs {
 
   - `400`: Missing or invalid body, or the public token was already used or is invalid
   - `401`: No active session
-  - `409`: This institution is already linked for the user. Disconnect it first, or use a different `plaid_sandbox_institution_id`
+  - `409`: This institution is already linked for the user. Disconnect the existing item first
 
   ## Usage
 

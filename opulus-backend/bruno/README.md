@@ -44,7 +44,7 @@ Each environment file (e.g., `environments/local.bru`) defines:
 - `test_email`: Test user email for authentication requests
 - `test_password`: Test user password for authentication requests
 - `test_name`: Test user name for registration requests
-- `plaid_sandbox_institution_id`, `plaid_sandbox_client_id`, `plaid_sandbox_secret`: Plaid Sandbox settings used by the `sandbox` collection (the client ID and secret are Bruno secrets; set them locally, never commit them)
+- `plaid_sandbox_client_id`, `plaid_sandbox_secret`: Plaid Sandbox credentials used by the `sandbox` collection (the client ID and secret are Bruno secrets; set them locally, never commit them)
 
 **Note:** 
 - The `local.bru` file is gitignored - each developer creates their own copy from `local.bru.example`

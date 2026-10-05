@@ -12,7 +12,8 @@ Connects a Plaid Sandbox item to your Opulus user without going through the UI. 
 Add these to your environment (see `environments/local.bru.example`):
 
 - `plaid_sandbox_client_id` and `plaid_sandbox_secret` (secrets, from the Plaid dashboard's sandbox keys)
-- `plaid_sandbox_institution_id` (defaults to `ins_109508`)
+
+The institution is hardcoded to `ins_109508` (First Platypus Bank), matching the integration tests.
 
 ## Usage
 

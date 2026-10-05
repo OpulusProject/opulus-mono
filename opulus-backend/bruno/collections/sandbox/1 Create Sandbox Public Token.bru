@@ -18,7 +18,7 @@ body:json {
   {
     "client_id": "{{plaid_sandbox_client_id}}",
     "secret": "{{plaid_sandbox_secret}}",
-    "institution_id": "{{plaid_sandbox_institution_id}}",
+    "institution_id": "ins_109508",
     "initial_products": ["transactions"]
   }
 }
@@ -38,7 +38,8 @@ docs {
 
   - `plaid_sandbox_client_id` (secret): Plaid sandbox client ID
   - `plaid_sandbox_secret` (secret): Plaid sandbox secret
-  - `plaid_sandbox_institution_id`: Sandbox institution to link. Defaults to `ins_109508` (First Platypus Bank)
+
+  The institution is hardcoded to `ins_109508` (First Platypus Bank), the same default the integration tests use.
 
   ## Response
 
