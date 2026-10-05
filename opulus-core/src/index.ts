@@ -11,6 +11,7 @@ export { Prisma, PrismaClient } from "@prisma/client";
 // Service exports
 export * from "./services/bankAccountService.js";
 export * from "./services/itemService.js";
+export * from "./services/liabilityService.js";
 export * from "./services/linkSessionService.js";
 export * from "./services/plaidService.js";
 export * from "./services/transactionService.js";

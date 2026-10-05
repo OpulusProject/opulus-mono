@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,23 +8,24 @@ datasource db {
 }
 
 model User {
-  id               String        @id
-  name             String
-  email            String
-  emailVerified    Boolean       @default(false)
-  image            String?
-  plaidId          String?       @unique
-  plaidUserToken   String?       @unique
-  twoFactorEnabled Boolean       @default(false)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @default(now()) @updatedAt
-  sessions         Session[]
-  accounts         Account[]
-  linkSessions     LinkSession[]
-  items            Item[]
-  bankAccounts     BankAccount[]
-  transactions     Transaction[]
-  twoFactor        TwoFactor?
+  id                 String             @id
+  name               String
+  email              String
+  emailVerified      Boolean            @default(false)
+  image              String?
+  plaidId            String?            @unique
+  plaidUserToken     String?            @unique
+  twoFactorEnabled   Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @default(now()) @updatedAt
+  sessions           Session[]
+  accounts           Account[]
+  linkSessions       LinkSession[]
+  accountLiabilities AccountLiability[]
+  items              Item[]
+  bankAccounts       BankAccount[]
+  transactions       Transaction[]
+  twoFactor          TwoFactor?
 
   @@unique([email])
   @@map("user")
@@ -88,8 +88,8 @@ model LinkSession {
 }
 
 model Item {
-  id                    String        @id @default(cuid())
-  plaidItemId           String        @unique
+  id                    String             @id @default(cuid())
+  plaidItemId           String             @unique
   userId                String
   accessToken           String
   institutionId         String?
@@ -101,24 +101,25 @@ model Item {
   errorCode             String?
   errorMessage          String?
   displayMessage        String?
-  availableProducts     String[]      @default([])
-  billedProducts        String[]      @default([])
-  products              String[]      @default([])
+  availableProducts     String[]           @default([])
+  billedProducts        String[]           @default([])
+  products              String[]           @default([])
   updateType            String // "background" | "user_present_required"
   consentExpirationTime DateTime?
   transactionCursor     String? // Cursor for /transactions/sync pagination
   syncedAt              DateTime? // Set only after a successful transactions_sync
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
-  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   bankAccounts          BankAccount[]
   transactions          Transaction[]
+  accountLiabilities    AccountLiability[]
 
   @@map("item")
 }
 
 model BankAccount {
-  id                     String        @id @default(cuid())
+  id                     String            @id @default(cuid())
   providerAccountId      String // Provider's account_id (may change across item updates)
   persistentAccountId    String? // Stable account identifier across item updates
   itemId                 String // Reference to Item (connection to financial institution)
@@ -133,11 +134,12 @@ model BankAccount {
   balanceLimit           Decimal? // Credit limit (for credit accounts)
   isoCurrencyCode        String? // ISO 4217 currency code (e.g., "USD", "CAD")
   unofficialCurrencyCode String? // Unofficial currency code (used when ISO currency unavailable)
-  createdAt              DateTime      @default(now())
-  updatedAt              DateTime      @updatedAt
-  user                   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  item                   Item          @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  user                   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item                   Item              @relation(fields: [itemId], references: [id], onDelete: Cascade)
   transactions           Transaction[]
+  liability              AccountLiability?
 
   // Same account_id can exist in different items
   // Index for stable account lookups
@@ -186,6 +188,41 @@ model Transaction {
   @@map("transaction")
 }
 
+/// Liabilities data (Plaid /liabilities/get) for a credit or loan account.
+/// One row per bank account; refreshed on link and on LIABILITIES webhooks.
+/// Deliberately excludes account numbers, property and servicer addresses, and
+/// payment reference numbers.
+model AccountLiability {
+  id                     String      @id @default(cuid())
+  accountId              String      @unique // BankAccount this describes
+  itemId                 String
+  userId                 String
+  kind                   String // "credit" | "mortgage" | "student"
+  isOverdue              Boolean?
+  nextPaymentDueDate     DateTime?
+  minimumPayment         Decimal? // Credit/student minimum payment; mortgage next monthly payment
+  lastPaymentAmount      Decimal?
+  lastPaymentDate        DateTime?
+  lastStatementBalance   Decimal?
+  lastStatementIssueDate DateTime?
+  interestRate           Decimal? // Percentage (mortgage, student loan)
+  originationDate        DateTime?
+  originationPrincipal   Decimal?
+  maturityDate           DateTime? // Mortgage maturity date or student loan expected payoff date
+  aprs                   Json? // Credit card APRs: [{ type, percentage, balanceSubjectToApr, interestChargeAmount }]
+  details                Json? // Kind-specific extras that do not need their own column yet
+  syncedAt               DateTime
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+  user                   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item                   Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  bankAccount            BankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([itemId])
+  @@index([userId])
+  @@map("account_liability")
+}
+
 model TwoFactor {
   id          String  @id @default(cuid())
   userId      String  @unique
@@ -195,5 +232,3 @@ model TwoFactor {
 
   @@map("two_factor")
 }
-
-

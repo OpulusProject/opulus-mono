@@ -6,6 +6,7 @@ import {
   ItemGetRequest,
   ItemPublicTokenExchangeRequest,
   ItemRemoveRequest,
+  LiabilitiesGetRequest,
   LinkTokenCreateRequest,
   PlaidApi,
   Products,
@@ -15,7 +16,7 @@ import {
 } from "plaid";
 import plaidClient from "../client/plaid.js";
 import config from "../config/default.js";
-import { handlePlaidError } from "../utils/plaidErrors.js";
+import { getPlaidErrorCode, handlePlaidError } from "../utils/plaidErrors.js";
 
 /**
  * Service for managing Plaid integrations
@@ -174,13 +175,37 @@ class PlaidService {
       const response = await this.plaid.itemRemove(request);
       return response.data;
     } catch (error) {
-      const plaidErrorCode = (
-        error as { response?: { data?: { error_code?: string } } }
-      )?.response?.data?.error_code;
-      if (plaidErrorCode === "ITEM_NOT_FOUND") {
+      if (getPlaidErrorCode(error) === "ITEM_NOT_FOUND") {
         return null;
       }
       throw handlePlaidError(error);
+    }
+  }
+
+  // ============================================================================
+  // Liabilities
+  // ============================================================================
+
+  /**
+   * Fetch liabilities (credit card, mortgage, and student loan details) for an item
+   * @param accessToken - The access token for the item
+   * @returns Liabilities and the item's accounts
+   */
+  async getLiabilities(accessToken: string) {
+    const request: LiabilitiesGetRequest = {
+      access_token: accessToken,
+    };
+
+    try {
+      const response = await this.plaid.liabilitiesGet(request);
+      return response.data;
+    } catch (error) {
+      // The SDK wraps Plaid's error body in an axios error. Unwrap it so the
+      // resulting AppError carries Plaid's own error_code, which callers use to
+      // tell "not available for this item" apart from real failures.
+      const plaidBody = (error as { response?: { data?: unknown } } | null)
+        ?.response?.data;
+      throw handlePlaidError(plaidBody ?? error);
     }
   }
 

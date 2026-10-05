@@ -261,6 +261,7 @@ class ItemService {
               balanceAvailable: true,
               balanceCurrent: true,
               balanceLimit: true,
+              liability: true,
             },
           },
         },
