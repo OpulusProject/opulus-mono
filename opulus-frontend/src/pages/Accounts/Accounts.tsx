@@ -12,8 +12,6 @@ import {
   SelectValue,
 } from '@/components/ui';
 
-import { InstitutionList } from './components';
-
 export const Accounts: React.FC = () => {
   return (
     <AppLayout title="Accounts">
@@ -37,8 +35,6 @@ export const Accounts: React.FC = () => {
             </SelectContent>
           </Select>
         </div>
-
-        <InstitutionList />
       </div>
     </AppLayout>
   );

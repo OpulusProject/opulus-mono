@@ -32,7 +32,7 @@ export async function createItemController(
     if (result.duplicate) {
       res.status(409).json({
         data: { itemId: result.existingItemId, duplicate: true },
-        message: "This institution is already linked to your account.",
+        message: "You are already connected to this institution.",
       });
       return;
     }
