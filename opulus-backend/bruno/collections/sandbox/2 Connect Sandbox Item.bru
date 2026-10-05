@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{base_url}}/api/plaid/items
+  url: {{base_url}}/api/items
   body: json
   auth: none
 }
@@ -31,7 +31,7 @@ docs {
 
   Exchanges the sandbox public token for an access token and persists a connected item for the signed-in user, with no UI or Plaid Link involved.
 
-  **Endpoint:** `POST /api/plaid/items`
+  **Endpoint:** `POST /api/items`
 
   ## Authentication
 

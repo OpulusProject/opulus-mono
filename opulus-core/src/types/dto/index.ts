@@ -7,6 +7,6 @@
 export * from './auth/index.js';
 export * from './common.js';
 export * from './items/index.js';
-export * from './plaid/index.js';
+export * from './linkTokens/index.js';
 export * from './transactions/index.js';
 

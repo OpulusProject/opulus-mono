@@ -229,8 +229,7 @@ opulus-core/
 │   │   └── queue/
 │   │       └── webhookQueue.ts
 │   ├── types/
-│   │   ├── dto/             # Data transfer objects
-│   │   └── plaid/           # Plaid types
+│   │   └── dto/             # Data transfer objects
 │   ├── utils/
 │   │   ├── errors.ts        # Error classes
 │   │   └── plaidErrors.ts   # Plaid error handling

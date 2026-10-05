@@ -88,7 +88,7 @@ export interface CreatedSandboxItem {
 
 /**
  * End-to-end: mint a sandbox public_token, exchange it through the backend's
- * POST /api/plaid/items, and return the resulting item id. Used by specs that
+ * POST /api/items, and return the resulting item id. Used by specs that
  * need a persisted sandbox-backed Item before exercising a downstream endpoint
  * (update-accounts, link-token/update, transactions/refresh).
  *
@@ -102,7 +102,7 @@ export async function createSandboxItem(
   institutionId: string = DEFAULT_SANDBOX_INSTITUTION_ID,
 ): Promise<CreatedSandboxItem> {
   const publicToken = await createSandboxPublicToken(creds, institutionId);
-  const res = await request.post("/api/plaid/items", {
+  const res = await request.post("/api/items", {
     headers: withSession(cookie),
     data: { publicToken, institutionId },
   });
