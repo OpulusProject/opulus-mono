@@ -14,7 +14,7 @@ export const Accounts: React.FC = () => {
       <div className="flex flex-col gap-6 px-4 lg:px-6">
         <PageHeader
           title="Accounts"
-          description="Your accounts, grouped by institution. Manage which institutions are linked in Settings."
+          description="Your accounts, grouped by institution. Manage your connections in Settings."
         />
 
         {isLoading ? (

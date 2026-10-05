@@ -44,7 +44,7 @@ const navMain: NavItem[] = [
     title: 'Settings',
     url: '/settings',
     icon: Settings,
-    items: [{ title: 'Institutions', url: '/settings/institutions' }],
+    items: [{ title: 'Connections', url: '/settings/connections' }],
   },
 ];
 

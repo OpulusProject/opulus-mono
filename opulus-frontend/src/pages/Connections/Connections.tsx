@@ -8,14 +8,14 @@ import { Button } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
 import type { UpdateMode } from '@/hooks/linkTokens/useLinkToken';
 
-import { InstitutionList } from './components';
+import { ConnectionList } from './components';
 
 interface UpdateTarget {
   itemId: string;
   mode: UpdateMode;
 }
 
-export const Institutions: React.FC = () => {
+export const Connections: React.FC = () => {
   const [isLinkOpen, setIsLinkOpen] = useState(false);
   const [updateTarget, setUpdateTarget] = useState<UpdateTarget | undefined>();
   const { data: itemsData, isLoading } = useItems();
@@ -28,20 +28,20 @@ export const Institutions: React.FC = () => {
   };
 
   return (
-    <AppLayout title="Institutions" section="Settings">
+    <AppLayout title="Connections" section="Settings">
       <div className="flex flex-col gap-6 px-4 lg:px-6">
         <PageHeader
-          title="Linked institutions"
+          title="Your connections"
           description="Connect the banks and cards Opulus tracks. Your accounts and transactions stay in sync automatically."
           actions={
             <Button type="button" onClick={() => openLink()}>
               <Plus className="size-4" />
-              Add institution
+              Add connection
             </Button>
           }
         />
 
-        <InstitutionList
+        <ConnectionList
           items={items}
           isLoading={isLoading}
           onUpdate={(itemId, mode) => openLink({ itemId, mode })}

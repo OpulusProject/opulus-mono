@@ -21,12 +21,12 @@ export const EmptyAccountsView: React.FC = () => {
         </EmptyMedia>
         <EmptyTitle>No accounts yet</EmptyTitle>
         <EmptyDescription>
-          Link an institution in Settings and its accounts will appear here.
+          Add a connection in Settings and its accounts will appear here.
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
         <Button asChild>
-          <Link to="/settings/institutions">Link an institution</Link>
+          <Link to="/settings/connections">Add a connection</Link>
         </Button>
       </EmptyContent>
     </Empty>

@@ -27,7 +27,7 @@ import { formatRelativeTime } from '@/utils/date';
 import { getInstitutionLogo } from '@/utils/institution';
 import { getItemStatus } from '@/utils/itemStatus';
 
-interface ItemRowProps {
+interface ConnectionRowProps {
   item: ItemPublicDTO;
   onUpdate: (itemId: string, mode: UpdateMode) => void;
 }
@@ -40,7 +40,10 @@ const STATUS_DOT_BG: Record<StatusVariant, string> = {
   unknown: 'bg-muted-foreground',
 };
 
-export const ItemRow: React.FC<ItemRowProps> = ({ item, onUpdate }) => {
+export const ConnectionRow: React.FC<ConnectionRowProps> = ({
+  item,
+  onUpdate,
+}) => {
   const logoUrl = getInstitutionLogo(item);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
   const { mutate: deleteItem, isPending: isDeleting } = useDeleteItem();

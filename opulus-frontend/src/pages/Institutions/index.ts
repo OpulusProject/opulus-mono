@@ -1,1 +1,0 @@
-export { Institutions } from './Institutions';

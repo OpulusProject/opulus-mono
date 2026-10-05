@@ -16,7 +16,7 @@ import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings.index'
-import { Route as SettingsInstitutionsRouteImport } from './routes/settings.institutions'
+import { Route as SettingsConnectionsRouteImport } from './routes/settings.connections'
 
 const TwoFactorRoute = TwoFactorRouteImport.update({
   id: '/two-factor',
@@ -53,9 +53,9 @@ const SettingsIndexRoute = SettingsIndexRouteImport.update({
   path: '/settings/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SettingsInstitutionsRoute = SettingsInstitutionsRouteImport.update({
-  id: '/settings/institutions',
-  path: '/settings/institutions',
+const SettingsConnectionsRoute = SettingsConnectionsRouteImport.update({
+  id: '/settings/connections',
+  path: '/settings/connections',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -66,7 +66,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/two-factor': typeof TwoFactorRoute
-  '/settings/institutions': typeof SettingsInstitutionsRoute
+  '/settings/connections': typeof SettingsConnectionsRoute
   '/settings': typeof SettingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -76,7 +76,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/two-factor': typeof TwoFactorRoute
-  '/settings/institutions': typeof SettingsInstitutionsRoute
+  '/settings/connections': typeof SettingsConnectionsRoute
   '/settings': typeof SettingsIndexRoute
 }
 export interface FileRoutesById {
@@ -87,7 +87,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/two-factor': typeof TwoFactorRoute
-  '/settings/institutions': typeof SettingsInstitutionsRoute
+  '/settings/connections': typeof SettingsConnectionsRoute
   '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -99,7 +99,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/two-factor'
-    | '/settings/institutions'
+    | '/settings/connections'
     | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -109,7 +109,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/two-factor'
-    | '/settings/institutions'
+    | '/settings/connections'
     | '/settings'
   id:
     | '__root__'
@@ -119,7 +119,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/two-factor'
-    | '/settings/institutions'
+    | '/settings/connections'
     | '/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -130,7 +130,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   TwoFactorRoute: typeof TwoFactorRoute
-  SettingsInstitutionsRoute: typeof SettingsInstitutionsRoute
+  SettingsConnectionsRoute: typeof SettingsConnectionsRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
@@ -185,11 +185,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/settings/institutions': {
-      id: '/settings/institutions'
-      path: '/settings/institutions'
-      fullPath: '/settings/institutions'
-      preLoaderRoute: typeof SettingsInstitutionsRouteImport
+    '/settings/connections': {
+      id: '/settings/connections'
+      path: '/settings/connections'
+      fullPath: '/settings/connections'
+      preLoaderRoute: typeof SettingsConnectionsRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -202,7 +202,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   TwoFactorRoute: TwoFactorRoute,
-  SettingsInstitutionsRoute: SettingsInstitutionsRoute,
+  SettingsConnectionsRoute: SettingsConnectionsRoute,
   SettingsIndexRoute: SettingsIndexRoute,
 }
 export const routeTree = rootRouteImport

@@ -14,4 +14,3 @@ Pages are typically used with React Router:
 ```tsx
 import { SomePage } from '@/pages/SomePage';
 ```
-
