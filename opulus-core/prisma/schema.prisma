@@ -104,6 +104,7 @@ model Item {
   updateType            String // "background" | "user_present_required"
   consentExpirationTime DateTime?
   transactionCursor     String? // Cursor for /transactions/sync pagination
+  syncedAt              DateTime? // Set only after a successful transactions_sync
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)

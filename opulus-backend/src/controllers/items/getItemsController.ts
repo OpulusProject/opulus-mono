@@ -36,6 +36,7 @@ export async function getItemsController(
         institutionLogo: item.institutionLogo,
         institutionColor: item.institutionColor,
         error: item.error,
+        syncedAt: item.syncedAt,
         bankAccounts: item.bankAccounts,
       })
     );

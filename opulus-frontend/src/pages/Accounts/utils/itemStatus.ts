@@ -34,51 +34,71 @@ const NON_RECONNECTABLE_ERROR_CODES = new Set<string>([
 export interface ItemStatus {
   variant: StatusVariant;
   label: string;
-  needsReconnect: boolean;
+  inlineText: string | null;
+  ctaLabel: string | null;
 }
 
 export function getItemStatus(errorCode: string | null): ItemStatus {
   if (!errorCode) {
-    return { variant: 'online', label: 'Connected', needsReconnect: false };
+    return {
+      variant: 'online',
+      label: 'Connected',
+      inlineText: null,
+      ctaLabel: null,
+    };
   }
 
+  // Yellow — item still working but will stop soon unless the user re-auths.
   if (
     errorCode === 'PENDING_DISCONNECT' ||
     errorCode === 'PENDING_EXPIRATION'
   ) {
     return {
       variant: 'degraded',
-      label: 'Reconnect soon',
-      needsReconnect: true,
+      label: 'Pending disconnect',
+      inlineText: 'Pending disconnect',
+      ctaLabel: 'Reconnect',
     };
   }
 
+  // Red — reconnectable auth error (user action fixes it).
   if (RECONNECT_ERROR_CODES.has(errorCode)) {
     return {
       variant: 'offline',
-      label: 'Reconnect required',
-      needsReconnect: true,
+      label: 'Login required',
+      inlineText: 'Login required',
+      ctaLabel: 'Reconnect',
     };
   }
 
+  // Red — institution-side outage (user can't fix; just wait).
   if (
     errorCode === 'INSTITUTION_DOWN' ||
     errorCode === 'INSTITUTION_NOT_RESPONDING'
   ) {
     return {
-      variant: 'maintenance',
+      variant: 'offline',
       label: 'Institution unavailable',
-      needsReconnect: false,
+      inlineText: 'Institution unavailable',
+      ctaLabel: null,
     };
   }
 
+  // Gray — no longer receiving data by design (unsupported / no_accounts).
   if (NON_RECONNECTABLE_ERROR_CODES.has(errorCode)) {
     return {
-      variant: 'offline',
+      variant: 'unknown',
       label: 'Not supported',
-      needsReconnect: false,
+      inlineText: 'Not supported',
+      ctaLabel: null,
     };
   }
 
-  return { variant: 'unknown', label: 'Error', needsReconnect: false };
+  // Red — unknown error. Data has stopped; no deterministic remediation.
+  return {
+    variant: 'offline',
+    label: 'Unknown error',
+    inlineText: 'Unknown error',
+    ctaLabel: null,
+  };
 }

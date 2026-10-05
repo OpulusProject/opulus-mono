@@ -50,10 +50,48 @@ test.describe("GET /api/items", () => {
     expect(items[0]).toMatchObject({
       id: seeded.itemId,
       institutionName: seeded.institutionName,
+      errorCode: null,
+      syncedAt: null,
     });
     expect(items[0].accounts).toEqual([
       expect.objectContaining({ id: seeded.accountId, name: seeded.accountName }),
     ]);
+  });
+
+  test("parses errorCode from the stored Plaid error JSON", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    await seedItemWithAccount(userId, {
+      error: JSON.stringify({
+        error_code: "ITEM_LOGIN_REQUIRED",
+        error_type: "ITEM_ERROR",
+      }),
+    });
+
+    // Act
+    const res = await request.get("/api/items", { headers: withSession(cookie) });
+
+    // Assert
+    await expectOk(res);
+    const items = (await res.json()).data.items as Array<{ errorCode: string | null }>;
+    expect(items[0].errorCode).toBe("ITEM_LOGIN_REQUIRED");
+  });
+
+  test("exposes syncedAt as an ISO timestamp when set", async ({ request }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const syncedAt = new Date("2026-03-15T12:00:00.000Z");
+    await seedItemWithAccount(userId, { syncedAt });
+
+    // Act
+    const res = await request.get("/api/items", { headers: withSession(cookie) });
+
+    // Assert
+    await expectOk(res);
+    const items = (await res.json()).data.items as Array<{ syncedAt: string | null }>;
+    expect(items[0].syncedAt).toBe(syncedAt.toISOString());
   });
 
   test("scopes results to the requesting user (does not leak another user's items)", async ({

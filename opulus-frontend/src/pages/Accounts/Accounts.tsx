@@ -1,9 +1,10 @@
-import { Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { useState } from 'react';
 
 import { AppLayout } from '@/common/AppLayout';
 import { LaunchLink } from '@/common/LaunchLink';
 import {
+  Button,
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
@@ -17,7 +18,7 @@ import {
 import { useItems } from '@/hooks/items/useItems';
 import type { UpdateMode } from '@/hooks/plaid/useLinkToken';
 
-import { AddAccountCard, EmptyAccountsView, ItemCard } from './components';
+import { EmptyAccountsView, ItemRow } from './components';
 
 interface UpdateTarget {
   itemId: string;
@@ -31,8 +32,6 @@ export const Accounts: React.FC = () => {
 
   const handleLinkSuccess = (publicToken: string, metadata: unknown) => {
     console.log('Plaid Link Success:', { publicToken, metadata });
-    // TODO: Exchange public token for access token
-    // TODO: Store account information
   };
 
   const handleLinkExit = (error: unknown, metadata: unknown) => {
@@ -70,23 +69,35 @@ export const Accounts: React.FC = () => {
             <Spinner className="size-6" />
           </div>
         ) : itemsData && itemsData.items.length > 0 ? (
-          <div className="flex flex-col gap-3">
-            {itemsData.items.map((item) => (
-              <ItemCard
-                key={item.id}
-                item={item}
-                onUpdate={(itemId, mode) => {
-                  setUpdateTarget({ itemId, mode });
+          <div className="rounded-md border">
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <h2 className="text-sm font-medium">Linked institutions</h2>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setUpdateTarget(undefined);
                   setIsLinkOpen(true);
                 }}
-              />
-            ))}
-            <AddAccountCard
-              onAddAccount={() => {
-                setUpdateTarget(undefined);
-                setIsLinkOpen(true);
-              }}
-            />
+              >
+                <Plus className="size-4" />
+                Add institution
+              </Button>
+            </div>
+            <ul className="divide-y">
+              {itemsData.items.map((item) => (
+                <li key={item.id}>
+                  <ItemRow
+                    item={item}
+                    onUpdate={(itemId, mode) => {
+                      setUpdateTarget({ itemId, mode });
+                      setIsLinkOpen(true);
+                    }}
+                  />
+                </li>
+              ))}
+            </ul>
           </div>
         ) : (
           <div

@@ -117,7 +117,10 @@ export async function syncItemTransactions(
 
     await tx.item.update({
       where: { id: item.id },
-      data: { transactionCursor: nextCursor },
+      data: {
+        transactionCursor: nextCursor,
+        syncedAt: new Date(),
+      },
     });
   });
 

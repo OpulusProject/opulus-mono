@@ -15,6 +15,7 @@ export interface ItemPublicDTO {
   institutionColor: string | null;
   error: string | null;
   errorCode: string | null;
+  syncedAt: string | null;
   accounts: Account[];
 }
 
@@ -39,6 +40,7 @@ export function toItemPublicDTO(item: {
   institutionLogo: string | null;
   institutionColor: string | null;
   error: string | null;
+  syncedAt: Date | null;
   bankAccounts: Array<{
     id: string;
     name: string;
@@ -67,6 +69,7 @@ export function toItemPublicDTO(item: {
     institutionColor: item.institutionColor,
     error: item.error,
     errorCode,
+    syncedAt: item.syncedAt ? item.syncedAt.toISOString() : null,
     accounts: item.bankAccounts.map((account) => ({
       id: account.id,
       name: account.name,
