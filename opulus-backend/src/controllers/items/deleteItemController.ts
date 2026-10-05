@@ -48,8 +48,7 @@ export async function deleteItemController(
 
     // TODO: record deletion of item
 
-    res.status(200).json({
-    })
+    res.status(204).send()
   } catch (error) {
     next(error);
   }
