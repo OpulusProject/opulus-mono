@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import type { Item as PlaidItem, PlaidErrorType } from "plaid";
+import type { PlaidErrorType, Item as PlaidItem } from "plaid";
 import prisma from "../client/prisma.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
 
@@ -192,6 +192,30 @@ class ItemService {
   }
 
   /**
+   * Deletes an item by ID
+   * @param itemId - the item ID
+   * @param client - Optional transaction client to run the delete inside a transaction
+   * @returns Deleted item
+   */
+  async delete(itemId: string, client: Prisma.TransactionClient = this.prisma) {
+    try {
+      return await client.item.delete({
+        where: { id: itemId },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to delete item: ${error.message}`
+          : "An unexpected error occurred while deleting item";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
    * Get all items for a user with their bank accounts
    * @param userId - The user ID
    * @returns Array of items with bank accounts (excluding credit accounts)
@@ -262,4 +286,3 @@ class ItemService {
 
 // Export singleton instance
 export const itemService = new ItemService(prisma);
-

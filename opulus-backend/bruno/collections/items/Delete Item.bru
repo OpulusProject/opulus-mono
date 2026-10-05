@@ -1,0 +1,77 @@
+meta {
+  name: Delete Item
+  type: http
+  seq: 2
+}
+
+delete {
+  url: {{base_url}}/api/items/:id
+  body: none
+  auth: none
+}
+
+params:path {
+  id: item_id_here
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+docs {
+  # Delete Item
+
+  Disconnects a Plaid item from Opulus. Removes the item from Plaid, then deletes its transactions, bank accounts, and the item itself.
+
+  **Endpoint:** `DELETE /api/items/:id`
+
+  ## Authentication
+
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+
+  ## Path Parameters
+
+  - `id` (string, required): The item ID (the Opulus `id`, not the `plaidItemId`). Get it from **Get Items**.
+
+  ## Behavior
+
+  1. Verifies the item belongs to the authenticated user
+  2. Calls Plaid `/item/remove` to revoke the access token
+  3. Deletes all transactions linked to the item
+  4. Deletes all bank accounts linked to the item
+  5. Deletes the item
+
+  ## Success Response (204)
+
+  No content.
+
+  ## Error Responses
+
+  - `401 Unauthorized`: No active session, or the item belongs to another user
+    ```json
+    {
+      "error": "Unauthorized",
+      "message": "You do not have access to this item"
+    }
+    ```
+
+  - `404 Not Found`: No item exists with the given ID
+    ```json
+    {
+      "error": "Not Found",
+      "message": "Item not found"
+    }
+    ```
+
+  - `500 Internal Server Error`: Plaid or database error
+
+  ## Usage
+
+  1. Use **Sign In** to authenticate and establish a session
+  2. Call **Get Items** and copy the `id` of the item to remove
+  3. Set the `id` path param above and send the request
+
+  ## Notes
+
+  - This is destructive and cannot be undone; the user must re-link the institution to restore the connection
+}

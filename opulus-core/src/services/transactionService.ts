@@ -239,6 +239,33 @@ class TransactionService {
   }
 
   /**
+   * Delete transactions by item ID
+   * @param itemId - the item ID to remove the transactions for
+   * @param client - Optional transaction client to run the delete inside a transaction
+   * @returns Count of deleted transactions
+   */
+  async deleteByItemId(
+    itemId: string,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
+    try {
+      return await client.transaction.deleteMany({
+        where: { itemId },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to delete transactions: ${error.message}`
+          : "An unexpected error occurred while deleting transactions";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
    * Get all transactions for a user with optional filters and pagination
    * @param userId - User ID
    * @param filters - Optional filters (itemId, accountId, startDate, endDate)

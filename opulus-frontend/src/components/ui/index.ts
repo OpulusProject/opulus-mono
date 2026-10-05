@@ -54,6 +54,20 @@ export {
   CollapsibleTrigger,
 } from './collapsible';
 
+// Dialog components
+export {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogOverlay,
+  DialogPortal,
+  DialogTitle,
+  DialogTrigger,
+} from './dialog';
+
 // Drawer components
 export {
   Drawer,

@@ -8,12 +8,19 @@ import {
   AvatarFallback,
   AvatarImage,
   Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui';
 import type { StatusVariant } from '@/components/ui';
+import { useDeleteItem } from '@/hooks/items/useDeleteItem';
 import type { UpdateMode } from '@/hooks/plaid/useLinkToken';
 import { cn } from '@/lib/utils';
 import { formatRelativeTime } from '@/utils/date';
@@ -35,6 +42,9 @@ const STATUS_DOT_BG: Record<StatusVariant, string> = {
 
 export const ItemRow: React.FC<ItemRowProps> = ({ item, onUpdate }) => {
   const logoUrl = getInstitutionLogo(item);
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const { mutate: deleteItem, isPending: isDeleting } = useDeleteItem();
+  const institutionName = item.institutionName || 'this institution';
 
   const status = getItemStatus(item.errorCode);
   const accountCount = item.accounts.length;
@@ -110,15 +120,49 @@ export const ItemRow: React.FC<ItemRowProps> = ({ item, onUpdate }) => {
           <DropdownMenuContent align="end">
             <DropdownMenuItem
               variant="destructive"
-              onSelect={() =>
-                console.log('[disconnect] item', item.id, item.institutionName)
-              }
+              onSelect={() => setConfirmOpen(true)}
             >
               Disconnect
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <Dialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          if (!isDeleting) setConfirmOpen(open);
+        }}
+      >
+        <DialogContent showCloseButton={!isDeleting}>
+          <DialogHeader>
+            <DialogTitle>Disconnect {institutionName}?</DialogTitle>
+            <DialogDescription>
+              Opulus will no longer track information for {institutionName}. All
+              accounts and transactions for it will be permanently deleted. This
+              action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isDeleting}
+              onClick={() => setConfirmOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              disabled={isDeleting}
+              onClick={() => deleteItem({ itemId: item.id })}
+            >
+              {isDeleting ? 'Disconnecting…' : 'Disconnect'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
