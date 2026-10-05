@@ -35,7 +35,10 @@ export async function getItemsController(
         institutionName: item.institutionName,
         institutionLogo: item.institutionLogo,
         institutionColor: item.institutionColor,
-        error: item.error,
+        errorType: item.errorType,
+        errorCode: item.errorCode,
+        errorMessage: item.errorMessage,
+        displayMessage: item.displayMessage,
         syncedAt: item.syncedAt,
         bankAccounts: item.bankAccounts,
       })

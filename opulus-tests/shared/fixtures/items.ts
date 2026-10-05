@@ -28,12 +28,10 @@ export async function seedItemWithAccount(
   overrides: Partial<{
     institutionName: string;
     accountName: string;
-    error: {
-      error_type: string;
-      error_code: string;
-      error_message: string;
-      display_message?: string | null;
-    } | null;
+    errorType: string | null;
+    errorCode: string | null;
+    errorMessage: string | null;
+    displayMessage: string | null;
     syncedAt: Date | null;
   }> = {},
 ): Promise<SeededItem> {
@@ -52,7 +50,18 @@ export async function seedItemWithAccount(
       availableProducts: ["transactions"],
       billedProducts: ["transactions"],
       products: ["transactions"],
-      ...(overrides.error !== undefined ? { error: overrides.error } : {}),
+      ...(overrides.errorType !== undefined
+        ? { errorType: overrides.errorType }
+        : {}),
+      ...(overrides.errorCode !== undefined
+        ? { errorCode: overrides.errorCode }
+        : {}),
+      ...(overrides.errorMessage !== undefined
+        ? { errorMessage: overrides.errorMessage }
+        : {}),
+      ...(overrides.displayMessage !== undefined
+        ? { displayMessage: overrides.displayMessage }
+        : {}),
       ...(overrides.syncedAt !== undefined
         ? { syncedAt: overrides.syncedAt }
         : {}),

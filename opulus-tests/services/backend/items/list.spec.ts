@@ -50,7 +50,10 @@ test.describe("GET /api/items", () => {
     expect(items[0]).toMatchObject({
       id: seeded.itemId,
       institutionName: seeded.institutionName,
-      error: null,
+      errorType: null,
+      errorCode: null,
+      errorMessage: null,
+      displayMessage: null,
       syncedAt: null,
     });
     expect(items[0].accounts).toEqual([
@@ -58,15 +61,13 @@ test.describe("GET /api/items", () => {
     ]);
   });
 
-  test("returns the stored Plaid error object", async ({ request }) => {
+  test("returns stored Plaid error columns", async ({ request }) => {
     // Arrange
     const { cookie, userId } = await createAuthedUser(request);
     await seedItemWithAccount(userId, {
-      error: {
-        error_type: "ITEM_ERROR",
-        error_code: "ITEM_LOGIN_REQUIRED",
-        error_message: "the login details of this item have changed",
-      },
+      errorType: "ITEM_ERROR",
+      errorCode: "ITEM_LOGIN_REQUIRED",
+      errorMessage: "the login details of this item have changed",
     });
 
     // Act
@@ -75,11 +76,14 @@ test.describe("GET /api/items", () => {
     // Assert
     await expectOk(res);
     const items = (await res.json()).data.items as Array<{
-      error: { error_code: string; error_type: string; error_message: string } | null;
+      errorType: string | null;
+      errorCode: string | null;
+      errorMessage: string | null;
     }>;
-    expect(items[0].error).toMatchObject({
-      error_type: "ITEM_ERROR",
-      error_code: "ITEM_LOGIN_REQUIRED",
+    expect(items[0]).toMatchObject({
+      errorType: "ITEM_ERROR",
+      errorCode: "ITEM_LOGIN_REQUIRED",
+      errorMessage: "the login details of this item have changed",
     });
   });
 

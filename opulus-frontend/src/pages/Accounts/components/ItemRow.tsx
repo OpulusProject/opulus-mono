@@ -57,7 +57,7 @@ export const ItemRow: React.FC<ItemRowProps> = ({ item, onUpdate }) => {
       : `data:image/png;base64,${item.institutionLogo}`
     : null;
 
-  const status = getItemStatus(item.error?.error_code ?? null);
+  const status = getItemStatus(item.errorCode);
   const accountCount = item.accounts.length;
 
   return (

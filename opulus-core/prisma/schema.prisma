@@ -97,7 +97,10 @@ model Item {
   institutionColor      String? // Primary brand color from Plaid
   institutionLogo       String? // Logo URL from Plaid
   webhook               String?
-  error                 Json? // Plaid ItemError object ({ error_type, error_code, error_message, … })
+  errorType             String?
+  errorCode             String?
+  errorMessage          String?
+  displayMessage        String?
   availableProducts     String[]      @default([])
   billedProducts        String[]      @default([])
   products              String[]      @default([])
