@@ -141,15 +141,6 @@ export function getCreditLimit(account: Account): number | null {
   return null;
 }
 
-/** Fraction (0-1+) of the credit limit currently owed, or null if unknown. */
-export function getCreditUtilization(account: Account): number | null {
-  const limit = getCreditLimit(account);
-  if (limit === null || limit <= 0 || account.balanceCurrent === null) {
-    return null;
-  }
-  return account.balanceCurrent / limit;
-}
-
 /**
  * Overall credit utilization (0-1) across accounts that report a limit, or
  * null when no limits are known or the accounts span currencies.

@@ -1,21 +1,9 @@
-import { Search } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import { AppLayout } from '@/common/AppLayout';
 import { PageHeader } from '@/common/PageHeader';
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Spinner,
-} from '@/components/ui';
+import { Spinner } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
-import { getAccountTypeLabel } from '@/utils/accountDisplay';
 import { type AccountKind, getAccountKind } from '@/utils/accountKind';
 
 import { type AccountEntry, toAccountEntries } from './accountEntries';
@@ -23,28 +11,8 @@ import { AccountGroup } from './AccountGroup';
 import { EmptyAccountsView } from './EmptyAccountsView';
 import { type SummaryStat, SummaryStats } from './SummaryStats';
 
-type SortKey = 'name' | 'balance' | 'type';
-
-const SORTERS: Record<SortKey, (a: AccountEntry, b: AccountEntry) => number> = {
-  name: (a, b) => a.account.name.localeCompare(b.account.name),
-  // Largest balance first; accounts without a balance go last.
-  balance: (a, b) =>
-    (b.account.balanceCurrent ?? -Infinity) -
-    (a.account.balanceCurrent ?? -Infinity),
-  type: (a, b) =>
-    getAccountTypeLabel(a.account).localeCompare(
-      getAccountTypeLabel(b.account)
-    ) || a.account.name.localeCompare(b.account.name),
-};
-
-function matchesQuery({ account, item }: AccountEntry, query: string) {
-  return [
-    account.name,
-    account.officialName,
-    account.mask,
-    item.institutionName,
-  ].some((field) => field?.toLowerCase().includes(query));
-}
+const byName = (a: AccountEntry, b: AccountEntry) =>
+  a.account.name.localeCompare(b.account.name);
 
 export interface AccountGroupConfig {
   kind: AccountKind;
@@ -65,8 +33,8 @@ interface AccountsOverviewProps {
 }
 
 /**
- * Shared layout for pages that list accounts by kind: summary header, search
- * and sort, then collapsible groups of accounts.
+ * Shared layout for pages that list accounts by kind: a summary header, then
+ * collapsible groups of accounts.
  */
 export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
   title,
@@ -78,9 +46,6 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
   emptyDescription,
 }) => {
   const { data: itemsData, isLoading } = useItems();
-  const [search, setSearch] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('name');
-
   const entries = useMemo(() => {
     const kinds = new Set(groups.map((group) => group.kind));
     return toAccountEntries(itemsData?.items ?? []).filter((entry) =>
@@ -88,22 +53,18 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
     );
   }, [itemsData, groups]);
 
-  const query = search.trim().toLowerCase();
-  const isSearching = query.length > 0;
-
-  const visibleGroups = useMemo(() => {
-    const matching = isSearching
-      ? entries.filter((entry) => matchesQuery(entry, query))
-      : entries;
-    return groups
-      .map((group) => ({
-        ...group,
-        entries: matching
-          .filter((entry) => getAccountKind(entry.account) === group.kind)
-          .sort(SORTERS[sortKey]),
-      }))
-      .filter((group) => group.entries.length > 0);
-  }, [entries, groups, query, isSearching, sortKey]);
+  const visibleGroups = useMemo(
+    () =>
+      groups
+        .map((group) => ({
+          ...group,
+          entries: entries
+            .filter((entry) => getAccountKind(entry.account) === group.kind)
+            .sort(byName),
+        }))
+        .filter((group) => group.entries.length > 0),
+    [entries, groups]
+  );
 
   let content: React.ReactNode;
   if (isLoading) {
@@ -121,48 +82,15 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
       <>
         <SummaryStats stats={getSummary(entries)} />
 
-        <div className="flex items-center gap-4">
-          <InputGroup className="flex-1">
-            <InputGroupAddon>
-              <Search className="h-4 w-4" />
-            </InputGroupAddon>
-            <InputGroupInput
-              placeholder="Search accounts..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
+        <div className="flex flex-col gap-4">
+          {visibleGroups.map((group) => (
+            <AccountGroup
+              key={group.kind}
+              title={group.title}
+              entries={group.entries}
             />
-          </InputGroup>
-          <Select
-            value={sortKey}
-            onValueChange={(value) => setSortKey(value as SortKey)}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name">Name</SelectItem>
-              <SelectItem value="balance">Balance</SelectItem>
-              <SelectItem value="type">Type</SelectItem>
-            </SelectContent>
-          </Select>
+          ))}
         </div>
-
-        {visibleGroups.length === 0 ? (
-          <p className="text-muted-foreground py-8 text-center text-sm">
-            No accounts match &ldquo;{search.trim()}&rdquo;.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {visibleGroups.map((group) => (
-              <AccountGroup
-                // Remount (expanded) when a search starts so matches are visible.
-                key={`${group.kind}:${isSearching}`}
-                title={group.title}
-                entries={group.entries}
-              />
-            ))}
-          </div>
-        )}
       </>
     );
   }

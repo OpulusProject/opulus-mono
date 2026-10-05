@@ -6,9 +6,7 @@ import {
   formatMoney,
   getAccountTypeLabel,
   getBalanceCaption,
-  getCreditUtilization,
 } from '@/utils/accountDisplay';
-import { getAccountKind } from '@/utils/accountKind';
 import { getInstitutionLogo } from '@/utils/institution';
 import { getItemStatus } from '@/utils/itemStatus';
 
@@ -18,40 +16,9 @@ interface AccountRowProps {
   entry: AccountEntry;
 }
 
-function UtilizationBar({ utilization }: { utilization: number }) {
-  const percent = Math.round(utilization * 100);
-  return (
-    <div className="mt-1.5 flex items-center justify-end gap-2">
-      <div
-        role="progressbar"
-        aria-label="Credit used"
-        aria-valuenow={percent}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        className="bg-muted h-1.5 w-24 overflow-hidden rounded-full"
-      >
-        <div
-          className={cn(
-            'h-full rounded-full',
-            utilization < 0.3 && 'bg-emerald-500',
-            utilization >= 0.3 && utilization < 0.7 && 'bg-amber-500',
-            utilization >= 0.7 && 'bg-red-500'
-          )}
-          style={{ width: `${Math.min(percent, 100)}%` }}
-        />
-      </div>
-      <span className="text-muted-foreground w-9 text-xs tabular-nums">
-        {percent}%
-      </span>
-    </div>
-  );
-}
-
 export const AccountRow: React.FC<AccountRowProps> = ({ entry }) => {
   const { account, item } = entry;
   const caption = getBalanceCaption(account);
-  const utilization =
-    getAccountKind(account) === 'credit' ? getCreditUtilization(account) : null;
   const institution = item.institutionName || 'Unknown institution';
   const status = getItemStatus(item.errorCode);
 
@@ -99,7 +66,6 @@ export const AccountRow: React.FC<AccountRowProps> = ({ entry }) => {
             {caption}
           </div>
         )}
-        {utilization !== null && <UtilizationBar utilization={utilization} />}
       </div>
     </div>
   );
