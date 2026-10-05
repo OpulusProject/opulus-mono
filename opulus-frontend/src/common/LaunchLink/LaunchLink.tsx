@@ -118,8 +118,7 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
         onSuccess: (result) => {
           if (result.data.duplicate) {
             console.info(
-              result.message ??
-                'You are already connected to this institution.'
+              result.message ?? 'You are already connected to this institution.'
             );
           }
         },
