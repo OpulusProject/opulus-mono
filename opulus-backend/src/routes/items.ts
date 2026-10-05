@@ -1,4 +1,4 @@
-import { deleteItemController } from "@/controllers/items/deleteItemController";
+import { deleteItemController } from "@/controllers/items/deleteItemController.js";
 import { getItemsController } from "@/controllers/items/getItemsController.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
 import { Router } from "express";
