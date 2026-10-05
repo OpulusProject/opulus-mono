@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui';
 import type { StatusVariant } from '@/components/ui';
+import { useDeleteItem } from '@/hooks/items/useDeleteItem';
 import type { UpdateMode } from '@/hooks/plaid/useLinkToken';
 import { cn } from '@/lib/utils';
 import { formatRelativeTime } from '@/utils/date';
@@ -35,6 +36,7 @@ const STATUS_DOT_BG: Record<StatusVariant, string> = {
 
 export const ItemRow: React.FC<ItemRowProps> = ({ item, onUpdate }) => {
   const logoUrl = getInstitutionLogo(item);
+  const { mutate: deleteItem, isPending: isDeleting } = useDeleteItem();
 
   const status = getItemStatus(item.errorCode);
   const accountCount = item.accounts.length;
@@ -110,9 +112,8 @@ export const ItemRow: React.FC<ItemRowProps> = ({ item, onUpdate }) => {
           <DropdownMenuContent align="end">
             <DropdownMenuItem
               variant="destructive"
-              onSelect={() =>
-                console.log('[disconnect] item', item.id, item.institutionName)
-              }
+              disabled={isDeleting}
+              onSelect={() => deleteItem({ itemId: item.id })}
             >
               Disconnect
             </DropdownMenuItem>
