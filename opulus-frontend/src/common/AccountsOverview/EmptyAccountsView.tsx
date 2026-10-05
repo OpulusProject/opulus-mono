@@ -12,17 +12,23 @@ import {
   EmptyTitle,
 } from '@/components/ui';
 
-export const EmptyAccountsView: React.FC = () => {
+interface EmptyAccountsViewProps {
+  title: string;
+  description: string;
+}
+
+export const EmptyAccountsView: React.FC<EmptyAccountsViewProps> = ({
+  title,
+  description,
+}) => {
   return (
     <Empty className="rounded-md border">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <Landmark />
         </EmptyMedia>
-        <EmptyTitle>No accounts yet</EmptyTitle>
-        <EmptyDescription>
-          Add a connection and its accounts will show up here.
-        </EmptyDescription>
+        <EmptyTitle>{title}</EmptyTitle>
+        <EmptyDescription>{description}</EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
         <Button asChild>

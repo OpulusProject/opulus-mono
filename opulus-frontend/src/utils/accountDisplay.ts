@@ -8,6 +8,7 @@ const SUBTYPE_LABELS: Record<string, string> = {
   savings: 'Savings',
   'credit card': 'Credit card',
   'line of credit': 'Line of credit',
+  'home equity': 'Home equity line of credit',
   'money market': 'Money market',
   'cash management': 'Cash management',
   cd: 'CD',
@@ -38,6 +39,11 @@ function titleCase(value: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+export interface CurrencyTotal {
+  currency: string | null;
+  amount: number;
+}
+
 /**
  * Format a money amount in the account's own currency. Falls back to a plain
  * two-decimal number when the currency is unknown or invalid.
@@ -63,6 +69,14 @@ export function formatMoney(
   }).format(amount);
 }
 
+/** "$1,000.00", or "$1,000.00 + US$50.00" when accounts span currencies. */
+export function formatTotals(accounts: Account[]): string {
+  if (accounts.length === 0) return formatMoney(0, null);
+  return sumByCurrency(accounts)
+    .map(({ currency, amount }) => formatMoney(amount, currency))
+    .join(' + ');
+}
+
 /** Human-friendly account type, preferring the more specific subtype. */
 export function getAccountTypeLabel(
   account: Pick<Account, 'type' | 'subtype'>
@@ -76,24 +90,35 @@ export function getAccountTypeLabel(
   return TYPE_LABELS[account.type] ?? titleCase(account.type);
 }
 
+/** Credit still available on a credit account, derived when not provided. */
+export function getAvailableCredit(account: Account): number | null {
+  if (account.balanceAvailable !== null) return account.balanceAvailable;
+  if (account.balanceLimit !== null && account.balanceCurrent !== null) {
+    return account.balanceLimit - account.balanceCurrent;
+  }
+  return null;
+}
+
 /** Secondary balance line shown under an account's main balance. */
 export function getBalanceCaption(account: Account): string | null {
   const currency = account.isoCurrencyCode;
 
   if (account.type === 'credit') {
-    if (account.balanceLimit !== null) {
-      const available =
-        account.balanceAvailable !== null
-          ? `${formatMoney(account.balanceAvailable, currency)} available of `
-          : 'Limit ';
-      return `${available}${formatMoney(account.balanceLimit, currency)}`;
+    const available = getAvailableCredit(account);
+    const limit = getCreditLimit(account);
+    if (available !== null && limit !== null) {
+      return `${formatMoney(available, currency)} available of ${formatMoney(limit, currency)}`;
     }
-    if (account.balanceAvailable !== null) {
-      return `${formatMoney(account.balanceAvailable, currency)} available`;
+    if (available !== null) {
+      return `${formatMoney(available, currency)} available`;
+    }
+    if (limit !== null) {
+      return `Limit ${formatMoney(limit, currency)}`;
     }
     return null;
   }
 
+  // Lines of credit (e.g. a HELOC) are loans that report available credit.
   if (
     account.balanceAvailable !== null &&
     account.balanceAvailable !== account.balanceCurrent
@@ -102,4 +127,55 @@ export function getBalanceCaption(account: Account): string | null {
   }
 
   return null;
+}
+
+/**
+ * Credit limit for a credit account. Plaid sometimes returns only the limit or
+ * only the available credit, so derive whichever one is missing.
+ */
+export function getCreditLimit(account: Account): number | null {
+  if (account.balanceLimit !== null) return account.balanceLimit;
+  if (account.balanceAvailable !== null && account.balanceCurrent !== null) {
+    return account.balanceCurrent + account.balanceAvailable;
+  }
+  return null;
+}
+
+/** Fraction (0-1+) of the credit limit currently owed, or null if unknown. */
+export function getCreditUtilization(account: Account): number | null {
+  const limit = getCreditLimit(account);
+  if (limit === null || limit <= 0 || account.balanceCurrent === null) {
+    return null;
+  }
+  return account.balanceCurrent / limit;
+}
+
+/**
+ * Overall credit utilization (0-1) across accounts that report a limit, or
+ * null when no limits are known or the accounts span currencies.
+ */
+export function getOverallUtilization(accounts: Account[]): {
+  utilization: number;
+  limit: number;
+  currency: string | null;
+} | null {
+  const withLimits = accounts.filter((a) => getCreditLimit(a) !== null);
+  if (withLimits.length === 0) return null;
+  const currency = withLimits[0].isoCurrencyCode;
+  if (withLimits.some((a) => a.isoCurrencyCode !== currency)) return null;
+
+  const limit = withLimits.reduce((s, a) => s + (getCreditLimit(a) ?? 0), 0);
+  const owed = withLimits.reduce((s, a) => s + (a.balanceCurrent ?? 0), 0);
+  if (limit <= 0) return null;
+  return { utilization: owed / limit, limit, currency };
+}
+
+/** Sum current balances, kept separate per currency (never mix currencies). */
+export function sumByCurrency(accounts: Account[]): CurrencyTotal[] {
+  const totals = new Map<string | null, number>();
+  for (const account of accounts) {
+    const key = account.isoCurrencyCode;
+    totals.set(key, (totals.get(key) ?? 0) + (account.balanceCurrent ?? 0));
+  }
+  return [...totals].map(([currency, amount]) => ({ currency, amount }));
 }

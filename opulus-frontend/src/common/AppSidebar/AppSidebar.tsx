@@ -2,6 +2,7 @@
 
 import { Link } from '@tanstack/react-router';
 import {
+  CreditCard,
   GemIcon,
   HelpCircle,
   Landmark,
@@ -39,6 +40,11 @@ const navMain: NavItem[] = [
     title: 'Accounts',
     url: '/accounts',
     icon: Landmark,
+  },
+  {
+    title: 'Credit & loans',
+    url: '/credit-and-loans',
+    icon: CreditCard,
   },
   {
     title: 'Settings',
