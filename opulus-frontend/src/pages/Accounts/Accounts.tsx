@@ -1,31 +1,40 @@
-import { AppLayout } from '@/common/AppLayout';
-import { PageHeader } from '@/common/PageHeader';
-import { Spinner } from '@/components/ui';
-import { useItems } from '@/hooks/items/useItems';
+import { Search } from 'lucide-react';
 
-import { AccountsByInstitution, EmptyAccountsView } from './components';
+import { AppLayout } from '@/common/AppLayout';
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui';
 
 export const Accounts: React.FC = () => {
-  const { data: itemsData, isLoading } = useItems();
-  const items = itemsData?.items ?? [];
-
   return (
     <AppLayout title="Accounts">
-      <div className="flex flex-col gap-6 px-4 lg:px-6">
-        <PageHeader
-          title="Accounts"
-          description="Your accounts, grouped by institution. Manage your connections in Settings."
-        />
-
-        {isLoading ? (
-          <div className="flex items-center justify-center py-16">
-            <Spinner className="size-6" />
-          </div>
-        ) : items.length === 0 ? (
-          <EmptyAccountsView />
-        ) : (
-          <AccountsByInstitution items={items} />
-        )}
+      <div className="px-4 lg:px-6">
+        <div className="flex items-center gap-4 py-4">
+          <InputGroup className="flex-1">
+            <InputGroupAddon>
+              <Search className="h-4 w-4" />
+            </InputGroupAddon>
+            <InputGroupInput placeholder="Search accounts..." />
+          </InputGroup>
+          <Select defaultValue="name">
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name">Name</SelectItem>
+              <SelectItem value="date">Date Added</SelectItem>
+              <SelectItem value="balance">Balance</SelectItem>
+              <SelectItem value="type">Type</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
     </AppLayout>
   );
