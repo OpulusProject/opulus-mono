@@ -59,6 +59,8 @@ export const ItemRow: React.FC<ItemRowProps> = ({ item, onUpdate }) => {
 
   const status = getItemStatus(item.errorCode);
   const accountCount = item.accounts.length;
+  const statusText =
+    status.inlineText && (item.displayMessage || status.inlineText);
 
   return (
     <div className="hover:bg-muted/40 flex items-center gap-3 px-4 py-3 transition-colors">
@@ -96,8 +98,9 @@ export const ItemRow: React.FC<ItemRowProps> = ({ item, onUpdate }) => {
       </div>
 
       <div className="flex shrink-0 items-center gap-3">
-        {status.inlineText ? (
+        {statusText ? (
           <span
+            title={statusText}
             className={cn(
               'max-w-[12rem] truncate text-xs font-medium',
               status.variant === 'degraded' &&
@@ -106,7 +109,7 @@ export const ItemRow: React.FC<ItemRowProps> = ({ item, onUpdate }) => {
               status.variant === 'unknown' && 'text-muted-foreground',
             )}
           >
-            {status.inlineText}
+            {statusText}
           </span>
         ) : null}
 
