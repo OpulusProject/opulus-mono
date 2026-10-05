@@ -4,7 +4,10 @@ import {
   createItemBodySchema,
 } from "@/controllers/plaid/createItemController.js";
 import { createLinkTokenController } from "@/controllers/plaid/createLinkTokenController.js";
-import { createUpdateLinkTokenController } from "@/controllers/plaid/createUpdateLinkTokenController.js";
+import {
+  createUpdateLinkTokenController,
+  updateLinkTokenBodySchema,
+} from "@/controllers/plaid/createUpdateLinkTokenController.js";
 import { refreshTransactionsController } from "@/controllers/plaid/refreshTransactionsController.js";
 import { updateItemAccountsController } from "@/controllers/plaid/updateItemAccountsController.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
@@ -21,6 +24,7 @@ router.post("/link-token", requireSession, createLinkTokenController);
 router.post(
   "/link-token/update",
   requireSession,
+  validate(updateLinkTokenBodySchema),
   createUpdateLinkTokenController
 );
 

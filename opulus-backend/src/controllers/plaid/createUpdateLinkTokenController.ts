@@ -26,7 +26,7 @@ export async function createUpdateLinkTokenController(
       throw new UnauthorizedError("Authentication required");
     }
 
-    const { itemId } = updateLinkTokenBodySchema.parse(req.body);
+    const { itemId } = req.body as z.infer<typeof updateLinkTokenBodySchema>;
     const item = await itemService.getById(itemId);
 
     if (item.userId !== session.user.id) {
