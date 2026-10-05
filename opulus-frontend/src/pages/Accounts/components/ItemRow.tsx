@@ -14,8 +14,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui';
 import type { StatusVariant } from '@/components/ui';
-import { cn } from '@/lib/utils';
 import type { UpdateMode } from '@/hooks/plaid/useLinkToken';
+import { cn } from '@/lib/utils';
 import { formatRelativeTime } from '@/utils/date';
 import { getInstitutionLogo } from '@/utils/institution';
 import { getItemStatus } from '@/utils/itemStatus';
