@@ -5,6 +5,7 @@ import {
   InstitutionsGetRequest,
   ItemGetRequest,
   ItemPublicTokenExchangeRequest,
+  ItemRemoveRequest,
   LinkTokenCreateRequest,
   PlaidApi,
   Products,
@@ -145,6 +146,24 @@ class PlaidService {
 
     try {
       const response = await this.plaid.itemGet(request);
+      return response.data;
+    } catch (error) {
+      throw handlePlaidError(error);
+    }
+  }
+
+  /**
+   * Remove a Plaid item by access token
+   * @param accessToken - The access token for the specified item
+   * @returns Unique identifier for the request
+   */
+  async removeItem(accessToken: string) {
+    const request: ItemRemoveRequest = {
+      access_token: accessToken,
+    }
+
+    try {
+      const response = await this.plaid.itemRemove(request);
       return response.data;
     } catch (error) {
       throw handlePlaidError(error);
