@@ -2,7 +2,6 @@ import {
   AccountsGetRequest,
   CountryCode,
   InstitutionsGetByIdRequest,
-  InstitutionsGetRequest,
   ItemGetRequest,
   ItemPublicTokenExchangeRequest,
   LinkTokenCreateRequest,
@@ -171,30 +170,6 @@ class PlaidService {
 
     try {
       const response = await this.plaid.institutionsGetById(request);
-      return response.data;
-    } catch (error) {
-      throw handlePlaidError(error);
-    }
-  }
-
-  /**
-   * Get all institutions from Plaid
-   * Supports pagination to retrieve all available institutions
-   * @returns List of institutions with total count
-   */
-  async getInstitutions(
-  ) {
-    const request: InstitutionsGetRequest = {
-      count: 500, // Plaid max is 500
-      offset: 0,
-      country_codes: [CountryCode.Ca],
-      options: {
-        include_optional_metadata: true,
-      },
-    };
-
-    try {
-      const response = await this.plaid.institutionsGet(request);
       return response.data;
     } catch (error) {
       throw handlePlaidError(error);
