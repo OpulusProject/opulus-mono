@@ -2,14 +2,20 @@
  * Get Items endpoint DTOs
  */
 
+import type { PlaidErrorType } from "plaid";
+
 import { Account } from "./bankAccount.js";
 
+/**
+ * Public DTO for Item response
+ * Only includes fields safe to expose to the client
+ */
 export interface ItemPublicDTO {
   id: string;
   institutionName: string | null;
   institutionLogo: string | null;
   institutionColor: string | null;
-  errorType: string | null;
+  errorType: PlaidErrorType | null;
   errorCode: string | null;
   errorMessage: string | null;
   displayMessage: string | null;
@@ -17,12 +23,21 @@ export interface ItemPublicDTO {
   accounts: Account[];
 }
 
+/**
+ * Items API response
+ */
 export interface ItemsResponse {
   data: {
     items: ItemPublicDTO[];
   };
 }
 
+/**
+ * Transform full item data to public DTO
+ * Filters out sensitive fields like accessToken, plaidItemId, etc.
+ * @param item - Full item data from service (includes bankAccounts)
+ * @returns Public DTO with only safe-to-expose fields
+ */
 export function toItemPublicDTO(item: {
   id: string;
   institutionName: string | null;
@@ -37,9 +52,9 @@ export function toItemPublicDTO(item: {
     id: string;
     name: string;
     type: string;
-    balanceAvailable: any;
-    balanceCurrent: any;
-    balanceLimit: any;
+    balanceAvailable: any; // Prisma Decimal
+    balanceCurrent: any; // Prisma Decimal
+    balanceLimit: any; // Prisma Decimal
   }>;
 }): ItemPublicDTO {
   return {
@@ -47,7 +62,7 @@ export function toItemPublicDTO(item: {
     institutionName: item.institutionName,
     institutionLogo: item.institutionLogo,
     institutionColor: item.institutionColor,
-    errorType: item.errorType,
+    errorType: (item.errorType as PlaidErrorType | null) ?? null,
     errorCode: item.errorCode,
     errorMessage: item.errorMessage,
     displayMessage: item.displayMessage,

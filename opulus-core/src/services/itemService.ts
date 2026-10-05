@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import type { Item as PlaidItem } from "plaid";
+import type { Item as PlaidItem, PlaidErrorType } from "plaid";
 import prisma from "../client/prisma.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
 
@@ -12,7 +12,7 @@ export interface CreateItemData {
   institutionColor?: string | null;
   institutionLogo?: string | null;
   webhook?: string | null;
-  errorType?: string | null;
+  errorType?: PlaidErrorType | null;
   errorCode?: string | null;
   errorMessage?: string | null;
   displayMessage?: string | null;
@@ -50,7 +50,7 @@ export function normalizePlaidItem(
     institutionColor: institution?.primary_color ?? null,
     institutionLogo: institution?.logo ?? null,
     webhook: plaidItem.webhook ?? null,
-    errorType: plaidItem.error ? String(plaidItem.error.error_type) : null,
+    errorType: plaidItem.error?.error_type ?? null,
     errorCode: plaidItem.error?.error_code ?? null,
     errorMessage: plaidItem.error?.error_message ?? null,
     displayMessage: plaidItem.error?.display_message ?? null,
