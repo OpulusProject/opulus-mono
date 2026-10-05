@@ -134,6 +134,10 @@ Run these from the repo root unless noted.
 4. Core services persist the Plaid item and normalized account data.
 5. The frontend reads connected items through typed DTOs from `@opulus/core`.
 
+A Plaid *item* is shown to users as a *connection*; see
+[Terminology](./docs/TERMINOLOGY.md) for how institution, item, connection, and
+account are used.
+
 ### Webhook processing
 
 Plaid webhook callbacks are acknowledged quickly, then queued for background
@@ -191,5 +195,5 @@ containers have no `.env` and env comes from the platform — no symlinks there.
 - [Frontend](./opulus-frontend/README.md) - React app, routing, query hooks, UI integration
 - [Webhooks](./opulus-webhooks/README.md) - Plaid webhook receiver, queueing, local tunnel setup
 - [Core](./opulus-core/README.md) - Shared services, Prisma, DTOs, Plaid client
-- [Docs](./docs/README.md) - Observability and transaction privacy notes
+- [Docs](./docs/README.md) - Terminology, observability, and transaction privacy notes
 

@@ -7,6 +7,7 @@ package READMEs.
 
 | Doc | Purpose |
 | --- | ------- |
+| [Terminology](./TERMINOLOGY.md) | How institution, item, connection, and account are used across code and UI |
 | [Observability](./OBSERVABILITY.md) | Logging, request IDs, and operational visibility notes |
 | [Transaction Privacy](./TRANSACTION_PRIVACY.md) | Privacy risks and a plan for encrypting sensitive transaction metadata |
 
