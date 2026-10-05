@@ -58,6 +58,11 @@ class PlaidService {
    */
   async createLinkToken(userToken: string, userId: string) {
     const products: Products[] = [Products.Assets, Products.Transactions];
+    // Liabilities (APRs, payment due dates, loan terms) is only extracted when
+    // the institution supports it. Putting it in `products` would hide every
+    // institution without support from Link, which matters in Canada where
+    // coverage is limited. Plaid bills it per item, only where it applies.
+    const requiredIfSupportedProducts: Products[] = [Products.Liabilities];
     const countryCodes: CountryCode[] = [CountryCode.Ca];
 
     const request: LinkTokenCreateRequest = {
@@ -67,6 +72,7 @@ class PlaidService {
       },
       client_name: "Opulus",
       products,
+      required_if_supported_products: requiredIfSupportedProducts,
       country_codes: countryCodes,
       language: "en",
       transactions: {
