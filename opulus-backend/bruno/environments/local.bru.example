@@ -5,3 +5,8 @@ vars {
   test_password: TestPassword123!
   test_name: Test User
 }
+
+vars:secret [
+  plaid_sandbox_client_id,
+  plaid_sandbox_secret
+]

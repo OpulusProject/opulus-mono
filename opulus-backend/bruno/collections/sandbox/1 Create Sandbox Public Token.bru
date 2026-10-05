@@ -1,0 +1,59 @@
+meta {
+  name: 1 Create Sandbox Public Token
+  type: http
+  seq: 1
+}
+
+post {
+  url: https://sandbox.plaid.com/sandbox/public_token/create
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "client_id": "{{plaid_sandbox_client_id}}",
+    "secret": "{{plaid_sandbox_secret}}",
+    "institution_id": "ins_109508",
+    "initial_products": ["transactions"]
+  }
+}
+
+vars:post-response {
+  plaid_public_token: res.body.public_token
+}
+
+docs {
+  # Create Sandbox Public Token
+
+  Mints a Plaid Sandbox `public_token` without going through Plaid Link. This is the same call the integration suite makes in `opulus-tests/integration/backend/helpers/plaidSandbox.ts`.
+
+  **Endpoint:** `POST https://sandbox.plaid.com/sandbox/public_token/create` (calls Plaid directly, not the Opulus backend)
+
+  ## Environment Variables
+
+  - `plaid_sandbox_client_id` (secret): Plaid sandbox client ID
+  - `plaid_sandbox_secret` (secret): Plaid sandbox secret
+
+  The institution is hardcoded to `ins_109508` (First Platypus Bank), the same default the integration tests use.
+
+  ## Response
+
+  On success the `public_token` is saved to the `plaid_public_token` variable, which **2 Connect Sandbox Item** reads.
+
+  ```json
+  {
+    "public_token": "public-sandbox-...",
+    "request_id": "..."
+  }
+  ```
+
+  ## Notes
+
+  - Public tokens are single-use. Re-run this request before each connect.
+  - Requires real sandbox credentials from the Plaid dashboard, not the `ci-test` dummies.
+}
