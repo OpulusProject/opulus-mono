@@ -23,9 +23,6 @@ export async function createItemController(
       throw new UnauthorizedError("Authentication required");
     }
 
-    // Belt-and-suspenders: validate() middleware already parsed this, but we
-    // re-parse here so the controller is self-defending if the route config
-    // ever drops the middleware. Matches refreshTransactionsController.
     const { publicToken, institutionId } = createItemBodySchema.parse(req.body);
 
     const result = await createItem(session.user.id, publicToken, {

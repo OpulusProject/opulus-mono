@@ -30,11 +30,11 @@ test.describe("POST /api/auth/two-factor/verify-totp", () => {
   });
 
   test("rejects an invalid TOTP code (401)", async ({ request }) => {
-    // Arrange: authenticated user with a freshly-enabled 2FA secret.
+    // Arrange
     const { cookie } = await createAuthedUser(request);
     const { totpUri } = await enableTwoFactor(request, cookie);
 
-    // Act: a guaranteed-wrong code for the current window (never the real one).
+    // Act
     const res = await request.post("/api/auth/two-factor/verify-totp", {
       headers: withSession(cookie),
       data: { code: wrongTotp(totpUri) },
@@ -45,7 +45,7 @@ test.describe("POST /api/auth/two-factor/verify-totp", () => {
   });
 
   test("confirms enrollment with a valid TOTP code", async ({ request }) => {
-    // Arrange: authenticate, then provision a 2FA secret.
+    // Arrange
     const { cookie } = await createAuthedUser(request);
     const { totpUri } = await enableTwoFactor(request, cookie);
 
