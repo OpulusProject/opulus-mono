@@ -4,4 +4,10 @@ vars {
   test_email: [email protected]
   test_password: TestPassword123!
   test_name: Test User
+  plaid_sandbox_institution_id: ins_109508
 }
+
+vars:secret [
+  plaid_sandbox_client_id,
+  plaid_sandbox_secret
+]

@@ -1,0 +1,70 @@
+meta {
+  name: 2 Connect Sandbox Item
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{base_url}}/api/plaid/items
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "publicToken": "{{plaid_public_token}}",
+    "institutionId": "{{plaid_sandbox_institution_id}}"
+  }
+}
+
+vars:post-response {
+  item_id: res.body.data.itemId
+}
+
+docs {
+  # Connect Sandbox Item
+
+  Exchanges the sandbox public token for an access token and persists a connected item for the signed-in user, with no UI or Plaid Link involved.
+
+  **Endpoint:** `POST /api/plaid/items`
+
+  ## Authentication
+
+  Requires an active session. Run **Sign In** from the `auth` collection first.
+
+  ## Request Body
+
+  - `publicToken` (string, required): Filled from `plaid_public_token`, set by **1 Create Sandbox Public Token**
+  - `institutionId` (string, required): Filled from `plaid_sandbox_institution_id`
+
+  ## Success Response (201)
+
+  ```json
+  {
+    "data": {
+      "itemId": "item_123",
+      "duplicate": false
+    }
+  }
+  ```
+
+  The new item's ID is saved to the `item_id` variable for use in other requests.
+
+  ## Error Responses
+
+  - `400`: Missing or invalid body, or the public token was already used or is invalid
+  - `401`: No active session
+  - `409`: This institution is already linked for the user. Disconnect it first, or use a different `plaid_sandbox_institution_id`
+
+  ## Usage
+
+  1. Run **Sign In** (`auth` collection)
+  2. Run **1 Create Sandbox Public Token**
+  3. Run **2 Connect Sandbox Item**
+  4. Run **Get Items** to confirm the item and its accounts exist
+}
