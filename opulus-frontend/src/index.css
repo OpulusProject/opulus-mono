@@ -1,10 +1,34 @@
 /* Import Tailwind CSS v4 */
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* Animation utilities (data-state enter/exit) used by shadcn components */
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));
+
+/* Height animation for Radix Collapsible content (e.g. sidebar groups) */
+@theme {
+  --animate-collapsible-down: collapsible-down 0.2s ease-out;
+  --animate-collapsible-up: collapsible-up 0.2s ease-out;
+
+  @keyframes collapsible-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-collapsible-content-height);
+    }
+  }
+
+  @keyframes collapsible-up {
+    from {
+      height: var(--radix-collapsible-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+}
 
 /* App-specific styles can be added below */
 
@@ -122,4 +146,3 @@
     @apply bg-background text-foreground;
   }
 }
-

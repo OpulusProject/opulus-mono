@@ -7,9 +7,11 @@ import { SidebarInset, SidebarProvider } from '@/components/ui';
 interface AppLayoutProps {
   children: React.ReactNode;
   title?: string;
+  /** Parent section shown before the title in the header, e.g. "Settings". */
+  section?: string;
 }
 
-export function AppLayout({ children, title }: AppLayoutProps) {
+export function AppLayout({ children, title, section }: AppLayoutProps) {
   return (
     <SidebarProvider
       style={
@@ -21,7 +23,7 @@ export function AppLayout({ children, title }: AppLayoutProps) {
     >
       <AppSidebar variant="inset" />
       <SidebarInset>
-        <SiteHeader title={title} />
+        <SiteHeader title={title} section={section} />
         <div className="flex flex-1 flex-col">
           <div className="@container/main flex flex-1 flex-col gap-2">
             <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">

@@ -22,9 +22,9 @@ import {
 } from '@/components/ui';
 import { useSession } from '@/hooks/auth/useSession';
 
-import { NavMain, NavSecondary, NavUser } from './components';
+import { type NavItem, NavMain, NavSecondary, NavUser } from './components';
 
-const navMain = [
+const navMain: NavItem[] = [
   {
     title: 'Search',
     url: '#',
@@ -40,14 +40,15 @@ const navMain = [
     url: '/accounts',
     icon: Landmark,
   },
-];
-
-const navSecondary = [
   {
     title: 'Settings',
     url: '/settings',
     icon: Settings,
+    items: [{ title: 'Institutions', url: '/settings/institutions' }],
   },
+];
+
+const navSecondary = [
   {
     title: 'Get Help',
     url: '#',

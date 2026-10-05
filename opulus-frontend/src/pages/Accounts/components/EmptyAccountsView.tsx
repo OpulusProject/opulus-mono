@@ -1,4 +1,5 @@
-import { Landmark, Plus } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { Landmark } from 'lucide-react';
 import React from 'react';
 
 import {
@@ -11,32 +12,22 @@ import {
   EmptyTitle,
 } from '@/components/ui';
 
-interface EmptyAccountsViewProps {
-  onAddAccount: () => void;
-}
-
-export const EmptyAccountsView: React.FC<EmptyAccountsViewProps> = ({
-  onAddAccount,
-}) => {
+export const EmptyAccountsView: React.FC = () => {
   return (
-    <Empty>
+    <Empty className="rounded-md border">
       <EmptyHeader>
         <EmptyMedia variant="icon">
           <Landmark />
         </EmptyMedia>
-        <EmptyTitle>No Accounts Yet</EmptyTitle>
+        <EmptyTitle>No accounts yet</EmptyTitle>
         <EmptyDescription>
-          You haven&apos;t linked any accounts yet. Get started by creating your
-          first account.
+          Link an institution in Settings and its accounts will appear here.
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
-        <div className="flex gap-2">
-          <Button onClick={onAddAccount}>
-            <Plus className="h-4 w-4" />
-            Add Account
-          </Button>
-        </div>
+        <Button asChild>
+          <Link to="/settings/institutions">Link an institution</Link>
+        </Button>
       </EmptyContent>
     </Empty>
   );

@@ -10,21 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TwoFactorRouteImport } from './routes/two-factor'
-import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsInstitutionsRouteImport } from './routes/settings.institutions'
 
 const TwoFactorRoute = TwoFactorRouteImport.update({
   id: '/two-factor',
   path: '/two-factor',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -52,6 +48,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsInstitutionsRoute = SettingsInstitutionsRouteImport.update({
+  id: '/settings/institutions',
+  path: '/settings/institutions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -59,8 +65,9 @@ export interface FileRoutesByFullPath {
   '/accounts': typeof AccountsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
-  '/settings': typeof SettingsRoute
   '/two-factor': typeof TwoFactorRoute
+  '/settings/institutions': typeof SettingsInstitutionsRoute
+  '/settings': typeof SettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -68,8 +75,9 @@ export interface FileRoutesByTo {
   '/accounts': typeof AccountsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
-  '/settings': typeof SettingsRoute
   '/two-factor': typeof TwoFactorRoute
+  '/settings/institutions': typeof SettingsInstitutionsRoute
+  '/settings': typeof SettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -78,8 +86,9 @@ export interface FileRoutesById {
   '/accounts': typeof AccountsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
-  '/settings': typeof SettingsRoute
   '/two-factor': typeof TwoFactorRoute
+  '/settings/institutions': typeof SettingsInstitutionsRoute
+  '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -89,8 +98,9 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/dashboard'
     | '/login'
-    | '/settings'
     | '/two-factor'
+    | '/settings/institutions'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -98,8 +108,9 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/dashboard'
     | '/login'
-    | '/settings'
     | '/two-factor'
+    | '/settings/institutions'
+    | '/settings'
   id:
     | '__root__'
     | '/'
@@ -107,8 +118,9 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/dashboard'
     | '/login'
-    | '/settings'
     | '/two-factor'
+    | '/settings/institutions'
+    | '/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,8 +129,9 @@ export interface RootRouteChildren {
   AccountsRoute: typeof AccountsRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
-  SettingsRoute: typeof SettingsRoute
   TwoFactorRoute: typeof TwoFactorRoute
+  SettingsInstitutionsRoute: typeof SettingsInstitutionsRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -128,13 +141,6 @@ declare module '@tanstack/react-router' {
       path: '/two-factor'
       fullPath: '/two-factor'
       preLoaderRoute: typeof TwoFactorRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -172,6 +178,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/institutions': {
+      id: '/settings/institutions'
+      path: '/settings/institutions'
+      fullPath: '/settings/institutions'
+      preLoaderRoute: typeof SettingsInstitutionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -181,8 +201,9 @@ const rootRouteChildren: RootRouteChildren = {
   AccountsRoute: AccountsRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
-  SettingsRoute: SettingsRoute,
   TwoFactorRoute: TwoFactorRoute,
+  SettingsInstitutionsRoute: SettingsInstitutionsRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
