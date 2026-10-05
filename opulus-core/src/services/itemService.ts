@@ -12,7 +12,7 @@ export interface CreateItemData {
   institutionColor?: string | null;
   institutionLogo?: string | null;
   webhook?: string | null;
-  error?: string | null;
+  error?: Prisma.InputJsonValue;
   availableProducts: string[];
   billedProducts: string[];
   products?: string[];
@@ -47,7 +47,14 @@ export function normalizePlaidItem(
     institutionColor: institution?.primary_color ?? null,
     institutionLogo: institution?.logo ?? null,
     webhook: plaidItem.webhook ?? null,
-    error: plaidItem.error ? JSON.stringify(plaidItem.error) : null,
+    error: plaidItem.error
+      ? ({
+          error_type: String(plaidItem.error.error_type),
+          error_code: plaidItem.error.error_code,
+          error_message: plaidItem.error.error_message,
+          display_message: plaidItem.error.display_message ?? null,
+        } as Prisma.InputJsonValue)
+      : undefined,
     availableProducts: plaidItem.available_products.map((p) => p.toString()),
     billedProducts: plaidItem.billed_products.map((p) => p.toString()),
     products: plaidItem.products?.map((p) => p.toString()),

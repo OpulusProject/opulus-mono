@@ -28,7 +28,12 @@ export async function seedItemWithAccount(
   overrides: Partial<{
     institutionName: string;
     accountName: string;
-    error: string | null;
+    error: {
+      error_type: string;
+      error_code: string;
+      error_message: string;
+      display_message?: string | null;
+    } | null;
     syncedAt: Date | null;
   }> = {},
 ): Promise<SeededItem> {

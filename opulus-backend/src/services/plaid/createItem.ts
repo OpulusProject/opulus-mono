@@ -16,7 +16,10 @@ export async function createItem(
   userId: string,
   publicToken: string,
   input: CreateItemInput
-) {
+): Promise<
+  | { duplicate: true; existingItemId: string }
+  | { duplicate: false; item: { id: string } }
+> {
   const duplicate = await findDuplicateItem(userId, input.institutionId);
   if (duplicate) {
     logger.info(
