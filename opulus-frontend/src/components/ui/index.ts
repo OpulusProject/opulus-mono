@@ -3,7 +3,7 @@
 // ============================================================================
 
 // Avatar component
-export { Avatar, AvatarFallback, AvatarImage } from './avatar';
+export { Avatar, AvatarBadge, AvatarFallback, AvatarImage } from './avatar';
 
 // Badge component
 export { Badge, badgeVariants } from './badge';
