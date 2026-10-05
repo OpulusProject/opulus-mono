@@ -28,21 +28,24 @@ test.describe("POST /api/plaid/transactions/refresh (sandbox)", () => {
   test("accepts an on-demand refresh for an item the user owns", async ({
     request,
   }) => {
+    // Arrange: authenticated user + one real sandbox item they own; look up
+    // the external plaidItemId that this endpoint takes.
     const creds = requireSandboxCredentials();
     const { cookie } = await createAuthedUser(request);
     const { itemId } = await createSandboxItem(request, cookie, creds);
-
     const persisted = await testDb().item.findUniqueOrThrow({
       where: { id: itemId },
       select: { plaidItemId: true },
     });
 
+    // Act
     const res = await request.post("/api/plaid/transactions/refresh", {
       headers: withSession(cookie),
       data: { itemId: persisted.plaidItemId },
     });
-    await expectOk(res);
 
+    // Assert: Plaid accepted the refresh and returned a request_id.
+    await expectOk(res);
     const body = (await res.json()) as {
       data: { requestId: string; message: string };
     };
@@ -51,6 +54,7 @@ test.describe("POST /api/plaid/transactions/refresh (sandbox)", () => {
   });
 
   test("rejects an item owned by a different user (401)", async ({ request }) => {
+    // Arrange: one real sandbox item owned by `owner`; `intruder` tries to use it.
     const creds = requireSandboxCredentials();
     const owner = await createAuthedUser(request);
     const intruder = await createAuthedUser(request);
@@ -60,10 +64,13 @@ test.describe("POST /api/plaid/transactions/refresh (sandbox)", () => {
       select: { plaidItemId: true },
     });
 
+    // Act
     const res = await request.post("/api/plaid/transactions/refresh", {
       headers: withSession(intruder.cookie),
       data: { itemId: persisted.plaidItemId },
     });
+
+    // Assert
     await expectStatus(res, 401);
   });
 });

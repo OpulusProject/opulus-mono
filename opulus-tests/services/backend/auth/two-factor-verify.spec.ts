@@ -29,14 +29,17 @@ test.describe("POST /api/auth/two-factor/verify-totp", () => {
   });
 
   test("rejects an invalid TOTP code (401)", async ({ request }) => {
+    // Arrange: authenticated user with a freshly-enabled 2FA secret.
     const { cookie } = await createAuthedUser(request);
     await enableTwoFactor(request, cookie);
 
+    // Act
     const res = await request.post("/api/auth/two-factor/verify-totp", {
       headers: withSession(cookie),
       data: { code: "000000" },
     });
 
+    // Assert
     await expectStatus(res, 401);
   });
 

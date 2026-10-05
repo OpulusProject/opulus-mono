@@ -19,13 +19,16 @@ test.describe("POST /api/plaid/link-token/update", () => {
   test("rejects a missing itemId before contacting Plaid (validation)", async ({
     request,
   }) => {
+    // Arrange
     const { cookie } = await createAuthedUser(request);
 
+    // Act
     const res = await request.post("/api/plaid/link-token/update", {
       headers: withSession(cookie),
       data: {},
     });
 
+    // Assert
     await expectValidationError(res);
   });
 });

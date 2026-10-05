@@ -20,30 +20,37 @@ test.describe("POST /api/plaid/link-token/update (sandbox)", () => {
   test("returns an update-mode link token for an item the user owns", async ({
     request,
   }) => {
+    // Arrange: authenticated user + one real sandbox item they own.
     const creds = requireSandboxCredentials();
     const { cookie } = await createAuthedUser(request);
     const { itemId } = await createSandboxItem(request, cookie, creds);
 
+    // Act
     const res = await request.post("/api/plaid/link-token/update", {
       headers: withSession(cookie),
       data: { itemId },
     });
-    await expectOk(res);
 
+    // Assert
+    await expectOk(res);
     const body = (await res.json()) as { data: { linkToken: string } };
     expect(body.data.linkToken).toMatch(/^link-sandbox-/);
   });
 
   test("rejects an item owned by a different user (401)", async ({ request }) => {
+    // Arrange: one real sandbox item owned by `owner`; `intruder` tries to use it.
     const creds = requireSandboxCredentials();
     const owner = await createAuthedUser(request);
     const intruder = await createAuthedUser(request);
     const { itemId } = await createSandboxItem(request, owner.cookie, creds);
 
+    // Act
     const res = await request.post("/api/plaid/link-token/update", {
       headers: withSession(intruder.cookie),
       data: { itemId },
     });
+
+    // Assert
     await expectStatus(res, 401);
   });
 });

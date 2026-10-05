@@ -13,7 +13,7 @@ import {
  * POST /api/plaid/items — Plaid Sandbox round-trip.
  *
  * Service-owned boundaries (401, 400 validation) live in the service suite
- * (opulus-tests/backend/plaid/items-create.spec.ts). This file exercises the
+ * (services/backend/plaid/items-create.spec.ts). This file exercises the
  * happy path and the duplicate short-circuit by minting real Plaid-issued
  * public_tokens against the Sandbox API.
  */
@@ -21,10 +21,12 @@ test.describe("POST /api/plaid/items (sandbox)", () => {
   test("creates an item from a real sandbox public_token and surfaces it on GET /api/items", async ({
     request,
   }) => {
+    // Arrange: authenticated user + a fresh sandbox public_token.
     const creds = requireSandboxCredentials();
     const { cookie } = await createAuthedUser(request);
     const publicToken = await createSandboxPublicToken(creds);
 
+    // Act
     const createRes = await request.post("/api/plaid/items", {
       headers: withSession(cookie),
       data: {
@@ -33,6 +35,8 @@ test.describe("POST /api/plaid/items (sandbox)", () => {
       },
     });
 
+    // Assert: 201 + { itemId, duplicate: false }, then the item is visible
+    // via GET /api/items with at least one linked account.
     await expectStatus(createRes, 201);
     const createBody = (await createRes.json()) as {
       data: { itemId: string; duplicate: boolean };
@@ -56,6 +60,7 @@ test.describe("POST /api/plaid/items (sandbox)", () => {
   test("short-circuits with 409 when the user already has an item for the same institution (no exchange of the second public_token)", async ({
     request,
   }) => {
+    // Arrange: authenticated user + one real sandbox item already persisted.
     const creds = requireSandboxCredentials();
     const { cookie } = await createAuthedUser(request);
 
@@ -72,11 +77,10 @@ test.describe("POST /api/plaid/items (sandbox)", () => {
       data: { itemId: string; duplicate: boolean };
     };
 
-    // Second link to the same institution: backend should detect the
-    // duplicate *before* exchanging the public_token and short-circuit 409.
-    // We generate a FRESH token so that if the backend ever regresses and
-    // calls /item/public_token/exchange, the exchange would actually succeed
-    // (and this test would correctly fail by returning 201 instead of 409).
+    // Act: second link to the same institution. We generate a FRESH token
+    // so that if the backend ever regresses and calls
+    // /item/public_token/exchange, the exchange would actually succeed (and
+    // this test would correctly fail by returning 201 instead of 409).
     const secondToken = await createSandboxPublicToken(creds);
     const dupeRes = await request.post("/api/plaid/items", {
       headers: withSession(cookie),
@@ -85,6 +89,9 @@ test.describe("POST /api/plaid/items (sandbox)", () => {
         institutionId: DEFAULT_SANDBOX_INSTITUTION_ID,
       },
     });
+
+    // Assert: 409 short-circuit referencing the first item, and GET /api/items
+    // still shows exactly one row for this institution.
     await expectStatus(dupeRes, 409);
     const dupeBody = (await dupeRes.json()) as {
       data: { itemId: string; duplicate: boolean };

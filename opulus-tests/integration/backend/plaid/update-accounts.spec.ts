@@ -20,36 +20,42 @@ test.describe("POST /api/plaid/items/:id/update-accounts (sandbox)", () => {
   test("reconciles a persisted item's accounts against Plaid's current view", async ({
     request,
   }) => {
+    // Arrange: authenticated user + one real sandbox item they own.
     const creds = requireSandboxCredentials();
     const { cookie } = await createAuthedUser(request);
     const { itemId } = await createSandboxItem(request, cookie, creds);
 
+    // Act
     const res = await request.post(
       `/api/plaid/items/${itemId}/update-accounts`,
       { headers: withSession(cookie) },
     );
-    await expectOk(res);
 
+    // Assert: no new accounts should have appeared since the initial link;
+    // every Plaid-reported account should map to the rows we just wrote.
+    await expectOk(res);
     const body = (await res.json()) as {
       data: { itemId: string; created: number; updated: number };
     };
     expect(body.data.itemId).toBe(itemId);
-    // No new accounts should have appeared since the initial link; every
-    // Plaid-reported account should map to the existing rows we just wrote.
     expect(body.data.created).toBe(0);
     expect(body.data.updated).toBeGreaterThan(0);
   });
 
   test("rejects an item owned by a different user (401)", async ({ request }) => {
+    // Arrange: one real sandbox item owned by `owner`; `intruder` tries to use it.
     const creds = requireSandboxCredentials();
     const owner = await createAuthedUser(request);
     const intruder = await createAuthedUser(request);
     const { itemId } = await createSandboxItem(request, owner.cookie, creds);
 
+    // Act
     const res = await request.post(
       `/api/plaid/items/${itemId}/update-accounts`,
       { headers: withSession(intruder.cookie) },
     );
+
+    // Assert
     await expectStatus(res, 401);
   });
 });

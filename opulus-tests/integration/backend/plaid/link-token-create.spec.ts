@@ -18,34 +18,40 @@ test.describe("POST /api/plaid/link-token (sandbox)", () => {
   test("returns a Plaid-issued link token for an authenticated user", async ({
     request,
   }) => {
+    // Arrange
     requireSandboxCredentials();
     const { cookie } = await createAuthedUser(request);
 
+    // Act
     const res = await request.post("/api/plaid/link-token", {
       headers: withSession(cookie),
       data: {},
     });
-    await expectOk(res);
 
+    // Assert: sandbox link tokens are prefixed `link-sandbox-...`; the prefix
+    // is a stable Plaid-side contract and a quick regression guard against
+    // the backend accidentally pointing at a non-sandbox environment.
+    await expectOk(res);
     const body = (await res.json()) as { data: { linkToken: string } };
     expect(typeof body.data.linkToken).toBe("string");
-    // Sandbox link tokens are prefixed `link-sandbox-...`; the prefix is a
-    // stable Plaid-side contract and a quick regression guard against the
-    // backend accidentally pointing at a non-sandbox environment.
     expect(body.data.linkToken).toMatch(/^link-sandbox-/);
   });
 
   test("issues distinct tokens for distinct users", async ({ request }) => {
+    // Arrange
     requireSandboxCredentials();
     const [a, b] = await Promise.all([
       createAuthedUser(request),
       createAuthedUser(request),
     ]);
 
+    // Act
     const [resA, resB] = await Promise.all([
       request.post("/api/plaid/link-token", { headers: withSession(a.cookie), data: {} }),
       request.post("/api/plaid/link-token", { headers: withSession(b.cookie), data: {} }),
     ]);
+
+    // Assert
     await expectOk(resA);
     await expectOk(resB);
     const bodyA = (await resA.json()) as { data: { linkToken: string } };

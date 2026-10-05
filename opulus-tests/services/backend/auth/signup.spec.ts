@@ -58,12 +58,15 @@ test.describe("POST /api/auth/sign-up/email", () => {
   test("rejects a duplicate email (422, USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL)", async ({
     request,
   }) => {
+    // Arrange: an account that already exists.
     const existing = await signUp(request);
 
+    // Act
     const res = await request.post("/api/auth/sign-up/email", {
       data: { email: existing.email, password: TEST_PASSWORD, name: "Twin" },
     });
 
+    // Assert
     await expectStatus(res, 422);
     await expectErrorCode(res, "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL");
   });
