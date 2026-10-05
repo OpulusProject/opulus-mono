@@ -32,7 +32,7 @@ export const Institutions: React.FC = () => {
       <div className="flex flex-col gap-6 px-4 lg:px-6">
         <PageHeader
           title="Linked institutions"
-          description="Connect the banks and cards Opulus tracks. You only need to do this once: after linking, your accounts and transactions stay in sync automatically."
+          description="Connect the banks and cards Opulus tracks. Your accounts and transactions stay in sync automatically."
           actions={
             <Button type="button" onClick={() => openLink()}>
               <Plus className="size-4" />
@@ -46,12 +46,6 @@ export const Institutions: React.FC = () => {
           isLoading={isLoading}
           onUpdate={(itemId, mode) => openLink({ itemId, mode })}
         />
-
-        <p className="text-muted-foreground max-w-prose text-xs">
-          Connections are made securely through Plaid. Opulus gets read-only
-          access and never sees your bank login. Disconnecting an institution
-          permanently deletes its accounts and transactions from Opulus.
-        </p>
       </div>
 
       {isLinkOpen && (

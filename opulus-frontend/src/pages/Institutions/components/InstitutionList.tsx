@@ -4,7 +4,6 @@ import React from 'react';
 import { Spinner } from '@/components/ui';
 import type { UpdateMode } from '@/hooks/linkTokens/useLinkToken';
 
-import { EmptyInstitutionsView } from './EmptyInstitutionsView';
 import { ItemRow } from './ItemRow';
 
 interface InstitutionListProps {
@@ -18,23 +17,26 @@ export const InstitutionList: React.FC<InstitutionListProps> = ({
   isLoading,
   onUpdate,
 }) => {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Spinner className="size-6" />
+      </div>
+    );
+  }
+
+  // No linked institutions: render no rows. The empty list is the empty state.
+  if (!items || items.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="rounded-md border">
-      {isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Spinner className="size-6" />
-        </div>
-      ) : !items || items.length === 0 ? (
-        <EmptyInstitutionsView />
-      ) : (
-        <ul className="divide-y">
-          {items.map((item) => (
-            <li key={item.id}>
-              <ItemRow item={item} onUpdate={onUpdate} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <ul className="divide-y rounded-md border">
+      {items.map((item) => (
+        <li key={item.id}>
+          <ItemRow item={item} onUpdate={onUpdate} />
+        </li>
+      ))}
+    </ul>
   );
 };

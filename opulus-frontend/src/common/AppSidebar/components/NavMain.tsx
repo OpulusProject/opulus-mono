@@ -57,11 +57,12 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
           </SidebarMenuButton>
         </CollapsibleTrigger>
         <CollapsibleContent className="data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down overflow-hidden">
-          <SidebarMenuSub>
+          <SidebarMenuSub className="mr-0 pr-0">
             {children.map((child) => (
               <SidebarMenuSubItem key={child.title}>
                 <SidebarMenuSubButton
                   asChild
+                  className="h-8"
                   isActive={isPathActive(pathname, child.url)}
                 >
                   <Link to={child.url}>
