@@ -19,14 +19,14 @@ interface Liability {
 }
 
 /**
- * GET /api/items (liabilities) — Plaid Sandbox round-trip.
+ * GET /api/items — Plaid Sandbox round-trip (liabilities).
  *
  * Linking an item makes the backend fetch Plaid liabilities and store them per
  * account. The default sandbox user has a credit card, a mortgage, and a
  * student loan, so each should come back with its kind's details. We assert
  * shape and kind, not Plaid's specific sandbox figures.
  */
-test.describe("GET /api/items liabilities (sandbox)", () => {
+test.describe("GET /api/items (sandbox)", () => {
   test("returns liability details for the credit, mortgage, and student accounts of a freshly linked item", async ({
     request,
   }) => {
