@@ -165,16 +165,24 @@ class LiabilityService {
    * Resolves to `unavailable` when Plaid has nothing to give for this item
    * (unsupported institution, product not ready, etc.); other failures throw.
    * @param item - The item to sync
+   * @param options.providerAccountIds - Only fetch these Plaid account IDs
+   *   (e.g. the accounts a LIABILITIES webhook reported as changed)
    * @throws AppError if Plaid or the database fails unexpectedly
    */
-  async syncForItem(item: {
-    id: string;
-    userId: string;
-    accessToken: string;
-  }): Promise<SyncLiabilitiesResult> {
+  async syncForItem(
+    item: {
+      id: string;
+      userId: string;
+      accessToken: string;
+    },
+    options: { providerAccountIds?: string[] } = {}
+  ): Promise<SyncLiabilitiesResult> {
     let response;
     try {
-      response = await this.plaid.getLiabilities(item.accessToken);
+      response = await this.plaid.getLiabilities(
+        item.accessToken,
+        options.providerAccountIds
+      );
     } catch (error) {
       if (
         error instanceof AppError &&

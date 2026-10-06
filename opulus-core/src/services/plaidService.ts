@@ -189,11 +189,13 @@ class PlaidService {
   /**
    * Fetch liabilities (credit card, mortgage, and student loan details) for an item
    * @param accessToken - The access token for the item
+   * @param accountIds - Optional Plaid account IDs to limit the response to
    * @returns Liabilities and the item's accounts
    */
-  async getLiabilities(accessToken: string) {
+  async getLiabilities(accessToken: string, accountIds?: string[]) {
     const request: LiabilitiesGetRequest = {
       access_token: accessToken,
+      ...(accountIds?.length && { options: { account_ids: accountIds } }),
     };
 
     try {
