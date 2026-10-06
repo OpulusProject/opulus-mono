@@ -6,6 +6,7 @@ import {
   ItemGetRequest,
   ItemPublicTokenExchangeRequest,
   ItemRemoveRequest,
+  LiabilitiesGetRequest,
   LinkTokenCreateRequest,
   PlaidApi,
   Products,
@@ -15,7 +16,7 @@ import {
 } from "plaid";
 import plaidClient from "../client/plaid.js";
 import config from "../config/default.js";
-import { handlePlaidError } from "../utils/plaidErrors.js";
+import { getPlaidErrorCode, handlePlaidError } from "../utils/plaidErrors.js";
 
 /**
  * Service for managing Plaid integrations
@@ -58,6 +59,11 @@ class PlaidService {
    */
   async createLinkToken(userToken: string, userId: string) {
     const products: Products[] = [Products.Assets, Products.Transactions];
+    // Liabilities (APRs, payment due dates, loan terms) is only extracted when
+    // the institution supports it. Putting it in `products` would hide every
+    // institution without support from Link, which matters in Canada where
+    // coverage is limited. Plaid bills it per item, only where it applies.
+    const requiredIfSupportedProducts: Products[] = [Products.Liabilities];
     const countryCodes: CountryCode[] = [CountryCode.Ca];
 
     const request: LinkTokenCreateRequest = {
@@ -67,6 +73,7 @@ class PlaidService {
       },
       client_name: "Opulus",
       products,
+      required_if_supported_products: requiredIfSupportedProducts,
       country_codes: countryCodes,
       language: "en",
       transactions: {
@@ -168,13 +175,39 @@ class PlaidService {
       const response = await this.plaid.itemRemove(request);
       return response.data;
     } catch (error) {
-      const plaidErrorCode = (
-        error as { response?: { data?: { error_code?: string } } }
-      )?.response?.data?.error_code;
-      if (plaidErrorCode === "ITEM_NOT_FOUND") {
+      if (getPlaidErrorCode(error) === "ITEM_NOT_FOUND") {
         return null;
       }
       throw handlePlaidError(error);
+    }
+  }
+
+  // ============================================================================
+  // Liabilities
+  // ============================================================================
+
+  /**
+   * Fetch liabilities (credit card, mortgage, and student loan details) for an item
+   * @param accessToken - The access token for the item
+   * @param accountIds - Optional Plaid account IDs to limit the response to
+   * @returns Liabilities and the item's accounts
+   */
+  async getLiabilities(accessToken: string, accountIds?: string[]) {
+    const request: LiabilitiesGetRequest = {
+      access_token: accessToken,
+      ...(accountIds?.length && { options: { account_ids: accountIds } }),
+    };
+
+    try {
+      const response = await this.plaid.liabilitiesGet(request);
+      return response.data;
+    } catch (error) {
+      // The SDK wraps Plaid's error body in an axios error. Unwrap it so the
+      // resulting AppError carries Plaid's own error_code, which callers use to
+      // tell "not available for this item" apart from real failures.
+      const plaidBody = (error as { response?: { data?: unknown } } | null)
+        ?.response?.data;
+      throw handlePlaidError(plaidBody ?? error);
     }
   }
 

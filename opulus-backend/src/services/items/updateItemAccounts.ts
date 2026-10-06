@@ -1,5 +1,6 @@
 import {
   itemService,
+  liabilityService,
   logger,
   normalizePlaidAccount,
   plaidService,
@@ -59,6 +60,9 @@ export async function updateItemAccounts(itemId: string) {
       }
     }
   });
+
+  // New or re-consented accounts may now have liabilities data.
+  await liabilityService.trySyncForItem(item);
 
   logger.info(
     {

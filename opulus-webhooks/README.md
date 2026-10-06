@@ -19,7 +19,7 @@ Plaid Webhook → Express Handler → Redis Queue → BullMQ Worker → Process 
 - **Handler**: Acknowledges immediately (~5ms), enqueues job
 - **Queue**: Stores jobs temporarily with retry support
 - **Worker**: Processes jobs concurrently (5 at a time) with automatic retries
-- **Handlers**: Process ITEM, LINK, TRANSACTIONS webhooks
+- **Handlers**: Process ITEM, LINK, LIABILITIES, TRANSACTIONS webhooks
 
 ## Prerequisites
 
@@ -175,6 +175,7 @@ opulus-webhooks/
 │   ├── plaid/
 │   │   ├── handlers/          # Webhook event handlers
 │   │   │   ├── item/         # ITEM webhook handlers
+│   │   │   ├── liabilities/  # LIABILITIES webhook handlers
 │   │   │   ├── link/         # LINK webhook handlers
 │   │   │   └── transactions/ # TRANSACTIONS webhook handlers
 │   │   ├── handlePlaidWebhook.ts  # Main webhook handler

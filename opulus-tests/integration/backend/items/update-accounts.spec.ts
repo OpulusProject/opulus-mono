@@ -35,10 +35,9 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     const { itemId } = await createSandboxItem(request, cookie, creds);
 
     // Act
-    const res = await request.post(
-      `/api/items/${itemId}/update-accounts`,
-      { headers: withSession(cookie) },
-    );
+    const res = await request.post(`/api/items/${itemId}/update-accounts`, {
+      headers: withSession(cookie),
+    });
 
     // Assert: no new accounts should have appeared since the initial link;
     // every Plaid-reported account should map to the rows we just wrote.
@@ -51,7 +50,59 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     expect(body.data.updated).toBeGreaterThan(0);
   });
 
-  test("rejects an item owned by a different user (401)", async ({ request }) => {
+  test("refreshes the item's liabilities without duplicating them", async ({
+    request,
+  }) => {
+    // Arrange: a freshly linked sandbox item, whose liabilities were stored on link.
+    const creds = requireSandboxCredentials();
+    const { cookie } = await createAuthedUser(request);
+    const { itemId } = await createSandboxItem(request, cookie, creds);
+    const readLiabilities = async () => {
+      const res = await request.get("/api/items", {
+        headers: withSession(cookie),
+      });
+      await expectOk(res);
+      const item = (
+        (await res.json()).data.items as Array<{
+          id: string;
+          accounts: Array<{
+            id: string;
+            liabilityDetails: { syncedAt: string } | null;
+          }>;
+        }>
+      ).find((i) => i.id === itemId);
+      return (item?.accounts ?? []).flatMap((account) =>
+        account.liabilityDetails
+          ? [{ id: account.id, syncedAt: account.liabilityDetails.syncedAt }]
+          : [],
+      );
+    };
+    const before = await readLiabilities();
+    expect(before.length).toBeGreaterThan(0);
+
+    // Act
+    const res = await request.post(`/api/items/${itemId}/update-accounts`, {
+      headers: withSession(cookie),
+    });
+
+    // Assert: the same accounts still have exactly one liability each, and each
+    // was re-fetched (its syncedAt moved forward).
+    await expectOk(res);
+    const after = await readLiabilities();
+    expect(after.map((l) => l.id).sort()).toEqual(
+      before.map((l) => l.id).sort(),
+    );
+    for (const liability of after) {
+      const previous = before.find((l) => l.id === liability.id);
+      expect(Date.parse(liability.syncedAt)).toBeGreaterThan(
+        Date.parse(previous!.syncedAt),
+      );
+    }
+  });
+
+  test("rejects an item owned by a different user (401)", async ({
+    request,
+  }) => {
     // Arrange: one real sandbox item owned by `owner`; `intruder` tries to use it.
     const creds = requireSandboxCredentials();
     const owner = await createAuthedUser(request);
@@ -59,10 +110,9 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     const { itemId } = await createSandboxItem(request, owner.cookie, creds);
 
     // Act
-    const res = await request.post(
-      `/api/items/${itemId}/update-accounts`,
-      { headers: withSession(intruder.cookie) },
-    );
+    const res = await request.post(`/api/items/${itemId}/update-accounts`, {
+      headers: withSession(intruder.cookie),
+    });
 
     // Assert
     await expectStatus(res, 401);

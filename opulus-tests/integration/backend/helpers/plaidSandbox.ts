@@ -63,7 +63,7 @@ export async function createSandboxPublicToken(
       client_id: creds.clientId,
       secret: creds.secret,
       institution_id: institutionId,
-      initial_products: ["transactions"],
+      initial_products: ["transactions", "liabilities"],
     }),
   });
 

@@ -2,6 +2,15 @@ import { PlaidError } from "plaid";
 import { AppError } from "./errors.js";
 
 /**
+ * Read the Plaid `error_code` off an error thrown by the Plaid client.
+ * The Plaid SDK rejects with an axios error whose body holds the Plaid error.
+ */
+export function getPlaidErrorCode(error: unknown): string | undefined {
+  return (error as { response?: { data?: { error_code?: string } } } | null)
+    ?.response?.data?.error_code;
+}
+
+/**
  * Handle Plaid API errors and convert them to application errors
  * @param error - Error from Plaid API
  * @returns AppError instance with appropriate status code and message

@@ -1,4 +1,4 @@
-import { TypeOf, array, number, object, string } from "zod";
+import { TypeOf, array, number, object, record, string } from "zod";
 
 /**
  * Schema for Plaid webhook event body (used in Express validation)
@@ -17,6 +17,11 @@ export const WebhookSchema = object({
     new_transactions: number().optional(),
     removed_transactions: array(string()).optional(),
     account_ids: array(string()).optional(),
+    account_ids_with_new_liabilities: array(string()).optional(),
+    account_ids_with_updated_liabilities: record(
+      string(),
+      array(string())
+    ).optional(),
     link_session_id: string().optional(),
     link_token: string().optional(),
     public_token: string().optional(),
@@ -40,6 +45,11 @@ export const PlaidWebhookEventSchema = object({
   new_transactions: number().optional(),
   removed_transactions: array(string()).optional(),
   account_ids: array(string()).optional(),
+  account_ids_with_new_liabilities: array(string()).optional(),
+  account_ids_with_updated_liabilities: record(
+    string(),
+    array(string())
+  ).optional(),
   link_session_id: string().optional(),
   link_token: string().optional(),
   public_token: string().optional(),
@@ -60,4 +70,3 @@ export type PlaidWebhookEvent = TypeOf<typeof PlaidWebhookEventSchema>;
  * Type for Express request body validation
  */
 export type WebhookInput = TypeOf<typeof WebhookSchema>["body"];
-

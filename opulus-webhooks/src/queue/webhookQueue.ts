@@ -80,14 +80,19 @@ export const webhookQueue = new Queue<PlaidWebhookEvent>("webhooks", {
  * Create and start webhook worker with handlers
  * Handlers are provided directly, eliminating the need for setWebhookHandlers()
  *
- * @param handlers - Webhook handlers for ITEM, LINK, and TRANSACTIONS events
+ * @param handlers - Webhook handlers for ITEM, LIABILITIES, and TRANSACTIONS events
  * @returns Worker instance
  */
 export function createWebhookWorker(handlers: {
   handleItemWebhook: WebhookHandler;
+  handleLiabilitiesWebhook: WebhookHandler;
   handleTransactionsWebhook: WebhookHandler;
 }): Worker<PlaidWebhookEvent> {
-  const { handleItemWebhook, handleTransactionsWebhook } = handlers;
+  const {
+    handleItemWebhook,
+    handleLiabilitiesWebhook,
+    handleTransactionsWebhook,
+  } = handlers;
 
   const worker = new Worker<PlaidWebhookEvent>(
     "webhooks",
@@ -113,6 +118,9 @@ export function createWebhookWorker(handlers: {
         switch (webhook_type) {
           case "ITEM":
             await handleItemWebhook(webhook_code, event);
+            break;
+          case "LIABILITIES":
+            await handleLiabilitiesWebhook(webhook_code, event);
             break;
           case "TRANSACTIONS":
             await handleTransactionsWebhook(webhook_code, event);
