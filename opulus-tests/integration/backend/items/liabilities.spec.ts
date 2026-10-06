@@ -45,11 +45,11 @@ test.describe("GET /api/items liabilities (sandbox)", () => {
     const item = (
       (await res.json()).data.items as Array<{
         id: string;
-        accounts: Array<{ type: string; liability: Liability | null }>;
+        accounts: Array<{ type: string; liabilityDetails: Liability | null }>;
       }>
     ).find((i) => i.id === itemId);
     const liabilities = (item?.accounts ?? []).flatMap((a) =>
-      a.liability ? [a.liability] : [],
+      a.liabilityDetails ? [a.liabilityDetails] : [],
     );
     const byKind = (kind: Liability["kind"]) =>
       liabilities.find((l) => l.kind === kind);
@@ -74,7 +74,7 @@ test.describe("GET /api/items liabilities (sandbox)", () => {
     expect(
       (item?.accounts ?? [])
         .filter((a) => a.type === "depository")
-        .every((a) => a.liability === null),
+        .every((a) => a.liabilityDetails === null),
     ).toBe(true);
     for (const liability of liabilities) {
       expect(Number.isNaN(Date.parse(liability.syncedAt))).toBe(false);

@@ -25,7 +25,9 @@ test.describe("GET /api/items", () => {
     const { cookie } = await createAuthedUser(request);
 
     // Act
-    const res = await request.get("/api/items", { headers: withSession(cookie) });
+    const res = await request.get("/api/items", {
+      headers: withSession(cookie),
+    });
 
     // Assert
     await expectOk(res);
@@ -41,7 +43,9 @@ test.describe("GET /api/items", () => {
     const seeded = await seedItemWithAccount(userId);
 
     // Act
-    const res = await request.get("/api/items", { headers: withSession(cookie) });
+    const res = await request.get("/api/items", {
+      headers: withSession(cookie),
+    });
 
     // Assert
     await expectOk(res);
@@ -61,7 +65,10 @@ test.describe("GET /api/items", () => {
       syncedAt: null,
     });
     expect(items[0].accounts).toEqual([
-      expect.objectContaining({ id: seeded.accountId, name: seeded.accountName }),
+      expect.objectContaining({
+        id: seeded.accountId,
+        name: seeded.accountName,
+      }),
     ]);
   });
 
@@ -81,18 +88,23 @@ test.describe("GET /api/items", () => {
     const checking = await seedItemWithAccount(userId);
 
     // Act
-    const res = await request.get("/api/items", { headers: withSession(cookie) });
+    const res = await request.get("/api/items", {
+      headers: withSession(cookie),
+    });
 
     // Assert
     await expectOk(res);
     const items = (await res.json()).data.items as Array<{
       id: string;
-      accounts: Array<{ id: string; liability: Record<string, unknown> | null }>;
+      accounts: Array<{
+        id: string;
+        liabilityDetails: Record<string, unknown> | null;
+      }>;
     }>;
     const cardAccount = items
       .find((i) => i.id === card.itemId)
       ?.accounts.find((a) => a.id === card.accountId);
-    expect(cardAccount?.liability).toMatchObject({
+    expect(cardAccount?.liabilityDetails).toMatchObject({
       kind: "credit",
       isOverdue: false,
       nextPaymentDueDate: liability.nextPaymentDueDate.toISOString(),
@@ -108,7 +120,7 @@ test.describe("GET /api/items", () => {
     const checkingAccount = items
       .find((i) => i.id === checking.itemId)
       ?.accounts.find((a) => a.id === checking.accountId);
-    expect(checkingAccount?.liability).toBeNull();
+    expect(checkingAccount?.liabilityDetails).toBeNull();
   });
 
   test("returns stored Plaid error columns", async ({ request }) => {
@@ -121,7 +133,9 @@ test.describe("GET /api/items", () => {
     });
 
     // Act
-    const res = await request.get("/api/items", { headers: withSession(cookie) });
+    const res = await request.get("/api/items", {
+      headers: withSession(cookie),
+    });
 
     // Assert
     await expectOk(res);
@@ -144,11 +158,15 @@ test.describe("GET /api/items", () => {
     await seedItemWithAccount(userId, { syncedAt });
 
     // Act
-    const res = await request.get("/api/items", { headers: withSession(cookie) });
+    const res = await request.get("/api/items", {
+      headers: withSession(cookie),
+    });
 
     // Assert
     await expectOk(res);
-    const items = (await res.json()).data.items as Array<{ syncedAt: string | null }>;
+    const items = (await res.json()).data.items as Array<{
+      syncedAt: string | null;
+    }>;
     expect(items[0].syncedAt).toBe(syncedAt.toISOString());
   });
 

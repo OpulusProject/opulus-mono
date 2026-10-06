@@ -5,7 +5,7 @@
 import type { PlaidErrorType } from "plaid";
 
 import { Account } from "./bankAccount.js";
-import { toAccountLiabilityDTO } from "./liability.js";
+import { toLiabilityDetailsDTO } from "./liabilityDetails.js";
 
 /**
  * Public DTO for Item response
@@ -56,7 +56,7 @@ export function toItemPublicDTO(item: {
     balanceAvailable: any; // Prisma Decimal
     balanceCurrent: any; // Prisma Decimal
     balanceLimit: any; // Prisma Decimal
-    liability: Parameters<typeof toAccountLiabilityDTO>[0] | null;
+    liabilityDetails: Parameters<typeof toLiabilityDetailsDTO>[0] | null;
   }>;
 }): ItemPublicDTO {
   return {
@@ -80,8 +80,8 @@ export function toItemPublicDTO(item: {
         ? Number(account.balanceCurrent)
         : null,
       balanceLimit: account.balanceLimit ? Number(account.balanceLimit) : null,
-      liability: account.liability
-        ? toAccountLiabilityDTO(account.liability)
+      liabilityDetails: account.liabilityDetails
+        ? toLiabilityDetailsDTO(account.liabilityDetails)
         : null,
     })),
   };

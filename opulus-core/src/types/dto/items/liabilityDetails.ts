@@ -1,5 +1,5 @@
 /**
- * Liabilities details for a credit or loan account (from Plaid liabilities).
+ * Liability details for a credit or loan account (from Plaid liabilities).
  * Which fields are present depends on the account kind and what the
  * institution reports; anything missing is null.
  */
@@ -13,7 +13,7 @@ export interface LiabilityApr {
   interestChargeAmount: number | null;
 }
 
-export interface AccountLiabilityDTO {
+export interface LiabilityDetailsDTO {
   kind: LiabilityKind;
   isOverdue: boolean | null;
   nextPaymentDueDate: string | null; // ISO date
@@ -40,7 +40,7 @@ const toIso = (value: Date | null): string | null =>
 /**
  * Transform a stored liability row to its public DTO
  */
-export function toAccountLiabilityDTO(row: {
+export function toLiabilityDetailsDTO(row: {
   kind: string;
   isOverdue: boolean | null;
   nextPaymentDueDate: Date | null;
@@ -56,7 +56,7 @@ export function toAccountLiabilityDTO(row: {
   aprs: unknown;
   details: unknown;
   syncedAt: Date;
-}): AccountLiabilityDTO {
+}): LiabilityDetailsDTO {
   return {
     kind: row.kind as LiabilityKind,
     isOverdue: row.isOverdue,

@@ -4,4 +4,4 @@
 
 export * from "./bankAccount.js";
 export * from "./getItems.js";
-export * from "./liability.js";
+export * from "./liabilityDetails.js";

@@ -139,7 +139,7 @@ model BankAccount {
   user                   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   item                   Item              @relation(fields: [itemId], references: [id], onDelete: Cascade)
   transactions           Transaction[]
-  liability              AccountLiability?
+  liabilityDetails       AccountLiability?
 
   // Same account_id can exist in different items
   // Index for stable account lookups
