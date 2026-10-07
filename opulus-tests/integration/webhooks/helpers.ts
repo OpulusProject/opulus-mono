@@ -156,7 +156,7 @@ export async function waitFor<T>(
   read: () => Promise<T>,
   done: (value: T) => boolean,
   what: string,
-  timeoutMs = 45_000,
+  timeoutMs = 60_000,
 ): Promise<T> {
   const deadline = Date.now() + timeoutMs;
   let last: T | undefined;
@@ -185,6 +185,7 @@ export async function readItem(
         errorType: string | null;
         newAccountsAvailable: boolean;
         syncedAt: string | null;
+        accounts: Array<{ liabilityDetails: { syncedAt: string } | null }>;
       }>;
     };
   };

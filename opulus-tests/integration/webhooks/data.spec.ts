@@ -1,18 +1,19 @@
 import { expect, test } from "@playwright/test";
 
 import { createAuthedUser } from "../../shared/fixtures/auth.js";
-import { testDb } from "../../shared/db.js";
 import { requireSandboxCredentials } from "../backend/helpers/plaidSandbox.js";
 import {
   fireSandboxWebhook,
   linkItemWithWebhook,
+  readItem,
   waitFor,
 } from "./helpers.js";
 
 /**
  * TRANSACTIONS and LIABILITIES webhooks, delivered by Plaid's sandbox to the
  * real receiver. The effect to wait for is the handler re-syncing from Plaid,
- * which moves a sync timestamp forward.
+ * which moves a sync timestamp forward. Both timestamps are read the way the
+ * client reads them, from GET /api/items.
  */
 test.describe("data webhooks (sandbox to receiver)", () => {
   test("TRANSACTIONS SYNC_UPDATES_AVAILABLE makes the receiver sync the item", async ({
@@ -26,9 +27,7 @@ test.describe("data webhooks (sandbox to receiver)", () => {
       cookie,
       creds,
     );
-    const syncedBefore = (
-      await testDb().item.findUniqueOrThrow({ where: { id: itemId } })
-    ).syncedAt;
+    const syncedBefore = (await readItem(request, cookie, itemId)).syncedAt;
 
     // Act
     await fireSandboxWebhook(
@@ -40,10 +39,11 @@ test.describe("data webhooks (sandbox to receiver)", () => {
 
     // Assert: syncedAt is only set after a successful transactions sync.
     const item = await waitFor(
-      () => testDb().item.findUniqueOrThrow({ where: { id: itemId } }),
+      () => readItem(request, cookie, itemId),
       (i) =>
         i.syncedAt !== null &&
-        (syncedBefore === null || i.syncedAt > syncedBefore),
+        (syncedBefore === null ||
+          new Date(i.syncedAt).getTime() > new Date(syncedBefore).getTime()),
       "the item to be re-synced",
     );
     expect(item.syncedAt).not.toBeNull();
@@ -60,18 +60,21 @@ test.describe("data webhooks (sandbox to receiver)", () => {
       cookie,
       creds,
     );
-    const db = testDb();
-    const before = await db.accountLiability.findMany({ where: { itemId } });
+    const liabilitySyncTimes = async () =>
+      (await readItem(request, cookie, itemId)).accounts.flatMap((a) =>
+        a.liabilityDetails ? [new Date(a.liabilityDetails.syncedAt).getTime()] : [],
+      );
+    const before = await liabilitySyncTimes();
     expect(before.length).toBeGreaterThan(0);
-    const latestBefore = Math.max(...before.map((l) => l.syncedAt.getTime()));
+    const latestBefore = Math.max(...before);
 
     // Act
     await fireSandboxWebhook(creds, accessToken, "LIABILITIES", "DEFAULT_UPDATE");
 
-    // Assert: refreshed in place (newer sync time, same number of rows).
+    // Assert: refreshed in place (newer sync time, same number of liabilities).
     const after = await waitFor(
-      () => db.accountLiability.findMany({ where: { itemId } }),
-      (rows) => Math.max(...rows.map((l) => l.syncedAt.getTime())) > latestBefore,
+      liabilitySyncTimes,
+      (times) => Math.max(...times) > latestBefore,
       "the liabilities to be refreshed",
     );
     expect(after.length).toBe(before.length);
