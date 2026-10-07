@@ -45,9 +45,10 @@ sends. Errors go to `next(error)`.
 
 **Services** do the multi-step work for one operation, such as deleting an item
 (Plaid, then a database transaction) or creating a link token. They live in
-`opulus-backend/src/services/<resource>/<verb><Noun>.ts`, or in
-`opulus-core/src/services` when the webhooks service needs the same logic (the
-transaction and liability syncs). A service:
+`opulus-backend/src/services/<resource>/<verb><Noun>.ts`; in
+`opulus-webhooks/src/services` for logic only the webhooks service uses; or in
+`opulus-core/src/services` when both need it (the transaction and liability
+syncs). A service:
 - takes one params object (`{ userId, ... }`) and exports its `<Name>Params`
   and `<Name>Result` types;
 - decides authorization itself: it fetches items with `getItem({ userId, itemId })`,
@@ -62,6 +63,10 @@ transaction and liability syncs). A service:
 (`itemRepository`, `accountRepository`, ...). They use Prisma and nothing else:
 no Plaid calls and no multi-step operations. They also hold the functions that
 turn Plaid's shapes into our rows (`normalizePlaid*`).
+- Every write takes an optional transaction client as its last argument, so a
+  service can join it to a `runInTransaction`.
+- Naming: `get…` returns the row or throws `NotFoundError`; `find…` returns
+  `null` when there is none; `getAll…` returns a list.
 
 **Gateways** (`opulus-core/src/gateways`) wrap an external API (`plaidGateway`).
 They don't use the database.
@@ -69,7 +74,14 @@ They don't use the database.
 **Dependencies point down:** controller → service → repository or gateway. Core
 never imports from the backend, and the backend and the webhooks service don't
 import from each other, which is why logic they share lives in core. The webhook
-handlers are the webhooks service's entry layer, the counterpart of controllers.
+handlers are the webhooks service's entry layer, the counterpart of controllers:
+they read the event and call a service, and don't call Plaid or Prisma
+themselves.
+
+Lint enforces most of this (`no-restricted-imports` per folder): controllers and
+webhook handlers can't import gateways or Prisma; services, repositories and
+gateways can't import Express; services can't import Prisma; repositories can't
+import gateways or services; gateways can't import the database or repositories.
 
 A read endpoint that calls one repository and maps rows to DTOs doesn't need a
 service of its own.
