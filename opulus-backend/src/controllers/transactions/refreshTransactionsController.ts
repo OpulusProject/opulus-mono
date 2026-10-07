@@ -1,4 +1,5 @@
 import { getRequestSession } from "@/middleware/session/requireSession.js";
+import { getValidatedBody } from "@/middleware/validation.js";
 import {
   itemService,
   plaidService,
@@ -32,7 +33,8 @@ export async function refreshTransactionsController(
     const userId = session.user.id;
 
     // Validate request body
-    const { itemId } = refreshTransactionsBodySchema.parse(req.body);
+    const { itemId } =
+      getValidatedBody<typeof refreshTransactionsBodySchema>(req);
 
     // Get the item and verify it belongs to the user
     const item = await itemService.getByPlaidItemId(itemId);

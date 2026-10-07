@@ -1,4 +1,5 @@
 import { getRequestSession } from "@/middleware/session/requireSession.js";
+import { getValidatedBody } from "@/middleware/validation.js";
 import {
   itemService,
   plaidService,
@@ -27,7 +28,8 @@ export async function createUpdateLinkTokenController(
   try {
     const session = getRequestSession(res);
 
-    const { itemId, mode } = updateLinkTokenBodySchema.parse(req.body);
+    const { itemId, mode } =
+      getValidatedBody<typeof updateLinkTokenBodySchema>(req);
     const item = await itemService.getById(itemId);
 
     if (item.userId !== session.user.id) {

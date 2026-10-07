@@ -1,4 +1,5 @@
 import { getRequestSession } from "@/middleware/session/requireSession.js";
+import { getValidatedBody } from "@/middleware/validation.js";
 import { createItem } from "@/services/items/createItem.js";
 import {
   CreateItemRequestSchema,
@@ -19,7 +20,8 @@ export async function createItemController(
   try {
     const session = getRequestSession(res);
 
-    const { publicToken, institutionId } = createItemBodySchema.parse(req.body);
+    const { publicToken, institutionId } =
+      getValidatedBody<typeof createItemBodySchema>(req);
 
     const result = await createItem(session.user.id, publicToken, {
       institutionId,
