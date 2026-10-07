@@ -48,8 +48,8 @@ for one operation, such as deleting an item (Plaid, then a database
 transaction) or creating a link token. A use case:
 - takes one params object (`{ userId, ... }`) and exports its `<Name>Params`
   and `<Name>Result` types;
-- decides authorization itself, for example with `getOwnedItem({ userId, itemId })`
-  for anything that acts on an item, so a controller can't forget it;
+- decides authorization itself: it fetches items with `getItem({ userId, itemId })`,
+  which only returns the user's own, so a controller can't forget the check;
 - knows nothing about Express (no `req`, no `res`);
 - throws `AppError` subclasses.
 
