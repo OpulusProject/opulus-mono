@@ -1,5 +1,10 @@
 import type { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
-import { AppError, itemService, liabilityService, logger } from "@opulus/core";
+import {
+  AppError,
+  itemService,
+  logger,
+  syncItemLiabilities,
+} from "@opulus/core";
 
 /**
  * Handle LIABILITIES DEFAULT_UPDATE webhook events: Plaid detected new or
@@ -35,7 +40,7 @@ export async function syncLiabilitiesHandler(
   ];
 
   const item = await itemService.getByPlaidItemId(event.item_id);
-  const result = await liabilityService.syncForItem(item, {
+  const result = await syncItemLiabilities(item, {
     providerAccountIds,
   });
 

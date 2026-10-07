@@ -7,21 +7,6 @@ import type {
 } from "plaid";
 import prisma from "../client/prisma.js";
 import { AppError } from "../utils/errors.js";
-import { logger } from "../utils/logger.js";
-import { plaidService } from "./plaidService.js";
-
-/**
- * Plaid error codes meaning "this item has no liabilities data to give right
- * now" (unsupported institution, not consented, not ready, or no eligible
- * accounts). These are expected, so callers treat them as "unavailable".
- */
-const UNAVAILABLE_ERROR_CODES = new Set([
-  "PRODUCTS_NOT_SUPPORTED",
-  "PRODUCT_NOT_READY",
-  "ADDITIONAL_CONSENT_REQUIRED",
-  "NO_LIABILITY_ACCOUNTS",
-  "INVALID_PRODUCT",
-]);
 
 type LiabilityDetails = Record<string, string | number | boolean | null>;
 
@@ -33,10 +18,6 @@ export interface NormalizedLiability {
     "accountId" | "itemId" | "userId" | "syncedAt"
   >;
 }
-
-export type SyncLiabilitiesResult =
-  | { status: "synced"; synced: number; unmatched: number }
-  | { status: "unavailable"; reason: string };
 
 const toDate = (value: string | null | undefined): Date | null =>
   value ? new Date(value) : null;
@@ -155,70 +136,22 @@ export function normalizePlaidLiabilities(
  * Service for storing liabilities (APRs, payment due dates, loan terms)
  */
 class LiabilityService {
-  constructor(
-    private prisma: PrismaClient,
-    private plaid: typeof plaidService
-  ) {}
+  constructor(private prisma: PrismaClient) {}
 
   /**
-   * Fetch an item's liabilities from Plaid and upsert one row per account.
-   * Resolves to `unavailable` when Plaid has nothing to give for this item
-   * (unsupported institution, product not ready, etc.); other failures throw.
-   * @param item - The item to sync
-   * @param options.providerAccountIds - Only fetch these Plaid account IDs
-   *   (e.g. the accounts a LIABILITIES webhook reported as changed)
-   * @throws AppError if Plaid or the database fails unexpectedly
+   * Insert or update the liabilities of some of an item's accounts, one row per
+   * account, all stamped with the same sync time.
+   * @param item - The item (and user) the liabilities belong to
+   * @param rows - The liability data for each of our account ids
+   * @throws AppError if database error occurs
    */
-  async syncForItem(
-    item: {
-      id: string;
-      userId: string;
-      accessToken: string;
-    },
-    options: { providerAccountIds?: string[] } = {}
-  ): Promise<SyncLiabilitiesResult> {
-    let response;
-    try {
-      response = await this.plaid.getLiabilities(
-        item.accessToken,
-        options.providerAccountIds
-      );
-    } catch (error) {
-      if (
-        error instanceof AppError &&
-        error.code &&
-        UNAVAILABLE_ERROR_CODES.has(error.code)
-      ) {
-        return { status: "unavailable", reason: error.code };
-      }
-      throw error;
-    }
-
-    const normalized = normalizePlaidLiabilities(response.liabilities);
-    if (normalized.length === 0) {
-      return { status: "synced", synced: 0, unmatched: 0 };
-    }
+  async upsertMany(
+    item: { id: string; userId: string },
+    rows: Array<{ accountId: string; data: NormalizedLiability["data"] }>
+  ): Promise<void> {
+    const syncedAt = new Date();
 
     try {
-      const accounts = await this.prisma.account.findMany({
-        where: {
-          itemId: item.id,
-          providerAccountId: {
-            in: normalized.map((entry) => entry.providerAccountId),
-          },
-        },
-        select: { id: true, providerAccountId: true },
-      });
-      const accountIds = new Map(
-        accounts.map((account) => [account.providerAccountId, account.id])
-      );
-
-      const syncedAt = new Date();
-      const rows = normalized.flatMap((entry) => {
-        const accountId = accountIds.get(entry.providerAccountId);
-        return accountId ? [{ accountId, data: entry.data }] : [];
-      });
-
       await this.prisma.$transaction(
         rows.map(({ accountId, data }) =>
           this.prisma.accountLiability.upsert({
@@ -234,12 +167,6 @@ class LiabilityService {
           })
         )
       );
-
-      return {
-        status: "synced",
-        synced: rows.length,
-        unmatched: normalized.length - rows.length,
-      };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new AppError(`Database error: ${error.message}`, 500, error.code);
@@ -247,41 +174,12 @@ class LiabilityService {
 
       const message =
         error instanceof Error
-          ? `Failed to sync liabilities: ${error.message}`
-          : "An unexpected error occurred while syncing liabilities";
+          ? `Failed to store liabilities: ${error.message}`
+          : "An unexpected error occurred while storing liabilities";
       throw new AppError(message, 500);
-    }
-  }
-
-  /**
-   * Like `syncForItem`, but never throws. Use where liabilities are a bonus
-   * and must not fail the surrounding flow (e.g. linking an institution).
-   */
-  async trySyncForItem(item: {
-    id: string;
-    userId: string;
-    accessToken: string;
-  }): Promise<SyncLiabilitiesResult | { status: "failed" }> {
-    try {
-      const result = await this.syncForItem(item);
-      logger.info(
-        { item_id: item.id, user_id: item.userId, ...result },
-        "Liabilities sync finished"
-      );
-      return result;
-    } catch (error) {
-      logger.warn(
-        {
-          item_id: item.id,
-          user_id: item.userId,
-          error_message: error instanceof Error ? error.message : String(error),
-        },
-        "Liabilities sync failed (non-fatal)"
-      );
-      return { status: "failed" };
     }
   }
 }
 
 // Export singleton instance
-export const liabilityService = new LiabilityService(prisma, plaidService);
+export const liabilityService = new LiabilityService(prisma);

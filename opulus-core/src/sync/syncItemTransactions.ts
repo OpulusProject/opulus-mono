@@ -1,11 +1,9 @@
-import {
-  itemService,
-  logger,
-  normalizePlaidTransaction,
-  plaidService,
-  prisma,
-  type RemovedTransaction,
-} from "@opulus/core";
+import type { RemovedTransaction } from "../client/plaid.js";
+import prisma from "../client/prisma.js";
+import { itemService } from "../services/itemService.js";
+import { plaidService } from "../services/plaidService.js";
+import { normalizePlaidTransaction } from "../services/transactionService.js";
+import { logger } from "../utils/logger.js";
 
 export interface SyncItemResult {
   added: number;
@@ -15,6 +13,9 @@ export interface SyncItemResult {
 
 /**
  * Catch up an item's transactions from its stored Plaid cursor.
+ *
+ * This is shared by the webhooks service (SYNC_UPDATES_AVAILABLE and the
+ * reconcile script), and lives in core with the other syncs.
  */
 export async function syncItemTransactions(
   plaidItemId: string

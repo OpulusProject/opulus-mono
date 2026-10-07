@@ -1,6 +1,5 @@
 import { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
-import { AppError, logger } from "@opulus/core";
-import { syncItemTransactions } from "../../syncItemTransactions.js";
+import { AppError, logger, syncItemTransactions } from "@opulus/core";
 
 /**
  * Handle transaction sync webhook events.
