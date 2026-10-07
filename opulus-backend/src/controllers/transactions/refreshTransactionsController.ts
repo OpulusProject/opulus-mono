@@ -1,11 +1,9 @@
 import { getRequestSession } from "@/middleware/session/requireSession.js";
 import { getValidatedBody } from "@/middleware/validation.js";
+import { refreshTransactions } from "@/services/transactions/refreshTransactions.js";
 import {
-  itemService,
-  plaidService,
   RefreshTransactionsRequestSchema,
   RefreshTransactionsResponse,
-  UnauthorizedError,
 } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 
@@ -30,30 +28,18 @@ export async function refreshTransactionsController(
   try {
     const session = getRequestSession(res);
 
-    const userId = session.user.id;
-
-    // Validate request body
-    const { itemId } =
+    // The body's itemId is Plaid's item id
+    const { itemId: plaidItemId } =
       getValidatedBody<typeof refreshTransactionsBodySchema>(req);
 
-    // Get the item and verify it belongs to the user
-    const item = await itemService.getByPlaidItemId(itemId);
-    if (item.userId !== userId) {
-      throw new UnauthorizedError(
-        "You do not have access to this item"
-      );
-    }
-
-    // Call Plaid refresh endpoint
-    // Note: This may take 10-30 seconds, but we return immediately
-    // The webhook will fire when refresh completes
-    const refreshResponse = await plaidService.transactionsRefresh(
-      item.accessToken
-    );
+    const { requestId } = await refreshTransactions({
+      userId: session.user.id,
+      plaidItemId,
+    });
 
     res.status(200).json({
       data: {
-        requestId: refreshResponse.request_id,
+        requestId,
         message:
           "Transaction refresh initiated. Plaid will fire SYNC_UPDATES_AVAILABLE webhook when refresh completes.",
       },
@@ -62,4 +48,3 @@ export async function refreshTransactionsController(
     next(error);
   }
 }
-
