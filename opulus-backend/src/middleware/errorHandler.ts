@@ -38,7 +38,6 @@ export function errorHandler(
     },
     "Request error"
   );
-
   // Handle known error types
   if (error instanceof ValidationError) {
     res.status(error.statusCode).json({
@@ -80,22 +79,6 @@ export function errorHandler(
       code: error.code,
     });
     return;
-  }
-
-  // Handle Better Auth specific errors
-  if (error && typeof error === "object" && "code" in error) {
-    const authError = error as { code?: string; message?: string };
-    if (
-      authError.code === "USER_ALREADY_EXISTS" ||
-      authError.code === "EMAIL_ALREADY_EXISTS"
-    ) {
-      res.status(409).json({
-        error: "User already exists",
-        message: "An account with this email already exists",
-        code: authError.code,
-      });
-      return;
-    }
   }
 
   // Handle generic errors
