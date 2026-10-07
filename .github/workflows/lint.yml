@@ -9,13 +9,19 @@ name: Lint
 
 on:
   pull_request:
+  # Check main itself after a merge: PRs are checked against the base they were
+  # opened on, so two PRs that pass alone can still fail together.
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
 
 concurrency:
   group: lint-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseded PR runs are cancelled; runs on main are not.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   lint:

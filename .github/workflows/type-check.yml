@@ -3,7 +3,7 @@
 # The test workflows only exercise what the tests reach, so a type error in
 # code they don't touch (or in the frontend, which they never build) could
 # merge unnoticed. This runs `tsc --noEmit` in core, backend, webhooks and
-# frontend on every PR.
+# frontend on every PR, and on main after each merge.
 #
 # Lint runs separately, in lint.yml.
 
@@ -11,13 +11,19 @@ name: Type Check
 
 on:
   pull_request:
+  # Check main itself after a merge: PRs are checked against the base they were
+  # opened on, so two PRs that pass alone can still fail together.
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
 
 concurrency:
   group: type-check-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseded PR runs are cancelled; runs on main are not.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   type-check:
