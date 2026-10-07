@@ -2,7 +2,7 @@ import {
   accountRepository,
   itemRepository,
   plaidGateway,
-  prisma,
+  runInTransaction,
   transactionRepository,
 } from "@opulus/core";
 
@@ -29,7 +29,7 @@ export async function deleteItem(params: DeleteItemParams): Promise<void> {
 
   await plaidGateway.removeItem(item.accessToken);
 
-  await prisma.$transaction(async (tx) => {
+  await runInTransaction(async (tx) => {
     await transactionRepository.deleteByItemId(item.id, tx);
     await accountRepository.deleteByItemId(item.id, tx);
     await itemRepository.delete(item.id, tx);

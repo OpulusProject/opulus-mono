@@ -1,9 +1,11 @@
 import {
+  accountRepository,
+  itemRepository,
   logger,
   normalizePlaidAccount,
   normalizePlaidItem,
   plaidGateway,
-  prisma,
+  runInTransaction,
   trySyncItemLiabilities,
 } from "@opulus/core";
 
@@ -74,8 +76,8 @@ export async function createItem(
   const accountsResponse = await plaidGateway.getAccounts(accessToken);
   const itemData = normalizePlaidItem(item, userId, accessToken, institution);
 
-  const createdItem = await prisma.$transaction(async (tx) => {
-    const created = await tx.item.create({ data: itemData });
+  const createdItem = await runInTransaction(async (tx) => {
+    const created = await itemRepository.create(itemData, tx);
 
     for (const plaidAccount of accountsResponse.accounts) {
       const accountData = normalizePlaidAccount(
@@ -83,7 +85,7 @@ export async function createItem(
         created.id,
         userId
       );
-      await tx.account.create({ data: accountData });
+      await accountRepository.create(accountData, tx);
     }
 
     logger.info(

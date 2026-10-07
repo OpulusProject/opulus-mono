@@ -1,11 +1,20 @@
 import type { RemovedTransaction } from "../client/plaid.js";
-import prisma from "../client/prisma.js";
-import { itemRepository } from "../repositories/itemRepository.js";
+import { runInTransaction } from "../client/transaction.js";
 import { plaidGateway } from "../gateways/plaidGateway.js";
-import { normalizePlaidTransaction } from "../repositories/transactionRepository.js";
+import { accountRepository } from "../repositories/accountRepository.js";
+import { itemRepository } from "../repositories/itemRepository.js";
+import {
+  normalizePlaidTransaction,
+  transactionRepository,
+} from "../repositories/transactionRepository.js";
 import { logger } from "../utils/logger.js";
 
-export interface SyncItemResult {
+export interface SyncItemTransactionsParams {
+  /** Plaid's id for the item (not ours). */
+  plaidItemId: string;
+}
+
+export interface SyncItemTransactionsResult {
   added: number;
   modified: number;
   removed: number;
@@ -18,114 +27,58 @@ export interface SyncItemResult {
  * reconcile script), and lives in core with the other shared services.
  */
 export async function syncItemTransactions(
-  plaidItemId: string
-): Promise<SyncItemResult> {
-  const item = await itemRepository.getByPlaidItemId(plaidItemId);
+  params: SyncItemTransactionsParams
+): Promise<SyncItemTransactionsResult> {
+  const item = await itemRepository.getByPlaidItemId(params.plaidItemId);
 
   const { added, modified, removed, nextCursor } =
-    await plaidGateway.transactionsSync(
-      item.accessToken,
-      item.transactionCursor
-    );
+    await plaidGateway.transactionsSync(item.accessToken, item.transactionCursor);
 
-  const accounts = await prisma.account.findMany({
-    where: { itemId: item.id },
-    select: {
-      id: true,
-      providerAccountId: true,
-    },
-  });
-
-  const accountIdMap = new Map(
-    accounts.map((acc) => [acc.providerAccountId, acc.id])
+  // Only the accounts these transactions belong to need looking up.
+  const accountIds = await accountRepository.getIdsByProviderAccountIds(
+    item.id,
+    [...new Set([...added, ...modified].map((t) => t.account_id))]
   );
 
-  await prisma.$transaction(async (tx) => {
-    if (added.length > 0) {
-      const transactionsToCreate = added
-        .map((plaidTransaction) => {
-          const accountId = accountIdMap.get(plaidTransaction.account_id);
-          if (!accountId) {
-            return null;
-          }
+  // Transactions for accounts we don't have (not shared with us) are skipped.
+  const toRow = (plaidTransaction: (typeof added)[number]) => {
+    const accountId = accountIds.get(plaidTransaction.account_id);
+    return accountId
+      ? normalizePlaidTransaction(
+          plaidTransaction,
+          accountId,
+          item.id,
+          item.userId
+        )
+      : null;
+  };
+  const notNull = <T>(row: T | null): row is T => row !== null;
 
-          return normalizePlaidTransaction(
-            plaidTransaction,
-            accountId,
-            item.id,
-            item.userId
-          );
-        })
-        .filter((t): t is NonNullable<typeof t> => t !== null);
+  const toCreate = added.map(toRow).filter(notNull);
+  const toUpdate = modified.map(toRow).filter(notNull);
+  const toDelete = (removed as RemovedTransaction[]).map(
+    (removedTransaction) => removedTransaction.transaction_id
+  );
 
-      if (transactionsToCreate.length > 0) {
-        await tx.transaction.createMany({
-          data: transactionsToCreate,
-          skipDuplicates: true,
-        });
-      }
+  // All of it, and moving the cursor forward, or none of it.
+  await runInTransaction(async (tx) => {
+    if (toCreate.length > 0) {
+      await transactionRepository.createMany(toCreate, tx);
     }
-
-    if (modified.length > 0) {
-      await Promise.all(
-        modified.map(async (plaidTransaction) => {
-          const accountId = accountIdMap.get(plaidTransaction.account_id);
-          if (!accountId) {
-            return;
-          }
-
-          const transactionData = normalizePlaidTransaction(
-            plaidTransaction,
-            accountId,
-            item.id,
-            item.userId
-          );
-
-          const {
-            providerTransactionId,
-            accountId: txAccountId,
-            ...updateData
-          } = transactionData;
-
-          await tx.transaction.update({
-            where: {
-              providerTransactionId_accountId: {
-                providerTransactionId,
-                accountId: txAccountId,
-              },
-            },
-            data: updateData,
-          });
-        })
-      );
+    if (toUpdate.length > 0) {
+      await transactionRepository.updateMany(toUpdate, tx);
     }
-
-    if (removed.length > 0) {
-      const transactionIdsToDelete = (removed as RemovedTransaction[]).map(
-        (removedTx) => removedTx.transaction_id
-      );
-
-      if (transactionIdsToDelete.length > 0) {
-        await tx.transaction.deleteMany({
-          where: {
-            providerTransactionId: {
-              in: transactionIdsToDelete,
-            },
-          },
-        });
-      }
+    if (toDelete.length > 0) {
+      await transactionRepository.deleteMany(toDelete, tx);
     }
-
-    await tx.item.update({
-      where: { id: item.id },
-      data: {
-        transactionCursor: nextCursor,
-        syncedAt: new Date(),
-      },
-    });
+    await itemRepository.update(
+      item.id,
+      { transactionCursor: nextCursor, syncedAt: new Date() },
+      tx
+    );
   });
 
-  const result: SyncItemResult = {
+  const result: SyncItemTransactionsResult = {
     added: added.length,
     modified: modified.length,
     removed: removed.length,
@@ -133,7 +86,7 @@ export async function syncItemTransactions(
 
   logger.info(
     {
-      item_id: plaidItemId,
+      item_id: params.plaidItemId,
       added_count: result.added,
       modified_count: result.modified,
       removed_count: result.removed,

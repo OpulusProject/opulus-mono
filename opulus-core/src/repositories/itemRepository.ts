@@ -96,9 +96,12 @@ class ItemRepository {
    * @throws ConflictError if item already exists
    * @throws AppError if database error occurs
    */
-  async create(data: CreateItemData) {
+  async create(
+    data: CreateItemData,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
     try {
-      return await this.prisma.item.create({ data });
+      return await client.item.create({ data });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -147,6 +150,36 @@ class ItemRepository {
     }
   }
 
+  /**
+   * Find the id of an item the user has already linked for an institution
+   * @param userId - The user ID
+   * @param institutionId - Plaid's institution id
+   * @returns The item's id, or null if there is none
+   * @throws AppError if database error occurs
+   */
+  async findIdByInstitution(
+    userId: string,
+    institutionId: string
+  ): Promise<string | null> {
+    try {
+      const item = await this.prisma.item.findFirst({
+        where: { userId, institutionId },
+        select: { id: true },
+      });
+      return item?.id ?? null;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to find item: ${error.message}`
+          : "An unexpected error occurred while finding item";
+      throw new AppError(message, 500);
+    }
+  }
+
   async getByPlaidItemId(plaidItemId: string) {
     try {
       const item = await this.prisma.item.findUniqueOrThrow({
@@ -179,13 +212,18 @@ class ItemRepository {
    * Only updates fields that are provided (undefined fields are ignored)
    * @param itemId - The item ID
    * @param data - Partial item data to update
+   * @param client - Optional transaction client to run inside a transaction
    * @returns Updated item
    * @throws NotFoundError if item not found
    * @throws AppError if database error occurs
    */
-  async update(itemId: string, data: Prisma.ItemUpdateInput) {
+  async update(
+    itemId: string,
+    data: Prisma.ItemUpdateInput,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
     try {
-      return await this.prisma.item.update({
+      return await client.item.update({
         where: { id: itemId },
         data,
       });

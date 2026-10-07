@@ -27,4 +27,23 @@ export default [
       ],
     },
   },
+  {
+    // Services go through repositories; Prisma stays inside them. Use
+    // runInTransaction for a transaction boundary.
+    files: ["src/services/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@prisma/client", "**/client/prisma.js"],
+              message:
+                "Services use repositories, not Prisma. Use runInTransaction for transactions.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];
