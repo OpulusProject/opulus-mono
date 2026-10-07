@@ -11,14 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TwoFactorRouteImport } from './routes/two-factor'
 import { Route as LoginRouteImport } from './routes/login'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as CreditAndLoansRouteImport } from './routes/credit-and-loans'
+import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedCreditAndLoansRouteImport } from './routes/_authenticated/credit-and-loans'
-import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
-import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
-import { Route as AuthenticatedSettingsConnectionsRouteImport } from './routes/_authenticated/settings.connections'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as SettingsConnectionsRouteImport } from './routes/settings.connections'
 
 const TwoFactorRoute = TwoFactorRouteImport.update({
   id: '/two-factor',
@@ -30,8 +29,19 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreditAndLoansRoute = CreditAndLoansRouteImport.update({
+  id: '/credit-and-loans',
+  path: '/credit-and-loans',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountsRoute = AccountsRouteImport.update({
+  id: '/accounts',
+  path: '/accounts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SplatRoute = SplatRouteImport.update({
@@ -44,113 +54,97 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AuthenticatedRoute,
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedCreditAndLoansRoute =
-  AuthenticatedCreditAndLoansRouteImport.update({
-    id: '/credit-and-loans',
-    path: '/credit-and-loans',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedAccountsRoute = AuthenticatedAccountsRouteImport.update({
-  id: '/accounts',
-  path: '/accounts',
-  getParentRoute: () => AuthenticatedRoute,
+const SettingsConnectionsRoute = SettingsConnectionsRouteImport.update({
+  id: '/settings/connections',
+  path: '/settings/connections',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedSettingsIndexRoute =
-  AuthenticatedSettingsIndexRouteImport.update({
-    id: '/settings/',
-    path: '/settings/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedSettingsConnectionsRoute =
-  AuthenticatedSettingsConnectionsRouteImport.update({
-    id: '/settings/connections',
-    path: '/settings/connections',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/accounts': typeof AccountsRoute
+  '/credit-and-loans': typeof CreditAndLoansRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/two-factor': typeof TwoFactorRoute
-  '/accounts': typeof AuthenticatedAccountsRoute
-  '/credit-and-loans': typeof AuthenticatedCreditAndLoansRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
-  '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
-  '/settings': typeof AuthenticatedSettingsIndexRoute
+  '/settings/connections': typeof SettingsConnectionsRoute
+  '/settings': typeof SettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
+  '/accounts': typeof AccountsRoute
+  '/credit-and-loans': typeof CreditAndLoansRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/two-factor': typeof TwoFactorRoute
-  '/accounts': typeof AuthenticatedAccountsRoute
-  '/credit-and-loans': typeof AuthenticatedCreditAndLoansRoute
-  '/dashboard': typeof AuthenticatedDashboardRoute
-  '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
-  '/settings': typeof AuthenticatedSettingsIndexRoute
+  '/settings/connections': typeof SettingsConnectionsRoute
+  '/settings': typeof SettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
-  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/accounts': typeof AccountsRoute
+  '/credit-and-loans': typeof CreditAndLoansRoute
+  '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/two-factor': typeof TwoFactorRoute
-  '/_authenticated/accounts': typeof AuthenticatedAccountsRoute
-  '/_authenticated/credit-and-loans': typeof AuthenticatedCreditAndLoansRoute
-  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
-  '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/settings/connections': typeof SettingsConnectionsRoute
+  '/settings/': typeof SettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/$'
-    | '/login'
-    | '/two-factor'
     | '/accounts'
     | '/credit-and-loans'
     | '/dashboard'
+    | '/login'
+    | '/two-factor'
     | '/settings/connections'
     | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/$'
-    | '/login'
-    | '/two-factor'
     | '/accounts'
     | '/credit-and-loans'
     | '/dashboard'
+    | '/login'
+    | '/two-factor'
     | '/settings/connections'
     | '/settings'
   id:
     | '__root__'
     | '/'
     | '/$'
-    | '/_authenticated'
+    | '/accounts'
+    | '/credit-and-loans'
+    | '/dashboard'
     | '/login'
     | '/two-factor'
-    | '/_authenticated/accounts'
-    | '/_authenticated/credit-and-loans'
-    | '/_authenticated/dashboard'
-    | '/_authenticated/settings/connections'
-    | '/_authenticated/settings/'
+    | '/settings/connections'
+    | '/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
-  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AccountsRoute: typeof AccountsRoute
+  CreditAndLoansRoute: typeof CreditAndLoansRoute
+  DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   TwoFactorRoute: typeof TwoFactorRoute
+  SettingsConnectionsRoute: typeof SettingsConnectionsRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -169,11 +163,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: ''
-      preLoaderRoute: typeof AuthenticatedRouteImport
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/credit-and-loans': {
+      id: '/credit-and-loans'
+      path: '/credit-and-loans'
+      fullPath: '/credit-and-loans'
+      preLoaderRoute: typeof CreditAndLoansRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/accounts': {
+      id: '/accounts'
+      path: '/accounts'
+      fullPath: '/accounts'
+      preLoaderRoute: typeof AccountsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$': {
@@ -190,70 +198,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/credit-and-loans': {
-      id: '/_authenticated/credit-and-loans'
-      path: '/credit-and-loans'
-      fullPath: '/credit-and-loans'
-      preLoaderRoute: typeof AuthenticatedCreditAndLoansRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/accounts': {
-      id: '/_authenticated/accounts'
-      path: '/accounts'
-      fullPath: '/accounts'
-      preLoaderRoute: typeof AuthenticatedAccountsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/settings/': {
-      id: '/_authenticated/settings/'
+    '/settings/': {
+      id: '/settings/'
       path: '/settings'
       fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/settings/connections': {
-      id: '/_authenticated/settings/connections'
+    '/settings/connections': {
+      id: '/settings/connections'
       path: '/settings/connections'
       fullPath: '/settings/connections'
-      preLoaderRoute: typeof AuthenticatedSettingsConnectionsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      preLoaderRoute: typeof SettingsConnectionsRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface AuthenticatedRouteChildren {
-  AuthenticatedAccountsRoute: typeof AuthenticatedAccountsRoute
-  AuthenticatedCreditAndLoansRoute: typeof AuthenticatedCreditAndLoansRoute
-  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedSettingsConnectionsRoute: typeof AuthenticatedSettingsConnectionsRoute
-  AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
-}
-
-const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAccountsRoute: AuthenticatedAccountsRoute,
-  AuthenticatedCreditAndLoansRoute: AuthenticatedCreditAndLoansRoute,
-  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedSettingsConnectionsRoute: AuthenticatedSettingsConnectionsRoute,
-  AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
-}
-
-const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
-  AuthenticatedRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
-  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AccountsRoute: AccountsRoute,
+  CreditAndLoansRoute: CreditAndLoansRoute,
+  DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   TwoFactorRoute: TwoFactorRoute,
+  SettingsConnectionsRoute: SettingsConnectionsRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
