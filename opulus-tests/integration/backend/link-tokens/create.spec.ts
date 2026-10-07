@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { LinkTokenResponseSchema } from "@opulus/core";
 
-import { expectOk } from "../../../shared/assertions.js";
+import { expectOk, expectMatchesSchema } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import { requireSandboxCredentials } from "../helpers/plaidSandbox.js";
@@ -32,6 +33,7 @@ test.describe("POST /api/link-tokens (sandbox)", () => {
     // is a stable Plaid-side contract and a quick regression guard against
     // the backend accidentally pointing at a non-sandbox environment.
     await expectOk(res);
+    await expectMatchesSchema(res, LinkTokenResponseSchema);
     const body = (await res.json()) as { data: { linkToken: string } };
     expect(typeof body.data.linkToken).toBe("string");
     expect(body.data.linkToken).toMatch(/^link-sandbox-/);

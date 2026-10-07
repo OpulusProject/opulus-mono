@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { AccountsResponseSchema } from "@opulus/core";
 
-import { expectOk } from "../../../shared/assertions.js";
+import { expectOk, expectMatchesSchema } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
@@ -36,6 +37,7 @@ test.describe("GET /api/accounts (sandbox)", () => {
         headers: withSession(cookie),
       });
       await expectOk(res);
+      await expectMatchesSchema(res, AccountsResponseSchema);
       return (await res.json()).data.accounts as AccountRow[];
     };
 

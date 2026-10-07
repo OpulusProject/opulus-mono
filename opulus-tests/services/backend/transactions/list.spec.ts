@@ -1,9 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { TransactionsResponseSchema } from "@opulus/core";
 import { withSession } from "../../../shared/client.js";
 import {
   expectOk,
   expectStatus,
   expectValidationError,
+  expectMatchesSchema,
 } from "../../../shared/assertions.js";
 import {
   createAuthedUser,
@@ -86,56 +88,11 @@ test.describe("GET /api/transactions", () => {
       headers: withSession(cookie),
     });
 
-    // Assert: amount is a number (not a decimal string), dates are ISO
-    // strings, and nothing outside the documented fields is exposed.
+    // Assert: the body is exactly the documented shape (dates are ISO strings,
+    // nothing outside the schema), and the amount is a number, not a decimal string.
     await expectOk(res);
-    const [transaction] = (await res.json()).data.transactions as Array<
-      Record<string, unknown>
-    >;
-    expect(typeof transaction.amount).toBe("number");
-    expect(transaction.amount).toBeCloseTo(12.34);
-    expect(new Date(transaction.date as string).toISOString()).toBe(
-      transaction.date,
-    );
-    expect(new Date(transaction.createdAt as string).toISOString()).toBe(
-      transaction.createdAt,
-    );
-    expect(Object.keys(transaction).sort()).toEqual(
-      [
-        "accountId",
-        "accountOwner",
-        "amount",
-        "authorizedDate",
-        "account",
-        "category",
-        "categoryId",
-        "checkNumber",
-        "createdAt",
-        "date",
-        "dateTransacted",
-        "id",
-        "isoCurrencyCode",
-        "itemId",
-        "location",
-        "merchantEntityId",
-        "merchantName",
-        "name",
-        "paymentMeta",
-        "pending",
-        "pendingTransactionId",
-        "personalFinanceCategory",
-        "providerTransactionId",
-        "transactionCode",
-        "unofficialCurrencyCode",
-        "updatedAt",
-        "userId",
-      ].sort(),
-    );
-    expect(Object.keys(transaction.account as object).sort()).toEqual([
-      "id",
-      "mask",
-      "name",
-    ]);
+    const body = await expectMatchesSchema(res, TransactionsResponseSchema);
+    expect(body.data.transactions[0].amount).toBeCloseTo(12.34);
   });
 
   test("rejects a limit above the allowed maximum (validation)", async ({

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { UpdateItemAccountsResponseSchema } from "@opulus/core";
 
-import { expectOk, expectStatus } from "../../../shared/assertions.js";
+import { expectOk, expectStatus, expectMatchesSchema } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
@@ -42,6 +43,7 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     // Assert: no new accounts should have appeared since the initial link;
     // every Plaid-reported account should map to the rows we just wrote.
     await expectOk(res);
+    await expectMatchesSchema(res, UpdateItemAccountsResponseSchema);
     const body = (await res.json()) as {
       data: { itemId: string; created: number; updated: number };
     };

@@ -1,27 +1,30 @@
 import type { Prisma } from "@prisma/client";
+import { z } from "zod";
 
 import { toNumber } from "../common.js";
 import {
-  type LiabilityDetailsDTO,
+  LiabilityDetailsDTOSchema,
   toLiabilityDetailsDTO,
 } from "./liabilityDetails.js";
 
 /**
  * Account (nested in an item, and returned by the accounts endpoint)
  */
-export interface AccountDTO {
-  id: string;
-  name: string;
-  officialName: string | null; // Name the institution uses for the account
-  type: string; // e.g., "depository", "credit", "loan", "investment", etc.
-  subtype: string | null; // e.g., "checking", "savings", "credit card", etc.
-  mask: string | null; // Last 2-4 alphanumeric characters of the account number
-  balanceAvailable: number | null;
-  balanceCurrent: number | null;
-  balanceLimit: number | null; // Credit limit (for credit accounts)
-  isoCurrencyCode: string | null; // ISO 4217 currency code (e.g., "USD", "CAD")
-  liabilityDetails: LiabilityDetailsDTO | null; // Credit/loan details, when available
-}
+export const AccountDTOSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  officialName: z.string().nullable(), // Name the institution uses for the account
+  type: z.string(), // e.g., "depository", "credit", "loan", "investment", etc.
+  subtype: z.string().nullable(), // e.g., "checking", "savings", "credit card", etc.
+  mask: z.string().nullable(), // Last 2-4 alphanumeric characters of the account number
+  balanceAvailable: z.number().nullable(),
+  balanceCurrent: z.number().nullable(),
+  balanceLimit: z.number().nullable(), // Credit limit (for credit accounts)
+  isoCurrencyCode: z.string().nullable(), // ISO 4217 currency code (e.g., "USD", "CAD")
+  liabilityDetails: LiabilityDetailsDTOSchema.nullable(), // Credit/loan details, when available
+});
+
+export type AccountDTO = z.infer<typeof AccountDTOSchema>;
 
 /**
  * Transform a stored account row to its public DTO

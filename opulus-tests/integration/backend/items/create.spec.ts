@@ -1,6 +1,11 @@
 import { expect, test } from "@playwright/test";
+import { CreateItemResponseSchema } from "@opulus/core";
 
-import { expectOk, expectStatus } from "../../../shared/assertions.js";
+import {
+  expectMatchesSchema,
+  expectOk,
+  expectStatus,
+} from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
@@ -38,6 +43,7 @@ test.describe("POST /api/items (sandbox)", () => {
     // Assert: 201 + { itemId, duplicate: false }, then the item is visible
     // via GET /api/items with at least one linked account.
     await expectStatus(createRes, 201);
+    await expectMatchesSchema(createRes, CreateItemResponseSchema);
     const createBody = (await createRes.json()) as {
       data: { itemId: string; duplicate: boolean };
     };
@@ -93,6 +99,7 @@ test.describe("POST /api/items (sandbox)", () => {
     // Assert: 409 short-circuit referencing the first item, and GET /api/items
     // still shows exactly one row for this institution.
     await expectStatus(dupeRes, 409);
+    await expectMatchesSchema(dupeRes, CreateItemResponseSchema);
     const dupeBody = (await dupeRes.json()) as {
       data: { itemId: string; duplicate: boolean };
       message?: string;

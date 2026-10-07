@@ -3,31 +3,36 @@
  */
 
 import type { Institution } from "plaid";
+import { z } from "zod";
 
 /**
  * Institution as returned by the API
  * Only includes fields the client uses, in the API's camelCase
  */
-export interface InstitutionDTO {
-  id: string;
-  name: string;
-  logo: string | null;
-  primaryColor: string | null;
-  url: string | null;
-}
+export const InstitutionDTOSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  logo: z.string().nullable(),
+  primaryColor: z.string().nullable(),
+  url: z.string().nullable(),
+});
+
+export type InstitutionDTO = z.infer<typeof InstitutionDTOSchema>;
 
 /**
  * Institutions API response
  * `total` is how many institutions Plaid has; `count` is how many are in
  * this response.
  */
-export interface InstitutionsResponse {
-  data: {
-    institutions: InstitutionDTO[];
-    total: number;
-    count: number;
-  };
-}
+export const InstitutionsResponseSchema = z.object({
+  data: z.object({
+    institutions: z.array(InstitutionDTOSchema),
+    total: z.number().int(),
+    count: z.number().int(),
+  }),
+});
+
+export type InstitutionsResponse = z.infer<typeof InstitutionsResponseSchema>;
 
 /**
  * Transform a Plaid institution to the public DTO

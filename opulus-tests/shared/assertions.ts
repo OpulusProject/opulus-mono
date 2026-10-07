@@ -1,4 +1,5 @@
 import { expect, type APIResponse } from "@playwright/test";
+import type { ZodType } from "zod";
 
 /**
  * Standardized response assertions. Import these in every spec so success and
@@ -52,4 +53,28 @@ export async function expectValidationError(res: APIResponse): Promise<unknown> 
   expect(body.error).toBe("Validation failed");
   expect(Array.isArray(body.details)).toBe(true);
   return body;
+}
+
+/**
+ * Assert a response body is exactly what a DTO schema describes: every field
+ * has the documented type and nothing else is exposed. The schema comes from
+ * @opulus/core, the same one the DTO types are derived from, so the contract
+ * has one definition.
+ *
+ * Zod drops fields it does not know when parsing, so the parsed body being
+ * equal to the raw body is what proves nothing extra was sent.
+ */
+export async function expectMatchesSchema<T>(
+  res: APIResponse,
+  schema: ZodType<T>,
+): Promise<T> {
+  const body: unknown = await res.json();
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    throw new Error(
+      `Response from ${res.url()} does not match its schema: ${JSON.stringify(parsed.error.issues)}`,
+    );
+  }
+  expect(parsed.data, "fields outside the schema were returned").toEqual(body);
+  return parsed.data;
 }

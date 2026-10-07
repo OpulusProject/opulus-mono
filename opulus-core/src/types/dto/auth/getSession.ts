@@ -2,28 +2,34 @@
  * Get Session endpoint DTOs
  */
 
-import { toIsoString } from "../common.js";
+import { z } from "zod";
 
-export interface SessionUserDTO {
-  id: string;
-  email: string;
-  name: string;
-  emailVerified: boolean;
-  image: string | null;
-}
+import { IsoTimestampSchema, toIsoString } from "../common.js";
+
+export const SessionUserDTOSchema = z.object({
+  id: z.string(),
+  email: z.string(),
+  name: z.string(),
+  emailVerified: z.boolean(),
+  image: z.string().nullable(),
+});
+
+export type SessionUserDTO = z.infer<typeof SessionUserDTOSchema>;
 
 /**
  * Session response
  */
-export interface SessionResponse {
-  data: {
-    user: SessionUserDTO;
-    session: {
-      id: string;
-      expiresAt: string;
-    };
-  };
-}
+export const SessionResponseSchema = z.object({
+  data: z.object({
+    user: SessionUserDTOSchema,
+    session: z.object({
+      id: z.string(),
+      expiresAt: IsoTimestampSchema,
+    }),
+  }),
+});
+
+export type SessionResponse = z.infer<typeof SessionResponseSchema>;
 
 /**
  * Transform an auth session to the public session DTO. The auth library

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { RefreshTransactionsResponseSchema } from "@opulus/core";
 
-import { expectOk, expectStatus } from "../../../shared/assertions.js";
+import { expectOk, expectStatus, expectMatchesSchema } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import { testDb } from "../../../shared/db.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
@@ -46,6 +47,7 @@ test.describe("POST /api/transactions/refresh (sandbox)", () => {
 
     // Assert: Plaid accepted the refresh and returned a request_id.
     await expectOk(res);
+    await expectMatchesSchema(res, RefreshTransactionsResponseSchema);
     const body = (await res.json()) as {
       data: { requestId: string; message: string };
     };

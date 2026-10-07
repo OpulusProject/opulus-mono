@@ -1,52 +1,19 @@
 /**
  * Login-related DTOs
+ *
+ * Sign-in and two-factor requests and responses are handled by better-auth,
+ * not our controllers, so only the form's shape lives here.
  */
 
-/**
- * Login request payload
- */
-export interface LoginRequest {
-  email: string;
-  password: string;
-  rememberMe?: boolean;
-}
+import { z } from "zod";
 
 /**
- * The user returned when authentication succeeds
+ * Login request payload (the fields of the login form)
  */
-export interface AuthenticatedUserDTO {
-  id: string;
-  email: string;
-  name: string | null;
-  emailVerified: boolean;
-}
+export const LoginRequestSchema = z.object({
+  email: z.string(),
+  password: z.string(),
+  rememberMe: z.boolean().optional(),
+});
 
-/**
- * The session returned when authentication succeeds
- */
-export interface AuthenticatedSessionDTO {
-  id: string;
-  token: string;
-  expiresAt: string;
-}
-
-/**
- * Successful login response
- */
-export interface LoginSuccessResponse {
-  user: AuthenticatedUserDTO;
-  session: AuthenticatedSessionDTO;
-}
-
-/**
- * Two-factor authentication redirect response
- * Returned when user needs to verify TOTP code
- */
-export interface TwoFactorRedirectResponse {
-  twoFactorRedirect: true;
-}
-
-/**
- * Login response - can be either success or 2FA redirect
- */
-export type LoginResponse = LoginSuccessResponse | TwoFactorRedirectResponse;
+export type LoginRequest = z.infer<typeof LoginRequestSchema>;

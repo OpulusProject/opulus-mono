@@ -4,6 +4,10 @@
  * Organized by resource, with a file per endpoint.
  *
  * Conventions:
+ * - Each DTO is a zod schema (`<Name>DTOSchema`, `<Name>ResponseSchema`,
+ *   `<Name>RequestSchema`) with its type inferred from it (`z.infer`), so the
+ *   shape is defined once. The service tests parse real responses with the
+ *   schemas, and the backend validates request bodies with the same ones.
  * - Entities are named `<Name>DTO` (never the bare Prisma model name, which is
  *   a different thing), and endpoint envelopes `<Name>Response`.
  * - Rows are turned into DTOs by a `to<Name>DTO` function that copies fields

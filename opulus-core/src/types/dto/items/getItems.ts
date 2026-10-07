@@ -2,38 +2,42 @@
  * Get Items endpoint DTOs
  */
 
-import type { PlaidErrorType } from "plaid";
+import { z } from "zod";
 
-import { AccountDTO, toAccountDTO } from "../accounts/account.js";
-import { toIsoString } from "../common.js";
+import { AccountDTOSchema, toAccountDTO } from "../accounts/account.js";
+import { IsoTimestampSchema, toIsoString } from "../common.js";
 
 /**
  * Item (a connection to an institution) as returned by the API
  * Only includes fields safe to expose to the client
  */
-export interface ItemDTO {
-  id: string;
-  institutionName: string | null;
-  institutionLogo: string | null;
-  institutionColor: string | null;
-  errorType: PlaidErrorType | null;
-  errorCode: string | null;
-  errorMessage: string | null;
-  displayMessage: string | null;
-  /** Plaid found accounts the user has not shared yet; they can add them. */
-  newAccountsAvailable: boolean;
-  syncedAt: string | null;
-  accounts: AccountDTO[];
-}
+export const ItemDTOSchema = z.object({
+  id: z.string(),
+  institutionName: z.string().nullable(),
+  institutionLogo: z.string().nullable(),
+  institutionColor: z.string().nullable(),
+  errorType: z.string().nullable(), // Plaid's error type, e.g. "ITEM_ERROR"
+  errorCode: z.string().nullable(),
+  errorMessage: z.string().nullable(),
+  displayMessage: z.string().nullable(),
+  // Plaid found accounts the user has not shared yet; they can add them.
+  newAccountsAvailable: z.boolean(),
+  syncedAt: IsoTimestampSchema.nullable(),
+  accounts: z.array(AccountDTOSchema),
+});
+
+export type ItemDTO = z.infer<typeof ItemDTOSchema>;
 
 /**
  * Items API response
  */
-export interface ItemsResponse {
-  data: {
-    items: ItemDTO[];
-  };
-}
+export const ItemsResponseSchema = z.object({
+  data: z.object({
+    items: z.array(ItemDTOSchema),
+  }),
+});
+
+export type ItemsResponse = z.infer<typeof ItemsResponseSchema>;
 
 /**
  * Transform full item data to public DTO
@@ -59,7 +63,7 @@ export function toItemDTO(item: {
     institutionName: item.institutionName,
     institutionLogo: item.institutionLogo,
     institutionColor: item.institutionColor,
-    errorType: (item.errorType as PlaidErrorType | null) ?? null,
+    errorType: item.errorType,
     errorCode: item.errorCode,
     errorMessage: item.errorMessage,
     displayMessage: item.displayMessage,

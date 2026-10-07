@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { InstitutionsResponseSchema } from "@opulus/core";
 
-import { expectOk } from "../../../shared/assertions.js";
+import { expectOk, expectMatchesSchema } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import { requireSandboxCredentials } from "../helpers/plaidSandbox.js";
@@ -29,6 +30,7 @@ test.describe("GET /api/institutions (sandbox)", () => {
 
     // Assert
     await expectOk(res);
+    await expectMatchesSchema(res, InstitutionsResponseSchema);
     const body = (await res.json()) as {
       data: {
         institutions: Array<{ id: string; name: string }>;
