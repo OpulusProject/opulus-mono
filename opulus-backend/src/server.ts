@@ -2,10 +2,10 @@
 import "dotenv/config";
 
 import { auth } from "@/client/auth.js";
-import { errorHandler } from "@/middleware/errorHandler.js";
 import router from "@/routes/index.js";
 import {
   config,
+  errorHandler,
   logger,
   prisma,
   requestIdMiddleware,
