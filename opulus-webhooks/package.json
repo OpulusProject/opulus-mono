@@ -10,7 +10,7 @@
     "reconcile": "tsx src/scripts/reconcile.ts",
     "fire-webhook": "tsx src/scripts/fireSandboxWebhook.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "lint": "eslint . --ext .ts,.tsx",
+    "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "tunnel": "zrok share public http://localhost:8081 --backend-mode proxy",
     "tunnel:reserved": "zrok reserve public http://localhost:8081 --backend-mode proxy --unique-name opuluswebhooks"
@@ -29,6 +29,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@eslint/js": "^9.17.0",
     "@types/express": "^5.0.5",
     "@types/node": "^22.2.0",
     "@types/safe-compare": "^1.1.2",
@@ -36,6 +37,7 @@
     "@typescript-eslint/parser": "^8.12.2",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^9.1.0",
+    "globals": "^15.14.0",
     "prettier": "^3.3.3",
     "tsup": "^8.5.1",
     "tsx": "^4.19.2",

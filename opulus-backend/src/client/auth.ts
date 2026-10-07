@@ -15,8 +15,6 @@ import { twoFactor } from "better-auth/plugins";
  * This allows us to use SameSite=Lax (more secure than SameSite=None)
  */
 
-const isProduction = config.nodeEnv === "production";
-
 // Extract root domain from clientUrl (e.g., "https://www.opulus.app" -> ".opulus.app")
 const getRootDomain = (url: string): string => {
   try {
@@ -82,4 +80,3 @@ export const auth = betterAuth({
 });
 
 export type Session = typeof auth.$Infer.Session;
-``;
