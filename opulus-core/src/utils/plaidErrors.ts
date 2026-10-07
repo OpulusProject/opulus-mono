@@ -45,7 +45,9 @@ export function handlePlaidError(error: unknown): AppError {
     // Map Plaid error codes to HTTP status codes
     const statusCodeMap: Record<string, number> = {
       INVALID_ACCESS_TOKEN: 401,
-      ITEM_LOGIN_REQUIRED: 401,
+      // The item is in a state the user can fix by reconnecting. Not a 401, which
+      // means the Opulus session; the response's `code` says what to do.
+      ITEM_LOGIN_REQUIRED: 409,
       INVALID_API_KEYS: 401,
       INVALID_CLIENT_ID: 401,
       INVALID_SECRET: 401,

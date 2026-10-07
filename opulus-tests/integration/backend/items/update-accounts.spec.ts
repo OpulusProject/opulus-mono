@@ -156,7 +156,7 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     expect(await flag()).toBe(false);
   });
 
-  test("reports an item whose bank login has changed as 401 ITEM_LOGIN_REQUIRED", async ({
+  test("reports an item whose bank login has changed as 409 ITEM_LOGIN_REQUIRED", async ({
     request,
   }) => {
     // Arrange: a sandbox item that Plaid now says needs the user to log in again.
@@ -176,7 +176,7 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
 
     // Assert: Plaid's error code reaches the client, so the UI can tell the user
     // to reconnect, instead of an opaque 500.
-    await expectStatus(res, 401);
+    await expectStatus(res, 409);
     await expectErrorCode(res, "ITEM_LOGIN_REQUIRED");
   });
 

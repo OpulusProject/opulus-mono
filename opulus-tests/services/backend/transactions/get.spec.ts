@@ -347,6 +347,64 @@ test.describe("GET /api/transactions", () => {
     await expectValidationError(res);
   });
 
+  test("rejects a date filter that is not a date (validation)", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie } = await createAuthedUser(request);
+
+    // Act + Assert: a bad value is an error, not silently ignored (which would
+    // return everything, unfiltered).
+    for (const query of ["?startDate=not-a-date", "?endDate=2026-13-45"]) {
+      const res = await request.get(`/api/transactions${query}`, {
+        headers: withSession(cookie),
+      });
+      await expectValidationError(res);
+    }
+  });
+
+  test("rejects a page or limit that is not a whole number (validation)", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie } = await createAuthedUser(request);
+
+    // Act + Assert: none of these may quietly fall back to the defaults.
+    for (const query of [
+      "?page=abc",
+      "?limit=abc",
+      "?page=1.5",
+      "?limit=2x",
+    ]) {
+      const res = await request.get(`/api/transactions${query}`, {
+        headers: withSession(cookie),
+      });
+      await expectValidationError(res);
+    }
+  });
+
+  test("treats empty filters as no filter", async ({ request }) => {
+    // Arrange: a client may send the parameters with no value.
+    const { cookie, userId } = await createAuthedUser(request);
+    const item = await seedItemWithAccount(userId);
+    await seedTransactions({
+      userId,
+      itemId: item.itemId,
+      accountId: item.accountId,
+      count: 2,
+    });
+
+    // Act
+    const data = await listTransactions(
+      request,
+      cookie,
+      "?itemId=&accountId=&startDate=&endDate=&page=&limit=",
+    );
+
+    // Assert
+    expect(data.pagination).toEqual({ page: 1, limit: 50, total: 2, totalPages: 1 });
+  });
+
   test("rejects a non-positive page (validation)", async ({ request }) => {
     const { cookie } = await createAuthedUser(request);
     const res = await request.get("/api/transactions?page=0", {
