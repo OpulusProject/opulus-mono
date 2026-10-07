@@ -8,7 +8,7 @@ packages consistent.
 
 | Package | Owns |
 | --- | --- |
-| `opulus-core` | Prisma schema and migrations, the Plaid client, data-access services, config, logging, the shared error classes and error handler, and the DTOs |
+| `opulus-core` | Prisma schema and migrations, repositories (data access), gateways (external APIs), the services both apps share, config, logging, the shared error classes and error handler, and the DTOs |
 | `opulus-backend` | The REST API (Express) and Better Auth |
 | `opulus-webhooks` | The Plaid webhook receiver, its Redis queue and the handlers |
 | `opulus-frontend` | The React app |
@@ -20,7 +20,7 @@ both the backend and the webhooks service need something, it lives in core.
 ## Backend request flow
 
 ```
-route -> requireSession -> validate / validateQuery -> controller -> backend service -> core service
+route -> requireSession -> validate / validateQuery -> controller -> service -> repository / gateway
 ```
 
 Each layer has one job.
@@ -43,9 +43,11 @@ Plaid, don't use Prisma and don't decide who may do what. A controller types
 its response as `Response<<Name>Response>` so the compiler checks what it
 sends. Errors go to `next(error)`.
 
-**Backend services** (`opulus-backend/src/services/<resource>/<verb><Noun>.ts`)
-do the multi-step work for one operation, such as deleting an item (Plaid, then
-a database transaction) or creating a link token. A backend service:
+**Services** do the multi-step work for one operation, such as deleting an item
+(Plaid, then a database transaction) or creating a link token. They live in
+`opulus-backend/src/services/<resource>/<verb><Noun>.ts`, or in
+`opulus-core/src/services` when the webhooks service needs the same logic (the
+transaction and liability syncs). A service:
 - takes one params object (`{ userId, ... }`) and exports its `<Name>Params`
   and `<Name>Result` types;
 - decides authorization itself: it fetches items with `getItem({ userId, itemId })`,
@@ -53,18 +55,21 @@ a database transaction) or creating a link token. A backend service:
 - knows nothing about Express (no `req`, no `res`);
 - throws `AppError` subclasses.
 
-**Core services** (`opulus-core/src/services`) are data access and provider
-calls for a single resource (`itemService`, `accountService`, `plaidService`).
-They are shared by the backend and the webhooks service.
+**Repositories** (`opulus-core/src/repositories`) are data access, one per model
+(`itemRepository`, `accountRepository`, ...). They use Prisma and nothing else:
+no Plaid calls and no multi-step operations. They also hold the functions that
+turn Plaid's shapes into our rows (`normalizePlaid*`).
 
-**Two folders are called `services`, and they are two tiers.** A core service is
-about one resource (one model, or the Plaid API). A backend service coordinates
-several of them for one operation a user asks for, and decides who may do it.
-Backend services call core services; core never imports from the backend. When
-you talk or write about them, say "backend service" or "core service".
+**Gateways** (`opulus-core/src/gateways`) wrap an external API (`plaidGateway`).
+They don't use the database.
 
-A read endpoint that calls one core service and maps rows to DTOs doesn't need a
-backend service of its own.
+**Dependencies point down:** controller → service → repository or gateway. Core
+never imports from the backend, and the backend and the webhooks service don't
+import from each other, which is why logic they share lives in core. The webhook
+handlers are the webhooks service's entry layer, the counterpart of controllers.
+
+A read endpoint that calls one repository and maps rows to DTOs doesn't need a
+service of its own.
 
 ## DTOs
 
