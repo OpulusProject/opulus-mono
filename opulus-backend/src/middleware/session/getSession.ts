@@ -1,4 +1,4 @@
-import { auth } from "@/client/auth.js";
+import { auth } from "@/auth.js";
 import { logger } from "@opulus/core";
 import { fromNodeHeaders } from "better-auth/node";
 import { IncomingHttpHeaders } from "http";
