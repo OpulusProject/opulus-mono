@@ -77,3 +77,27 @@ export function validateQuery<T extends ZodSchema>(schema: T) {
     }
   };
 }
+
+/**
+ * Read the query parameters that `validateQuery` parsed for this request.
+ *
+ * `validateQuery` stores the schema's parsed output, so pass the same schema
+ * as the type argument to get its inferred type. This keeps the one type
+ * assertion in a single place and fails with a clear error, instead of an
+ * obscure one, if a route forgot to apply the middleware.
+ *
+ * @throws Error if `validateQuery` did not run for this request
+ *
+ * @example
+ * const { type } = getValidatedQuery<typeof getBankAccountsQuerySchema>(req);
+ */
+export function getValidatedQuery<T extends ZodSchema>(
+  req: Request
+): z.infer<T> {
+  if (req.validatedQuery === undefined) {
+    throw new Error(
+      "validateQuery middleware must run before reading validated query parameters"
+    );
+  }
+  return req.validatedQuery as z.infer<T>;
+}

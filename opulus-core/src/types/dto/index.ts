@@ -4,6 +4,7 @@
  * Organized by domain/endpoint following the controller pattern
  */
 
+export * from './bankAccounts/index.js';
 export * from './auth/index.js';
 export * from './common.js';
 export * from './items/index.js';

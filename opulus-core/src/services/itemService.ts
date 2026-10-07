@@ -2,6 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import type { PlaidErrorType, Item as PlaidItem } from "plaid";
 import prisma from "../client/prisma.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
+import { accountDtoSelect } from "./bankAccountService.js";
 
 export interface CreateItemData {
   plaidItemId: string;
@@ -253,21 +254,7 @@ class ItemService {
       const items = await this.prisma.item.findMany({
         where: { userId },
         include: {
-          bankAccounts: {
-            select: {
-              id: true,
-              name: true,
-              officialName: true,
-              type: true,
-              subtype: true,
-              mask: true,
-              balanceAvailable: true,
-              balanceCurrent: true,
-              balanceLimit: true,
-              isoCurrencyCode: true,
-              liabilityDetails: true,
-            },
-          },
+          bankAccounts: { select: accountDtoSelect },
         },
         orderBy: {
           createdAt: "desc",

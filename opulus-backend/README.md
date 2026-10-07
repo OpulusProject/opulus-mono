@@ -38,6 +38,10 @@ All authentication routes are handled by Better Auth at `/api/auth/*`:
 
 - `GET /api/institutions` - Search Plaid institutions (requires authentication)
 
+### Bank Accounts
+
+- `GET /api/bank-accounts` - Get the user's bank accounts across all connections, optionally filtered by `type` (`depository`, `investment`, `credit`, `loan`, `other`; repeat the parameter for several, e.g. `?type=credit&type=loan`) (requires authentication)
+
 ### Items
 
 - `GET /api/items` - Get all connected items for current user (requires authentication)
