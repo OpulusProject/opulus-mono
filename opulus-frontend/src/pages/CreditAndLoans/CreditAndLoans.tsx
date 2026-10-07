@@ -1,5 +1,6 @@
+import type { AccountWithConnection } from '@opulus/core';
+
 import {
-  type AccountEntry,
   type AccountGroupConfig,
   AccountsOverview,
   type SummaryStat,
@@ -9,17 +10,16 @@ import {
   formatTotals,
   getOverallUtilization,
 } from '@/utils/accountDisplay';
-import { getAccountKind } from '@/utils/accountKind';
+import { getAccountType } from '@/utils/accountType';
 
 const GROUPS: AccountGroupConfig[] = [
-  { kind: 'credit', title: 'Credit cards' },
-  { kind: 'loan', title: 'Loans and lines of credit' },
+  { type: 'credit', title: 'Credit cards' },
+  { type: 'loan', title: 'Loans and lines of credit' },
 ];
 
-function getSummary(entries: AccountEntry[]): SummaryStat[] {
-  const accounts = entries.map((entry) => entry.account);
-  const cards = accounts.filter((a) => getAccountKind(a) === 'credit');
-  const loans = accounts.filter((a) => getAccountKind(a) === 'loan');
+function getSummary(accounts: AccountWithConnection[]): SummaryStat[] {
+  const cards = accounts.filter((a) => getAccountType(a) === 'credit');
+  const loans = accounts.filter((a) => getAccountType(a) === 'loan');
   const utilization = getOverallUtilization(cards);
 
   return [

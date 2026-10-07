@@ -22,6 +22,7 @@ export function useUpdateItemAccounts() {
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ['items'] });
+      void queryClient.invalidateQueries({ queryKey: ['accounts'] });
     },
   });
 }
