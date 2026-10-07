@@ -1,14 +1,14 @@
 /**
- * Get Accounts endpoint DTOs
+ * Get Bank Accounts endpoint DTOs
  */
 
-import { Account, toAccountDTO } from "../items/bankAccount.js";
+import { Account, toBankAccountDTO } from "../items/bankAccount.js";
 
 /**
- * Account types, matching Plaid's account `type`. `other` also covers any type
+ * Bank account types, matching Plaid's account `type`. `other` also covers any type
  * we do not recognize.
  */
-export const ACCOUNT_TYPES = [
+export const BANK_ACCOUNT_TYPES = [
   "depository",
   "investment",
   "credit",
@@ -16,45 +16,45 @@ export const ACCOUNT_TYPES = [
   "other",
 ] as const;
 
-export type AccountType = (typeof ACCOUNT_TYPES)[number];
+export type BankAccountType = (typeof BANK_ACCOUNT_TYPES)[number];
 
 /**
  * The connection (item) an account belongs to, just enough to say where it is
  * and whether that connection has a problem.
  */
-export interface AccountConnection {
+export interface BankAccountConnection {
   id: string;
   institutionName: string | null;
   errorCode: string | null;
 }
 
-export interface AccountWithConnection extends Account {
-  connection: AccountConnection;
+export interface BankAccountWithConnection extends Account {
+  connection: BankAccountConnection;
 }
 
 /**
  * Accounts API response
  */
-export interface AccountsResponse {
+export interface BankAccountsResponse {
   data: {
-    accounts: AccountWithConnection[];
+    accounts: BankAccountWithConnection[];
   };
 }
 
 /**
  * Transform a stored bank account row (with its item) to the public DTO
  */
-export function toAccountWithConnectionDTO(
-  account: Parameters<typeof toAccountDTO>[0] & {
+export function toBankAccountWithConnectionDTO(
+  account: Parameters<typeof toBankAccountDTO>[0] & {
     item: {
       id: string;
       institutionName: string | null;
       errorCode: string | null;
     };
   }
-): AccountWithConnection {
+): BankAccountWithConnection {
   return {
-    ...toAccountDTO(account),
+    ...toBankAccountDTO(account),
     connection: {
       id: account.item.id,
       institutionName: account.item.institutionName,

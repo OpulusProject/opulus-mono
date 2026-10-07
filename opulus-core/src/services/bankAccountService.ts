@@ -1,11 +1,11 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import type { AccountBase as PlaidAccount } from "plaid";
 import prisma from "../client/prisma.js";
-import type { AccountType } from "../types/dto/accounts/getAccounts.js";
+import type { BankAccountType } from "../types/dto/bankAccounts/getBankAccounts.js";
 import { AppError, ConflictError } from "../utils/errors.js";
 
 /**
- * Account columns exposed through the API (see toAccountDTO). Shared by every
+ * Account columns exposed through the API (see toBankAccountDTO). Shared by every
  * query that returns accounts so they cannot drift apart.
  */
 export const accountDtoSelect = {
@@ -33,7 +33,7 @@ const KNOWN_PLAID_TYPES = [
 
 /** Build the `type` filter for the requested account types. */
 function typeFilter(
-  types: AccountType[] | undefined
+  types: BankAccountType[] | undefined
 ): Prisma.BankAccountWhereInput {
   if (!types?.length) return {};
 
@@ -131,7 +131,7 @@ class BankAccountService {
    * @returns Accounts with the connection each belongs to, by name
    * @throws AppError if database error occurs
    */
-  async getAllByUserId(userId: string, types?: AccountType[]) {
+  async getAllByUserId(userId: string, types?: BankAccountType[]) {
     try {
       return await this.prisma.bankAccount.findMany({
         where: { userId, ...typeFilter(types) },

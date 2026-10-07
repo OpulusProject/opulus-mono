@@ -28,7 +28,7 @@ async function listAccounts(
   cookie: string,
   query = "",
 ): Promise<AccountRow[]> {
-  const res = await request.get(`/api/accounts${query}`, {
+  const res = await request.get(`/api/bank-accounts${query}`, {
     headers: withSession(cookie),
   });
   await expectOk(res);
@@ -36,13 +36,13 @@ async function listAccounts(
 }
 
 /**
- * This file: the accounts list endpoint. Items and accounts have no create
+ * This file: the bank accounts list endpoint. Items and accounts have no create
  * endpoint, so they are seeded directly into the isolated test DB and verified
  * over HTTP.
  */
-test.describe("GET /api/accounts", () => {
+test.describe("GET /api/bank-accounts", () => {
   test("requires authentication (401)", async ({ request }) => {
-    const res = await request.get("/api/accounts");
+    const res = await request.get("/api/bank-accounts");
     await expectStatus(res, 401);
   });
 
@@ -108,7 +108,7 @@ test.describe("GET /api/accounts", () => {
     expect(accounts.map((a) => a.id)).toEqual([card.accountId]);
   });
 
-  test("accepts several types, repeated or comma-separated", async ({
+  test("accepts several types by repeating the type parameter", async ({
     request,
   }) => {
     // Arrange
@@ -120,23 +120,31 @@ test.describe("GET /api/accounts", () => {
     const loan = await seedItemWithAccount(userId, {
       account: { type: "loan" },
     });
-    const expected = [card.accountId, loan.accountId].sort();
 
     // Act
-    const repeated = await listAccounts(
+    const accounts = await listAccounts(
       request,
       cookie,
       "?type=credit&type=loan",
     );
-    const commaSeparated = await listAccounts(
-      request,
-      cookie,
-      "?type=credit,loan",
-    );
 
     // Assert
-    expect(repeated.map((a) => a.id).sort()).toEqual(expected);
-    expect(commaSeparated.map((a) => a.id).sort()).toEqual(expected);
+    expect(accounts.map((a) => a.id).sort()).toEqual(
+      [card.accountId, loan.accountId].sort(),
+    );
+  });
+
+  test("rejects a comma-separated list of types (400)", async ({ request }) => {
+    // Arrange
+    const { cookie } = await createAuthedUser(request);
+
+    // Act
+    const res = await request.get("/api/bank-accounts?type=credit,loan", {
+      headers: withSession(cookie),
+    });
+
+    // Assert
+    await expectValidationError(res);
   });
 
   test("treats the legacy brokerage type as investment, and unrecognized types as other", async ({
@@ -165,7 +173,7 @@ test.describe("GET /api/accounts", () => {
     const { cookie } = await createAuthedUser(request);
 
     // Act
-    const res = await request.get("/api/accounts?type=savings", {
+    const res = await request.get("/api/bank-accounts?type=savings", {
       headers: withSession(cookie),
     });
 

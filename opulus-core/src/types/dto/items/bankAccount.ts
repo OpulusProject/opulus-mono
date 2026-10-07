@@ -24,7 +24,7 @@ export interface Account {
  * Transform a stored bank account row to its public DTO
  * (converts Prisma decimals to numbers).
  */
-export function toAccountDTO(account: {
+export function toBankAccountDTO(account: {
   id: string;
   name: string;
   officialName: string | null;

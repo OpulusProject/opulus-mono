@@ -4,7 +4,7 @@
 
 import type { PlaidErrorType } from "plaid";
 
-import { Account, toAccountDTO } from "./bankAccount.js";
+import { Account, toBankAccountDTO } from "./bankAccount.js";
 
 /**
  * Public DTO for Item response
@@ -48,7 +48,7 @@ export function toItemPublicDTO(item: {
   errorMessage: string | null;
   displayMessage: string | null;
   syncedAt: Date | null;
-  bankAccounts: Array<Parameters<typeof toAccountDTO>[0]>;
+  bankAccounts: Array<Parameters<typeof toBankAccountDTO>[0]>;
 }): ItemPublicDTO {
   return {
     id: item.id,
@@ -60,6 +60,6 @@ export function toItemPublicDTO(item: {
     errorMessage: item.errorMessage,
     displayMessage: item.displayMessage,
     syncedAt: item.syncedAt ? item.syncedAt.toISOString() : null,
-    accounts: item.bankAccounts.map(toAccountDTO),
+    accounts: item.bankAccounts.map(toBankAccountDTO),
   };
 }

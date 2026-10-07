@@ -1,7 +1,7 @@
 import {
-  getAccountsController,
-  getAccountsQuerySchema,
-} from "@/controllers/accounts/getAccountsController.js";
+  getBankAccountsController,
+  getBankAccountsQuerySchema,
+} from "@/controllers/bankAccounts/getBankAccountsController.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
 import { validateQuery } from "@/middleware/validation.js";
 import { Router } from "express";
@@ -9,14 +9,14 @@ import { Router } from "express";
 const router: ReturnType<typeof Router> = Router();
 
 /**
- * Accounts routes
+ * Bank account routes
  * All routes require authentication
  */
 router.get(
   "/",
   requireSession,
-  validateQuery(getAccountsQuerySchema),
-  getAccountsController
+  validateQuery(getBankAccountsQuerySchema),
+  getBankAccountsController
 );
 
 export default router;

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { sessionController } from "@/controllers/session/sessionController.js";
-import accountsRouter from "./accounts.js";
+import bankAccountsRouter from "./bankAccounts.js";
 import institutionsRouter from "./institutions.js";
 import itemsRouter from "./items.js";
 import linkTokensRouter from "./linkTokens.js";
@@ -19,8 +19,8 @@ router.get("/healthcheck", (req, res) => {
 
 router.get("/session", sessionController);
 
-// Accounts routes
-router.use("/accounts", accountsRouter);
+// Bank account routes
+router.use("/bank-accounts", bankAccountsRouter);
 
 // Institutions routes
 router.use("/institutions", institutionsRouter);
