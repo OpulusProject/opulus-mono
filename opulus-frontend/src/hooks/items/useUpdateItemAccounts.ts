@@ -1,10 +1,7 @@
+import { UpdateItemAccountsResponse } from '@opulus/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
-
-export interface UpdateItemAccountsResponse {
-  data: { itemId: string; created: number; updated: number };
-}
 
 /**
  * Reconcile a persisted Item's accounts with Plaid after a Link

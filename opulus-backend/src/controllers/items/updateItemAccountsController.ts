@@ -1,6 +1,10 @@
 import { getSession } from "@/services/session/getSession.js";
 import { updateItemAccounts } from "@/services/items/updateItemAccounts.js";
-import { itemService, UnauthorizedError } from "@opulus/core";
+import {
+  itemService,
+  UnauthorizedError,
+  UpdateItemAccountsResponse,
+} from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 
 /**
@@ -12,7 +16,7 @@ import { NextFunction, Request, Response } from "express";
  */
 export async function updateItemAccountsController(
   req: Request,
-  res: Response,
+  res: Response<UpdateItemAccountsResponse>,
   next: NextFunction
 ) {
   try {

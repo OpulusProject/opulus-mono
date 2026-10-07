@@ -1,5 +1,10 @@
 import { getSession } from "@/services/session/getSession.js";
-import { plaidService, UnauthorizedError } from "@opulus/core";
+import {
+  InstitutionsResponse,
+  plaidService,
+  toInstitutionDTO,
+  UnauthorizedError,
+} from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 
 /**
@@ -8,7 +13,7 @@ import { NextFunction, Request, Response } from "express";
  */
 export async function getInstitutionsController(
   req: Request,
-  res: Response,
+  res: Response<InstitutionsResponse>,
   next: NextFunction
 ) {
   try {
@@ -23,7 +28,7 @@ export async function getInstitutionsController(
 
     res.status(200).json({
       data: {
-        institutions: institutionsResponse.institutions,
+        institutions: institutionsResponse.institutions.map(toInstitutionDTO),
         total: institutionsResponse.total,
         count: institutionsResponse.institutions.length,
       },

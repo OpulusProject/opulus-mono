@@ -1,6 +1,6 @@
 import { getSession } from "@/services/session/getSession.js";
 import { createItem } from "@/services/items/createItem.js";
-import { UnauthorizedError } from "@opulus/core";
+import { CreateItemResponse, UnauthorizedError } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
@@ -14,7 +14,7 @@ export const createItemBodySchema = z.object({
  */
 export async function createItemController(
   req: Request,
-  res: Response,
+  res: Response<CreateItemResponse>,
   next: NextFunction
 ) {
   try {

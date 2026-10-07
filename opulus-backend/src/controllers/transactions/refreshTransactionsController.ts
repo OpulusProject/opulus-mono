@@ -2,6 +2,7 @@ import { getSession } from "@/services/session/getSession.js";
 import {
   itemService,
   plaidService,
+  RefreshTransactionsResponse,
   UnauthorizedError,
 } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
@@ -24,7 +25,7 @@ export const refreshTransactionsBodySchema = z.object({
  */
 export async function refreshTransactionsController(
   req: Request,
-  res: Response,
+  res: Response<RefreshTransactionsResponse>,
   next: NextFunction
 ) {
   try {

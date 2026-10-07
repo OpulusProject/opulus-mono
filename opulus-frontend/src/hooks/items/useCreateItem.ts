@@ -1,17 +1,8 @@
+import { CreateItemRequest, CreateItemResponse } from '@opulus/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 
 import { apiClient } from '@/lib/api/client';
-
-export interface CreateItemInput {
-  publicToken: string;
-  institutionId: string;
-}
-
-export interface CreateItemResponse {
-  data: { itemId: string; duplicate: boolean };
-  message?: string;
-}
 
 /**
  * Exchange a Plaid Link public_token for an access token and persist the Item.
@@ -22,7 +13,7 @@ export interface CreateItemResponse {
 export function useCreateItem() {
   const queryClient = useQueryClient();
 
-  return useMutation<CreateItemResponse, Error, CreateItemInput>({
+  return useMutation<CreateItemResponse, Error, CreateItemRequest>({
     mutationFn: async (input) => {
       try {
         const response = await apiClient.post<CreateItemResponse>(

@@ -31,16 +31,16 @@ test.describe("GET /api/institutions (sandbox)", () => {
     await expectOk(res);
     const body = (await res.json()) as {
       data: {
-        institutions: Array<{ institution_id: string; name: string }>;
+        institutions: Array<{ id: string; name: string }>;
         total: number;
         count: number;
       };
     };
     expect(body.data.institutions.length).toBeGreaterThan(0);
     expect(body.data.count).toBe(body.data.institutions.length);
-    // Shape check against the Plaid Institution contract.
+    // Shape check against the InstitutionDTO contract.
     for (const inst of body.data.institutions) {
-      expect(typeof inst.institution_id).toBe("string");
+      expect(typeof inst.id).toBe("string");
       expect(typeof inst.name).toBe("string");
       expect(inst.name.length).toBeGreaterThan(0);
     }

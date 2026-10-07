@@ -3,4 +3,5 @@
  */
 
 export * from './getTransactions.js';
+export * from './refreshTransactions.js';
 

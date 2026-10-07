@@ -15,7 +15,7 @@ import { NextFunction, Request, Response } from "express";
  */
 export async function deleteItemController(
   req: Request,
-  res: Response,
+  res: Response<void>,
   next: NextFunction
 ) {
   try {
