@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { expectOk, expectStatus } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
+import { testDb } from "../../../shared/db.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
   createSandboxItem,
@@ -98,6 +99,53 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
         Date.parse(previous!.syncedAt),
       );
     }
+  });
+
+  test("keeps the new-accounts prompt until new accounts are added, then clears it", async ({
+    request,
+  }) => {
+    // Arrange: an item flagged as having new accounts to share. A
+    // NEW_ACCOUNTS_AVAILABLE webhook sets this flag in practice, but Plaid's
+    // sandbox only fires that webhook for items created through Link with
+    // Account Select v2 (see the webhook end-to-end suite, whose test of it
+    // skips for that reason). So the flag is set directly here, to test what
+    // update-accounts does with it. Replace this with a fired webhook once
+    // the sandbox can send one for our items.
+    const creds = requireSandboxCredentials();
+    const { cookie } = await createAuthedUser(request);
+    const { itemId } = await createSandboxItem(request, cookie, creds);
+    const db = testDb();
+    await db.item.update({
+      where: { id: itemId },
+      data: { newAccountsAvailable: true },
+    });
+    const flag = async () =>
+      (await db.item.findUniqueOrThrow({ where: { id: itemId } }))
+        .newAccountsAvailable;
+    const updateAccounts = () =>
+      request.post(`/api/items/${itemId}/update-accounts`, {
+        headers: withSession(cookie),
+      });
+
+    // Act 1: the user finishes update mode but shares nothing new.
+    const first = await updateAccounts();
+
+    // Assert 1: nothing was added, so the prompt stays.
+    await expectOk(first);
+    expect((await first.json()).data.created).toBe(0);
+    expect(await flag()).toBe(true);
+
+    // Act 2: Plaid now returns an account we don't have. The sandbox can't
+    // add an account to an existing item, so that is simulated by removing
+    // our row for one.
+    const account = await db.account.findFirstOrThrow({ where: { itemId } });
+    await db.account.delete({ where: { id: account.id } });
+    const second = await updateAccounts();
+
+    // Assert 2: it is added and the prompt goes away.
+    await expectOk(second);
+    expect((await second.json()).data.created).toBe(1);
+    expect(await flag()).toBe(false);
   });
 
   test("rejects an item owned by a different user (401)", async ({
