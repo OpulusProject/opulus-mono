@@ -20,7 +20,7 @@ both the backend and the webhooks service need something, it lives in core.
 ## Backend request flow
 
 ```
-route -> requireSession -> validate / validateQuery -> controller -> use case -> core services
+route -> requireSession -> validate / validateQuery -> controller -> backend service -> core service
 ```
 
 Each layer has one job.
@@ -43,9 +43,9 @@ Plaid, don't use Prisma and don't decide who may do what. A controller types
 its response as `Response<<Name>Response>` so the compiler checks what it
 sends. Errors go to `next(error)`.
 
-**Use cases** (`src/services/<resource>/<verb><Noun>.ts`) do the multi-step work
-for one operation, such as deleting an item (Plaid, then a database
-transaction) or creating a link token. A use case:
+**Backend services** (`opulus-backend/src/services/<resource>/<verb><Noun>.ts`)
+do the multi-step work for one operation, such as deleting an item (Plaid, then
+a database transaction) or creating a link token. A backend service:
 - takes one params object (`{ userId, ... }`) and exports its `<Name>Params`
   and `<Name>Result` types;
 - decides authorization itself: it fetches items with `getItem({ userId, itemId })`,
@@ -57,8 +57,14 @@ transaction) or creating a link token. A use case:
 calls for a single resource (`itemService`, `accountService`, `plaidService`).
 They are shared by the backend and the webhooks service.
 
+**Two folders are called `services`, and they are two tiers.** A core service is
+about one resource (one model, or the Plaid API). A backend service coordinates
+several of them for one operation a user asks for, and decides who may do it.
+Backend services call core services; core never imports from the backend. When
+you talk or write about them, say "backend service" or "core service".
+
 A read endpoint that calls one core service and maps rows to DTOs doesn't need a
-use case of its own.
+backend service of its own.
 
 ## DTOs
 
