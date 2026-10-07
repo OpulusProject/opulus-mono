@@ -141,3 +141,27 @@ ngrok http 8081
 ```
 
 Then use the ngrok URL: `https://your-id.ngrok.io/webhook/plaid`
+
+## End-to-end tests with Plaid's sandbox
+
+The service suite can only check that the receiver rejects bad requests, because
+Plaid signs the genuine ones. `opulus-tests/integration/webhooks` instead has
+Plaid's sandbox deliver real webhooks (`/sandbox/item/fire_webhook`,
+`/sandbox/item/reset_login`) and waits for their effect on the item.
+
+To run it locally you need the backend and the receiver running against the same
+test database, Redis, and a public URL for the receiver:
+
+```bash
+pnpm dev:webhooks:tunnel   # prints the public URL for the receiver
+```
+
+```bash
+WEBHOOK_PUBLIC_URL=<public url> TEST_BASE_URL=http://localhost:8080 \
+TEST_DATABASE_URL=<test db> PLAID_SANDBOX_CLIENT_ID=... PLAID_SANDBOX_SECRET=... \
+pnpm --filter @opulus/tests test:integration-webhooks
+```
+
+Use a separate Redis for the receiver under test if you also have a dev receiver
+running, so the two don't take each other's jobs. In CI the
+`Webhook E2E` workflow does all of this with a temporary tunnel.

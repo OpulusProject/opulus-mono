@@ -1,0 +1,165 @@
+# Webhook receiver END-TO-END suite.
+#
+# Plaid signs the webhooks it sends, so the service suite can only prove the
+# receiver rejects bad requests. This workflow lets Plaid's sandbox deliver
+# real ones: it runs the backend and the webhooks receiver, exposes the
+# receiver through a temporary public tunnel, and runs the specs in
+# opulus-tests/integration/webhooks, which link sandbox items pointing at that
+# tunnel and make the sandbox fire webhooks at them.
+#
+# Not a PR gate. It depends on a public tunnel and Plaid delivering over the
+# internet, so it runs nightly, on demand, and on PRs that change the suite or
+# this workflow. A tunnel outage then shows up as one failed nightly run
+# instead of blocking merges.
+#
+# Needs the PLAID_SANDBOX_CLIENT_ID / PLAID_SANDBOX_SECRET repository secrets
+# (the same ones the backend integration suite uses). The receiver must be
+# given the same credentials, since it fetches Plaid's webhook verification
+# key with them.
+
+name: Webhook E2E
+
+on:
+  schedule:
+    - cron: "30 7 * * *" # 07:30 UTC nightly
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/webhook-e2e.yml"
+      - "opulus-tests/integration/webhooks/**"
+      - "opulus-webhooks/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: webhook-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  webhook-e2e:
+    name: Webhook receiver end-to-end
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      TEST_DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      BETTER_AUTH_SECRET: ci-webhook-e2e-secret-not-for-production
+      CLIENT_URL: http://localhost:5173
+      NODE_ENV: test
+      PORT: "8080"
+      WEBHOOK_PORT: "8081"
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
+      PLAID_CLIENT_ID: ${{ secrets.PLAID_SANDBOX_CLIENT_ID }}
+      PLAID_SECRET: ${{ secrets.PLAID_SANDBOX_SECRET }}
+      PLAID_ENV: sandbox
+      PLAID_SANDBOX_CLIENT_ID: ${{ secrets.PLAID_SANDBOX_CLIENT_ID }}
+      PLAID_SANDBOX_SECRET: ${{ secrets.PLAID_SANDBOX_SECRET }}
+      TEST_BASE_URL: http://localhost:8080
+
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app_dev
+          POSTGRES_DB: app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @opulus/core prisma:generate
+
+      - name: Build core package
+        run: pnpm --filter @opulus/core build
+
+      - name: Apply database migrations
+        run: pnpm --filter @opulus/core exec prisma migrate deploy --schema=./prisma/schema.prisma
+
+      - name: Boot backend service
+        run: |
+          pnpm --filter @opulus/backend exec tsx src/server.ts > /tmp/backend.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf "$TEST_BASE_URL/health" >/dev/null; then
+              echo "Backend is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Backend did not become healthy in time" >&2
+          cat /tmp/backend.log >&2
+          exit 1
+
+      - name: Boot webhooks receiver
+        run: |
+          pnpm --filter @opulus/webhooks exec tsx src/server.ts > /tmp/webhooks.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf "http://localhost:8081/health" >/dev/null; then
+              echo "Webhooks receiver is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Webhooks receiver did not become healthy in time" >&2
+          cat /tmp/webhooks.log >&2
+          exit 1
+
+      # A Cloudflare quick tunnel: no account or token, and it gives the
+      # receiver a public https URL for Plaid to deliver to.
+      - name: Open a public tunnel to the receiver
+        run: |
+          curl -fsSL -o /tmp/cloudflared \
+            https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          chmod +x /tmp/cloudflared
+          /tmp/cloudflared tunnel --no-autoupdate --url http://localhost:8081 > /tmp/tunnel.log 2>&1 &
+          for i in $(seq 1 60); do
+            URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' /tmp/tunnel.log | head -1 || true)
+            if [ -n "$URL" ] && curl -sf "$URL/health" >/dev/null; then
+              echo "Receiver reachable at $URL"
+              echo "WEBHOOK_PUBLIC_URL=$URL" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Tunnel did not become reachable in time" >&2
+          cat /tmp/tunnel.log >&2
+          exit 1
+
+      - name: Run webhook end-to-end tests
+        run: pnpm --filter @opulus/tests test:integration-webhooks
+
+      - name: Show service logs on failure
+        if: failure()
+        run: |
+          echo "--- backend"; tail -n 100 /tmp/backend.log || true
+          echo "--- webhooks receiver"; tail -n 200 /tmp/webhooks.log || true
