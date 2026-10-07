@@ -1,4 +1,4 @@
-# Service API test suites, run as required status checks on every PR to main.
+# Service API test suites, run as required status checks on every PR, including ones stacked on another branch.
 #
 # Two independent gates, one per HTTP service:
 #   - "Backend service-api tests"  -> exercises @opulus/backend over REST
@@ -19,8 +19,6 @@ name: Service API Tests
 
 on:
   pull_request:
-    branches:
-      - main
 
 permissions:
   contents: read
