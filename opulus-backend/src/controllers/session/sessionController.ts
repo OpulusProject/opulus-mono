@@ -1,6 +1,6 @@
-import { Request, Response, NextFunction } from "express";
-import { getSession } from "@/services/session/getSession.js";
-import { SessionResponse, toSessionDTO, UnauthorizedError } from "@opulus/core";
+import { getRequestSession } from "@/middleware/session/requireSession.js";
+import { SessionResponse, toSessionDTO } from "@opulus/core";
+import { NextFunction, Request, Response } from "express";
 
 /**
  * Get current user session
@@ -12,11 +12,7 @@ export async function sessionController(
   next: NextFunction
 ) {
   try {
-    const session = await getSession(req.headers);
-
-    if (!session) {
-      throw new UnauthorizedError("No active session");
-    }
+    const session = getRequestSession(res);
 
     res.status(200).json({ data: toSessionDTO(session) });
   } catch (error) {

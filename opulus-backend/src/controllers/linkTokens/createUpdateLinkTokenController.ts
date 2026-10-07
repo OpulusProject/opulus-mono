@@ -1,4 +1,4 @@
-import { getSession } from "@/services/session/getSession.js";
+import { getRequestSession } from "@/middleware/session/requireSession.js";
 import {
   itemService,
   plaidService,
@@ -25,10 +25,7 @@ export async function createUpdateLinkTokenController(
   next: NextFunction
 ) {
   try {
-    const session = await getSession(req.headers);
-    if (!session?.user) {
-      throw new UnauthorizedError("Authentication required");
-    }
+    const session = getRequestSession(res);
 
     const { itemId, mode } = updateLinkTokenBodySchema.parse(req.body);
     const item = await itemService.getById(itemId);

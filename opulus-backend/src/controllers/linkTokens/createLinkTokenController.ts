@@ -1,9 +1,8 @@
-import { getSession } from "@/services/session/getSession.js";
+import { getRequestSession } from "@/middleware/session/requireSession.js";
 import {
   linkSessionService,
   plaidService,
   LinkTokenResponse,
-  UnauthorizedError,
   userService,
 } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
@@ -18,11 +17,7 @@ export async function createLinkTokenController(
   next: NextFunction
 ) {
   try {
-    // Get authenticated user session
-    const session = await getSession(req.headers);
-    if (!session?.user) {
-      throw new UnauthorizedError("Authentication required");
-    }
+    const session = getRequestSession(res);
 
     const userId = session.user.id;
 
