@@ -28,8 +28,9 @@ export function validate<T extends ZodSchema>(schema: T) {
         );
       }
 
-      // Replace req.body with validated data (type-safe)
+      // Replace req.body with validated data, and keep it for getValidatedBody
       req.body = validationResult.data as z.infer<T>;
+      req.validatedBody = validationResult.data as z.infer<T>;
 
       // Continue to next middleware/controller
       next();
@@ -38,6 +39,30 @@ export function validate<T extends ZodSchema>(schema: T) {
       next(error);
     }
   };
+}
+
+/**
+ * Read the request body that `validate` parsed for this request, so a
+ * controller does not parse it a second time.
+ *
+ * `validate` stores the schema's parsed output, so pass the same schema as the
+ * type argument to get its inferred type. This keeps the one type assertion in
+ * a single place and fails with a clear error if a route forgot the middleware.
+ *
+ * @throws Error if `validate` did not run for this request
+ *
+ * @example
+ * const { itemId } = getValidatedBody<typeof refreshTransactionsBodySchema>(req);
+ */
+export function getValidatedBody<T extends ZodSchema>(
+  req: Request
+): z.infer<T> {
+  if (req.validatedBody === undefined) {
+    throw new Error(
+      "validate middleware must run before reading the validated request body"
+    );
+  }
+  return req.validatedBody as z.infer<T>;
 }
 
 /**

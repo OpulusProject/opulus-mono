@@ -95,30 +95,35 @@ This will:
 
    **Note:** This URL is automatically included in link tokens. Plaid will send webhooks to this URL automatically - no Dashboard configuration needed!
 
-### Testing ITEM_ADD_RESULT Webhook
+### Sending a webhook without the Link UI
 
-1. **Start everything (recommended):**
+Instead of linking a bank through Plaid Link each time, have Plaid's sandbox send
+a real signed webhook to your tunnel:
 
-   ```bash
-   pnpm dev:webhooks:local
-   ```
-
-   Or manually:
+1. **Start the receiver and the tunnel** (two terminals), and put the tunnel's
+   URL in `.env` as `PLAID_WEBHOOK_URL` as above:
 
    ```bash
-   # Terminal 1
    pnpm dev:webhooks
-
-   # Terminal 2
-   cd opulus-webhooks && pnpm tunnel
+   pnpm dev:webhooks:tunnel
    ```
 
-2. **Use Plaid Link** to connect a bank account (sandbox mode)
+2. **Fire a webhook.** This creates a throwaway sandbox item and asks Plaid to
+   send a `TRANSACTIONS` webhook for it to `PLAID_WEBHOOK_URL` (the default code
+   is `SYNC_UPDATES_AVAILABLE`):
 
-3. **Watch logs** - You should see:
+   ```bash
+   pnpm --filter @opulus/webhooks fire-webhook
+   pnpm --filter @opulus/webhooks fire-webhook -- --code DEFAULT_UPDATE
+   pnpm --filter @opulus/webhooks fire-webhook -- --code SYNC_UPDATES_AVAILABLE --institution ins_109508
    ```
-   [ITEM WEBHOOK] ITEM_ADD_RESULT - Item created: <item_id> for user <userId>
-   ```
+
+3. **Watch the receiver's logs.** You should see "Webhook received" and "Webhook
+   enqueued" (so Plaid's signature was verified and the job queued), then the
+   worker picking it up. The throwaway item is never saved to our database, so
+   the worker's handler then fails to find it and retries; that is expected. It
+   checks delivery, verification and queueing, not what a handler does to data.
+   For that, use the end-to-end tests below, which link real sandbox items.
 
 ### Troubleshooting
 

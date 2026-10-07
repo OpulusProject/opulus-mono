@@ -1,10 +1,7 @@
-import { getSession } from "@/services/session/getSession.js";
-import {
-  itemService,
-  plaidService,
-  LinkTokenResponse,
-  UnauthorizedError,
-} from "@opulus/core";
+import { getRequestSession } from "@/middleware/session/requireSession.js";
+import { getValidatedBody } from "@/middleware/validation.js";
+import { createUpdateLinkToken } from "@/services/linkTokens/createUpdateLinkToken.js";
+import { LinkTokenResponse } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
@@ -25,29 +22,18 @@ export async function createUpdateLinkTokenController(
   next: NextFunction
 ) {
   try {
-    const session = await getSession(req.headers);
-    if (!session?.user) {
-      throw new UnauthorizedError("Authentication required");
-    }
+    const session = getRequestSession(res);
 
-    const { itemId, mode } = updateLinkTokenBodySchema.parse(req.body);
-    const item = await itemService.getById(itemId);
+    const { itemId, mode } =
+      getValidatedBody<typeof updateLinkTokenBodySchema>(req);
 
-    if (item.userId !== session.user.id) {
-      throw new UnauthorizedError("You do not have access to this item");
-    }
-
-    const linkTokenResponse = await plaidService.createUpdateLinkToken(
-      item.accessToken,
-      session.user.id,
-      { selectAccounts: mode === "add-accounts" }
-    );
-
-    res.status(200).json({
-      data: {
-        linkToken: linkTokenResponse.link_token,
-      },
+    const { linkToken } = await createUpdateLinkToken({
+      userId: session.user.id,
+      itemId,
+      mode,
     });
+
+    res.status(200).json({ data: { linkToken } });
   } catch (error) {
     next(error);
   }

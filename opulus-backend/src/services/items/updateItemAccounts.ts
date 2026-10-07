@@ -1,12 +1,14 @@
 import {
   itemService,
-  liabilityService,
   logger,
   normalizePlaidAccount,
   plaidService,
   prisma,
   toItemErrorData,
+  trySyncItemLiabilities,
 } from "@opulus/core";
+
+import { getItem } from "./getItem.js";
 
 /**
  * Reconcile a persisted Item's accounts with Plaid's current view
@@ -20,8 +22,21 @@ import {
  * mutable fields refreshed. De-selection handling (soft or hard delete) is
  * deferred — accounts the user removes stay in the DB for now.
  */
-export async function updateItemAccounts(itemId: string) {
-  const item = await itemService.getById(itemId);
+export interface UpdateItemAccountsParams {
+  userId: string;
+  itemId: string;
+}
+
+export interface UpdateItemAccountsResult {
+  itemId: string;
+  created: number;
+  updated: number;
+}
+
+export async function updateItemAccounts(
+  params: UpdateItemAccountsParams
+): Promise<UpdateItemAccountsResult> {
+  const item = await getItem(params);
   const accountsResponse = await plaidService.getAccounts(item.accessToken);
 
   // The user just went through update mode, so whatever error or warning a
@@ -83,7 +98,7 @@ export async function updateItemAccounts(itemId: string) {
   }
 
   // New or re-consented accounts may now have liabilities data.
-  await liabilityService.trySyncForItem(item);
+  await trySyncItemLiabilities(item);
 
   logger.info(
     {

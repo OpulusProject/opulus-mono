@@ -17,6 +17,9 @@ export * from "./services/plaidService.js";
 export * from "./services/transactionService.js";
 export * from "./services/userService.js";
 
+// Sync exports
+export * from "./sync/index.js";
+
 // Type exports (DTOs)
 export * from "./types/dto/index.js";
 
@@ -29,5 +32,6 @@ export * from "./utils/plaidErrors.js";
 export { default as config } from "./config/default.js";
 
 // Middleware exports
+export { errorHandler } from "./middleware/errorHandler.js";
 export { requestIdMiddleware } from "./middleware/requestId.js";
 export { requestLogger } from "./middleware/requestLogger.js";

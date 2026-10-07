@@ -156,6 +156,38 @@ class AccountService {
     }
   }
 
+  /**
+   * Look up our account ids for some of an item's accounts, by Plaid's ids
+   * @param itemId - The item the accounts belong to
+   * @param providerAccountIds - Plaid account ids to look up
+   * @returns Map of Plaid account id to our account id (ids we don't have are absent)
+   * @throws AppError if database error occurs
+   */
+  async getIdsByProviderAccountIds(
+    itemId: string,
+    providerAccountIds: string[]
+  ): Promise<Map<string, string>> {
+    try {
+      const accounts = await this.prisma.account.findMany({
+        where: { itemId, providerAccountId: { in: providerAccountIds } },
+        select: { id: true, providerAccountId: true },
+      });
+      return new Map(
+        accounts.map((account) => [account.providerAccountId, account.id])
+      );
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get accounts: ${error.message}`
+          : "An unexpected error occurred while fetching accounts";
+      throw new AppError(message, 500);
+    }
+  }
+
   async deleteByItemId(
     itemId: string,
     client: Prisma.TransactionClient = this.prisma

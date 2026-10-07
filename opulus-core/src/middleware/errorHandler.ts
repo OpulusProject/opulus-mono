@@ -1,16 +1,17 @@
+import { NextFunction, Request, Response } from "express";
 import {
   AppError,
   ConflictError,
-  logger,
   NotFoundError,
   UnauthorizedError,
   ValidationError,
-} from "@opulus/core";
-import { NextFunction, Request, Response } from "express";
+} from "../utils/errors.js";
+import { logger } from "../utils/logger.js";
 
 /**
- * Global error handler middleware
- * Handles all errors and sends appropriate HTTP responses
+ * Global error handler middleware, shared by the backend and the webhooks
+ * receiver so both answer errors the same way. Handles all errors and sends
+ * appropriate HTTP responses; mount it after every route.
  */
 export function errorHandler(
   error: unknown,

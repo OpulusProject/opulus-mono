@@ -2,13 +2,13 @@
 import "dotenv/config";
 
 import {
+  errorHandler,
   logger,
   prisma,
   requestIdMiddleware,
   requestLogger,
 } from "@opulus/core";
 import express, { Router, raw } from "express";
-import { errorHandler } from "./middleware/errorHandler.js";
 import { verifyPlaidWebhook } from "./middleware/verifyPlaidWebhook.js";
 import { handlePlaidWebhook } from "./plaid/handlePlaidWebhook.js";
 import { handleItemWebhook } from "./plaid/handlers/item/index.js";
