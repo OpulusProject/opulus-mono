@@ -1,27 +1,27 @@
+import type { BankAccountWithConnection } from '@opulus/core';
+
 import {
-  type AccountEntry,
   type AccountGroupConfig,
   AccountsOverview,
   type SummaryStat,
 } from '@/common/AccountsOverview';
 import { formatTotals } from '@/utils/accountDisplay';
-import { getAccountKind } from '@/utils/accountKind';
+import { getAccountType } from '@/utils/accountType';
 
 const GROUPS: AccountGroupConfig[] = [
-  { kind: 'cash', title: 'Cash' },
-  { kind: 'investment', title: 'Investments' },
-  { kind: 'other', title: 'Other' },
+  { type: 'depository', title: 'Cash' },
+  { type: 'investment', title: 'Investments' },
+  { type: 'other', title: 'Other' },
 ];
 
 function countLabel(count: number) {
   return `${count} account${count === 1 ? '' : 's'}`;
 }
 
-function getSummary(entries: AccountEntry[]): SummaryStat[] {
-  const accounts = entries.map((entry) => entry.account);
-  const cash = accounts.filter((a) => getAccountKind(a) === 'cash');
+function getSummary(accounts: BankAccountWithConnection[]): SummaryStat[] {
+  const cash = accounts.filter((a) => getAccountType(a) === 'depository');
   const investments = accounts.filter(
-    (a) => getAccountKind(a) === 'investment'
+    (a) => getAccountType(a) === 'investment'
   );
 
   return [

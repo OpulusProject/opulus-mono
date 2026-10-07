@@ -20,6 +20,7 @@ export function useDeleteItem() {
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ['items'] });
+      void queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
       void queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
   });

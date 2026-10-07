@@ -1,21 +1,21 @@
+import type { BankAccountType, BankAccountWithConnection } from '@opulus/core';
 import { useMemo } from 'react';
 
 import { AppLayout } from '@/common/AppLayout';
 import { PageHeader } from '@/common/PageHeader';
 import { Spinner } from '@/components/ui';
-import { useItems } from '@/hooks/items/useItems';
-import { type AccountKind, getAccountKind } from '@/utils/accountKind';
+import { useBankAccounts } from '@/hooks/bankAccounts/useBankAccounts';
+import { getAccountType } from '@/utils/accountType';
 
-import { type AccountEntry, toAccountEntries } from './accountEntries';
 import { AccountGroup } from './AccountGroup';
 import { EmptyAccountsView } from './EmptyAccountsView';
 import { type SummaryStat, SummaryStats } from './SummaryStats';
 
-const byName = (a: AccountEntry, b: AccountEntry) =>
-  a.account.name.localeCompare(b.account.name);
+const byName = (a: BankAccountWithConnection, b: BankAccountWithConnection) =>
+  a.name.localeCompare(b.name);
 
 export interface AccountGroupConfig {
-  kind: AccountKind;
+  type: BankAccountType;
   title: string;
 }
 
@@ -24,16 +24,16 @@ interface AccountsOverviewProps {
   title: string;
   heading: string;
   description: string;
-  /** Groups to show, in order. Their kinds define which accounts belong here. */
+  /** Groups to show, in order. Their types define which accounts belong here. */
   groups: AccountGroupConfig[];
-  /** Headline numbers for every account on this page (ignores search). */
-  getSummary: (entries: AccountEntry[]) => SummaryStat[];
+  /** Headline numbers for every account on this page. */
+  getSummary: (accounts: BankAccountWithConnection[]) => SummaryStat[];
   emptyTitle: string;
   emptyDescription: string;
 }
 
 /**
- * Shared layout for pages that list accounts by kind: a summary header, then
+ * Shared layout for pages that list accounts by type: a summary header, then
  * collapsible groups of accounts.
  */
 export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
@@ -45,25 +45,21 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
   emptyTitle,
   emptyDescription,
 }) => {
-  const { data: itemsData, isLoading } = useItems();
-  const entries = useMemo(() => {
-    const kinds = new Set(groups.map((group) => group.kind));
-    return toAccountEntries(itemsData?.items ?? []).filter((entry) =>
-      kinds.has(getAccountKind(entry.account))
-    );
-  }, [itemsData, groups]);
+  const types = useMemo(() => groups.map((group) => group.type), [groups]);
+  const { data, isLoading } = useBankAccounts(types);
+  const accounts = useMemo(() => data?.accounts ?? [], [data]);
 
   const visibleGroups = useMemo(
     () =>
       groups
         .map((group) => ({
           ...group,
-          entries: entries
-            .filter((entry) => getAccountKind(entry.account) === group.kind)
+          accounts: accounts
+            .filter((account) => getAccountType(account) === group.type)
             .sort(byName),
         }))
-        .filter((group) => group.entries.length > 0),
-    [entries, groups]
+        .filter((group) => group.accounts.length > 0),
+    [accounts, groups]
   );
 
   let content: React.ReactNode;
@@ -73,21 +69,21 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
         <Spinner className="size-6" />
       </div>
     );
-  } else if (entries.length === 0) {
+  } else if (accounts.length === 0) {
     content = (
       <EmptyAccountsView title={emptyTitle} description={emptyDescription} />
     );
   } else {
     content = (
       <>
-        <SummaryStats stats={getSummary(entries)} />
+        <SummaryStats stats={getSummary(accounts)} />
 
         <div className="flex flex-col gap-4">
           {visibleGroups.map((group) => (
             <AccountGroup
-              key={group.kind}
+              key={group.type}
               title={group.title}
-              entries={group.entries}
+              accounts={group.accounts}
             />
           ))}
         </div>

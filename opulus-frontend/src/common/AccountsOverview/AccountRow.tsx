@@ -1,3 +1,4 @@
+import type { BankAccountWithConnection } from '@opulus/core';
 import React from 'react';
 
 import { ListRow } from '@/common/ListRow';
@@ -8,20 +9,17 @@ import {
 } from '@/utils/accountDisplay';
 import { getStatusNotice } from '@/utils/itemStatus';
 
-import type { AccountEntry } from './accountEntries';
-
 interface AccountRowProps {
-  entry: AccountEntry;
+  account: BankAccountWithConnection;
 }
 
-export const AccountRow: React.FC<AccountRowProps> = ({ entry }) => {
-  const { account, item } = entry;
-  const notice = getStatusNotice(item.errorCode);
+export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {
+  const notice = getStatusNotice(account.connection.errorCode);
 
   return (
     <ListRow
       title={account.name}
-      subtitle={`${item.institutionName || 'Unknown institution'} · ${getAccountTypeLabel(account)}${account.mask ? ` •••• ${account.mask}` : ''}`}
+      subtitle={`${account.connection.institutionName || 'Unknown institution'} · ${getAccountTypeLabel(account)}${account.mask ? ` •••• ${account.mask}` : ''}`}
       notices={notice ? [notice] : undefined}
       trailingTitle={formatMoney(
         account.balanceCurrent,

@@ -1,3 +1,4 @@
+import type { BankAccountWithConnection } from '@opulus/core';
 import React, { useState } from 'react';
 
 import { ListRow } from '@/common/ListRow';
@@ -8,17 +9,16 @@ import {
 } from '@/components/ui';
 import { formatTotals } from '@/utils/accountDisplay';
 
-import type { AccountEntry } from './accountEntries';
 import { AccountRow } from './AccountRow';
 
 interface AccountGroupProps {
   title: string;
-  entries: AccountEntry[];
+  accounts: BankAccountWithConnection[];
 }
 
 export const AccountGroup: React.FC<AccountGroupProps> = ({
   title,
-  entries,
+  accounts,
 }) => {
   const [open, setOpen] = useState(true);
 
@@ -28,16 +28,16 @@ export const AccountGroup: React.FC<AccountGroupProps> = ({
         <CollapsibleTrigger asChild>
           <ListRow
             title={title}
-            subtitle={`${entries.length} account${entries.length === 1 ? '' : 's'}`}
-            trailingTitle={formatTotals(entries.map((e) => e.account))}
+            subtitle={`${accounts.length} account${accounts.length === 1 ? '' : 's'}`}
+            trailingTitle={formatTotals(accounts)}
             expanded={open}
           />
         </CollapsibleTrigger>
 
         <CollapsibleContent className="data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down overflow-hidden">
           <div className="divide-y border-t">
-            {entries.map((entry) => (
-              <AccountRow key={entry.account.id} entry={entry} />
+            {accounts.map((account) => (
+              <AccountRow key={account.id} account={account} />
             ))}
           </div>
         </CollapsibleContent>
