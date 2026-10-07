@@ -1,4 +1,4 @@
-import { LinkTokenResponse } from '@opulus/core';
+import { LinkTokenResponse } from '@opulus/core/dto';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';

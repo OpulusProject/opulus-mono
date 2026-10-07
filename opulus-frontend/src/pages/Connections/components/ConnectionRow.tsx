@@ -1,4 +1,4 @@
-import type { ItemDTO } from '@opulus/core';
+import type { ItemDTO } from '@opulus/core/dto';
 import React from 'react';
 
 import { ListRow } from '@/common/ListRow';

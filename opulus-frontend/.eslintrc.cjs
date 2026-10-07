@@ -74,6 +74,13 @@ module.exports = {
     'no-restricted-imports': [
       'error',
       {
+        paths: [
+          {
+            name: '@opulus/core',
+            message:
+              "Import contracts from '@opulus/core/dto'. The root also exports Prisma, the Plaid gateway and the queue, which must never reach the browser bundle.",
+          },
+        ],
         patterns: [
           {
             group: ['./*/', '**../'],

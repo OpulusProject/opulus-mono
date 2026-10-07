@@ -1,4 +1,4 @@
-import { TransactionsResponse } from '@opulus/core';
+import { TransactionsResponse } from '@opulus/core/dto';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';

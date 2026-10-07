@@ -1,4 +1,4 @@
-import type { ItemDTO } from '@opulus/core';
+import type { ItemDTO } from '@opulus/core/dto';
 import { ChevronRight } from 'lucide-react';
 import * as React from 'react';
 

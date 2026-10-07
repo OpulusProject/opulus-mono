@@ -1,4 +1,4 @@
-import type { TransactionDTO } from '@opulus/core';
+import type { TransactionDTO } from '@opulus/core/dto';
 
 /**
  * Calculate largest spending category from transactions

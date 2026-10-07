@@ -1,4 +1,4 @@
-import type { AccountDTO } from '@opulus/core';
+import type { AccountDTO } from '@opulus/core/dto';
 
 // Matches the locale used for dates elsewhere in the app.
 const LOCALE = 'en-CA';

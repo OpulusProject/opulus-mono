@@ -1,4 +1,4 @@
-import type { AccountType, AccountWithConnectionDTO } from '@opulus/core';
+import type { AccountType, AccountWithConnectionDTO } from '@opulus/core/dto';
 import { useMemo } from 'react';
 
 import { AppLayout } from '@/common/AppLayout';

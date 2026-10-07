@@ -1,4 +1,4 @@
-import { CreateItemRequest, CreateItemResponse } from '@opulus/core';
+import { CreateItemRequest, CreateItemResponse } from '@opulus/core/dto';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 

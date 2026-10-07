@@ -1,4 +1,4 @@
-import type { ItemDTO } from '@opulus/core';
+import type { ItemDTO } from '@opulus/core/dto';
 import { Landmark } from 'lucide-react';
 import React from 'react';
 

@@ -1,4 +1,4 @@
-import type { ItemDTO } from '@opulus/core';
+import type { ItemDTO } from '@opulus/core/dto';
 
 /**
  * Plaid returns an institution logo as raw base64 PNG, and only for some

@@ -1,4 +1,4 @@
-import { UpdateItemAccountsResponse } from '@opulus/core';
+import { UpdateItemAccountsResponse } from '@opulus/core/dto';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
