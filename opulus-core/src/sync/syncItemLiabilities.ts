@@ -1,8 +1,8 @@
-import { accountService } from "../services/accountService.js";
+import { accountRepository } from "../repositories/accountRepository.js";
 import {
-  liabilityService,
+  liabilityRepository,
   normalizePlaidLiabilities,
-} from "../services/liabilityService.js";
+} from "../repositories/liabilityRepository.js";
 import { plaidService } from "../services/plaidService.js";
 import { AppError } from "../utils/errors.js";
 import { logger } from "../utils/logger.js";
@@ -71,7 +71,7 @@ export async function syncItemLiabilities(
     return { status: "synced", synced: 0, unmatched: 0 };
   }
 
-  const accountIds = await accountService.getIdsByProviderAccountIds(
+  const accountIds = await accountRepository.getIdsByProviderAccountIds(
     item.id,
     normalized.map((entry) => entry.providerAccountId)
   );
@@ -82,7 +82,7 @@ export async function syncItemLiabilities(
   });
 
   if (rows.length > 0) {
-    await liabilityService.upsertMany(item, rows);
+    await liabilityRepository.upsertMany(item, rows);
   }
 
   return {

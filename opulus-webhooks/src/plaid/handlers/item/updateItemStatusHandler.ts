@@ -1,13 +1,13 @@
 import type { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
 import {
   AppError,
-  itemService,
+  itemRepository,
   logger,
   NotFoundError,
   toItemErrorData,
 } from "@opulus/core";
 
-type ItemUpdate = Parameters<typeof itemService.update>[1];
+type ItemUpdate = Parameters<typeof itemRepository.update>[1];
 
 /**
  * The item update that an ITEM webhook calls for.
@@ -78,8 +78,8 @@ export async function updateItemStatusHandler(
   }
 
   try {
-    const item = await itemService.getByPlaidItemId(event.item_id);
-    await itemService.update(item.id, statusUpdateFor(event));
+    const item = await itemRepository.getByPlaidItemId(event.item_id);
+    await itemRepository.update(item.id, statusUpdateFor(event));
 
     logger.info(
       {

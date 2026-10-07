@@ -1,5 +1,5 @@
 import {
-  itemService,
+  itemRepository,
   logger,
   normalizePlaidAccount,
   plaidService,
@@ -43,7 +43,7 @@ export async function updateItemAccounts(
   // webhook stored may be resolved. Plaid sends no webhook for that, so take
   // the item's current state from Plaid.
   const plaidItem = await plaidService.getItem(item.accessToken);
-  await itemService.update(item.id, {
+  await itemRepository.update(item.id, {
     ...toItemErrorData(plaidItem.item.error),
     consentExpirationTime: plaidItem.item.consent_expiration_time
       ? new Date(plaidItem.item.consent_expiration_time)
@@ -94,7 +94,7 @@ export async function updateItemAccounts(
   // The accounts Plaid flagged as new have been added, so stop prompting.
   // (If the user shared none of them, the flag stays and they can try again.)
   if (created > 0) {
-    await itemService.update(item.id, { newAccountsAvailable: false });
+    await itemRepository.update(item.id, { newAccountsAvailable: false });
   }
 
   // New or re-consented accounts may now have liabilities data.

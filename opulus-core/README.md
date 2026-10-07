@@ -4,7 +4,7 @@ Core business logic, shared services, and infrastructure for Opulus.
 
 ## Overview
 
-Shared package containing database access, external API clients, business logic services, types, and utilities used across all Opulus services.
+Shared package containing database access, external API clients, repositories, shared business logic, types, and utilities used across all Opulus services.
 
 ## What's Included
 
@@ -19,13 +19,23 @@ Shared package containing database access, external API clients, business logic 
 - **Plaid Client** - Plaid API integration
 - **Plaid Service** - Plaid API wrapper with error handling
 
-### Services
+### Repositories
 
-- **User Service** - User management
-- **Item Service** - Plaid item management
-- **Account Service** - Account operations
-- **Transaction Service** - Transaction operations
-- **Link Session Service** - Plaid Link session management
+Data access, one per model.
+
+- **User Repository** - Users
+- **Item Repository** - Plaid items
+- **Account Repository** - Accounts
+- **Transaction Repository** - Transactions
+- **Liability Repository** - Account liabilities, and the normalizers for Plaid's liability shapes
+- **Link Session Repository** - Plaid Link sessions
+
+### Syncs
+
+- **`sync/`** - Pulling an item's data from Plaid and storing it (`syncItemTransactions`, `syncItemLiabilities`), shared by the backend and the webhooks service
+
+### Other
+
 - **Webhook Queue** - Queue system for webhook processing (Redis + BullMQ)
 
 ### Types
@@ -50,8 +60,8 @@ import { prisma } from "@opulus/core";
 // Plaid
 import { plaidClient, plaidService } from "@opulus/core";
 
-// Services
-import { userService, itemService, transactionService } from "@opulus/core";
+// Repositories
+import { userRepository, itemRepository, transactionRepository } from "@opulus/core";
 
 // Types
 import type { GetItemsResponse, Transaction } from "@opulus/core";
@@ -107,43 +117,55 @@ Open database GUI:
 pnpm prisma:studio
 ```
 
-## Services
+## Repositories
 
-### User Service
-
-```typescript
-import { userService } from "@opulus/core";
-
-// Get user by ID
-const user = await userService.getById(userId);
-
-// Get user by email
-const user = await userService.getByEmail(email);
-```
-
-### Item Service
+### User Repository
 
 ```typescript
-import { itemService } from "@opulus/core";
+import { userRepository } from "@opulus/core";
 
-// Get item by Plaid item ID
-const item = await itemService.getByPlaidItemId(plaidItemId);
-
-// Get all items for user
-const items = await itemService.getByUserId(userId);
+// Get a user by ID
+const user = await userRepository.get(userId);
 ```
 
-### Transaction Service
+### Item Repository
 
 ```typescript
-import { transactionService } from "@opulus/core";
+import { itemRepository } from "@opulus/core";
 
-// Get transactions for user
-const transactions = await transactionService.getByUserId(userId, {
-  startDate: new Date("2024-01-01"),
-  endDate: new Date("2024-12-31"),
-});
+// Get an item by Plaid's item ID
+const item = await itemRepository.getByPlaidItemId(plaidItemId);
+
+// Get all of a user's items, with their accounts
+const items = await itemRepository.getAllByUserId(userId);
 ```
+
+### Transaction Repository
+
+```typescript
+import { transactionRepository } from "@opulus/core";
+
+// Get a user's transactions, filtered and paginated
+const result = await transactionRepository.getAllByUserId(
+  userId,
+  { startDate: new Date("2024-01-01"), endDate: new Date("2024-12-31") },
+  { page: 1, limit: 50 }
+);
+```
+
+## Syncs
+
+```typescript
+import { syncItemLiabilities, syncItemTransactions } from "@opulus/core";
+
+// Catch an item's transactions up from its stored cursor
+await syncItemTransactions(plaidItemId);
+
+// Fetch and store an item's liabilities
+await syncItemLiabilities(item);
+```
+
+## Plaid
 
 ### Plaid Service
 
@@ -219,15 +241,18 @@ opulus-core/
 │   │   └── plaid.ts         # Plaid client
 │   ├── config/
 │   │   └── default.ts       # Configuration
+│   ├── repositories/    # Data access, one per model
+│   │   ├── userRepository.ts
+│   │   ├── itemRepository.ts
+│   │   ├── accountRepository.ts
+│   │   ├── transactionRepository.ts
+│   │   ├── liabilityRepository.ts
+│   │   └── linkSessionRepository.ts
 │   ├── services/
-│   │   ├── userService.ts
-│   │   ├── itemService.ts
-│   │   ├── transactionService.ts
-│   │   ├── plaidService.ts
-│   │   ├── linkSessionService.ts
-│   │   ├── accountService.ts
-│   │   └── queue/
-│   │       └── webhookQueue.ts
+│   │   └── plaidService.ts
+│   ├── sync/            # Syncs shared by the backend and webhooks
+│   │   ├── syncItemLiabilities.ts
+│   │   └── syncItemTransactions.ts
 │   ├── types/
 │   │   └── dto/             # Data transfer objects
 │   ├── utils/

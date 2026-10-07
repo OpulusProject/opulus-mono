@@ -8,10 +8,10 @@ export interface CreateLinkSessionData {
 }
 
 /**
- * Service for managing link sessions
+ * Repository for link sessions
  * Handles creation and retrieval of Plaid link sessions
  */
-class LinkSessionService {
+class LinkSessionRepository {
   constructor(private prisma: PrismaClient) {}
 
   /**
@@ -86,4 +86,4 @@ class LinkSessionService {
 }
 
 // Export singleton instance
-export const linkSessionService = new LinkSessionService(prisma);
+export const linkSessionRepository = new LinkSessionRepository(prisma);

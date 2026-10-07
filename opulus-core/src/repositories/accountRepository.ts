@@ -96,7 +96,7 @@ export function normalizePlaidAccount(
   };
 }
 
-class AccountService {
+class AccountRepository {
   constructor(private prisma: PrismaClient) {}
 
   async create(data: CreateAccountData) {
@@ -211,4 +211,4 @@ class AccountService {
 }
 
 // Export singleton instance
-export const accountService = new AccountService(prisma);
+export const accountRepository = new AccountRepository(prisma);

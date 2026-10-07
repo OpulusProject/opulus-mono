@@ -2,7 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import type { PlaidErrorType, Item as PlaidItem } from "plaid";
 import prisma from "../client/prisma.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
-import { accountDtoSelect } from "./accountService.js";
+import { accountDtoSelect } from "./accountRepository.js";
 
 export interface CreateItemData {
   plaidItemId: string;
@@ -83,10 +83,10 @@ export function normalizePlaidItem(
 }
 
 /**
- * Service for managing Plaid items
+ * Repository for Plaid items
  * Handles item creation and retrieval
  */
-class ItemService {
+class ItemRepository {
   constructor(private prisma: PrismaClient) {}
 
   /**
@@ -294,4 +294,4 @@ class ItemService {
 }
 
 // Export singleton instance
-export const itemService = new ItemService(prisma);
+export const itemRepository = new ItemRepository(prisma);

@@ -15,7 +15,7 @@
 import "dotenv/config";
 
 import {
-  itemService,
+  itemRepository,
   logger,
   prisma,
   syncItemTransactions,
@@ -43,7 +43,7 @@ async function main(): Promise<void> {
           institutionName: null as string | null,
         },
       ]
-    : await itemService.listAll();
+    : await itemRepository.listAll();
 
   if (items.length === 0) {
     logger.info("No items to reconcile");

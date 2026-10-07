@@ -12,10 +12,10 @@ export interface UpdateUserData {
 }
 
 /**
- * Service for managing users
+ * Repository for users
  * Handles user retrieval and updates
  */
-class UserService {
+class UserRepository {
   constructor(private prisma: PrismaClient) {}
 
   /**
@@ -98,4 +98,4 @@ class UserService {
 }
 
 // Export singleton instance
-export const userService = new UserService(prisma);
+export const userRepository = new UserRepository(prisma);

@@ -80,10 +80,10 @@ export function normalizePlaidTransaction(
 }
 
 /**
- * Service for managing Plaid transactions
+ * Repository for Plaid transactions
  * Handles transaction creation, updates, and deletion
  */
-class TransactionService {
+class TransactionRepository {
   constructor(private prisma: PrismaClient) {}
 
   /**
@@ -352,4 +352,4 @@ class TransactionService {
 }
 
 // Export singleton instance
-export const transactionService = new TransactionService(prisma);
+export const transactionRepository = new TransactionRepository(prisma);

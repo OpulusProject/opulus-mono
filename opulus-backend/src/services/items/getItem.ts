@@ -1,4 +1,4 @@
-import { itemService, UnauthorizedError } from "@opulus/core";
+import { itemRepository, UnauthorizedError } from "@opulus/core";
 
 /**
  * Get one of the user's items.
@@ -11,7 +11,7 @@ import { itemService, UnauthorizedError } from "@opulus/core";
  * @throws UnauthorizedError if the item belongs to another user
  */
 export async function getItem(params: { userId: string; itemId: string }) {
-  const item = await itemService.getById(params.itemId);
+  const item = await itemRepository.getById(params.itemId);
   if (item.userId !== params.userId) {
     throw new UnauthorizedError("You do not have access to this item");
   }
@@ -25,7 +25,7 @@ export async function getItemByPlaidItemId(params: {
   userId: string;
   plaidItemId: string;
 }) {
-  const item = await itemService.getByPlaidItemId(params.plaidItemId);
+  const item = await itemRepository.getByPlaidItemId(params.plaidItemId);
   if (item.userId !== params.userId) {
     throw new UnauthorizedError("You do not have access to this item");
   }

@@ -133,9 +133,9 @@ export function normalizePlaidLiabilities(
 }
 
 /**
- * Service for storing liabilities (APRs, payment due dates, loan terms)
+ * Repository for liabilities (APRs, payment due dates, loan terms)
  */
-class LiabilityService {
+class LiabilityRepository {
   constructor(private prisma: PrismaClient) {}
 
   /**
@@ -182,4 +182,4 @@ class LiabilityService {
 }
 
 // Export singleton instance
-export const liabilityService = new LiabilityService(prisma);
+export const liabilityRepository = new LiabilityRepository(prisma);
