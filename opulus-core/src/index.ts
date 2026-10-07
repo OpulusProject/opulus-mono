@@ -19,8 +19,9 @@ export * from "./repositories/userRepository.js";
 // Gateway exports (external APIs)
 export * from "./gateways/plaidGateway.js";
 
-// Sync exports
-export * from "./sync/index.js";
+// Service exports (business logic shared by the backend and webhooks)
+export * from "./services/syncItemLiabilities.js";
+export * from "./services/syncItemTransactions.js";
 
 // Type exports (DTOs)
 export * from "./types/dto/index.js";

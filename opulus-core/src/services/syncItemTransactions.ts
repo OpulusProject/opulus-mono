@@ -15,7 +15,7 @@ export interface SyncItemResult {
  * Catch up an item's transactions from its stored Plaid cursor.
  *
  * This is shared by the webhooks service (SYNC_UPDATES_AVAILABLE and the
- * reconcile script), and lives in core with the other syncs.
+ * reconcile script), and lives in core with the other shared services.
  */
 export async function syncItemTransactions(
   plaidItemId: string

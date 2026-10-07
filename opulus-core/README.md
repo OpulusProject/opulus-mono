@@ -4,7 +4,7 @@ Core business logic, shared services, and infrastructure for Opulus.
 
 ## Overview
 
-Shared package containing database access, external API clients, repositories, shared business logic, types, and utilities used across all Opulus services.
+Shared package containing repositories (data access), gateways (external APIs), the business logic the backend and webhooks service share, types, and utilities used across all Opulus apps.
 
 ## What's Included
 
@@ -30,9 +30,11 @@ Data access, one per model.
 - **Liability Repository** - Account liabilities, and the normalizers for Plaid's liability shapes
 - **Link Session Repository** - Plaid Link sessions
 
-### Syncs
+### Services
 
-- **`sync/`** - Pulling an item's data from Plaid and storing it (`syncItemTransactions`, `syncItemLiabilities`), shared by the backend and the webhooks service
+Business logic that both the backend and the webhooks service need. Logic only one app needs lives in that app.
+
+- **`syncItemTransactions`**, **`syncItemLiabilities`** - Pull an item's data from Plaid and store it
 
 ### Other
 
@@ -153,7 +155,7 @@ const result = await transactionRepository.getAllByUserId(
 );
 ```
 
-## Syncs
+## Services
 
 ```typescript
 import { syncItemLiabilities, syncItemTransactions } from "@opulus/core";
@@ -250,7 +252,7 @@ opulus-core/
 │   │   └── linkSessionRepository.ts
 │   ├── gateways/        # External APIs
 │   │   └── plaidGateway.ts
-│   ├── sync/            # Syncs shared by the backend and webhooks
+│   ├── services/        # Business logic shared by the apps
 │   │   ├── syncItemLiabilities.ts
 │   │   └── syncItemTransactions.ts
 │   ├── types/
