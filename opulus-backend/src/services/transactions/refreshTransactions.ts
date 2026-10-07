@@ -1,6 +1,6 @@
 import { plaidService } from "@opulus/core";
 
-import { getOwnedItemByPlaidItemId } from "../items/getOwnedItem.js";
+import { getItemByPlaidItemId } from "../items/getItem.js";
 
 export interface RefreshTransactionsParams {
   userId: string;
@@ -26,7 +26,7 @@ export interface RefreshTransactionsResult {
 export async function refreshTransactions(
   params: RefreshTransactionsParams
 ): Promise<RefreshTransactionsResult> {
-  const item = await getOwnedItemByPlaidItemId(params);
+  const item = await getItemByPlaidItemId(params);
 
   const refreshResponse = await plaidService.transactionsRefresh(
     item.accessToken
