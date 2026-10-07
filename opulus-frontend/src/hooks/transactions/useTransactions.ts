@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
 
+import { transactionKeys } from './queryKeys';
+
 interface GetTransactionsParams {
   itemId?: string;
   accountId?: string;
@@ -39,7 +41,7 @@ const getTransactionsApi = async (
  */
 export function useTransactions(params?: GetTransactionsParams) {
   return useQuery<TransactionsResponse['data'], Error>({
-    queryKey: ['transactions', params],
+    queryKey: transactionKeys.list(params),
     queryFn: () => getTransactionsApi(params),
     retry: 1,
     staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes

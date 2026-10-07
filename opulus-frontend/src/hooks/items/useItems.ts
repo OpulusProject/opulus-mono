@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
 
+import { itemKeys } from './queryKeys';
+
 const getItemsApi = async (): Promise<ItemsResponse['data']> => {
   const response = await apiClient.get<ItemsResponse>('/api/items');
   return response.data.data;
@@ -16,7 +18,7 @@ const getItemsApi = async (): Promise<ItemsResponse['data']> => {
  */
 export function useItems() {
   return useQuery<ItemsResponse['data'], Error>({
-    queryKey: ['items'],
+    queryKey: itemKeys.list(),
     queryFn: getItemsApi,
     retry: 1,
     staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes

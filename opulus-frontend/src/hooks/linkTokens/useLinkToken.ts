@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
 
+import { linkTokenKeys } from './queryKeys';
+
 /**
  * Update-mode flavors. `reconnect` repairs a broken connection; `add-accounts`
  * also lets the user share accounts that appeared at the institution since
@@ -17,7 +19,7 @@ export type UpdateMode = 'reconnect' | 'add-accounts';
  */
 export function useLinkToken(itemId?: string, mode: UpdateMode = 'reconnect') {
   return useQuery<LinkTokenResponse['data'], Error>({
-    queryKey: ['plaid', 'linkToken', itemId ?? 'new', mode],
+    queryKey: linkTokenKeys.forItem(itemId, mode),
     queryFn: async () => {
       const response = await apiClient.post<LinkTokenResponse>(
         `/api/link-tokens${itemId ? '/update' : ''}`,
