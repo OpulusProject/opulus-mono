@@ -1,2 +1,2 @@
 export { AppLayout } from './AppLayout';
-export { SiteHeader } from './components/SiteHeader';
+export { SiteHeader } from '@/common/AppLayout/components/SiteHeader';

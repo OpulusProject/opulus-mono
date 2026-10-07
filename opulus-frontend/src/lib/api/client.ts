@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL =
+  (import.meta.env.VITE_API_URL as string | undefined) ||
+  'http://localhost:8080';
 
 // Log the API URL being used (helps debug production issues)
 // Note: This will show the value that was baked in at build time

@@ -26,7 +26,7 @@ export async function verifyPlaidWebhook(
   let decodedToken;
   try {
     decodedToken = jwtDecode(signedJwt);
-  } catch (error) {
+  } catch {
     res.status(401).json({
       message: "Webhook verification failed: Invalid JWT format",
     });
@@ -37,7 +37,7 @@ export async function verifyPlaidWebhook(
   let decodedTokenHeader;
   try {
     decodedTokenHeader = jwtDecode(signedJwt, { header: true });
-  } catch (error) {
+  } catch {
     res.status(401).json({
       message: "Webhook verification failed: Invalid JWT header format",
     });
@@ -181,7 +181,7 @@ export async function verifyPlaidWebhook(
   // Parse body and attach to req for handler
   try {
     req.body = JSON.parse(bodyString);
-  } catch (error) {
+  } catch {
     res.status(400).json({
       message: "Webhook verification failed: Invalid JSON body",
     });
