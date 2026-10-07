@@ -2,7 +2,9 @@
  * Get Accounts endpoint DTOs
  */
 
-import { AccountDTO, toAccountDTO } from "./account.js";
+import { z } from "zod";
+
+import { AccountDTOSchema, toAccountDTO } from "./account.js";
 
 /**
  * Account types, matching Plaid's account `type`. `other` also covers any type
@@ -16,30 +18,40 @@ export const ACCOUNT_TYPES = [
   "other",
 ] as const;
 
-export type AccountType = (typeof ACCOUNT_TYPES)[number];
+export const AccountTypeSchema = z.enum(ACCOUNT_TYPES);
+
+export type AccountType = z.infer<typeof AccountTypeSchema>;
 
 /**
  * The connection (item) an account belongs to, just enough to say where it is
  * and whether that connection has a problem.
  */
-export interface AccountConnectionDTO {
-  id: string;
-  institutionName: string | null;
-  errorCode: string | null;
-}
+export const AccountConnectionDTOSchema = z.object({
+  id: z.string(),
+  institutionName: z.string().nullable(),
+  errorCode: z.string().nullable(),
+});
 
-export interface AccountWithConnectionDTO extends AccountDTO {
-  connection: AccountConnectionDTO;
-}
+export type AccountConnectionDTO = z.infer<typeof AccountConnectionDTOSchema>;
+
+export const AccountWithConnectionDTOSchema = AccountDTOSchema.extend({
+  connection: AccountConnectionDTOSchema,
+});
+
+export type AccountWithConnectionDTO = z.infer<
+  typeof AccountWithConnectionDTOSchema
+>;
 
 /**
  * Accounts API response
  */
-export interface AccountsResponse {
-  data: {
-    accounts: AccountWithConnectionDTO[];
-  };
-}
+export const AccountsResponseSchema = z.object({
+  data: z.object({
+    accounts: z.array(AccountWithConnectionDTOSchema),
+  }),
+});
+
+export type AccountsResponse = z.infer<typeof AccountsResponseSchema>;
 
 /**
  * Transform a stored account row (with its item) to the public DTO

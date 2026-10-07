@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { SessionResponseSchema } from "@opulus/core";
 import { withSession } from "../../../shared/client.js";
-import { expectOk, expectStatus } from "../../../shared/assertions.js";
+import { expectOk, expectStatus, expectMatchesSchema } from "../../../shared/assertions.js";
 import { createAuthedUser } from "../../../shared/fixtures/index.js";
 
 /**
@@ -32,14 +33,10 @@ test.describe("GET /api/session", () => {
       headers: withSession(cookie),
     });
 
-    // Assert: the auth library knows more about the user than the client needs.
+    // Assert: the auth library knows more about the user than the client
+    // needs; the schema allows only the documented fields.
     await expectOk(res);
-    const { user, session } = (await res.json()).data;
-    expect(Object.keys(user).sort()).toEqual(
-      ["email", "emailVerified", "id", "image", "name"].sort(),
-    );
-    expect(Object.keys(session).sort()).toEqual(["expiresAt", "id"]);
-    expect(new Date(session.expiresAt).toISOString()).toBe(session.expiresAt);
+    await expectMatchesSchema(res, SessionResponseSchema);
   });
 
   test("returns the authenticated user for a valid session", async ({

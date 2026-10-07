@@ -1,13 +1,13 @@
 import { getSession } from "@/services/session/getSession.js";
 import { createItem } from "@/services/items/createItem.js";
-import { CreateItemResponse, UnauthorizedError } from "@opulus/core";
+import {
+  CreateItemRequestSchema,
+  CreateItemResponse,
+  UnauthorizedError,
+} from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
-import { z } from "zod";
 
-export const createItemBodySchema = z.object({
-  publicToken: z.string().min(1, "publicToken is required"),
-  institutionId: z.string().min(1, "institutionId is required"),
-});
+export const createItemBodySchema = CreateItemRequestSchema;
 
 /**
  * POST /api/items

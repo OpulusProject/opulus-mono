@@ -1,6 +1,7 @@
 import type { Prisma } from "@prisma/client";
+import { z } from "zod";
 
-import { toIsoString, toNumber } from "../common.js";
+import { IsoTimestampSchema, toIsoString, toNumber } from "../common.js";
 
 /**
  * Liability details for a credit or loan account (from Plaid liabilities).
@@ -8,32 +9,40 @@ import { toIsoString, toNumber } from "../common.js";
  * institution reports; anything missing is null.
  */
 
-export type LiabilityKind = "credit" | "mortgage" | "student";
+export const LiabilityKindSchema = z.enum(["credit", "mortgage", "student"]);
 
-export interface LiabilityAprDTO {
-  type: string; // e.g. "purchase_apr", "cash_apr", "balance_transfer_apr"
-  percentage: number;
-  balanceSubjectToApr: number | null;
-  interestChargeAmount: number | null;
-}
+export type LiabilityKind = z.infer<typeof LiabilityKindSchema>;
 
-export interface LiabilityDetailsDTO {
-  kind: LiabilityKind;
-  isOverdue: boolean | null;
-  nextPaymentDueDate: string | null; // ISO date
-  minimumPayment: number | null; // Mortgage: next monthly payment
-  lastPaymentAmount: number | null;
-  lastPaymentDate: string | null; // ISO date
-  lastStatementBalance: number | null;
-  lastStatementIssueDate: string | null; // ISO date
-  interestRate: number | null; // Percentage
-  originationDate: string | null; // ISO date
-  originationPrincipal: number | null;
-  maturityDate: string | null; // Mortgage maturity or student loan expected payoff
-  aprs: LiabilityAprDTO[] | null;
-  details: Record<string, string | number | boolean | null> | null;
-  syncedAt: string; // ISO timestamp
-}
+export const LiabilityAprDTOSchema = z.object({
+  type: z.string(), // e.g. "purchase_apr", "cash_apr", "balance_transfer_apr"
+  percentage: z.number(),
+  balanceSubjectToApr: z.number().nullable(),
+  interestChargeAmount: z.number().nullable(),
+});
+
+export type LiabilityAprDTO = z.infer<typeof LiabilityAprDTOSchema>;
+
+export const LiabilityDetailsDTOSchema = z.object({
+  kind: LiabilityKindSchema,
+  isOverdue: z.boolean().nullable(),
+  nextPaymentDueDate: IsoTimestampSchema.nullable(), // ISO date
+  minimumPayment: z.number().nullable(), // Mortgage: next monthly payment
+  lastPaymentAmount: z.number().nullable(),
+  lastPaymentDate: IsoTimestampSchema.nullable(), // ISO date
+  lastStatementBalance: z.number().nullable(),
+  lastStatementIssueDate: IsoTimestampSchema.nullable(), // ISO date
+  interestRate: z.number().nullable(), // Percentage
+  originationDate: IsoTimestampSchema.nullable(), // ISO date
+  originationPrincipal: z.number().nullable(),
+  maturityDate: IsoTimestampSchema.nullable(), // Mortgage maturity or student loan expected payoff
+  aprs: z.array(LiabilityAprDTOSchema).nullable(),
+  details: z
+    .record(z.union([z.string(), z.number(), z.boolean(), z.null()]))
+    .nullable(),
+  syncedAt: IsoTimestampSchema, // ISO timestamp
+});
+
+export type LiabilityDetailsDTO = z.infer<typeof LiabilityDetailsDTOSchema>;
 
 /**
  * Transform a stored liability row to its public DTO

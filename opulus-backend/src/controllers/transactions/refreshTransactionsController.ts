@@ -2,18 +2,16 @@ import { getSession } from "@/services/session/getSession.js";
 import {
   itemService,
   plaidService,
+  RefreshTransactionsRequestSchema,
   RefreshTransactionsResponse,
   UnauthorizedError,
 } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
-import { z } from "zod";
 
 /**
  * Request body schema for refresh transactions endpoint
  */
-export const refreshTransactionsBodySchema = z.object({
-  itemId: z.string().min(1, "itemId is required"),
-});
+export const refreshTransactionsBodySchema = RefreshTransactionsRequestSchema;
 
 /**
  * Refresh transactions for a Plaid item

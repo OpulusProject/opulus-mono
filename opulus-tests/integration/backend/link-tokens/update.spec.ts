@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { LinkTokenResponseSchema } from "@opulus/core";
 
-import { expectOk, expectStatus } from "../../../shared/assertions.js";
+import { expectOk, expectStatus, expectMatchesSchema } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
@@ -33,6 +34,7 @@ test.describe("POST /api/link-tokens/update (sandbox)", () => {
 
     // Assert
     await expectOk(res);
+    await expectMatchesSchema(res, LinkTokenResponseSchema);
     const body = (await res.json()) as { data: { linkToken: string } };
     expect(body.data.linkToken).toMatch(/^link-sandbox-/);
   });

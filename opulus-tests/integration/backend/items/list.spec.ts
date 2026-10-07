@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { ItemsResponseSchema } from "@opulus/core";
 
-import { expectOk } from "../../../shared/assertions.js";
+import { expectOk, expectMatchesSchema } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
@@ -42,6 +43,7 @@ test.describe("GET /api/items (sandbox)", () => {
 
     // Assert
     await expectOk(res);
+    await expectMatchesSchema(res, ItemsResponseSchema);
     const item = (
       (await res.json()).data.items as Array<{
         id: string;

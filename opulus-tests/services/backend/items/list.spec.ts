@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { ItemsResponseSchema } from "@opulus/core";
 import { withSession } from "../../../shared/client.js";
-import { expectOk, expectStatus } from "../../../shared/assertions.js";
+import { expectOk, expectStatus, expectMatchesSchema } from "../../../shared/assertions.js";
 import {
   createAuthedUser,
   seedCreditLiability,
@@ -31,6 +32,7 @@ test.describe("GET /api/items", () => {
 
     // Assert
     await expectOk(res);
+    await expectMatchesSchema(res, ItemsResponseSchema);
     const body = await res.json();
     expect(body.data.items).toEqual([]);
   });

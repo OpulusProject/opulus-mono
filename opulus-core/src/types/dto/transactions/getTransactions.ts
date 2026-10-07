@@ -3,56 +3,65 @@
  */
 
 import type { Prisma } from "@prisma/client";
+import { z } from "zod";
 
-import { PaginationMetadata, toIsoString } from "../common.js";
+import {
+  IsoTimestampSchema,
+  PaginationMetadataSchema,
+  toIsoString,
+} from "../common.js";
 
 /**
  * Transaction DTO matching the API response
  * Dates are serialized as ISO strings
  */
-export interface TransactionDTO {
-  id: string;
-  providerTransactionId: string;
-  accountId: string;
-  itemId: string;
-  userId: string;
-  amount: number;
-  date: string; // ISO string
-  authorizedDate: string | null; // ISO string or null
-  name: string;
-  merchantName: string | null;
-  category: string[];
-  categoryId: string | null;
-  personalFinanceCategory: string | null;
-  location: string | null;
-  paymentMeta: string | null;
-  isoCurrencyCode: string | null;
-  unofficialCurrencyCode: string | null;
-  pending: boolean;
-  pendingTransactionId: string | null;
-  accountOwner: string | null;
-  transactionCode: string | null;
-  merchantEntityId: string | null;
-  checkNumber: string | null;
-  dateTransacted: string | null; // ISO string or null
-  createdAt: string; // ISO string
-  updatedAt: string; // ISO string
-  account: {
-    id: string;
-    name: string;
-    mask: string | null;
-  };
-}
+export const TransactionDTOSchema = z.object({
+  id: z.string(),
+  providerTransactionId: z.string(),
+  accountId: z.string(),
+  itemId: z.string(),
+  userId: z.string(),
+  amount: z.number(),
+  date: IsoTimestampSchema,
+  authorizedDate: IsoTimestampSchema.nullable(),
+  name: z.string(),
+  merchantName: z.string().nullable(),
+  category: z.array(z.string()),
+  categoryId: z.string().nullable(),
+  personalFinanceCategory: z.string().nullable(),
+  location: z.string().nullable(),
+  paymentMeta: z.string().nullable(),
+  isoCurrencyCode: z.string().nullable(),
+  unofficialCurrencyCode: z.string().nullable(),
+  pending: z.boolean(),
+  pendingTransactionId: z.string().nullable(),
+  accountOwner: z.string().nullable(),
+  transactionCode: z.string().nullable(),
+  merchantEntityId: z.string().nullable(),
+  checkNumber: z.string().nullable(),
+  dateTransacted: IsoTimestampSchema.nullable(),
+  createdAt: IsoTimestampSchema,
+  updatedAt: IsoTimestampSchema,
+  account: z.object({
+    id: z.string(),
+    name: z.string(),
+    mask: z.string().nullable(),
+  }),
+});
+
+export type TransactionDTO = z.infer<typeof TransactionDTOSchema>;
 
 /**
  * Transactions API response with pagination
  */
-export interface TransactionsResponse {
-  data: {
-    transactions: TransactionDTO[];
-    pagination: PaginationMetadata;
-  };
-}
+export const TransactionsResponseSchema = z.object({
+  data: z.object({
+    transactions: z.array(TransactionDTOSchema),
+    pagination: PaginationMetadataSchema,
+  }),
+});
+
+export type TransactionsResponse = z.infer<typeof TransactionsResponseSchema>;
 
 /**
  * A transaction row with the account columns the API includes
