@@ -1,4 +1,4 @@
-import type { Account } from '@opulus/core';
+import type { BankAccountDTO } from '@opulus/core';
 
 // Matches the locale used for dates elsewhere in the app.
 const LOCALE = 'en-CA';
@@ -70,7 +70,7 @@ export function formatMoney(
 }
 
 /** "$1,000.00", or "$1,000.00 + US$50.00" when accounts span currencies. */
-export function formatTotals(accounts: Account[]): string {
+export function formatTotals(accounts: BankAccountDTO[]): string {
   if (accounts.length === 0) return formatMoney(0, null);
   return sumByCurrency(accounts)
     .map(({ currency, amount }) => formatMoney(amount, currency))
@@ -79,7 +79,7 @@ export function formatTotals(accounts: Account[]): string {
 
 /** Human-friendly account type, preferring the more specific subtype. */
 export function getAccountTypeLabel(
-  account: Pick<Account, 'type' | 'subtype'>
+  account: Pick<BankAccountDTO, 'type' | 'subtype'>
 ): string {
   if (account.subtype) {
     return (
@@ -91,7 +91,7 @@ export function getAccountTypeLabel(
 }
 
 /** Credit still available on a credit account, derived when not provided. */
-export function getAvailableCredit(account: Account): number | null {
+export function getAvailableCredit(account: BankAccountDTO): number | null {
   if (account.balanceAvailable !== null) return account.balanceAvailable;
   if (account.balanceLimit !== null && account.balanceCurrent !== null) {
     return account.balanceLimit - account.balanceCurrent;
@@ -100,7 +100,7 @@ export function getAvailableCredit(account: Account): number | null {
 }
 
 /** Secondary balance line shown under an account's main balance. */
-export function getBalanceCaption(account: Account): string | null {
+export function getBalanceCaption(account: BankAccountDTO): string | null {
   const currency = account.isoCurrencyCode;
 
   if (account.type === 'credit') {
@@ -133,7 +133,7 @@ export function getBalanceCaption(account: Account): string | null {
  * Credit limit for a credit account. Plaid sometimes returns only the limit or
  * only the available credit, so derive whichever one is missing.
  */
-export function getCreditLimit(account: Account): number | null {
+export function getCreditLimit(account: BankAccountDTO): number | null {
   if (account.balanceLimit !== null) return account.balanceLimit;
   if (account.balanceAvailable !== null && account.balanceCurrent !== null) {
     return account.balanceCurrent + account.balanceAvailable;
@@ -145,7 +145,7 @@ export function getCreditLimit(account: Account): number | null {
  * Overall credit utilization (0-1) across accounts that report a limit, or
  * null when no limits are known or the accounts span currencies.
  */
-export function getOverallUtilization(accounts: Account[]): {
+export function getOverallUtilization(accounts: BankAccountDTO[]): {
   utilization: number;
   limit: number;
   currency: string | null;
@@ -162,7 +162,7 @@ export function getOverallUtilization(accounts: Account[]): {
 }
 
 /** Sum current balances, kept separate per currency (never mix currencies). */
-export function sumByCurrency(accounts: Account[]): CurrencyTotal[] {
+export function sumByCurrency(accounts: BankAccountDTO[]): CurrencyTotal[] {
   const totals = new Map<string | null, number>();
   for (const account of accounts) {
     const key = account.isoCurrencyCode;

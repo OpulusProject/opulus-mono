@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { getSession } from "@/services/session/getSession.js";
-import { UnauthorizedError } from "@opulus/core";
+import { SessionResponse, toSessionDTO, UnauthorizedError } from "@opulus/core";
 
 /**
  * Get current user session
@@ -8,7 +8,7 @@ import { UnauthorizedError } from "@opulus/core";
  */
 export async function sessionController(
   req: Request,
-  res: Response,
+  res: Response<SessionResponse>,
   next: NextFunction
 ) {
   try {
@@ -18,15 +18,7 @@ export async function sessionController(
       throw new UnauthorizedError("No active session");
     }
 
-    res.status(200).json({
-      data: {
-        user: session.user,
-        session: {
-          id: session.session.id,
-          expiresAt: session.session.expiresAt.toISOString(),
-        },
-      },
-    });
+    res.status(200).json({ data: toSessionDTO(session) });
   } catch (error) {
     // Pass error to error handling middleware
     next(error);

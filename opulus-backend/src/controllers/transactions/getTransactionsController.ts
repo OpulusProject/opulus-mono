@@ -1,5 +1,11 @@
+import { getValidatedQuery } from "@/middleware/validation.js";
 import { getSession } from "@/services/session/getSession.js";
-import { transactionService, UnauthorizedError } from "@opulus/core";
+import {
+  toTransactionDTO,
+  transactionService,
+  TransactionsResponse,
+  UnauthorizedError,
+} from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
@@ -51,7 +57,7 @@ export const getTransactionsQuerySchema = z.object({
  */
 export async function getTransactionsController(
   req: Request,
-  res: Response,
+  res: Response<TransactionsResponse>,
   next: NextFunction
 ) {
   try {
@@ -65,7 +71,7 @@ export async function getTransactionsController(
 
     // Query parameters are already validated by validateQuery middleware
     const { itemId, accountId, startDate, endDate, page, limit } =
-      req.validatedQuery as z.infer<typeof getTransactionsQuerySchema>;
+      getValidatedQuery<typeof getTransactionsQuerySchema>(req);
 
     // Get transactions with filters and pagination
     const result = await transactionService.getAllByUserId(
@@ -84,7 +90,7 @@ export async function getTransactionsController(
 
     res.status(200).json({
       data: {
-        transactions: result.transactions,
+        transactions: result.transactions.map(toTransactionDTO),
         pagination: result.pagination,
       },
     });

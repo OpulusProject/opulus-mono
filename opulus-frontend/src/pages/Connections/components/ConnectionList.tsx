@@ -1,4 +1,4 @@
-import type { ItemPublicDTO } from '@opulus/core';
+import type { ItemDTO } from '@opulus/core';
 import { Landmark } from 'lucide-react';
 import React from 'react';
 
@@ -8,7 +8,7 @@ import type { UpdateMode } from '@/hooks/linkTokens/useLinkToken';
 import { ConnectionRow } from './ConnectionRow';
 
 interface ConnectionListProps {
-  items: ItemPublicDTO[] | undefined;
+  items: ItemDTO[] | undefined;
   isLoading: boolean;
   onUpdate: (itemId: string, mode: UpdateMode) => void;
 }

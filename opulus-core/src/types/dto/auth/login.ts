@@ -12,20 +12,30 @@ export interface LoginRequest {
 }
 
 /**
+ * The user returned when authentication succeeds
+ */
+export interface AuthenticatedUserDTO {
+  id: string;
+  email: string;
+  name: string | null;
+  emailVerified: boolean;
+}
+
+/**
+ * The session returned when authentication succeeds
+ */
+export interface AuthenticatedSessionDTO {
+  id: string;
+  token: string;
+  expiresAt: string;
+}
+
+/**
  * Successful login response
  */
 export interface LoginSuccessResponse {
-  user: {
-    id: string;
-    email: string;
-    name: string | null;
-    emailVerified: boolean;
-  };
-  session: {
-    id: string;
-    token: string;
-    expiresAt: string;
-  };
+  user: AuthenticatedUserDTO;
+  session: AuthenticatedSessionDTO;
 }
 
 /**

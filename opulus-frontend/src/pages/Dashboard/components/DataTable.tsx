@@ -1,6 +1,6 @@
 'use client';
 
-import type { Transaction } from '@opulus/core';
+import type { TransactionDTO } from '@opulus/core';
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -220,7 +220,7 @@ export function DataTable() {
   );
 }
 
-const columns: ColumnDef<Transaction>[] = [
+const columns: ColumnDef<TransactionDTO>[] = [
   {
     accessorKey: 'name',
     header: 'Name',
@@ -232,7 +232,7 @@ const columns: ColumnDef<Transaction>[] = [
     accessorKey: 'amount',
     header: () => <div className="text-right">Amount</div>,
     cell: ({ row }) => {
-      const amount = Number(row.original.amount);
+      const amount = row.original.amount;
       const currencyCode = row.original.isoCurrencyCode;
       // Negate the amount for display: positive = money out (red), negative = money in (green)
       const displayAmount = -amount;

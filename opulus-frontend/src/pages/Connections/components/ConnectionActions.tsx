@@ -1,4 +1,4 @@
-import type { ItemPublicDTO } from '@opulus/core';
+import type { ItemDTO } from '@opulus/core';
 import { MoreHorizontal } from 'lucide-react';
 import React, { useState } from 'react';
 
@@ -20,7 +20,7 @@ import type { UpdateMode } from '@/hooks/linkTokens/useLinkToken';
 import { getItemStatus } from '@/utils/itemStatus';
 
 interface ConnectionActionsProps {
-  item: Pick<ItemPublicDTO, 'errorCode' | 'id' | 'institutionName'>;
+  item: Pick<ItemDTO, 'errorCode' | 'id' | 'institutionName'>;
   onUpdate: (itemId: string, mode: UpdateMode) => void;
 }
 
@@ -83,7 +83,7 @@ export const ConnectionActions: React.FC<ConnectionActionsProps> = ({
 };
 
 interface DisconnectDialogProps {
-  item: Pick<ItemPublicDTO, 'id' | 'institutionName'>;
+  item: Pick<ItemDTO, 'id' | 'institutionName'>;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

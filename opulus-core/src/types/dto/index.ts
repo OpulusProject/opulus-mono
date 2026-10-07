@@ -1,7 +1,18 @@
 /**
  * DTO (Data Transfer Object) exports
- * These types represent the API contract between frontend and backend
- * Organized by domain/endpoint following the controller pattern
+ * These types are the API contract between the backend and the frontend.
+ * Organized by resource, with a file per endpoint.
+ *
+ * Conventions:
+ * - Entities are named `<Name>DTO` (never the bare Prisma model name, which is
+ *   a different thing), and endpoint envelopes `<Name>Response`.
+ * - Rows are turned into DTOs by a `to<Name>DTO` function that copies fields
+ *   one by one. That list is the allow-list: a new column is never exposed
+ *   until it is added here.
+ * - JSON has no decimals or dates, so DTOs use numbers (`toNumber`) and ISO
+ *   strings (`toIsoString`), both in `common.ts`.
+ * - Controllers type `res` as `Response<<Name>Response>` so the compiler checks
+ *   what they send against the DTO.
  */
 
 export * from './bankAccounts/index.js';

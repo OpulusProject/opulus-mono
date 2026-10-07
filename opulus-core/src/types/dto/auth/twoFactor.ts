@@ -2,6 +2,8 @@
  * Two-factor authentication DTOs
  */
 
+import type { LoginSuccessResponse } from "./login.js";
+
 /**
  * Enable two-factor authentication request
  */
@@ -29,17 +31,4 @@ export interface VerifyTotpRequest {
 /**
  * Verify TOTP code response
  */
-export interface VerifyTotpResponse {
-  user: {
-    id: string;
-    email: string;
-    name: string | null;
-    emailVerified: boolean;
-  };
-  session: {
-    id: string;
-    token: string;
-    expiresAt: string;
-  };
-}
-
+export type VerifyTotpResponse = LoginSuccessResponse;

@@ -68,6 +68,76 @@ test.describe("GET /api/transactions", () => {
     }
   });
 
+  test("returns a transaction in its documented shape (numeric amount, ISO dates, only the documented fields)", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const item = await seedItemWithAccount(userId);
+    await seedTransactions({
+      userId,
+      itemId: item.itemId,
+      accountId: item.accountId,
+      count: 1,
+    });
+
+    // Act
+    const res = await request.get("/api/transactions", {
+      headers: withSession(cookie),
+    });
+
+    // Assert: amount is a number (not a decimal string), dates are ISO
+    // strings, and nothing outside the documented fields is exposed.
+    await expectOk(res);
+    const [transaction] = (await res.json()).data.transactions as Array<
+      Record<string, unknown>
+    >;
+    expect(typeof transaction.amount).toBe("number");
+    expect(transaction.amount).toBeCloseTo(12.34);
+    expect(new Date(transaction.date as string).toISOString()).toBe(
+      transaction.date,
+    );
+    expect(new Date(transaction.createdAt as string).toISOString()).toBe(
+      transaction.createdAt,
+    );
+    expect(Object.keys(transaction).sort()).toEqual(
+      [
+        "accountId",
+        "accountOwner",
+        "amount",
+        "authorizedDate",
+        "bankAccount",
+        "category",
+        "categoryId",
+        "checkNumber",
+        "createdAt",
+        "date",
+        "dateTransacted",
+        "id",
+        "isoCurrencyCode",
+        "itemId",
+        "location",
+        "merchantEntityId",
+        "merchantName",
+        "name",
+        "paymentMeta",
+        "pending",
+        "pendingTransactionId",
+        "personalFinanceCategory",
+        "providerTransactionId",
+        "transactionCode",
+        "unofficialCurrencyCode",
+        "updatedAt",
+        "userId",
+      ].sort(),
+    );
+    expect(Object.keys(transaction.bankAccount as object).sort()).toEqual([
+      "id",
+      "mask",
+      "name",
+    ]);
+  });
+
   test("rejects a limit above the allowed maximum (validation)", async ({
     request,
   }) => {

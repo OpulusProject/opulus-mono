@@ -1,8 +1,8 @@
 import { getSession } from "@/services/session/getSession.js";
 import {
-  ItemPublicDTO,
   itemService,
-  toItemPublicDTO,
+  ItemsResponse,
+  toItemDTO,
   UnauthorizedError,
 } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
@@ -13,7 +13,7 @@ import { NextFunction, Request, Response } from "express";
  */
 export async function getItemsController(
   req: Request,
-  res: Response,
+  res: Response<ItemsResponse>,
   next: NextFunction
 ) {
   try {
@@ -28,27 +28,8 @@ export async function getItemsController(
     // Get all items with bank accounts (service returns full data)
     const items = await itemService.getAllByUserId(userId);
 
-    // Transform to public DTO, filtering sensitive fields
-    const publicItems: ItemPublicDTO[] = items.map((item) =>
-      toItemPublicDTO({
-        id: item.id,
-        institutionName: item.institutionName,
-        institutionLogo: item.institutionLogo,
-        institutionColor: item.institutionColor,
-        errorType: item.errorType,
-        errorCode: item.errorCode,
-        errorMessage: item.errorMessage,
-        displayMessage: item.displayMessage,
-        syncedAt: item.syncedAt,
-        bankAccounts: item.bankAccounts,
-      })
-    );
-
-    res.status(200).json({
-      data: {
-        items: publicItems,
-      },
-    });
+    // Transform to the public shape, leaving out sensitive fields
+    res.status(200).json({ data: { items: items.map(toItemDTO) } });
   } catch (error) {
     next(error);
   }

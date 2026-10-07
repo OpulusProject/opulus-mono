@@ -1,4 +1,4 @@
-import type { Transaction } from '@opulus/core';
+import type { TransactionDTO } from '@opulus/core';
 
 /**
  * Calculate largest spending category from transactions
@@ -6,7 +6,7 @@ import type { Transaction } from '@opulus/core';
  * @returns The category name with the highest spending, or null if no spending transactions
  */
 export function calculateLargestCategory(
-  transactions: Transaction[]
+  transactions: TransactionDTO[]
 ): string | null {
   if (!transactions || transactions.length === 0) {
     return null;
@@ -15,8 +15,8 @@ export function calculateLargestCategory(
   // Map to sum spending by category (using first category if multiple)
   const categorySpending = new Map<string, number>();
 
-  transactions.forEach((transaction: Transaction) => {
-    const amount = Number(transaction.amount);
+  transactions.forEach((transaction: TransactionDTO) => {
+    const amount = transaction.amount;
     // Only include positive amounts (spending)
     if (amount > 0) {
       const categories = transaction.category || [];
@@ -45,9 +45,9 @@ export function calculateLargestCategory(
  * Calculate total spending from transactions
  * Only includes positive amounts (money out/spending per Plaid convention)
  */
-export function calculateTotalSpending(transactions: Transaction[]): number {
+export function calculateTotalSpending(transactions: TransactionDTO[]): number {
   return transactions.reduce((sum, transaction) => {
-    const amount = Number(transaction.amount);
+    const amount = transaction.amount;
     // Only include positive amounts (money out/spending per Plaid convention)
     if (amount > 0) {
       return sum + amount;

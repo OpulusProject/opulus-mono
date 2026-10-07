@@ -21,6 +21,27 @@ test.describe("GET /api/session", () => {
     await expectStatus(res, 401);
   });
 
+  test("returns only the documented user and session fields", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie } = await createAuthedUser(request);
+
+    // Act
+    const res = await request.get("/api/session", {
+      headers: withSession(cookie),
+    });
+
+    // Assert: the auth library knows more about the user than the client needs.
+    await expectOk(res);
+    const { user, session } = (await res.json()).data;
+    expect(Object.keys(user).sort()).toEqual(
+      ["email", "emailVerified", "id", "image", "name"].sort(),
+    );
+    expect(Object.keys(session).sort()).toEqual(["expiresAt", "id"]);
+    expect(new Date(session.expiresAt).toISOString()).toBe(session.expiresAt);
+  });
+
   test("returns the authenticated user for a valid session", async ({
     request,
   }) => {

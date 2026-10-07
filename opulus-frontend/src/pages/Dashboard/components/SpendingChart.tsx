@@ -1,6 +1,6 @@
 'use client';
 
-import type { Transaction } from '@opulus/core';
+import type { TransactionDTO } from '@opulus/core';
 import * as React from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
@@ -67,8 +67,8 @@ export function SpendingChart() {
     // Group transactions by date and sum spending (positive amounts = money out)
     const spendingByDate = new Map<string, number>();
 
-    transactionsData.transactions.forEach((transaction: Transaction) => {
-      const amount = Number(transaction.amount);
+    transactionsData.transactions.forEach((transaction: TransactionDTO) => {
+      const amount = transaction.amount;
       // Only include positive amounts (money out/spending per Plaid convention)
       // Positive values = money moves out of account = spending
       if (amount > 0) {

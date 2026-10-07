@@ -4,13 +4,17 @@
 
 import type { PlaidErrorType } from "plaid";
 
-import { Account, toBankAccountDTO } from "./bankAccount.js";
+import {
+  BankAccountDTO,
+  toBankAccountDTO,
+} from "../bankAccounts/bankAccount.js";
+import { toIsoString } from "../common.js";
 
 /**
- * Public DTO for Item response
+ * Item (a connection to an institution) as returned by the API
  * Only includes fields safe to expose to the client
  */
-export interface ItemPublicDTO {
+export interface ItemDTO {
   id: string;
   institutionName: string | null;
   institutionLogo: string | null;
@@ -20,7 +24,7 @@ export interface ItemPublicDTO {
   errorMessage: string | null;
   displayMessage: string | null;
   syncedAt: string | null;
-  accounts: Account[];
+  accounts: BankAccountDTO[];
 }
 
 /**
@@ -28,7 +32,7 @@ export interface ItemPublicDTO {
  */
 export interface ItemsResponse {
   data: {
-    items: ItemPublicDTO[];
+    items: ItemDTO[];
   };
 }
 
@@ -38,7 +42,7 @@ export interface ItemsResponse {
  * @param item - Full item data from service (includes bankAccounts)
  * @returns Public DTO with only safe-to-expose fields
  */
-export function toItemPublicDTO(item: {
+export function toItemDTO(item: {
   id: string;
   institutionName: string | null;
   institutionLogo: string | null;
@@ -49,7 +53,7 @@ export function toItemPublicDTO(item: {
   displayMessage: string | null;
   syncedAt: Date | null;
   bankAccounts: Array<Parameters<typeof toBankAccountDTO>[0]>;
-}): ItemPublicDTO {
+}): ItemDTO {
   return {
     id: item.id,
     institutionName: item.institutionName,
@@ -59,7 +63,7 @@ export function toItemPublicDTO(item: {
     errorCode: item.errorCode,
     errorMessage: item.errorMessage,
     displayMessage: item.displayMessage,
-    syncedAt: item.syncedAt ? item.syncedAt.toISOString() : null,
+    syncedAt: toIsoString(item.syncedAt),
     accounts: item.bankAccounts.map(toBankAccountDTO),
   };
 }
