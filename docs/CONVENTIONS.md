@@ -53,6 +53,9 @@ transaction and liability syncs). A service:
 - decides authorization itself: it fetches items with `getItem({ userId, itemId })`,
   which only returns the user's own, so a controller can't forget the check;
 - knows nothing about Express (no `req`, no `res`);
+- reads and writes through repositories and never imports Prisma (a lint rule
+  enforces it). To make several repository calls atomic, use
+  `runInTransaction(async (tx) => ...)` and pass `tx` to each call;
 - throws `AppError` subclasses.
 
 **Repositories** (`opulus-core/src/repositories`) are data access, one per model
