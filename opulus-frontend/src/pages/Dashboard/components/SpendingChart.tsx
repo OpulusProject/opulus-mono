@@ -1,6 +1,6 @@
 'use client';
 
-import type { TransactionDTO } from '@opulus/core';
+import type { TransactionDTO } from '@opulus/core/dto';
 import * as React from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 

@@ -1,4 +1,4 @@
-import type { AccountDTO, ItemDTO } from '@opulus/core';
+import type { AccountDTO, ItemDTO } from '@opulus/core/dto';
 
 /**
  * Calculate total available cash from all items

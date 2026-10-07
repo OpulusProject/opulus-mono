@@ -1,4 +1,4 @@
-import type { AccountWithConnectionDTO } from '@opulus/core';
+import type { AccountWithConnectionDTO } from '@opulus/core/dto';
 import React, { useState } from 'react';
 
 import { ListRow } from '@/common/ListRow';

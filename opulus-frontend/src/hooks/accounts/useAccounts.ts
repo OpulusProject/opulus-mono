@@ -1,4 +1,4 @@
-import { AccountType, AccountsResponse } from '@opulus/core';
+import { AccountType, AccountsResponse } from '@opulus/core/dto';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';

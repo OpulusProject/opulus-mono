@@ -7,28 +7,12 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
-    "./client/prisma": {
-      "import": "./dist/client/prisma.js",
-      "types": "./dist/client/prisma.d.ts"
-    },
-    "./client/plaid": {
-      "import": "./dist/client/plaid.js",
-      "types": "./dist/client/plaid.d.ts"
-    },
-    "./services/*": {
-      "import": "./dist/services/*/index.js",
-      "types": "./dist/services/*/index.d.ts"
-    },
-    "./utils/*": {
-      "import": "./dist/utils/*.js",
-      "types": "./dist/utils/*.d.ts"
-    },
-    "./config": {
-      "import": "./dist/config/default.js",
-      "types": "./dist/config/default.d.ts"
+    "./dto": {
+      "types": "./dist/types/dto/index.d.ts",
+      "import": "./dist/types/dto/index.js"
     }
   },
   "scripts": {

@@ -1,4 +1,4 @@
-import { LoginRequest } from '@opulus/core';
+import { LoginRequest } from '@opulus/core/dto';
 import { useNavigate } from '@tanstack/react-router';
 import { Gem } from 'lucide-react';
 import { useState } from 'react';

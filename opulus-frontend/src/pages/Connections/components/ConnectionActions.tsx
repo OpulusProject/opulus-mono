@@ -1,4 +1,4 @@
-import type { ItemDTO } from '@opulus/core';
+import type { ItemDTO } from '@opulus/core/dto';
 import { MoreHorizontal } from 'lucide-react';
 import React, { useState } from 'react';
 

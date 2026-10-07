@@ -1,6 +1,6 @@
 'use client';
 
-import type { TransactionDTO } from '@opulus/core';
+import type { TransactionDTO } from '@opulus/core/dto';
 import {
   ColumnDef,
   ColumnFiltersState,

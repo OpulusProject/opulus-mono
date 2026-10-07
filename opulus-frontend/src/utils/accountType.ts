@@ -1,4 +1,4 @@
-import type { AccountDTO, AccountType } from '@opulus/core';
+import type { AccountDTO, AccountType } from '@opulus/core/dto';
 
 /**
  * An account's type for grouping: Plaid's own `type`, with the deprecated
