@@ -9,12 +9,8 @@ import { testDb } from "../../shared/db.js";
 import {
   createSandboxItem,
   PLAID_SANDBOX_URL,
-  resetSandboxLogin,
   type SandboxCredentials,
 } from "../helpers/plaidSandbox.js";
-
-// Shared with the backend integration suite.
-export { resetSandboxLogin };
 
 /**
  * Where Plaid should deliver webhooks: the public URL of the receiver under

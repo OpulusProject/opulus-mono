@@ -1,13 +1,15 @@
 import { expect, test } from "@playwright/test";
 
 import { createAuthedUser } from "../../shared/fixtures/auth.js";
-import { requireSandboxCredentials } from "../helpers/plaidSandbox.js";
+import {
+  requireSandboxCredentials,
+  resetSandboxLogin,
+} from "../helpers/plaidSandbox.js";
 import {
   fireNewAccountsAvailableOrSkip,
   fireSandboxWebhook,
   linkItemWithWebhook,
   readItem,
-  resetSandboxLogin,
   waitFor,
 } from "./helpers.js";
 
