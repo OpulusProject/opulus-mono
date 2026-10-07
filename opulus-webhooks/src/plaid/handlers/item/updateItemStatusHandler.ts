@@ -1,101 +1,37 @@
 import type { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
 import {
-  AppError,
-  itemRepository,
-  logger,
-  NotFoundError,
-  toItemErrorData,
-} from "@opulus/core";
-
-type ItemUpdate = Parameters<typeof itemRepository.update>[1];
+  recordItemStatus,
+  type ItemStatusWebhookCode,
+} from "@/services/recordItemStatus.js";
+import { AppError, logger, NotFoundError } from "@opulus/core";
 
 /**
- * The item update that an ITEM webhook calls for.
- *
- * NEW_ACCOUNTS_AVAILABLE only flags the item. Plaid does not return the new
- * accounts from /accounts/get until the user shares them in update mode, so
- * there is nothing to fetch yet; the Connections page prompts the user, and
- * updateItemAccounts picks the accounts up once they have.
- *
- * Connection problems are stored in the item's error columns, which the
- * Connections page already reads (it shows a Reconnect action for the codes
- * below). The two "pending" warnings are not errors in Plaid's terms, but they
- * need the same treatment, so they are stored with the webhook code as the
- * error code.
- * https://plaid.com/docs/api/items/#webhooks
- */
-function statusUpdateFor(event: PlaidWebhookEvent): ItemUpdate {
-  switch (event.webhook_code) {
-    case "ERROR":
-    case "USER_PERMISSION_REVOKED":
-      // Plaid says to keep the item here so the user can re-grant access.
-      return toItemErrorData(event.error);
-
-    case "NEW_ACCOUNTS_AVAILABLE":
-      return { newAccountsAvailable: true };
-
-    case "LOGIN_REPAIRED":
-      // The item healed without the user going through update mode.
-      return toItemErrorData(null);
-
-    case "PENDING_EXPIRATION":
-      return {
-        ...toItemErrorData({
-          error_type: "ITEM_ERROR",
-          error_code: "PENDING_EXPIRATION",
-          error_message: `Access consent expires on ${event.consent_expiration_time ?? "an upcoming date"}`,
-        }),
-        consentExpirationTime: event.consent_expiration_time
-          ? new Date(event.consent_expiration_time)
-          : undefined,
-      };
-
-    case "PENDING_DISCONNECT":
-      return toItemErrorData({
-        error_type: "ITEM_ERROR",
-        error_code: "PENDING_DISCONNECT",
-        error_message: `Plaid will disconnect this item on ${event.disconnect_time ?? "an upcoming date"}${event.reason ? ` (${event.reason})` : ""}`,
-      });
-
-    default:
-      throw new AppError(
-        `No status update for ITEM webhook code ${event.webhook_code}`,
-        500
-      );
-  }
-}
-
-/**
- * Handle ITEM webhooks that change an item's connection status: record the
- * error, warning or new-accounts flag, or clear the error once Plaid reports
- * the item healthy again.
+ * Handle ITEM webhooks that change an item's connection status: read the
+ * event and hand it to `recordItemStatus`.
  */
 export async function updateItemStatusHandler(
-  event: PlaidWebhookEvent
+  event: PlaidWebhookEvent,
+  webhookCode: ItemStatusWebhookCode
 ): Promise<void> {
   if (!event.item_id) {
     throw new AppError("item_id is required for ITEM webhook", 400);
   }
 
   try {
-    const item = await itemRepository.getByPlaidItemId(event.item_id);
-    await itemRepository.update(item.id, statusUpdateFor(event));
-
-    logger.info(
-      {
-        item_id: item.id,
-        plaid_item_id: event.item_id,
-        webhook_code: event.webhook_code,
-        error_code: event.error?.error_code,
-      },
-      "Item status updated from ITEM webhook"
-    );
+    await recordItemStatus({
+      plaidItemId: event.item_id,
+      webhookCode,
+      error: event.error,
+      consentExpirationTime: event.consent_expiration_time,
+      disconnectTime: event.disconnect_time,
+      reason: event.reason,
+    });
   } catch (error) {
     // The user may have disconnected the item before the webhook arrived;
     // retrying would never find it.
     if (error instanceof NotFoundError) {
       logger.warn(
-        { plaid_item_id: event.item_id, webhook_code: event.webhook_code },
+        { plaid_item_id: event.item_id, webhook_code: webhookCode },
         "ITEM webhook for an item we no longer have; ignoring"
       );
       return;

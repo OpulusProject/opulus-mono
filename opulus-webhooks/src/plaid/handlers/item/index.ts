@@ -16,7 +16,7 @@ export async function handleItemWebhook(
     case "PENDING_DISCONNECT":
     case "PENDING_EXPIRATION":
     case "USER_PERMISSION_REVOKED":
-      await updateItemStatusHandler(event);
+      await updateItemStatusHandler(event, webhook_code);
       break;
     default:
       logger.warn(

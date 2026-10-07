@@ -93,9 +93,12 @@ class TransactionRepository {
    * @throws ConflictError if transaction already exists
    * @throws AppError if database error occurs
    */
-  async create(data: CreateTransactionData) {
+  async create(
+    data: CreateTransactionData,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
     try {
-      return await this.prisma.transaction.create({ data });
+      return await client.transaction.create({ data });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {

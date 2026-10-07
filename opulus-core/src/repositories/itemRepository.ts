@@ -280,7 +280,7 @@ class ItemRepository {
   /**
    * List every item. Used by the reconcile CLI to walk the full catalog.
    */
-  async listAll() {
+  async getAll() {
     try {
       return await this.prisma.item.findMany({
         select: {

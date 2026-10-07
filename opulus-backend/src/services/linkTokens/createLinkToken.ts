@@ -24,7 +24,7 @@ export async function createLinkToken(
 ): Promise<CreateLinkTokenResult> {
   const { userId } = params;
 
-  const user = await userRepository.get(userId);
+  const user = await userRepository.getById(userId);
 
   let userToken = user.plaidUserToken;
 
