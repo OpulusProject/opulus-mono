@@ -19,10 +19,10 @@ import config from "../config/default.js";
 import { getPlaidErrorCode, handlePlaidError } from "../utils/plaidErrors.js";
 
 /**
- * Service for managing Plaid integrations
+ * Gateway to the Plaid API
  * Handles Plaid API interactions including users, tokens, items, and accounts
  */
-class PlaidService {
+class PlaidGateway {
   constructor(private plaid: PlaidApi) {}
 
   // ============================================================================
@@ -378,4 +378,4 @@ class PlaidService {
 }
 
 // Export singleton instance
-export const plaidService = new PlaidService(plaidClient);
+export const plaidGateway = new PlaidGateway(plaidClient);

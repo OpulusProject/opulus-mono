@@ -1,6 +1,6 @@
 import {
   linkSessionRepository,
-  plaidService,
+  plaidGateway,
   userRepository,
 } from "@opulus/core";
 
@@ -29,7 +29,7 @@ export async function createLinkToken(
   let userToken = user.plaidUserToken;
 
   if (!userToken) {
-    const plaidUserResponse = await plaidService.createUser(userId);
+    const plaidUserResponse = await plaidGateway.createUser(userId);
     const { user_token: plaidUserToken, user_id: plaidId } = plaidUserResponse;
 
     await userRepository.update({
@@ -41,7 +41,7 @@ export async function createLinkToken(
     userToken = plaidUserToken;
   }
 
-  const linkTokenResponse = await plaidService.createLinkToken(
+  const linkTokenResponse = await plaidGateway.createLinkToken(
     userToken,
     userId
   );

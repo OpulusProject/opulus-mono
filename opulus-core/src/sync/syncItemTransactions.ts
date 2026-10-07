@@ -1,7 +1,7 @@
 import type { RemovedTransaction } from "../client/plaid.js";
 import prisma from "../client/prisma.js";
 import { itemRepository } from "../repositories/itemRepository.js";
-import { plaidService } from "../services/plaidService.js";
+import { plaidGateway } from "../gateways/plaidGateway.js";
 import { normalizePlaidTransaction } from "../repositories/transactionRepository.js";
 import { logger } from "../utils/logger.js";
 
@@ -23,7 +23,7 @@ export async function syncItemTransactions(
   const item = await itemRepository.getByPlaidItemId(plaidItemId);
 
   const { added, modified, removed, nextCursor } =
-    await plaidService.transactionsSync(
+    await plaidGateway.transactionsSync(
       item.accessToken,
       item.transactionCursor
     );

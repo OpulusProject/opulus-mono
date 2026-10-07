@@ -1,6 +1,6 @@
 import {
   InstitutionsResponse,
-  plaidService,
+  plaidGateway,
   toInstitutionDTO,
 } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
@@ -16,7 +16,7 @@ export async function getInstitutionsController(
 ) {
   try {
     // Get institutions from Plaid
-    const institutionsResponse = await plaidService.getInstitutions();
+    const institutionsResponse = await plaidGateway.getInstitutions();
 
     res.status(200).json({
       data: {

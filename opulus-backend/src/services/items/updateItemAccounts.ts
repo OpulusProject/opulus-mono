@@ -2,7 +2,7 @@ import {
   itemRepository,
   logger,
   normalizePlaidAccount,
-  plaidService,
+  plaidGateway,
   prisma,
   toItemErrorData,
   trySyncItemLiabilities,
@@ -37,12 +37,12 @@ export async function updateItemAccounts(
   params: UpdateItemAccountsParams
 ): Promise<UpdateItemAccountsResult> {
   const item = await getItem(params);
-  const accountsResponse = await plaidService.getAccounts(item.accessToken);
+  const accountsResponse = await plaidGateway.getAccounts(item.accessToken);
 
   // The user just went through update mode, so whatever error or warning a
   // webhook stored may be resolved. Plaid sends no webhook for that, so take
   // the item's current state from Plaid.
-  const plaidItem = await plaidService.getItem(item.accessToken);
+  const plaidItem = await plaidGateway.getItem(item.accessToken);
   await itemRepository.update(item.id, {
     ...toItemErrorData(plaidItem.item.error),
     consentExpirationTime: plaidItem.item.consent_expiration_time
