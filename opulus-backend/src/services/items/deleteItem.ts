@@ -6,7 +6,7 @@ import {
   transactionService,
 } from "@opulus/core";
 
-import { getOwnedItem } from "./getOwnedItem.js";
+import { getItem } from "./getItem.js";
 
 export interface DeleteItemParams {
   userId: string;
@@ -25,7 +25,7 @@ export interface DeleteItemParams {
  * @throws UnauthorizedError if the item belongs to another user
  */
 export async function deleteItem(params: DeleteItemParams): Promise<void> {
-  const item = await getOwnedItem(params);
+  const item = await getItem(params);
 
   await plaidService.removeItem(item.accessToken);
 
