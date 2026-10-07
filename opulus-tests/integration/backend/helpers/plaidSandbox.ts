@@ -55,6 +55,7 @@ export function requireSandboxCredentials(): SandboxCredentials {
 export async function createSandboxPublicToken(
   creds: SandboxCredentials,
   institutionId: string = DEFAULT_SANDBOX_INSTITUTION_ID,
+  options: { webhookUrl?: string } = {},
 ): Promise<string> {
   const res = await fetch(`${PLAID_SANDBOX_URL}/sandbox/public_token/create`, {
     method: "POST",
@@ -64,6 +65,8 @@ export async function createSandboxPublicToken(
       secret: creds.secret,
       institution_id: institutionId,
       initial_products: ["transactions", "liabilities"],
+      // Where Plaid delivers this item's webhooks (the receiver under test).
+      ...(options.webhookUrl && { options: { webhook: options.webhookUrl } }),
     }),
   });
 
@@ -100,8 +103,13 @@ export async function createSandboxItem(
   cookie: string,
   creds: SandboxCredentials,
   institutionId: string = DEFAULT_SANDBOX_INSTITUTION_ID,
+  options: { webhookUrl?: string } = {},
 ): Promise<CreatedSandboxItem> {
-  const publicToken = await createSandboxPublicToken(creds, institutionId);
+  const publicToken = await createSandboxPublicToken(
+    creds,
+    institutionId,
+    options,
+  );
   const res = await request.post("/api/items", {
     headers: withSession(cookie),
     data: { publicToken, institutionId },
