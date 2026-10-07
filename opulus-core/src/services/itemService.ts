@@ -25,6 +25,26 @@ export interface CreateItemData {
 }
 
 /**
+ * The item's four error columns for a Plaid error (or all null for no error).
+ * Used wherever an error is stored or cleared so they always change together.
+ */
+export function toItemErrorData(
+  error?: {
+    error_type?: PlaidErrorType | string | null;
+    error_code?: string | null;
+    error_message?: string | null;
+    display_message?: string | null;
+  } | null
+) {
+  return {
+    errorType: (error?.error_type as PlaidErrorType | null | undefined) ?? null,
+    errorCode: error?.error_code ?? null,
+    errorMessage: error?.error_message ?? null,
+    displayMessage: error?.display_message ?? null,
+  };
+}
+
+/**
  * Normalize Plaid Item to CreateItemData format
  * Handles field name mapping and type conversions
  * @param plaidItem - The Plaid item
@@ -51,10 +71,7 @@ export function normalizePlaidItem(
     institutionColor: institution?.primary_color ?? null,
     institutionLogo: institution?.logo ?? null,
     webhook: plaidItem.webhook ?? null,
-    errorType: plaidItem.error?.error_type ?? null,
-    errorCode: plaidItem.error?.error_code ?? null,
-    errorMessage: plaidItem.error?.error_message ?? null,
-    displayMessage: plaidItem.error?.display_message ?? null,
+    ...toItemErrorData(plaidItem.error),
     availableProducts: plaidItem.available_products.map((p) => p.toString()),
     billedProducts: plaidItem.billed_products.map((p) => p.toString()),
     products: plaidItem.products?.map((p) => p.toString()),
