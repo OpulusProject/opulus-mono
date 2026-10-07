@@ -1,0 +1,89 @@
+meta {
+  name: Get Accounts
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/api/accounts
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+params:query {
+  ~type: credit,loan
+}
+
+docs {
+  # Get Accounts
+
+  Get the authenticated user's accounts across all their connections, optionally filtered by account type.
+
+  **Endpoint:** `GET /api/accounts`
+
+  ## Authentication
+
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+
+  ## Query Parameters
+
+  - `type` (optional): One or more account types to return, repeated (`?type=credit&type=loan`) or comma-separated (`?type=credit,loan`). Omit it to get every account.
+    - `depository`: checking, savings, cash management, CD, HSA, money market
+    - `investment`: TFSA, RRSP, brokerage, and other investment accounts (the legacy `brokerage` type is included)
+    - `credit`: credit cards
+    - `loan`: mortgages, student and auto loans, lines of credit
+    - `other`: any other or unrecognized type
+
+  ## Response
+
+  Accounts sorted by name. Each account has the same fields as the accounts nested in **Get Items**, plus the `connection` it belongs to (the item's `id`, `institutionName`, and `errorCode`).
+
+  ## Success Response (200)
+
+  ```json
+  {
+    "data": {
+      "accounts": [
+        {
+          "id": "acct_2",
+          "name": "Platinum Rewards Visa",
+          "officialName": null,
+          "type": "credit",
+          "subtype": "credit card",
+          "mask": "4242",
+          "balanceCurrent": 250.5,
+          "balanceAvailable": 4749.5,
+          "balanceLimit": 5000,
+          "isoCurrencyCode": "CAD",
+          "liabilityDetails": null,
+          "connection": {
+            "id": "item_123",
+            "institutionName": "First Platypus Bank",
+            "errorCode": null
+          }
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Error Responses
+
+  - `400 Bad Request`: `type` is not one of the supported account types
+    ```json
+    {
+      "error": "Validation failed",
+      "details": [{ "field": "type.0", "message": "Invalid enum value..." }]
+    }
+    ```
+
+  - `401 Unauthorized`: No active session found
+
+  ## Notes
+
+  - `liabilityDetails` is only present for credit cards, mortgages, and student loans at institutions that report liabilities (see **Get Items**)
+}

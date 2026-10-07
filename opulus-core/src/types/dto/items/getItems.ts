@@ -4,8 +4,7 @@
 
 import type { PlaidErrorType } from "plaid";
 
-import { Account } from "./bankAccount.js";
-import { toLiabilityDetailsDTO } from "./liabilityDetails.js";
+import { Account, toAccountDTO } from "./bankAccount.js";
 
 /**
  * Public DTO for Item response
@@ -49,19 +48,7 @@ export function toItemPublicDTO(item: {
   errorMessage: string | null;
   displayMessage: string | null;
   syncedAt: Date | null;
-  bankAccounts: Array<{
-    id: string;
-    name: string;
-    officialName: string | null;
-    type: string;
-    subtype: string | null;
-    mask: string | null;
-    balanceAvailable: any; // Prisma Decimal
-    balanceCurrent: any; // Prisma Decimal
-    balanceLimit: any; // Prisma Decimal
-    isoCurrencyCode: string | null;
-    liabilityDetails: Parameters<typeof toLiabilityDetailsDTO>[0] | null;
-  }>;
+  bankAccounts: Array<Parameters<typeof toAccountDTO>[0]>;
 }): ItemPublicDTO {
   return {
     id: item.id,
@@ -73,24 +60,6 @@ export function toItemPublicDTO(item: {
     errorMessage: item.errorMessage,
     displayMessage: item.displayMessage,
     syncedAt: item.syncedAt ? item.syncedAt.toISOString() : null,
-    accounts: item.bankAccounts.map((account) => ({
-      id: account.id,
-      name: account.name,
-      officialName: account.officialName,
-      type: account.type,
-      subtype: account.subtype,
-      mask: account.mask,
-      balanceAvailable: account.balanceAvailable
-        ? Number(account.balanceAvailable)
-        : null,
-      balanceCurrent: account.balanceCurrent
-        ? Number(account.balanceCurrent)
-        : null,
-      balanceLimit: account.balanceLimit ? Number(account.balanceLimit) : null,
-      isoCurrencyCode: account.isoCurrencyCode,
-      liabilityDetails: account.liabilityDetails
-        ? toLiabilityDetailsDTO(account.liabilityDetails)
-        : null,
-    })),
+    accounts: item.bankAccounts.map(toAccountDTO),
   };
 }
