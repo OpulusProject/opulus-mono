@@ -1,4 +1,5 @@
 import type { StatusVariant } from '@/components/ui';
+import type { Notice } from '@/types/notice';
 
 /**
  * Plaid Item error codes that are resolved by sending the user through Link's
@@ -100,5 +101,21 @@ export function getItemStatus(errorCode: string | null): ItemStatus {
     label: 'Unknown error',
     inlineText: 'Unknown error',
     ctaLabel: null,
+  };
+}
+
+/** The connection problem worth showing next to a row, or null if healthy. */
+export function getStatusNotice(errorCode: string | null): Notice | null {
+  const status = getItemStatus(errorCode);
+  if (!status.inlineText) return null;
+
+  return {
+    text: status.inlineText,
+    tone:
+      status.variant === 'offline'
+        ? 'danger'
+        : status.variant === 'degraded'
+          ? 'warning'
+          : 'muted',
   };
 }

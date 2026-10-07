@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TwoFactorRouteImport } from './routes/two-factor'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as CreditAndLoansRouteImport } from './routes/credit-and-loans'
 import { Route as AccountsRouteImport } from './routes/accounts'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
@@ -31,6 +32,11 @@ const LoginRoute = LoginRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CreditAndLoansRoute = CreditAndLoansRouteImport.update({
+  id: '/credit-and-loans',
+  path: '/credit-and-loans',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountsRoute = AccountsRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/accounts': typeof AccountsRoute
+  '/credit-and-loans': typeof CreditAndLoansRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/two-factor': typeof TwoFactorRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/accounts': typeof AccountsRoute
+  '/credit-and-loans': typeof CreditAndLoansRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/two-factor': typeof TwoFactorRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/accounts': typeof AccountsRoute
+  '/credit-and-loans': typeof CreditAndLoansRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/two-factor': typeof TwoFactorRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/accounts'
+    | '/credit-and-loans'
     | '/dashboard'
     | '/login'
     | '/two-factor'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/accounts'
+    | '/credit-and-loans'
     | '/dashboard'
     | '/login'
     | '/two-factor'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/accounts'
+    | '/credit-and-loans'
     | '/dashboard'
     | '/login'
     | '/two-factor'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
   AccountsRoute: typeof AccountsRoute
+  CreditAndLoansRoute: typeof CreditAndLoansRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   TwoFactorRoute: typeof TwoFactorRoute
@@ -155,6 +168,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/credit-and-loans': {
+      id: '/credit-and-loans'
+      path: '/credit-and-loans'
+      fullPath: '/credit-and-loans'
+      preLoaderRoute: typeof CreditAndLoansRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/accounts': {
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
   AccountsRoute: AccountsRoute,
+  CreditAndLoansRoute: CreditAndLoansRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   TwoFactorRoute: TwoFactorRoute,

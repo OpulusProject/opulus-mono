@@ -52,10 +52,14 @@ export function toItemPublicDTO(item: {
   bankAccounts: Array<{
     id: string;
     name: string;
+    officialName: string | null;
     type: string;
+    subtype: string | null;
+    mask: string | null;
     balanceAvailable: any; // Prisma Decimal
     balanceCurrent: any; // Prisma Decimal
     balanceLimit: any; // Prisma Decimal
+    isoCurrencyCode: string | null;
     liabilityDetails: Parameters<typeof toLiabilityDetailsDTO>[0] | null;
   }>;
 }): ItemPublicDTO {
@@ -72,7 +76,10 @@ export function toItemPublicDTO(item: {
     accounts: item.bankAccounts.map((account) => ({
       id: account.id,
       name: account.name,
+      officialName: account.officialName,
       type: account.type,
+      subtype: account.subtype,
+      mask: account.mask,
       balanceAvailable: account.balanceAvailable
         ? Number(account.balanceAvailable)
         : null,
@@ -80,6 +87,7 @@ export function toItemPublicDTO(item: {
         ? Number(account.balanceCurrent)
         : null,
       balanceLimit: account.balanceLimit ? Number(account.balanceLimit) : null,
+      isoCurrencyCode: account.isoCurrencyCode,
       liabilityDetails: account.liabilityDetails
         ? toLiabilityDetailsDTO(account.liabilityDetails)
         : null,

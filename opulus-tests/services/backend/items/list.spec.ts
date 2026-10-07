@@ -72,6 +72,51 @@ test.describe("GET /api/items", () => {
     ]);
   });
 
+  test("returns the account details needed to display it", async ({
+    request,
+  }) => {
+    // Arrange: a credit card with a limit, mask, and currency.
+    const { cookie, userId } = await createAuthedUser(request);
+    const card = await seedItemWithAccount(userId, {
+      account: {
+        officialName: "Platinum Rewards Visa",
+        type: "credit",
+        subtype: "credit card",
+        mask: "4242",
+        balanceCurrent: 250.5,
+        balanceAvailable: 4749.5,
+        balanceLimit: 5000,
+        isoCurrencyCode: "CAD",
+      },
+    });
+
+    // Act
+    const res = await request.get("/api/items", {
+      headers: withSession(cookie),
+    });
+
+    // Assert
+    await expectOk(res);
+    const items = (await res.json()).data.items as Array<{
+      id: string;
+      accounts: Array<Record<string, unknown>>;
+    }>;
+    const item = items.find((i) => i.id === card.itemId);
+    expect(item?.accounts).toEqual([
+      expect.objectContaining({
+        id: card.accountId,
+        officialName: "Platinum Rewards Visa",
+        type: "credit",
+        subtype: "credit card",
+        mask: "4242",
+        balanceCurrent: 250.5,
+        balanceAvailable: 4749.5,
+        balanceLimit: 5000,
+        isoCurrencyCode: "CAD",
+      }),
+    ]);
+  });
+
   test("returns liability details for an account that has them, and null otherwise", async ({
     request,
   }) => {
