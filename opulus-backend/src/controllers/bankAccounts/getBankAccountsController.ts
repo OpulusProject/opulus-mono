@@ -1,3 +1,4 @@
+import { getValidatedQuery } from "@/middleware/validation.js";
 import { getSession } from "@/services/session/getSession.js";
 import {
   BANK_ACCOUNT_TYPES,
@@ -38,9 +39,7 @@ export async function getBankAccountsController(
       throw new UnauthorizedError("Authentication required");
     }
 
-    const { type } = req.validatedQuery as z.infer<
-      typeof getBankAccountsQuerySchema
-    >;
+    const { type } = getValidatedQuery<typeof getBankAccountsQuerySchema>(req);
 
     const bankAccounts = await bankAccountService.getAllByUserId(
       session.user.id,
