@@ -1,4 +1,4 @@
-import type { AccountWithConnection } from '@opulus/core';
+import type { BankAccountWithConnection } from '@opulus/core';
 import React, { useState } from 'react';
 
 import { ListRow } from '@/common/ListRow';
@@ -13,7 +13,7 @@ import { AccountRow } from './AccountRow';
 
 interface AccountGroupProps {
   title: string;
-  accounts: AccountWithConnection[];
+  accounts: BankAccountWithConnection[];
 }
 
 export const AccountGroup: React.FC<AccountGroupProps> = ({

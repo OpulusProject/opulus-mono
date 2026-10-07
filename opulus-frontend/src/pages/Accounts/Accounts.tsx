@@ -1,4 +1,4 @@
-import type { AccountWithConnection } from '@opulus/core';
+import type { BankAccountWithConnection } from '@opulus/core';
 
 import {
   type AccountGroupConfig,
@@ -18,7 +18,7 @@ function countLabel(count: number) {
   return `${count} account${count === 1 ? '' : 's'}`;
 }
 
-function getSummary(accounts: AccountWithConnection[]): SummaryStat[] {
+function getSummary(accounts: BankAccountWithConnection[]): SummaryStat[] {
   const cash = accounts.filter((a) => getAccountType(a) === 'depository');
   const investments = accounts.filter(
     (a) => getAccountType(a) === 'investment'

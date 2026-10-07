@@ -1,4 +1,4 @@
-import type { AccountWithConnection } from '@opulus/core';
+import type { BankAccountWithConnection } from '@opulus/core';
 import React from 'react';
 
 import { ListRow } from '@/common/ListRow';
@@ -10,7 +10,7 @@ import {
 import { getStatusNotice } from '@/utils/itemStatus';
 
 interface AccountRowProps {
-  account: AccountWithConnection;
+  account: BankAccountWithConnection;
 }
 
 export const AccountRow: React.FC<AccountRowProps> = ({ account }) => {

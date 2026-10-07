@@ -39,7 +39,7 @@ export function useCreateItem() {
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ['items'] });
-      void queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      void queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
     },
   });
 }
