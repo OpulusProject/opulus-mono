@@ -170,6 +170,23 @@ export async function waitFor<T>(
   );
 }
 
+/** The ids of the user's accounts on one item, as the client lists them. */
+export async function readAccountIds(
+  request: APIRequestContext,
+  cookie: string,
+  itemId: string,
+): Promise<string[]> {
+  const res = await request.get("/api/accounts", {
+    headers: withSession(cookie),
+  });
+  const { data } = (await res.json()) as {
+    data: { accounts: Array<{ id: string; connection: { id: string } }> };
+  };
+  return data.accounts
+    .filter((a) => a.connection.id === itemId)
+    .map((a) => a.id);
+}
+
 /** Read the user's item as the client sees it. */
 export async function readItem(
   request: APIRequestContext,
