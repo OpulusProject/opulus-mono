@@ -1,16 +1,10 @@
 import { getRequestSession } from "@/middleware/session/requireSession.js";
-import {
-  accountService,
-  itemService,
-  plaidService,
-  prisma,
-  transactionService,
-  UnauthorizedError,
-} from "@opulus/core";
+import { deleteItem } from "@/services/items/deleteItem.js";
 import { NextFunction, Request, Response } from "express";
 
 /**
- * Deletes a specified item for the authenticated user with metadata
+ * Disconnects a specified item for the authenticated user, deleting everything
+ * linked to it
  * DELETE /api/items/:id
  */
 export async function deleteItemController(
@@ -21,24 +15,7 @@ export async function deleteItemController(
   try {
     const session = getRequestSession(res);
 
-    // Permission check
-    const itemId = req.params.id;
-    const item = await itemService.getById(itemId);
-    if (item.userId !== session.user.id) {
-      throw new UnauthorizedError("You do not have access to this item");
-    }
-
-    // Disconnect the item from Plaid
-    await plaidService.removeItem(item.accessToken);
-
-    // Delete the item and everything linked to it atomically
-    await prisma.$transaction(async (tx) => {
-      await transactionService.deleteByItemId(itemId, tx);
-      await accountService.deleteByItemId(itemId, tx);
-      await itemService.delete(itemId, tx);
-    });
-
-    // TODO: record deletion of item
+    await deleteItem({ userId: session.user.id, itemId: req.params.id });
 
     res.status(204).send();
   } catch (error) {
