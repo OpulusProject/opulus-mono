@@ -64,7 +64,7 @@ model AuthAccount {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  @@map("account")
+  @@map("auth_account")
 }
 
 model Verification {
@@ -147,7 +147,7 @@ model Account {
   // Index for stable account lookups
   @@unique([providerAccountId, itemId])
   @@index([persistentAccountId])
-  @@map("bank_account")
+  @@map("account")
 }
 
 model Transaction {
