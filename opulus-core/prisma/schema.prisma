@@ -19,7 +19,7 @@ model User {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @default(now()) @updatedAt
   sessions           Session[]
-  accounts           Account[]
+  authAccounts       AuthAccount[]
   linkSessions       LinkSession[]
   accountLiabilities AccountLiability[]
   items              Item[]
@@ -46,7 +46,9 @@ model Session {
   @@map("session")
 }
 
-model Account {
+/// better-auth's linked-login table (credentials and OAuth providers). Named
+/// AuthAccount so "Account" can mean a financial account.
+model AuthAccount {
   id                    String    @id
   accountId             String
   providerId            String

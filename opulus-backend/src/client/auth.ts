@@ -37,6 +37,10 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  // better-auth's account table is our AuthAccount model (see schema.prisma)
+  account: {
+    modelName: "authAccount",
+  },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
