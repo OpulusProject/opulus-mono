@@ -32,7 +32,6 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: 1,
   reporter: [["list"]],
-  // A test can wait on more than one webhook, each delivered over the internet.
   timeout: 180_000,
   globalTeardown: "./global-teardown.ts",
 
