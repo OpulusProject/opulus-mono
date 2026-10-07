@@ -6,6 +6,11 @@ import { withSession } from "../../../shared/client.js";
 import { testDb } from "../../../shared/db.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
+  scrambleProviderAccountIds,
+  seedAccountForItem,
+  seedTransactions,
+} from "../../../shared/fixtures/index.js";
+import {
   createSandboxItem,
   requireSandboxCredentials,
 } from "../helpers/plaidSandbox.js";
@@ -18,14 +23,9 @@ import {
  * accounts; since Plaid's view hasn't changed, we expect every account to be
  * reported as `updated` (or `unchanged`) and none as `created`.
  *
- * TODO: coverage gaps — both require seeding our DB out of sync with Plaid
- * (sandbox items are fixed on the Plaid side, so divergence has to come from
- * our side via testDb()):
- *   - "new accounts appear": delete one account row for the item post-link,
- *     re-sync, assert created === 1.
- *   - "accounts are unlinked": insert a bogus extra account row, re-sync,
- *     assert it's removed (or marked inactive, per whichever semantics the
- *     controller lands on).
+ * Sandbox items are fixed on the Plaid side, so a divergence from Plaid's view
+ * (an account Plaid no longer returns, ids that no longer match) has to be
+ * seeded from our side through the test DB fixtures.
  */
 test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
   test("reconciles a persisted item's accounts against Plaid's current view", async ({
@@ -46,11 +46,17 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     await expectOk(res);
     await expectMatchesSchema(res, UpdateItemAccountsResponseSchema);
     const body = (await res.json()) as {
-      data: { itemId: string; created: number; updated: number };
+      data: {
+        itemId: string;
+        created: number;
+        updated: number;
+        removed: number;
+      };
     };
     expect(body.data.itemId).toBe(itemId);
     expect(body.data.created).toBe(0);
     expect(body.data.updated).toBeGreaterThan(0);
+    expect(body.data.removed).toBe(0);
   });
 
   test("refreshes the item's liabilities without duplicating them", async ({
@@ -148,6 +154,82 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     await expectOk(second);
     expect((await second.json()).data.created).toBe(1);
     expect(await flag()).toBe(false);
+  });
+
+  test("removes an account Plaid no longer returns, with its transactions", async ({
+    request,
+  }) => {
+    // Arrange: a real sandbox item, plus an extra account (with transactions)
+    // that Plaid doesn't return, as if the user had de-selected it.
+    const creds = requireSandboxCredentials();
+    const { cookie, userId } = await createAuthedUser(request);
+    const { itemId } = await createSandboxItem(request, cookie, creds);
+    const gone = await seedAccountForItem({ itemId, userId });
+    const { names } = await seedTransactions({
+      userId,
+      itemId,
+      accountId: gone.accountId,
+      count: 2,
+    });
+    const listAccounts = async () =>
+      (
+        (await (
+          await request.get("/api/accounts", { headers: withSession(cookie) })
+        ).json()) as { data: { accounts: Array<{ id: string; name: string }> } }
+      ).data.accounts;
+    const before = await listAccounts();
+    expect(before.map((a) => a.id)).toContain(gone.accountId);
+
+    // Act
+    const res = await request.post(`/api/items/${itemId}/update-accounts`, {
+      headers: withSession(cookie),
+    });
+
+    // Assert: only the account Plaid no longer returns is gone, and its
+    // transactions went with it.
+    await expectOk(res);
+    expect((await res.json()).data.removed).toBe(1);
+    const after = await listAccounts();
+    expect(after.map((a) => a.id)).not.toContain(gone.accountId);
+    expect(after).toHaveLength(before.length - 1);
+    const transactions = (await (
+      await request.get("/api/transactions?limit=100", {
+        headers: withSession(cookie),
+      })
+    ).json()) as { data: { transactions: Array<{ name: string }> } };
+    for (const name of names) {
+      expect(transactions.data.transactions.map((t) => t.name)).not.toContain(
+        name,
+      );
+    }
+  });
+
+  test("removes nothing when none of Plaid's accounts match ours", async ({
+    request,
+  }) => {
+    // Arrange: a sandbox item whose accounts all carry ids Plaid doesn't know,
+    // which is what it looks like if Plaid changes every account id. That is
+    // not the user de-selecting, so none of them may be deleted.
+    const creds = requireSandboxCredentials();
+    const { cookie } = await createAuthedUser(request);
+    const { itemId } = await createSandboxItem(request, cookie, creds);
+    const originalIds = await scrambleProviderAccountIds(itemId);
+    expect(originalIds.length).toBeGreaterThan(0);
+
+    // Act
+    const res = await request.post(`/api/items/${itemId}/update-accounts`, {
+      headers: withSession(cookie),
+    });
+
+    // Assert
+    await expectOk(res);
+    expect((await res.json()).data.removed).toBe(0);
+    const accounts = (await (
+      await request.get("/api/accounts", { headers: withSession(cookie) })
+    ).json()) as { data: { accounts: Array<{ id: string }> } };
+    expect(accounts.data.accounts.map((a) => a.id)).toEqual(
+      expect.arrayContaining(originalIds),
+    );
   });
 
   test("rejects an item owned by a different user (401)", async ({

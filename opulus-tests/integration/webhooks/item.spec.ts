@@ -6,6 +6,7 @@ import {
   fireNewAccountsAvailableOrSkip,
   fireSandboxWebhook,
   linkItemWithWebhook,
+  readAccountIds,
   readItem,
   resetSandboxLogin,
   waitFor,
@@ -120,6 +121,33 @@ test.describe("ITEM webhooks (sandbox to receiver)", () => {
       (item) => item.errorCode === "PENDING_DISCONNECT",
       "the pending-disconnect warning to be recorded",
     );
+  });
+
+  test("USER_ACCOUNT_REVOKED removes one account and keeps the item", async ({
+    request,
+  }) => {
+    // Arrange
+    const creds = requireSandboxCredentials();
+    const { cookie } = await createAuthedUser(request);
+    const { itemId, accessToken } = await linkItemWithWebhook(
+      request,
+      cookie,
+      creds,
+    );
+    const before = await readAccountIds(request, cookie, itemId);
+    expect(before.length).toBeGreaterThan(1);
+
+    // Act
+    await fireSandboxWebhook(creds, accessToken, "ITEM", "USER_ACCOUNT_REVOKED");
+
+    // Assert: Plaid says to delete the revoked account's data, and only that.
+    const after = await waitFor(
+      () => readAccountIds(request, cookie, itemId),
+      (ids) => ids.length < before.length,
+      "the revoked account to be removed",
+    );
+    expect(after).toHaveLength(before.length - 1);
+    expect((await readItem(request, cookie, itemId)).id).toBe(itemId);
   });
 
   test("USER_PERMISSION_REVOKED is recorded and the item is kept", async ({
