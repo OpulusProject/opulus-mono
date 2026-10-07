@@ -43,7 +43,7 @@ async function main(): Promise<void> {
           institutionName: null as string | null,
         },
       ]
-    : await itemRepository.listAll();
+    : await itemRepository.getAll();
 
   if (items.length === 0) {
     logger.info("No items to reconcile");

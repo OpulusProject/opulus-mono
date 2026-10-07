@@ -27,4 +27,54 @@ export default [
       ],
     },
   },
+  {
+    // Services (the webhooks service's own business logic) go through
+    // repositories, like the backend's: no Prisma, no HTTP.
+    files: ["src/services/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@opulus/core",
+              importNames: ["prisma", "Prisma", "PrismaClient"],
+              message:
+                "Services use repositories, not Prisma. Use runInTransaction for transactions.",
+            },
+            {
+              name: "express",
+              message: "Services know nothing about HTTP.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Webhook handlers are the entry layer, like controllers: read the event and
+    // call a service. They don't call Plaid or Prisma themselves.
+    files: ["src/plaid/handlers/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@opulus/core",
+              importNames: [
+                "plaidGateway",
+                "prisma",
+                "Prisma",
+                "PrismaClient",
+                "runInTransaction",
+              ],
+              message:
+                "Handlers call services, not gateways or Prisma. Put the work in a service.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ];

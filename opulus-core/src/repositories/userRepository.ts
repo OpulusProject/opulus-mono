@@ -25,7 +25,7 @@ class UserRepository {
    * @throws NotFoundError if user not found
    * @throws AppError if database error occurs
    */
-  async get(userId: string) {
+  async getById(userId: string) {
     try {
       const user = await this.prisma.user.findUniqueOrThrow({
         where: { id: userId },
@@ -61,15 +61,19 @@ class UserRepository {
    * For email updates, consider using updateEmail service (if email verification required)
    *
    * @param data - User update data
+   * @param client - Optional transaction client to run inside a transaction
    * @returns Updated user
    * @throws NotFoundError if user not found
    * @throws AppError if database error occurs
    */
-  async update(data: UpdateUserData) {
+  async update(
+    data: UpdateUserData,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
     const { id, ...updateData } = data;
 
     try {
-      return await this.prisma.user.update({
+      return await client.user.update({
         where: { id },
         data: updateData,
       });

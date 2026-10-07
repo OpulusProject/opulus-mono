@@ -21,9 +21,12 @@ class LinkSessionRepository {
    * @throws ConflictError if link token already exists
    * @throws AppError if database error occurs
    */
-  async create(data: CreateLinkSessionData) {
+  async create(
+    data: CreateLinkSessionData,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
     try {
-      return await this.prisma.linkSession.create({
+      return await client.linkSession.create({
         data,
       });
     } catch (error) {
