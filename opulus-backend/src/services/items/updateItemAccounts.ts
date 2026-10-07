@@ -1,9 +1,10 @@
 import {
+  accountRepository,
   itemRepository,
   logger,
   normalizePlaidAccount,
   plaidGateway,
-  prisma,
+  runInTransaction,
   toItemErrorData,
   trySyncItemLiabilities,
 } from "@opulus/core";
@@ -53,26 +54,22 @@ export async function updateItemAccounts(
   let created = 0;
   let updated = 0;
 
-  await prisma.$transaction(async (tx) => {
+  await runInTransaction(async (tx) => {
     for (const plaidAccount of accountsResponse.accounts) {
       const data = normalizePlaidAccount(plaidAccount, item.id, item.userId);
-      const existing = await tx.account.findUnique({
-        where: {
-          providerAccountId_itemId: {
-            providerAccountId: data.providerAccountId,
-            itemId: item.id,
-          },
-        },
-        select: { id: true },
-      });
+      const existingId = await accountRepository.findIdByProviderAccountId(
+        item.id,
+        data.providerAccountId,
+        tx
+      );
 
-      if (!existing) {
-        await tx.account.create({ data });
+      if (!existingId) {
+        await accountRepository.create(data, tx);
         created += 1;
       } else {
-        await tx.account.update({
-          where: { id: existing.id },
-          data: {
+        await accountRepository.update(
+          existingId,
+          {
             name: data.name,
             officialName: data.officialName,
             type: data.type,
@@ -85,7 +82,8 @@ export async function updateItemAccounts(
             unofficialCurrencyCode: data.unofficialCurrencyCode,
             persistentAccountId: data.persistentAccountId,
           },
-        });
+          tx
+        );
         updated += 1;
       }
     }

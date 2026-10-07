@@ -115,11 +115,15 @@ class TransactionRepository {
   /**
    * Create multiple transactions in a single operation
    * @param dataArray - Array of transaction data
+   * @param client - Optional transaction client to run inside a transaction
    * @returns Created transactions
    */
-  async createMany(dataArray: CreateTransactionData[]) {
+  async createMany(
+    dataArray: CreateTransactionData[],
+    client: Prisma.TransactionClient = this.prisma
+  ) {
     try {
-      return await this.prisma.transaction.createMany({
+      return await client.transaction.createMany({
         data: dataArray,
         skipDuplicates: true, // Skip duplicates instead of throwing error
       });
@@ -139,14 +143,18 @@ class TransactionRepository {
   /**
    * Update a transaction by provider transaction ID and account ID
    * @param data - Transaction update data
+   * @param client - Optional transaction client to run inside a transaction
    * @returns Updated transaction
    * @throws NotFoundError if transaction not found
    * @throws AppError if database error occurs
    */
-  async update(data: UpdateTransactionData) {
+  async update(
+    data: UpdateTransactionData,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
     try {
       const { providerTransactionId, accountId, ...updateData } = data;
-      return await this.prisma.transaction.update({
+      return await client.transaction.update({
         where: {
           providerTransactionId_accountId: {
             providerTransactionId,
@@ -179,25 +187,22 @@ class TransactionRepository {
    * Update multiple transactions
    * Uses updateMany for bulk updates
    * @param updates - Array of transaction updates
+   * @param client - Optional transaction client. Without one the updates run in
+   *   their own transaction; with one they join the caller's.
    */
-  async updateMany(updates: UpdateTransactionData[]) {
+  async updateMany(
+    updates: UpdateTransactionData[],
+    client?: Prisma.TransactionClient
+  ) {
+    // Prisma doesn't support bulk update with different data per row, so update
+    // each one, all inside one transaction
+    const updateAll = (db: Prisma.TransactionClient) =>
+      Promise.all(updates.map((update) => this.update(update, db)));
+
     try {
-      // Prisma doesn't support bulk update with different data per row
-      // So we'll use a transaction to update each one
-      return await this.prisma.$transaction(
-        updates.map((update) => {
-          const { providerTransactionId, accountId, ...updateData } = update;
-          return this.prisma.transaction.update({
-            where: {
-              providerTransactionId_accountId: {
-                providerTransactionId,
-                accountId,
-              },
-            },
-            data: updateData,
-          });
-        })
-      );
+      return await (client
+        ? updateAll(client)
+        : this.prisma.$transaction((tx) => updateAll(tx)));
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new AppError(`Database error: ${error.message}`, 500, error.code);
@@ -214,11 +219,15 @@ class TransactionRepository {
   /**
    * Delete transactions by provider transaction IDs
    * @param transactionIds - Array of provider transaction IDs
+   * @param client - Optional transaction client to run inside a transaction
    * @returns Count of deleted transactions
    */
-  async deleteMany(transactionIds: string[]) {
+  async deleteMany(
+    transactionIds: string[],
+    client: Prisma.TransactionClient = this.prisma
+  ) {
     try {
-      return await this.prisma.transaction.deleteMany({
+      return await client.transaction.deleteMany({
         where: {
           providerTransactionId: {
             in: transactionIds,
