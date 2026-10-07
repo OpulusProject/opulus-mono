@@ -17,6 +17,9 @@ export * from "./services/plaidService.js";
 export * from "./services/transactionService.js";
 export * from "./services/userService.js";
 
+// Sync exports
+export * from "./sync/index.js";
+
 // Type exports (DTOs)
 export * from "./types/dto/index.js";
 

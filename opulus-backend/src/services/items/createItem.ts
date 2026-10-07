@@ -1,10 +1,10 @@
 import {
-  liabilityService,
   logger,
   normalizePlaidAccount,
   normalizePlaidItem,
   plaidService,
   prisma,
+  trySyncItemLiabilities,
 } from "@opulus/core";
 
 import { findDuplicateItem } from "./findDuplicateItem.js";
@@ -101,7 +101,7 @@ export async function createItem(
 
   // Liabilities (APRs, due dates, loan terms) are a bonus: fetch them now, but
   // never fail linking over them. A LIABILITIES webhook refreshes them later.
-  await liabilityService.trySyncForItem({
+  await trySyncItemLiabilities({
     id: createdItem.id,
     userId,
     accessToken,

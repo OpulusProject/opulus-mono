@@ -1,11 +1,11 @@
 import {
   itemService,
-  liabilityService,
   logger,
   normalizePlaidAccount,
   plaidService,
   prisma,
   toItemErrorData,
+  trySyncItemLiabilities,
 } from "@opulus/core";
 
 import { getItem } from "./getItem.js";
@@ -98,7 +98,7 @@ export async function updateItemAccounts(
   }
 
   // New or re-consented accounts may now have liabilities data.
-  await liabilityService.trySyncForItem(item);
+  await trySyncItemLiabilities(item);
 
   logger.info(
     {
