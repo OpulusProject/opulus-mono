@@ -23,7 +23,9 @@ export async function createItemController(
     const { publicToken, institutionId } =
       getValidatedBody<typeof createItemBodySchema>(req);
 
-    const result = await createItem(session.user.id, publicToken, {
+    const result = await createItem({
+      userId: session.user.id,
+      publicToken,
       institutionId,
     });
 

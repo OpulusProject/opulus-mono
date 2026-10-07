@@ -9,25 +9,33 @@ import {
 
 import { findDuplicateItem } from "./findDuplicateItem.js";
 
-export interface CreateItemInput {
+export interface CreateItemParams {
+  userId: string;
+  publicToken: string;
   institutionId: string;
 }
 
-export async function createItem(
-  userId: string,
-  publicToken: string,
-  input: CreateItemInput
-): Promise<
+export type CreateItemResult =
   | { duplicate: true; existingItemId: string }
-  | { duplicate: false; item: { id: string } }
-> {
-  const duplicate = await findDuplicateItem(userId, input.institutionId);
+  | { duplicate: false; item: { id: string } };
+
+/**
+ * Connect an institution for the user: exchange Plaid Link's public token for
+ * an access token, and store the item with its accounts and liabilities. If the
+ * user already has an item for the institution, nothing is exchanged and the
+ * existing item's id is returned.
+ */
+export async function createItem(
+  params: CreateItemParams
+): Promise<CreateItemResult> {
+  const { userId, publicToken, institutionId } = params;
+  const duplicate = await findDuplicateItem(userId, institutionId);
   if (duplicate) {
     logger.info(
       {
         user_id: userId,
         existing_item_id: duplicate,
-        institution_id: input.institutionId,
+        institution_id: institutionId,
       },
       "Duplicate Item detected; skipping public_token exchange"
     );

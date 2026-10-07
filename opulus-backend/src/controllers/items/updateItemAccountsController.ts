@@ -1,10 +1,6 @@
 import { getRequestSession } from "@/middleware/session/requireSession.js";
 import { updateItemAccounts } from "@/services/items/updateItemAccounts.js";
-import {
-  itemService,
-  UnauthorizedError,
-  UpdateItemAccountsResponse,
-} from "@opulus/core";
+import { UpdateItemAccountsResponse } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 
 /**
@@ -22,13 +18,11 @@ export async function updateItemAccountsController(
   try {
     const session = getRequestSession(res);
 
-    const itemId = req.params.id;
-    const item = await itemService.getById(itemId);
-    if (item.userId !== session.user.id) {
-      throw new UnauthorizedError("You do not have access to this item");
-    }
+    const result = await updateItemAccounts({
+      userId: session.user.id,
+      itemId: req.params.id,
+    });
 
-    const result = await updateItemAccounts(itemId);
     res.status(200).json({ data: result });
   } catch (error) {
     next(error);
