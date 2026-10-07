@@ -40,9 +40,7 @@ export async function syncLiabilitiesHandler(
   ];
 
   const item = await itemRepository.getByPlaidItemId(event.item_id);
-  const result = await syncItemLiabilities(item, {
-    providerAccountIds,
-  });
+  const result = await syncItemLiabilities({ item, providerAccountIds });
 
   logger.info(
     {

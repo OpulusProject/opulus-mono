@@ -9,7 +9,6 @@ import {
   trySyncItemLiabilities,
 } from "@opulus/core";
 
-import { findDuplicateItem } from "./findDuplicateItem.js";
 
 export interface CreateItemParams {
   userId: string;
@@ -31,7 +30,11 @@ export async function createItem(
   params: CreateItemParams
 ): Promise<CreateItemResult> {
   const { userId, publicToken, institutionId } = params;
-  const duplicate = await findDuplicateItem(userId, institutionId);
+  // Strict policy: one item per (user, institution)
+  const duplicate = await itemRepository.findIdByInstitution(
+    userId,
+    institutionId
+  );
   if (duplicate) {
     logger.info(
       {
@@ -104,9 +107,7 @@ export async function createItem(
   // Liabilities (APRs, due dates, loan terms) are a bonus: fetch them now, but
   // never fail linking over them. A LIABILITIES webhook refreshes them later.
   await trySyncItemLiabilities({
-    id: createdItem.id,
-    userId,
-    accessToken,
+    item: { id: createdItem.id, userId, accessToken },
   });
 
   return { duplicate: false as const, item: createdItem };

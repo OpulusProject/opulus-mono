@@ -1,4 +1,4 @@
-import { getSession } from "@/services/session/getSession.js";
+import { getSession } from "./getSession.js";
 import { UnauthorizedError } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 

@@ -42,6 +42,36 @@ export default [
               message:
                 "Services use repositories, not Prisma. Use runInTransaction for transactions.",
             },
+            {
+              name: "express",
+              message: "Services know nothing about HTTP; keep req and res in controllers.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // Controllers handle HTTP only: they call services (or one repository for a
+    // plain read), never Plaid, Prisma or a transaction.
+    files: ["src/controllers/**/*.ts"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@opulus/core",
+              importNames: [
+                "plaidGateway",
+                "prisma",
+                "Prisma",
+                "PrismaClient",
+                "runInTransaction",
+              ],
+              message:
+                "Controllers call services, not gateways or Prisma. Put the work in a service.",
+            },
           ],
         },
       ],

@@ -1,4 +1,6 @@
 import { auth } from "@/client/auth.js";
+import { logger } from "@opulus/core";
+import { fromNodeHeaders } from "better-auth/node";
 import { IncomingHttpHeaders } from "http";
 
 /**
@@ -8,14 +10,15 @@ import { IncomingHttpHeaders } from "http";
  */
 export async function getSession(headers: IncomingHttpHeaders) {
   try {
-    const session = await auth.api.getSession({
-      headers: headers as any,
+    return await auth.api.getSession({
+      headers: fromNodeHeaders(headers),
     });
-
-    return session;
   } catch (error) {
-    // Log error but don't throw - let caller decide how to handle
-    console.error("[SESSION] Error getting session:", error);
+    // Log but don't throw - let the caller decide how to handle it
+    logger.error(
+      { error_message: error instanceof Error ? error.message : String(error) },
+      "Error getting session"
+    );
     return null;
   }
 }

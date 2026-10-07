@@ -1,5 +1,16 @@
 import { itemRepository, UnauthorizedError } from "@opulus/core";
 
+export interface GetItemParams {
+  userId: string;
+  itemId: string;
+}
+
+export interface GetItemByPlaidItemIdParams {
+  userId: string;
+  /** Plaid's id for the item (not ours). */
+  plaidItemId: string;
+}
+
 /**
  * Get one of the user's items.
  *
@@ -10,7 +21,7 @@ import { itemRepository, UnauthorizedError } from "@opulus/core";
  * @throws NotFoundError if there is no such item
  * @throws UnauthorizedError if the item belongs to another user
  */
-export async function getItem(params: { userId: string; itemId: string }) {
+export async function getItem(params: GetItemParams) {
   const item = await itemRepository.getById(params.itemId);
   if (item.userId !== params.userId) {
     throw new UnauthorizedError("You do not have access to this item");
@@ -21,10 +32,9 @@ export async function getItem(params: { userId: string; itemId: string }) {
 /**
  * Like `getItem`, for callers that identify the item by Plaid's item id.
  */
-export async function getItemByPlaidItemId(params: {
-  userId: string;
-  plaidItemId: string;
-}) {
+export async function getItemByPlaidItemId(
+  params: GetItemByPlaidItemIdParams
+) {
   const item = await itemRepository.getByPlaidItemId(params.plaidItemId);
   if (item.userId !== params.userId) {
     throw new UnauthorizedError("You do not have access to this item");

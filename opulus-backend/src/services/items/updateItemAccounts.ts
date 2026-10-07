@@ -96,7 +96,7 @@ export async function updateItemAccounts(
   }
 
   // New or re-consented accounts may now have liabilities data.
-  await trySyncItemLiabilities(item);
+  await trySyncItemLiabilities({ item });
 
   logger.info(
     {
