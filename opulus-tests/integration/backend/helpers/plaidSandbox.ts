@@ -84,6 +84,33 @@ export async function createSandboxPublicToken(
   return data.public_token;
 }
 
+/**
+ * Put the item into ITEM_LOGIN_REQUIRED on Plaid's side: from then on Plaid
+ * answers calls for it with that error, as if the user's bank login had changed.
+ * Takes the item's Plaid access token (read it from the test DB; it is never
+ * exposed over HTTP).
+ */
+export async function resetSandboxLogin(
+  creds: SandboxCredentials,
+  accessToken: string,
+): Promise<void> {
+  const res = await fetch(`${PLAID_SANDBOX_URL}/sandbox/item/reset_login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: creds.clientId,
+      secret: creds.secret,
+      access_token: accessToken,
+    }),
+  });
+
+  if (!res.ok) {
+    throw new Error(
+      `Plaid sandbox /sandbox/item/reset_login failed (${res.status}): ${await res.text()}`,
+    );
+  }
+}
+
 export interface CreatedSandboxItem {
   /** Our internal item id (what update-accounts / link-token/update take). */
   itemId: string;

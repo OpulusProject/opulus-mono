@@ -1,13 +1,19 @@
 import { expect, test } from "@playwright/test";
 import { UpdateItemAccountsResponseSchema } from "@opulus/core";
 
-import { expectOk, expectStatus, expectMatchesSchema } from "../../../shared/assertions.js";
+import {
+  expectErrorCode,
+  expectMatchesSchema,
+  expectOk,
+  expectStatus,
+} from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import { testDb } from "../../../shared/db.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
   createSandboxItem,
   requireSandboxCredentials,
+  resetSandboxLogin,
 } from "../helpers/plaidSandbox.js";
 
 /**
@@ -148,6 +154,30 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     await expectOk(second);
     expect((await second.json()).data.created).toBe(1);
     expect(await flag()).toBe(false);
+  });
+
+  test("reports an item whose bank login has changed as 401 ITEM_LOGIN_REQUIRED", async ({
+    request,
+  }) => {
+    // Arrange: a sandbox item that Plaid now says needs the user to log in again.
+    const creds = requireSandboxCredentials();
+    const { cookie } = await createAuthedUser(request);
+    const { itemId } = await createSandboxItem(request, cookie, creds);
+    const { accessToken } = await testDb().item.findUniqueOrThrow({
+      where: { id: itemId },
+      select: { accessToken: true },
+    });
+    await resetSandboxLogin(creds, accessToken);
+
+    // Act
+    const res = await request.post(`/api/items/${itemId}/update-accounts`, {
+      headers: withSession(cookie),
+    });
+
+    // Assert: Plaid's error code reaches the client, so the UI can tell the user
+    // to reconnect, instead of an opaque 500.
+    await expectStatus(res, 401);
+    await expectErrorCode(res, "ITEM_LOGIN_REQUIRED");
   });
 
   test("rejects an item owned by a different user (401)", async ({
