@@ -31,26 +31,32 @@ The app will be available at: **http://localhost:5173**
 ```
 opulus-frontend/
 ├── src/
-│   ├── common/              # Shared components
+│   ├── common/              # Components used by several pages
+│   │   ├── AccountsOverview/ # Grouped account lists (Accounts, Credit and loans)
 │   │   ├── AppLayout/       # Main layout component
 │   │   ├── AppSidebar/      # Sidebar navigation
-│   │   └── LaunchLink/     # Plaid Link wrapper
-│   ├── hooks/               # React hooks
+│   │   ├── LaunchLink/     # Plaid Link wrapper
+│   │   ├── ListRow/        # Shared row for institutions and accounts
+│   │   └── PageHeader/     # Page title and actions
+│   ├── hooks/               # React hooks, one folder per resource
+│   │   ├── accounts/       # Accounts hooks
 │   │   ├── auth/           # Authentication hooks
 │   │   ├── items/          # Items hooks
 │   │   ├── linkTokens/     # Plaid Link token hooks
-│   │   └── transactions/   # Transactions hooks
-│   ├── lib/                 # Utilities
+│   │   └── transactions/   # Transactions hooks (each folder has a queryKeys.ts)
+│   ├── lib/                 # Framework glue
 │   │   ├── api/            # API client
-│   │   └── auth/           # Auth utilities
+│   │   └── auth/           # Auth client and isSignedIn
 │   ├── pages/               # Page components
-│   │   ├── Dashboard/      # Dashboard page
 │   │   ├── Accounts/       # Accounts page
+│   │   ├── Connections/    # Connected institutions
+│   │   ├── CreditAndLoans/ # Credit cards and loans
+│   │   ├── Dashboard/      # Dashboard page
 │   │   ├── Login/          # Login page
 │   │   └── TwoFactor/     # 2FA page
-│   ├── routes/              # TanStack Router routes
+│   ├── routes/              # TanStack Router routes (_authenticated/ is the route guard)
 │   ├── types/              # TypeScript types
-│   ├── utils/              # Utility functions
+│   ├── utils/              # Display and formatting helpers for our own data
 │   ├── App.tsx             # Root component
 │   └── main.tsx            # Entry point
 ├── Dockerfile              # For Railway deployment

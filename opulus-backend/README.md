@@ -140,25 +140,31 @@ This runs:
 ```
 opulus-backend/
 ├── src/
-│   ├── client/
-│   │   └── auth.ts          # Better Auth configuration
-│   ├── controllers/         # Request handlers
-│   │   ├── auth/
+│   ├── auth.ts              # Better Auth configuration
+│   ├── controllers/         # HTTP only: read the request, call a service, send the response
+│   │   ├── accounts/
 │   │   ├── institutions/
 │   │   ├── items/
 │   │   ├── linkTokens/
 │   │   ├── session/
 │   │   └── transactions/
-│   ├── middleware/          # Express middleware
-│   │   ├── errorHandler.ts
-│   │   ├── session/
-│   │   └── validation.ts
+│   ├── services/            # Business logic, one operation per file
+│   │   ├── institutions/
+│   │   ├── items/
+│   │   ├── linkTokens/
+│   │   └── transactions/
+│   ├── middleware/          # Express middleware (the error handler is shared, in core)
+│   │   ├── session/         # requireSession and getSession
+│   │   └── validation.ts    # validate and validateQuery
 │   ├── routes/              # API routes
 │   │   ├── index.ts
+│   │   ├── accounts.ts
 │   │   ├── institutions.ts
 │   │   ├── items.ts
 │   │   ├── linkTokens.ts
 │   │   └── transactions.ts
+│   ├── types/
+│   │   └── express.d.ts     # Request additions (validated body and query)
 │   └── server.ts           # Express app entry point
 ├── bruno/                  # Bruno API collections
 ├── Dockerfile              # For Railway deployment
@@ -185,4 +191,5 @@ CORS is configured to allow requests from:
 
 - [Main README](../README.md) - Repo-wide setup and prerequisites
 - [Bruno Collections](./bruno/README.md) - API testing documentation
-- [Core Package](../opulus-core/README.md) - Shared services and types
+- [Core Package](../opulus-core/README.md) - Repositories, gateways and types
+- [Conventions](../docs/CONVENTIONS.md) - What each layer may do
