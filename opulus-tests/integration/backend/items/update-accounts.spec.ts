@@ -14,7 +14,7 @@ import {
   createSandboxItem,
   requireSandboxCredentials,
   resetSandboxLogin,
-} from "../helpers/plaidSandbox.js";
+} from "../../helpers/plaidSandbox.js";
 
 /**
  * POST /api/items/:id/update-accounts — Plaid Sandbox round-trip.

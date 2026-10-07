@@ -4,7 +4,7 @@ import { LinkTokenResponseSchema } from "@opulus/core";
 import { expectOk, expectMatchesSchema } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
-import { requireSandboxCredentials } from "../helpers/plaidSandbox.js";
+import { requireSandboxCredentials } from "../../helpers/plaidSandbox.js";
 
 /**
  * POST /api/link-tokens — Plaid Sandbox round-trip.

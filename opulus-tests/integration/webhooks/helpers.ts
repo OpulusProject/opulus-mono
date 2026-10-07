@@ -11,7 +11,7 @@ import {
   PLAID_SANDBOX_URL,
   resetSandboxLogin,
   type SandboxCredentials,
-} from "../backend/helpers/plaidSandbox.js";
+} from "../helpers/plaidSandbox.js";
 
 // Shared with the backend integration suite.
 export { resetSandboxLogin };

@@ -10,7 +10,7 @@ import {
 import {
   createSandboxItem,
   requireSandboxCredentials,
-} from "../helpers/plaidSandbox.js";
+} from "../../helpers/plaidSandbox.js";
 
 interface ItemRow {
   id: string;
