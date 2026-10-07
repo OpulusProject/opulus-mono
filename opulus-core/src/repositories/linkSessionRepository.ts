@@ -1,6 +1,6 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import prisma from "../client/prisma.js";
-import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
+import { AppError, ConflictError } from "../utils/errors.js";
 
 export interface CreateLinkSessionData {
   userId: string;
@@ -9,7 +9,7 @@ export interface CreateLinkSessionData {
 
 /**
  * Repository for link sessions
- * Handles creation and retrieval of Plaid link sessions
+ * Handles creation of Plaid link sessions
  */
 class LinkSessionRepository {
   constructor(private prisma: PrismaClient) {}
@@ -43,46 +43,6 @@ class LinkSessionRepository {
         error instanceof Error
           ? `Failed to create link session: ${error.message}`
           : "An unexpected error occurred while creating link session";
-      throw new AppError(message, 500);
-    }
-  }
-
-  /**
-   * Get a link session by link token
-   * @param linkToken - The Plaid link token
-   * @returns Link session with userId
-   * @throws NotFoundError if link session not found
-   * @throws AppError if database error occurs
-   */
-  async getByToken(linkToken: string) {
-    try {
-      const linkSession = await this.prisma.linkSession.findUniqueOrThrow({
-        where: { linkToken },
-        select: {
-          id: true,
-          userId: true,
-          linkToken: true,
-          createdAt: true,
-        },
-      });
-
-      return linkSession;
-    } catch (error) {
-      // Re-throw NotFoundError
-      if (error instanceof NotFoundError) {
-        throw error;
-      }
-
-      // Handle Prisma errors
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new AppError(`Database error: ${error.message}`, 500, error.code);
-      }
-
-      // Handle unknown errors
-      const message =
-        error instanceof Error
-          ? `Failed to get link session: ${error.message}`
-          : "An unexpected error occurred while fetching link session";
       throw new AppError(message, 500);
     }
   }
