@@ -2,7 +2,10 @@ import { CreateItemRequest, CreateItemResponse } from '@opulus/core/dto';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 
+import { accountKeys } from '@/hooks/accounts/queryKeys';
 import { apiClient } from '@/lib/api/client';
+
+import { itemKeys } from './queryKeys';
 
 /**
  * Exchange a Plaid Link public_token for an access token and persist the Item.
@@ -29,8 +32,8 @@ export function useCreateItem() {
       }
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['items'] });
-      void queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      void queryClient.invalidateQueries({ queryKey: itemKeys.all });
+      void queryClient.invalidateQueries({ queryKey: accountKeys.all });
     },
   });
 }

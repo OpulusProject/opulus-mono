@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
 
+import { accountKeys } from './queryKeys';
+
 const getAccountsApi = async (
   types?: AccountType[]
 ): Promise<AccountsResponse['data']> => {
@@ -22,7 +24,7 @@ const getAccountsApi = async (
  */
 export function useAccounts(types?: AccountType[]) {
   return useQuery<AccountsResponse['data'], Error>({
-    queryKey: ['accounts', types ?? 'all'],
+    queryKey: accountKeys.list(types),
     queryFn: () => getAccountsApi(types),
     retry: 1,
     staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes

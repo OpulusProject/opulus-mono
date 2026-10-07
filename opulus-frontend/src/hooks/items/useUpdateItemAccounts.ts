@@ -1,7 +1,10 @@
 import { UpdateItemAccountsResponse } from '@opulus/core/dto';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import { accountKeys } from '@/hooks/accounts/queryKeys';
 import { apiClient } from '@/lib/api/client';
+
+import { itemKeys } from './queryKeys';
 
 /**
  * Reconcile a persisted Item's accounts with Plaid after a Link
@@ -18,8 +21,8 @@ export function useUpdateItemAccounts() {
       return response.data;
     },
     onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['items'] });
-      void queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      void queryClient.invalidateQueries({ queryKey: itemKeys.all });
+      void queryClient.invalidateQueries({ queryKey: accountKeys.all });
     },
   });
 }
