@@ -20,7 +20,7 @@ params:query {
 docs {
   # Get Items
 
-  Get all Plaid items (connections) for the authenticated user, each with its accounts.
+  Get all Plaid items (connections) for the authenticated user, each with its bank accounts.
 
   **Endpoint:** `GET /api/items`
 
@@ -33,9 +33,10 @@ docs {
   Returns all items for the authenticated user, newest first. Sensitive fields (access token, Plaid item ID) are never included. Each item has:
   - Institution info (`institutionName`, `institutionLogo`, `institutionColor`)
   - Sync and error state (`syncedAt`, `errorType`, `errorCode`, `errorMessage`, `displayMessage`)
-  - `accounts`: the item's accounts, each with:
+  - `accounts`: the item's bank accounts, each with:
     - `name`, `officialName`, `type`, `subtype`, `mask` (last digits)
     - `balanceCurrent`, `balanceAvailable`, `balanceLimit` (credit limit), `isoCurrencyCode`
+    - `liabilityDetails`: Plaid liabilities data for credit cards, mortgages, and student loans (APRs, payment due dates, loan terms), or `null` when none is available
 
   ## Success Response (200)
 
@@ -76,7 +77,31 @@ docs {
               "balanceCurrent": 250.5,
               "balanceAvailable": 4749.5,
               "balanceLimit": 5000,
-              "isoCurrencyCode": "CAD"
+              "isoCurrencyCode": "CAD",
+              "liabilityDetails": {
+                "kind": "credit",
+                "isOverdue": false,
+                "nextPaymentDueDate": "2024-02-15T00:00:00.000Z",
+                "minimumPayment": 35,
+                "lastPaymentAmount": 200,
+                "lastPaymentDate": "2024-01-10T00:00:00.000Z",
+                "lastStatementBalance": 410.25,
+                "lastStatementIssueDate": "2024-01-01T00:00:00.000Z",
+                "interestRate": null,
+                "originationDate": null,
+                "originationPrincipal": null,
+                "maturityDate": null,
+                "aprs": [
+                  {
+                    "type": "purchase_apr",
+                    "percentage": 19.99,
+                    "balanceSubjectToApr": 410.25,
+                    "interestChargeAmount": 6.83
+                  }
+                ],
+                "details": null,
+                "syncedAt": "2024-01-08T00:00:00.000Z"
+              }
             }
           ]
         }
@@ -107,4 +132,5 @@ docs {
 
   - For credit and loan accounts, `balanceCurrent` is the amount owed (Plaid's convention)
   - Balances and `mask` can be `null` when the institution doesn't provide them
+  - `liabilityDetails` is only present for credit, mortgage, and student loan accounts at institutions that report liabilities. Auto loans and lines of credit (e.g. HELOC) are `null`. Mortgage and student loan accounts also carry kind-specific values in `details` (e.g. escrow balance, repayment plan)
 }
