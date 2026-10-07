@@ -1,26 +1,21 @@
-import type {
-  BankAccountType,
-  BankAccountWithConnectionDTO,
-} from '@opulus/core';
+import type { AccountType, AccountWithConnectionDTO } from '@opulus/core';
 import { useMemo } from 'react';
 
 import { AppLayout } from '@/common/AppLayout';
 import { PageHeader } from '@/common/PageHeader';
 import { Spinner } from '@/components/ui';
-import { useBankAccounts } from '@/hooks/bankAccounts/useBankAccounts';
+import { useAccounts } from '@/hooks/accounts/useAccounts';
 import { getAccountType } from '@/utils/accountType';
 
 import { AccountGroup } from './AccountGroup';
 import { EmptyAccountsView } from './EmptyAccountsView';
 import { type SummaryStat, SummaryStats } from './SummaryStats';
 
-const byName = (
-  a: BankAccountWithConnectionDTO,
-  b: BankAccountWithConnectionDTO
-) => a.name.localeCompare(b.name);
+const byName = (a: AccountWithConnectionDTO, b: AccountWithConnectionDTO) =>
+  a.name.localeCompare(b.name);
 
 export interface AccountGroupConfig {
-  type: BankAccountType;
+  type: AccountType;
   title: string;
 }
 
@@ -32,7 +27,7 @@ interface AccountsOverviewProps {
   /** Groups to show, in order. Their types define which accounts belong here. */
   groups: AccountGroupConfig[];
   /** Headline numbers for every account on this page. */
-  getSummary: (accounts: BankAccountWithConnectionDTO[]) => SummaryStat[];
+  getSummary: (accounts: AccountWithConnectionDTO[]) => SummaryStat[];
   emptyTitle: string;
   emptyDescription: string;
 }
@@ -51,7 +46,7 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
   emptyDescription,
 }) => {
   const types = useMemo(() => groups.map((group) => group.type), [groups]);
-  const { data, isLoading } = useBankAccounts(types);
+  const { data, isLoading } = useAccounts(types);
   const accounts = useMemo(() => data?.accounts ?? [], [data]);
 
   const visibleGroups = useMemo(

@@ -1,36 +1,36 @@
 import { getValidatedQuery } from "@/middleware/validation.js";
 import { getSession } from "@/services/session/getSession.js";
 import {
-  BANK_ACCOUNT_TYPES,
-  bankAccountService,
-  BankAccountsResponse,
-  toBankAccountWithConnectionDTO,
+  ACCOUNT_TYPES,
+  accountService,
+  AccountsResponse,
+  toAccountWithConnectionDTO,
   UnauthorizedError,
 } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
 /**
- * Query parameter schema for the bank accounts endpoint. `type` may be given
+ * Query parameter schema for the accounts endpoint. `type` may be given
  * once or repeated to filter by several types (?type=credit&type=loan).
  */
-export const getBankAccountsQuerySchema = z.object({
+export const getAccountsQuerySchema = z.object({
   type: z.preprocess(
     (value) =>
       value === undefined ? undefined : Array.isArray(value) ? value : [value],
-    z.array(z.enum(BANK_ACCOUNT_TYPES)).optional()
+    z.array(z.enum(ACCOUNT_TYPES)).optional()
   ),
 });
 
 /**
- * Get the authenticated user's bank accounts across all their connections
- * GET /api/bank-accounts?type=credit&type=loan
+ * Get the authenticated user's accounts across all their connections
+ * GET /api/accounts?type=credit&type=loan
  *
  * Query parameters are validated by validateQuery middleware
  */
-export async function getBankAccountsController(
+export async function getAccountsController(
   req: Request,
-  res: Response<BankAccountsResponse>,
+  res: Response<AccountsResponse>,
   next: NextFunction
 ) {
   try {
@@ -39,15 +39,12 @@ export async function getBankAccountsController(
       throw new UnauthorizedError("Authentication required");
     }
 
-    const { type } = getValidatedQuery<typeof getBankAccountsQuerySchema>(req);
+    const { type } = getValidatedQuery<typeof getAccountsQuerySchema>(req);
 
-    const bankAccounts = await bankAccountService.getAllByUserId(
-      session.user.id,
-      type
-    );
+    const accounts = await accountService.getAllByUserId(session.user.id, type);
 
     res.status(200).json({
-      data: { accounts: bankAccounts.map(toBankAccountWithConnectionDTO) },
+      data: { accounts: accounts.map(toAccountWithConnectionDTO) },
     });
   } catch (error) {
     next(error);

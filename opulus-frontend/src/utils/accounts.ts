@@ -1,4 +1,4 @@
-import type { BankAccountDTO, ItemDTO } from '@opulus/core';
+import type { AccountDTO, ItemDTO } from '@opulus/core';
 
 /**
  * Calculate total available cash from all items
@@ -23,7 +23,7 @@ export function calculateCreditUtilization(items: ItemDTO[]): number | null {
   }
   const allAccounts = items.flatMap((item) => item.accounts);
   const creditAccounts = allAccounts.filter(
-    (account: BankAccountDTO) => account.type === 'credit'
+    (account: AccountDTO) => account.type === 'credit'
   );
 
   if (creditAccounts.length === 0) {
@@ -32,7 +32,7 @@ export function calculateCreditUtilization(items: ItemDTO[]): number | null {
 
   // Sum balances of credit accounts (use balanceCurrent, typically negative for credit cards)
   const totalBalance = creditAccounts.reduce(
-    (sum: number, account: BankAccountDTO) => {
+    (sum: number, account: AccountDTO) => {
       // For credit cards, balanceCurrent is typically negative (amount owed)
       // We want the absolute value for utilization calculation
       const balance = account.balanceCurrent ?? 0;
@@ -44,7 +44,7 @@ export function calculateCreditUtilization(items: ItemDTO[]): number | null {
   // Sum credit limits
   // If balanceLimit is not available, fallback to balanceCurrent + balanceAvailable
   const totalLimit = creditAccounts.reduce(
-    (sum: number, account: BankAccountDTO) => {
+    (sum: number, account: AccountDTO) => {
       if (account.balanceLimit !== null && account.balanceLimit !== undefined) {
         return sum + account.balanceLimit;
       }
@@ -71,12 +71,12 @@ export function calculateCreditUtilization(items: ItemDTO[]): number | null {
  * Calculate total balance from accounts, excluding credit accounts
  * Uses balanceAvailable if available, otherwise falls back to balanceCurrent
  */
-export function calculateTotalBalance(accounts: BankAccountDTO[]): number {
+export function calculateTotalBalance(accounts: AccountDTO[]): number {
   const nonCreditAccounts = accounts.filter(
-    (account: BankAccountDTO) => account.type !== 'credit'
+    (account: AccountDTO) => account.type !== 'credit'
   );
 
-  return nonCreditAccounts.reduce((sum: number, account: BankAccountDTO) => {
+  return nonCreditAccounts.reduce((sum: number, account: AccountDTO) => {
     // Use balanceAvailable if available, otherwise fall back to balanceCurrent
     const balance = account.balanceAvailable ?? account.balanceCurrent ?? 0;
     return sum + balance;

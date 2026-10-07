@@ -28,7 +28,7 @@ async function listAccounts(
   cookie: string,
   query = "",
 ): Promise<AccountRow[]> {
-  const res = await request.get(`/api/bank-accounts${query}`, {
+  const res = await request.get(`/api/accounts${query}`, {
     headers: withSession(cookie),
   });
   await expectOk(res);
@@ -36,13 +36,13 @@ async function listAccounts(
 }
 
 /**
- * This file: the bank accounts list endpoint. Items and accounts have no create
+ * This file: the accounts list endpoint. Items and accounts have no create
  * endpoint, so they are seeded directly into the isolated test DB and verified
  * over HTTP.
  */
-test.describe("GET /api/bank-accounts", () => {
+test.describe("GET /api/accounts", () => {
   test("requires authentication (401)", async ({ request }) => {
-    const res = await request.get("/api/bank-accounts");
+    const res = await request.get("/api/accounts");
     await expectStatus(res, 401);
   });
 
@@ -139,7 +139,7 @@ test.describe("GET /api/bank-accounts", () => {
     const { cookie } = await createAuthedUser(request);
 
     // Act
-    const res = await request.get("/api/bank-accounts?type=credit,loan", {
+    const res = await request.get("/api/accounts?type=credit,loan", {
       headers: withSession(cookie),
     });
 
@@ -173,7 +173,7 @@ test.describe("GET /api/bank-accounts", () => {
     const { cookie } = await createAuthedUser(request);
 
     // Act
-    const res = await request.get("/api/bank-accounts?type=savings", {
+    const res = await request.get("/api/accounts?type=savings", {
       headers: withSession(cookie),
     });
 

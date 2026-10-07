@@ -4,10 +4,7 @@
 
 import type { PlaidErrorType } from "plaid";
 
-import {
-  BankAccountDTO,
-  toBankAccountDTO,
-} from "../bankAccounts/bankAccount.js";
+import { AccountDTO, toAccountDTO } from "../accounts/account.js";
 import { toIsoString } from "../common.js";
 
 /**
@@ -24,7 +21,7 @@ export interface ItemDTO {
   errorMessage: string | null;
   displayMessage: string | null;
   syncedAt: string | null;
-  accounts: BankAccountDTO[];
+  accounts: AccountDTO[];
 }
 
 /**
@@ -39,7 +36,7 @@ export interface ItemsResponse {
 /**
  * Transform full item data to public DTO
  * Filters out sensitive fields like accessToken, plaidItemId, etc.
- * @param item - Full item data from service (includes bankAccounts)
+ * @param item - Full item data from service (includes accounts)
  * @returns Public DTO with only safe-to-expose fields
  */
 export function toItemDTO(item: {
@@ -52,7 +49,7 @@ export function toItemDTO(item: {
   errorMessage: string | null;
   displayMessage: string | null;
   syncedAt: Date | null;
-  bankAccounts: Array<Parameters<typeof toBankAccountDTO>[0]>;
+  accounts: Array<Parameters<typeof toAccountDTO>[0]>;
 }): ItemDTO {
   return {
     id: item.id,
@@ -64,6 +61,6 @@ export function toItemDTO(item: {
     errorMessage: item.errorMessage,
     displayMessage: item.displayMessage,
     syncedAt: toIsoString(item.syncedAt),
-    accounts: item.bankAccounts.map(toBankAccountDTO),
+    accounts: item.accounts.map(toAccountDTO),
   };
 }

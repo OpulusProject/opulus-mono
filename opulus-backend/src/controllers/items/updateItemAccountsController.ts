@@ -4,7 +4,7 @@ import { itemService, UnauthorizedError } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 
 /**
- * Reconcile a persisted Item's bank accounts with Plaid's current view.
+ * Reconcile a persisted Item's accounts with Plaid's current view.
  * Called by the frontend after a Link update-mode session completes (Plaid
  * does not fire a webhook for that flow).
  *

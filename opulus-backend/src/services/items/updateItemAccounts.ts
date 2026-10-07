@@ -8,7 +8,7 @@ import {
 } from "@opulus/core";
 
 /**
- * Reconcile a persisted Item's bank accounts with Plaid's current view
+ * Reconcile a persisted Item's accounts with Plaid's current view
  * (`/accounts/get`). Called after a Link update-mode session (reconnect or
  * add-accounts) since Plaid does not fire a webhook for update mode.
  *
@@ -26,7 +26,7 @@ export async function updateItemAccounts(itemId: string) {
   await prisma.$transaction(async (tx) => {
     for (const plaidAccount of accountsResponse.accounts) {
       const data = normalizePlaidAccount(plaidAccount, item.id, item.userId);
-      const existing = await tx.bankAccount.findUnique({
+      const existing = await tx.account.findUnique({
         where: {
           providerAccountId_itemId: {
             providerAccountId: data.providerAccountId,
@@ -37,10 +37,10 @@ export async function updateItemAccounts(itemId: string) {
       });
 
       if (!existing) {
-        await tx.bankAccount.create({ data });
+        await tx.account.create({ data });
         created += 1;
       } else {
-        await tx.bankAccount.update({
+        await tx.account.update({
           where: { id: existing.id },
           data: {
             name: data.name,

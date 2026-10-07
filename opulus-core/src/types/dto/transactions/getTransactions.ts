@@ -37,7 +37,7 @@ export interface TransactionDTO {
   dateTransacted: string | null; // ISO string or null
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
-  bankAccount: {
+  account: {
     id: string;
     name: string;
     mask: string | null;
@@ -58,7 +58,7 @@ export interface TransactionsResponse {
  * A transaction row with the account columns the API includes
  */
 type TransactionWithAccount = Prisma.TransactionGetPayload<{
-  include: { bankAccount: { select: { id: true; name: true; mask: true } } };
+  include: { account: { select: { id: true; name: true; mask: true } } };
 }>;
 
 /**
@@ -96,10 +96,10 @@ export function toTransactionDTO(
     dateTransacted: toIsoString(transaction.dateTransacted),
     createdAt: toIsoString(transaction.createdAt),
     updatedAt: toIsoString(transaction.updatedAt),
-    bankAccount: {
-      id: transaction.bankAccount.id,
-      name: transaction.bankAccount.name,
-      mask: transaction.bankAccount.mask,
+    account: {
+      id: transaction.account.id,
+      name: transaction.account.name,
+      mask: transaction.account.mask,
     },
   };
 }

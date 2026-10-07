@@ -7,9 +7,9 @@ import {
 } from "./liabilityDetails.js";
 
 /**
- * Bank account (nested in an item, and returned by the bank accounts endpoint)
+ * Account (nested in an item, and returned by the accounts endpoint)
  */
-export interface BankAccountDTO {
+export interface AccountDTO {
   id: string;
   name: string;
   officialName: string | null; // Name the institution uses for the account
@@ -24,9 +24,9 @@ export interface BankAccountDTO {
 }
 
 /**
- * Transform a stored bank account row to its public DTO
+ * Transform a stored account row to its public DTO
  */
-export function toBankAccountDTO(account: {
+export function toAccountDTO(account: {
   id: string;
   name: string;
   officialName: string | null;
@@ -38,7 +38,7 @@ export function toBankAccountDTO(account: {
   balanceLimit: Prisma.Decimal | null;
   isoCurrencyCode: string | null;
   liabilityDetails: Parameters<typeof toLiabilityDetailsDTO>[0] | null;
-}): BankAccountDTO {
+}): AccountDTO {
   return {
     id: account.id,
     name: account.name,

@@ -25,7 +25,7 @@ export async function getItemsController(
 
     const userId = session.user.id;
 
-    // Get all items with bank accounts (service returns full data)
+    // Get all items with accounts (service returns full data)
     const items = await itemService.getAllByUserId(userId);
 
     // Transform to the public shape, leaving out sensitive fields

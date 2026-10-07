@@ -2,9 +2,9 @@ import { uniqueId } from "../client.js";
 import { testDb } from "../db.js";
 
 /**
- * Item / bank-account fixtures.
+ * Item / account fixtures.
  *
- * Items and bank accounts have NO create endpoint — they are born only from the
+ * Items and accounts have NO create endpoint — they are born only from the
  * Plaid webhook → exchange → DB write path. Per the service-api-tests skill,
  * resources with no create endpoint are seeded directly into an ISOLATED test DB
  * (see helpers/db.ts); verification always happens over HTTP. Payload shapes
@@ -20,7 +20,7 @@ export interface SeededItem {
 }
 
 /**
- * Seed one Item plus one linked BankAccount for a user, mirroring what the
+ * Seed one Item plus one linked Account for a user, mirroring what the
  * webhooks link handler persists. Returns the ids the read specs need.
  */
 export async function seedItemWithAccount(
@@ -33,7 +33,7 @@ export async function seedItemWithAccount(
     errorMessage: string | null;
     displayMessage: string | null;
     syncedAt: Date | null;
-    /** Overrides for the seeded bank account (defaults to a CAD checking account). */
+    /** Overrides for the seeded account (defaults to a CAD checking account). */
     account: Partial<{
       officialName: string | null;
       type: string;
@@ -79,7 +79,7 @@ export async function seedItemWithAccount(
     },
   });
 
-  const account = await db.bankAccount.create({
+  const account = await db.account.create({
     data: {
       providerAccountId: uniqueId("acct"),
       itemId: item.id,

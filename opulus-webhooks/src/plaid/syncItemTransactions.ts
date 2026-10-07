@@ -27,7 +27,7 @@ export async function syncItemTransactions(
       item.transactionCursor
     );
 
-  const bankAccounts = await prisma.bankAccount.findMany({
+  const accounts = await prisma.account.findMany({
     where: { itemId: item.id },
     select: {
       id: true,
@@ -36,7 +36,7 @@ export async function syncItemTransactions(
   });
 
   const accountIdMap = new Map(
-    bankAccounts.map((acc) => [acc.providerAccountId, acc.id])
+    accounts.map((acc) => [acc.providerAccountId, acc.id])
   );
 
   await prisma.$transaction(async (tx) => {

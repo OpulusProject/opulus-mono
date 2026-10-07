@@ -106,7 +106,7 @@ test.describe("GET /api/transactions", () => {
         "accountOwner",
         "amount",
         "authorizedDate",
-        "bankAccount",
+        "account",
         "category",
         "categoryId",
         "checkNumber",
@@ -131,7 +131,7 @@ test.describe("GET /api/transactions", () => {
         "userId",
       ].sort(),
     );
-    expect(Object.keys(transaction.bankAccount as object).sort()).toEqual([
+    expect(Object.keys(transaction.account as object).sort()).toEqual([
       "id",
       "mask",
       "name",
