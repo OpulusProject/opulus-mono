@@ -1,4 +1,4 @@
-import { getSession } from "@/services/session/getSession.js";
+import { getRequestSession } from "@/middleware/session/requireSession.js";
 import {
   itemService,
   plaidService,
@@ -27,11 +27,7 @@ export async function refreshTransactionsController(
   next: NextFunction
 ) {
   try {
-    // Get authenticated user session
-    const session = await getSession(req.headers);
-    if (!session?.user) {
-      throw new UnauthorizedError("Authentication required");
-    }
+    const session = getRequestSession(res);
 
     const userId = session.user.id;
 

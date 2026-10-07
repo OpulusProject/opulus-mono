@@ -1,4 +1,4 @@
-import { getSession } from "@/services/session/getSession.js";
+import { getRequestSession } from "@/middleware/session/requireSession.js";
 import { updateItemAccounts } from "@/services/items/updateItemAccounts.js";
 import {
   itemService,
@@ -20,10 +20,7 @@ export async function updateItemAccountsController(
   next: NextFunction
 ) {
   try {
-    const session = await getSession(req.headers);
-    if (!session?.user) {
-      throw new UnauthorizedError("Authentication required");
-    }
+    const session = getRequestSession(res);
 
     const itemId = req.params.id;
     const item = await itemService.getById(itemId);

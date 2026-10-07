@@ -1,11 +1,10 @@
 import { getValidatedQuery } from "@/middleware/validation.js";
-import { getSession } from "@/services/session/getSession.js";
+import { getRequestSession } from "@/middleware/session/requireSession.js";
 import {
   ACCOUNT_TYPES,
   accountService,
   AccountsResponse,
   toAccountWithConnectionDTO,
-  UnauthorizedError,
 } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
@@ -34,10 +33,7 @@ export async function getAccountsController(
   next: NextFunction
 ) {
   try {
-    const session = await getSession(req.headers);
-    if (!session?.user) {
-      throw new UnauthorizedError("Authentication required");
-    }
+    const session = getRequestSession(res);
 
     const { type } = getValidatedQuery<typeof getAccountsQuerySchema>(req);
 

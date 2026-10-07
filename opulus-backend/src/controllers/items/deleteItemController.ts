@@ -1,4 +1,4 @@
-import { getSession } from "@/services/session/getSession.js";
+import { getRequestSession } from "@/middleware/session/requireSession.js";
 import {
   accountService,
   itemService,
@@ -19,11 +19,7 @@ export async function deleteItemController(
   next: NextFunction
 ) {
   try {
-    // Get authenticated user session
-    const session = await getSession(req.headers);
-    if (!session?.user) {
-      throw new UnauthorizedError("Authentication required");
-    }
+    const session = getRequestSession(res);
 
     // Permission check
     const itemId = req.params.id;
