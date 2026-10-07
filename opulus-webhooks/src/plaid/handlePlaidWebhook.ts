@@ -84,6 +84,3 @@ export async function handlePlaidWebhook(
     }
   }
 }
-
-// This function is no longer needed - processing is handled by queue workers
-// Keeping for backwards compatibility if needed
