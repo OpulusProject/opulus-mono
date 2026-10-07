@@ -17,6 +17,10 @@ packages consistent.
 Apps depend on `@opulus/core`; they don't copy contracts from each other. If
 both the backend and the webhooks service need something, it lives in core.
 
+The one place core touches HTTP is `opulus-core/src/middleware`: the Express
+middleware both apps share (request id, request logging and the error handler).
+Nothing else in core imports Express.
+
 ## Backend request flow
 
 ```
@@ -125,6 +129,9 @@ with the schemas, so a field that isn't in the schema fails a test.
 
 - `src/pages/<Page>` for pages, `src/common` for components used by several
   pages, `src/components/ui` for the shadcn primitives.
+- `src/lib` is glue to frameworks and servers (the API client, the auth client,
+  shadcn's `cn`). `src/utils` is display and formatting helpers for our own data
+  (account types, item status, dates).
 - `src/hooks/<resource>` has the data hooks. Each resource has a `queryKeys.ts`
   with an `all` prefix (for invalidation) and a builder for each query; hooks and
   mutations use those instead of writing key arrays inline.

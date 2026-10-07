@@ -16,19 +16,22 @@ frontend.
 ```
 .
 ├── opulus-backend/              Express API, Better Auth, Bruno collections
-│   ├── src/controllers/         Thin request handlers for session, Plaid, items, transactions
-│   ├── src/middleware/          error handling, auth/session, demo-mode checks
+│   ├── src/controllers/         HTTP-only handlers for session, Plaid, items, transactions
+│   ├── src/services/            business logic, one operation per file (delete an item, ...)
+│   ├── src/middleware/          session auth and request validation
 │   ├── src/routes/              API route registration
 │   └── bruno/                   API client collections and local/prod environments
 ├── opulus-frontend/             React + Vite + TanStack Router/Query app
 │   ├── src/common/              app layout, sidebar, shared UI glue
 │   ├── src/hooks/               auth, Plaid, items, transactions hooks
-│   ├── src/lib/                 API clients, including demo-mode client
+│   ├── src/lib/                 API and auth clients
 │   ├── src/pages/               dashboard, accounts, login, 2FA, settings
 │   └── src/routes/              file-based TanStack Router routes
-├── opulus-core/                 Shared Prisma, Plaid client, services, DTOs, config
+├── opulus-core/                 Shared Prisma, Plaid gateway, repositories, DTOs, config
 │   ├── prisma/                  schema and migrations
-│   └── src/services/            item, transaction, Plaid, demo services
+│   ├── src/repositories/        data access, one per model
+│   ├── src/gateways/            the Plaid API wrapper
+│   └── src/services/            business logic shared by the backend and webhooks
 ├── opulus-webhooks/             Plaid webhook receiver + Redis/BullMQ worker
 ├── docs/                        Notes on observability and privacy
 ├── docker-compose.yml           Local Postgres + Redis
@@ -131,7 +134,8 @@ Run these from the repo root unless noted.
 1. The frontend requests a Plaid Link token from the backend.
 2. Plaid Link returns a public token after the user selects an institution.
 3. The backend exchanges that public token for an access token.
-4. Core services persist the Plaid item and normalized account data.
+4. A backend service persists the Plaid item and normalized account data through
+   core repositories.
 5. The frontend reads connected items through typed DTOs from `@opulus/core`.
 
 ### Webhook processing
@@ -140,7 +144,7 @@ Plaid webhook callbacks are acknowledged quickly, then queued for background
 work:
 
 ```
-Plaid webhook -> opulus-webhooks -> Redis/BullMQ -> handler -> core services
+Plaid webhook -> opulus-webhooks -> Redis/BullMQ -> handler -> service -> core repositories
 ```
 
 That keeps provider callbacks fast while still allowing retries, observability,
@@ -148,8 +152,10 @@ and a separate worker process for heavier sync work.
 
 ### Shared package boundaries
 
-- `@opulus/core` owns Prisma, external clients, business services, config, and
-DTOs shared between apps.
+- `@opulus/core` owns Prisma, repositories (data access), gateways (external
+  APIs), the services both apps share, config, and the DTOs shared between apps.
+- Controllers call services, and services call repositories and gateways. See
+  [Conventions](./docs/CONVENTIONS.md) for what each layer may do.
 - UI primitives (shadcn/ui) live in `opulus-frontend/src/components/ui`.
 - App packages consume `@opulus/core` instead of duplicating contracts.
 
@@ -190,6 +196,6 @@ containers have no `.env` and env comes from the platform — no symlinks there.
 - [Backend](./opulus-backend/README.md) - Express API, auth, endpoints, Bruno testing
 - [Frontend](./opulus-frontend/README.md) - React app, routing, query hooks, UI integration
 - [Webhooks](./opulus-webhooks/README.md) - Plaid webhook receiver, queueing, local tunnel setup
-- [Core](./opulus-core/README.md) - Shared services, Prisma, DTOs, Plaid client
+- [Core](./opulus-core/README.md) - Repositories, gateways, Prisma, DTOs
 - [Docs](./docs/README.md) - Conventions, observability and transaction privacy notes
 
