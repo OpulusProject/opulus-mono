@@ -10,6 +10,8 @@
 #     branch, so each PR in a stack gets checked. Fork PRs that don't have
 #     access to the secrets will fail — contributors from forks should open
 #     the PR from a branch in the main repo.
+#   - push to main: runs again after each merge, because a PR is checked against
+#     the base it was opened on and two PRs that pass alone can fail together.
 #   - schedule: nightly run against main so regressions surface even on days
 #     with no PR traffic.
 #   - workflow_dispatch: on-demand runs from the Actions tab.
@@ -21,6 +23,10 @@ name: Integration Tests
 
 on:
   pull_request:
+  # Check main itself after a merge (see the comment in type-check.yml).
+  push:
+    branches:
+      - main
   schedule:
     - cron: "0 7 * * *" # 07:00 UTC nightly
   workflow_dispatch:

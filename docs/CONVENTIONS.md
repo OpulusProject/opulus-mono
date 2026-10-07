@@ -90,6 +90,37 @@ import gateways or services; gateways can't import the database or repositories.
 A read endpoint that calls one repository and maps rows to DTOs doesn't need a
 service of its own.
 
+## Adding an endpoint
+
+The usual path, in the order the pieces are normally written. Each step is a
+file the conventions above already describe.
+
+1. **Contract.** In `opulus-core/src/types/dto/<resource>/`, a request schema if
+   it takes a body, a response schema, and a `to<Name>DTO` that copies fields
+   from the row. Export it from the folder's `index.ts`. The frontend gets the
+   types from `@opulus/core/dto`.
+2. **Data access.** The repository method(s) it needs in
+   `opulus-core/src/repositories`: `get…` throws when missing, `find…` returns
+   `null`, and a write takes an optional transaction client.
+3. **Business logic.** A service in
+   `opulus-backend/src/services/<resource>/<verb><Noun>.ts` with a params object
+   and exported `Params` and `Result` types. Fetch items with `getItem` so
+   ownership is checked. Skip this for a plain read of one repository.
+4. **Controller.** `src/controllers/<resource>/<verb><Noun>Controller.ts`: type
+   `res` as `Response<<Name>Response>`, read the user with
+   `getRequestSession(res)`, the input with `getValidatedBody` or
+   `getValidatedQuery`, call the service, send the DTO, `next(error)` on failure.
+5. **Route.** In `src/routes/<resource>.ts`: `requireSession`, then `validate` or
+   `validateQuery` with the request schema, then the controller. A new resource's
+   router is registered in `src/routes/index.ts`.
+6. **Tests.** A service spec in `opulus-tests/services/backend/<resource>/`
+   (401 first, validation, another user's data never returned, the response
+   schema), and an integration spec if it calls Plaid.
+7. **Bruno doc.** `opulus-backend/bruno/collections/<resource>/<Verb> <Noun>.bru`.
+8. **Frontend.** A hook in `src/hooks/<resource>/` using that resource's
+   `queryKeys.ts`; a page that needs a signed-in user goes in
+   `src/routes/_authenticated/`.
+
 ## DTOs
 
 The API contract lives in `opulus-core/src/types/dto`, one folder per resource
@@ -185,13 +216,21 @@ Rules that apply to all of them:
 | Lint | `pnpm -r lint` | No |
 | Webhook E2E | The webhook end-to-end suite, nightly and on changes to it or `opulus-webhooks` | No |
 
-Workflows run on every pull request, whatever its base branch, so every PR in a
-stack is checked.
+The first four run on every pull request, whatever its base branch, and again on
+`main` after each merge. A PR is checked against the base it was opened on, so
+two PRs that pass alone can fail together (a lint rule and a file that breaks it
+once did); the run on `main` catches that. Webhook E2E is left out of the push
+runs because it needs a public tunnel.
 
 ## Pull requests
 
 - Branch from `main`; merge commits; branches are deleted when merged.
-- One concern per PR. When a change builds on another that isn't merged yet,
-  stack it: base the PR on the other PR's branch, say so in the description, and
-  merge bottom-up. GitHub retargets the next PR when the one below merges.
+- One concern per PR, but a concern can be big: a new endpoint with its DTO,
+  service, repository method, tests and Bruno doc is one PR. Prefer a few larger
+  PRs over a chain of small ones. Every PR runs the full suites against Plaid's
+  sandbox, which rate-limits (a 429) when many PRs run at once, and a stack
+  multiplies that.
+- Stack PRs only when a change truly depends on another that isn't merged yet:
+  base the PR on the other PR's branch, say so in the description, and merge
+  bottom-up. GitHub retargets the next PR when the one below merges.
 - Include a test plan in the description, and say what was not verified.
