@@ -129,6 +129,9 @@ with the schemas, so a field that isn't in the schema fails a test.
 
 - `src/pages/<Page>` for pages, `src/common` for components used by several
   pages, `src/components/ui` for the shadcn primitives.
+- Import contracts from `@opulus/core/dto`, never the `@opulus/core` root: the
+  root also exports Prisma, the Plaid gateway and the queue, which must not reach
+  the browser. A lint rule enforces it.
 - `src/lib` is glue to frameworks and servers (the API client, the auth client,
   shadcn's `cn`). `src/utils` is display and formatting helpers for our own data
   (account types, item status, dates).

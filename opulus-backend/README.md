@@ -140,8 +140,7 @@ This runs:
 ```
 opulus-backend/
 ├── src/
-│   ├── client/
-│   │   └── auth.ts          # Better Auth configuration
+│   ├── auth.ts              # Better Auth configuration
 │   ├── controllers/         # HTTP only: read the request, call a service, send the response
 │   │   ├── accounts/
 │   │   ├── institutions/
