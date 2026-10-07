@@ -37,6 +37,26 @@ test.describe("POST /api/link-tokens/update (sandbox)", () => {
     expect(body.data.linkToken).toMatch(/^link-sandbox-/);
   });
 
+  test("returns an update-mode link token that lets the user add accounts", async ({
+    request,
+  }) => {
+    // Arrange
+    const creds = requireSandboxCredentials();
+    const { cookie } = await createAuthedUser(request);
+    const { itemId } = await createSandboxItem(request, cookie, creds);
+
+    // Act: Plaid validates the account-selection setting when it mints the token.
+    const res = await request.post("/api/link-tokens/update", {
+      headers: withSession(cookie),
+      data: { itemId, mode: "add-accounts" },
+    });
+
+    // Assert
+    await expectOk(res);
+    const body = (await res.json()) as { data: { linkToken: string } };
+    expect(body.data.linkToken).toMatch(/^link-sandbox-/);
+  });
+
   test("rejects an item owned by a different user (401)", async ({ request }) => {
     // Arrange: one real sandbox item owned by `owner`; `intruder` tries to use it.
     const creds = requireSandboxCredentials();

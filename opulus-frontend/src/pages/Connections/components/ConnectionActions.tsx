@@ -20,13 +20,17 @@ import type { UpdateMode } from '@/hooks/linkTokens/useLinkToken';
 import { getItemStatus } from '@/utils/itemStatus';
 
 interface ConnectionActionsProps {
-  item: Pick<ItemDTO, 'errorCode' | 'id' | 'institutionName'>;
+  item: Pick<
+    ItemDTO,
+    'errorCode' | 'id' | 'institutionName' | 'newAccountsAvailable'
+  >;
   onUpdate: (itemId: string, mode: UpdateMode) => void;
 }
 
 /**
- * A connection's actions: a button to repair it when it needs attention, and
- * the "..." menu with its disconnect confirmation.
+ * A connection's actions: a button to repair it when it needs attention (or to
+ * add newly found accounts when it doesn't), and the "..." menu with its
+ * disconnect confirmation.
  */
 export const ConnectionActions: React.FC<ConnectionActionsProps> = ({
   item,
@@ -39,7 +43,7 @@ export const ConnectionActions: React.FC<ConnectionActionsProps> = ({
     <>
       {/* Fixed width so the menu lines up whether or not a button shows. */}
       <div className="flex w-28 justify-end">
-        {status.ctaLabel && (
+        {status.ctaLabel ? (
           <Button
             type="button"
             variant="outline"
@@ -48,6 +52,17 @@ export const ConnectionActions: React.FC<ConnectionActionsProps> = ({
           >
             {status.ctaLabel}
           </Button>
+        ) : (
+          item.newAccountsAvailable && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onUpdate(item.id, 'add-accounts')}
+            >
+              Add accounts
+            </Button>
+          )
         )}
       </div>
 

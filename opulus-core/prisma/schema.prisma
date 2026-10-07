@@ -103,6 +103,7 @@ model Item {
   errorCode             String?
   errorMessage          String?
   displayMessage        String?
+  newAccountsAvailable  Boolean            @default(false) // Plaid detected accounts the user has not shared yet
   availableProducts     String[]           @default([])
   billedProducts        String[]           @default([])
   products              String[]           @default([])

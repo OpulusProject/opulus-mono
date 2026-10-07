@@ -31,4 +31,20 @@ test.describe("POST /api/link-tokens/update", () => {
     // Assert
     await expectValidationError(res);
   });
+
+  test("rejects an unknown mode before contacting Plaid (validation)", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie } = await createAuthedUser(request);
+
+    // Act
+    const res = await request.post("/api/link-tokens/update", {
+      headers: withSession(cookie),
+      data: { itemId: "item_1", mode: "delete-everything" },
+    });
+
+    // Assert
+    await expectValidationError(res);
+  });
 });

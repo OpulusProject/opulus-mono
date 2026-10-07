@@ -4,10 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 
 /**
- * Update-mode flavors. Reserved for distinguishing future entry points
- * (e.g. a "new accounts available" nudge driven by Plaid's webhook signal)
- * from standard reconnect. All flavors currently resolve to a plain update-
- * mode Link token server-side.
+ * Update-mode flavors. `reconnect` repairs a broken connection; `add-accounts`
+ * also lets the user share accounts that appeared at the institution since
+ * they linked it (the "new accounts available" prompt).
  */
 export type UpdateMode = 'reconnect' | 'add-accounts';
 
@@ -22,7 +21,7 @@ export function useLinkToken(itemId?: string, mode: UpdateMode = 'reconnect') {
     queryFn: async () => {
       const response = await apiClient.post<LinkTokenResponse>(
         `/api/link-tokens${itemId ? '/update' : ''}`,
-        itemId ? { itemId } : undefined
+        itemId ? { itemId, mode } : undefined
       );
       return response.data.data;
     },

@@ -13,7 +13,8 @@ import {
  * (`/accounts/get`). Called after a Link update-mode session (reconnect or
  * add-accounts) since Plaid does not fire a webhook for update mode.
  *
- * It also refreshes the item's stored error and consent expiry from Plaid.
+ * It also refreshes the item's stored error and consent expiry from Plaid,
+ * and drops the "new accounts available" flag once new accounts were added.
  *
  * Upsert-only: new Plaid accounts are inserted, existing ones have their
  * mutable fields refreshed. De-selection handling (soft or hard delete) is
@@ -74,6 +75,12 @@ export async function updateItemAccounts(itemId: string) {
       }
     }
   });
+
+  // The accounts Plaid flagged as new have been added, so stop prompting.
+  // (If the user shared none of them, the flag stays and they can try again.)
+  if (created > 0) {
+    await itemService.update(item.id, { newAccountsAvailable: false });
+  }
 
   // New or re-consented accounts may now have liabilities data.
   await liabilityService.trySyncForItem(item);

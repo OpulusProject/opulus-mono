@@ -196,6 +196,31 @@ test.describe("GET /api/items", () => {
     });
   });
 
+  test("flags an item that has new accounts to share, and only that item", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const flagged = await seedItemWithAccount(userId, {
+      newAccountsAvailable: true,
+    });
+    const plain = await seedItemWithAccount(userId);
+
+    // Act
+    const res = await request.get("/api/items", {
+      headers: withSession(cookie),
+    });
+
+    // Assert
+    await expectOk(res);
+    const items = (await res.json()).data.items as Array<{
+      id: string;
+      newAccountsAvailable: boolean;
+    }>;
+    expect(items.find((i) => i.id === flagged.itemId)?.newAccountsAvailable).toBe(true);
+    expect(items.find((i) => i.id === plain.itemId)?.newAccountsAvailable).toBe(false);
+  });
+
   test("exposes syncedAt as an ISO timestamp when set", async ({ request }) => {
     // Arrange
     const { cookie, userId } = await createAuthedUser(request);

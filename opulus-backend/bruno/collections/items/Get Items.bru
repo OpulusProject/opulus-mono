@@ -33,6 +33,7 @@ docs {
   Returns all items for the authenticated user, newest first. Sensitive fields (access token, Plaid item ID) are never included. Each item has:
   - Institution info (`institutionName`, `institutionLogo`, `institutionColor`)
   - Sync and error state (`syncedAt`, `errorType`, `errorCode`, `errorMessage`, `displayMessage`)
+  - `newAccountsAvailable`: `true` when Plaid found accounts the user hasn't shared yet; the user adds them through Link's update mode
   - `accounts`: the item's bank accounts, each with:
     - `name`, `officialName`, `type`, `subtype`, `mask` (last digits)
     - `balanceCurrent`, `balanceAvailable`, `balanceLimit` (credit limit), `isoCurrencyCode`
