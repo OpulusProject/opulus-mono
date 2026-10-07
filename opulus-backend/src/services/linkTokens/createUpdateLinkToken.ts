@@ -1,6 +1,6 @@
 import { plaidService } from "@opulus/core";
 
-import { getOwnedItem } from "../items/getOwnedItem.js";
+import { getItem } from "../items/getItem.js";
 
 /**
  * What the update-mode Link session is for: `reconnect` repairs the connection,
@@ -28,7 +28,7 @@ export interface CreateUpdateLinkTokenResult {
 export async function createUpdateLinkToken(
   params: CreateUpdateLinkTokenParams
 ): Promise<CreateUpdateLinkTokenResult> {
-  const item = await getOwnedItem(params);
+  const item = await getItem(params);
 
   const linkTokenResponse = await plaidService.createUpdateLinkToken(
     item.accessToken,
