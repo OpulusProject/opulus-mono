@@ -1,15 +1,16 @@
 import { itemService, UnauthorizedError } from "@opulus/core";
 
 /**
- * Get an item, checking that it belongs to the user.
+ * Get one of the user's items.
  *
- * This is where "can this user touch this item" is decided, so a use case that
- * acts on an item calls it first instead of each controller checking.
+ * Fetching an item always means fetching the user's own, so the ownership check
+ * lives here: "can this user touch this item" is decided in one place, and a
+ * use case that acts on an item calls this instead of each controller checking.
  *
  * @throws NotFoundError if there is no such item
  * @throws UnauthorizedError if the item belongs to another user
  */
-export async function getOwnedItem(params: { userId: string; itemId: string }) {
+export async function getItem(params: { userId: string; itemId: string }) {
   const item = await itemService.getById(params.itemId);
   if (item.userId !== params.userId) {
     throw new UnauthorizedError("You do not have access to this item");
@@ -18,9 +19,9 @@ export async function getOwnedItem(params: { userId: string; itemId: string }) {
 }
 
 /**
- * Like `getOwnedItem`, for callers that identify the item by Plaid's item id.
+ * Like `getItem`, for callers that identify the item by Plaid's item id.
  */
-export async function getOwnedItemByPlaidItemId(params: {
+export async function getItemByPlaidItemId(params: {
   userId: string;
   plaidItemId: string;
 }) {

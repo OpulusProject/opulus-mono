@@ -8,7 +8,7 @@ import {
   toItemErrorData,
 } from "@opulus/core";
 
-import { getOwnedItem } from "./getOwnedItem.js";
+import { getItem } from "./getItem.js";
 
 /**
  * Reconcile a persisted Item's accounts with Plaid's current view
@@ -36,7 +36,7 @@ export interface UpdateItemAccountsResult {
 export async function updateItemAccounts(
   params: UpdateItemAccountsParams
 ): Promise<UpdateItemAccountsResult> {
-  const item = await getOwnedItem(params);
+  const item = await getItem(params);
   const accountsResponse = await plaidService.getAccounts(item.accessToken);
 
   // The user just went through update mode, so whatever error or warning a
