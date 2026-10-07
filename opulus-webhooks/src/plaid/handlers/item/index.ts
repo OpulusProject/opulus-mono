@@ -1,5 +1,6 @@
 import type { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
 import { logger } from "@opulus/core";
+import { updateItemStatusHandler } from "./updateItemStatusHandler.js";
 
 /**
  * Handle ITEM webhook events
@@ -11,12 +12,11 @@ export async function handleItemWebhook(
   switch (webhook_code) {
     case "ERROR":
     case "LOGIN_REPAIRED":
-    case "NEW_ACCOUNTS_AVAILABLE":
     case "PENDING_DISCONNECT":
     case "PENDING_EXPIRATION":
-    case "USER_PERMISSION_REVOKED": {
-      // await updateItemStatusHandler(event);
-    }
+    case "USER_PERMISSION_REVOKED":
+      await updateItemStatusHandler(event);
+      break;
     default:
       logger.warn(
         {

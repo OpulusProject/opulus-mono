@@ -1,6 +1,17 @@
 import { TypeOf, array, number, object, record, string } from "zod";
 
 /**
+ * The error Plaid attaches to ITEM webhooks (and others). Plaid sends null or
+ * omits it when there is no error.
+ */
+const itemError = object({
+  error_type: string(),
+  error_code: string(),
+  error_message: string(),
+  display_message: string().nullish(),
+});
+
+/**
  * Schema for Plaid webhook event body (used in Express validation)
  * Wraps the event in a body object for middleware validation
  */
@@ -25,11 +36,10 @@ export const WebhookSchema = object({
     link_session_id: string().optional(),
     link_token: string().optional(),
     public_token: string().optional(),
-    error: object({
-      error_type: string(),
-      error_code: string(),
-      error_message: string(),
-    }).optional(),
+    error: itemError.nullish(),
+    consent_expiration_time: string().optional(),
+    disconnect_time: string().optional(),
+    reason: string().optional(),
   }).passthrough(), // Allow additional fields (matches [key: string]: unknown)
 });
 
@@ -53,11 +63,10 @@ export const PlaidWebhookEventSchema = object({
   link_session_id: string().optional(),
   link_token: string().optional(),
   public_token: string().optional(),
-  error: object({
-    error_type: string(),
-    error_code: string(),
-    error_message: string(),
-  }).optional(),
+  error: itemError.nullish(),
+  consent_expiration_time: string().optional(),
+  disconnect_time: string().optional(),
+  reason: string().optional(),
 }).passthrough();
 
 /**

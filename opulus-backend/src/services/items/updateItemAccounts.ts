@@ -5,12 +5,15 @@ import {
   normalizePlaidAccount,
   plaidService,
   prisma,
+  toItemErrorData,
 } from "@opulus/core";
 
 /**
  * Reconcile a persisted Item's accounts with Plaid's current view
  * (`/accounts/get`). Called after a Link update-mode session (reconnect or
  * add-accounts) since Plaid does not fire a webhook for update mode.
+ *
+ * It also refreshes the item's stored error and consent expiry from Plaid.
  *
  * Upsert-only: new Plaid accounts are inserted, existing ones have their
  * mutable fields refreshed. De-selection handling (soft or hard delete) is
@@ -19,6 +22,17 @@ import {
 export async function updateItemAccounts(itemId: string) {
   const item = await itemService.getById(itemId);
   const accountsResponse = await plaidService.getAccounts(item.accessToken);
+
+  // The user just went through update mode, so whatever error or warning a
+  // webhook stored may be resolved. Plaid sends no webhook for that, so take
+  // the item's current state from Plaid.
+  const plaidItem = await plaidService.getItem(item.accessToken);
+  await itemService.update(item.id, {
+    ...toItemErrorData(plaidItem.item.error),
+    consentExpirationTime: plaidItem.item.consent_expiration_time
+      ? new Date(plaidItem.item.consent_expiration_time)
+      : null,
+  });
 
   let created = 0;
   let updated = 0;

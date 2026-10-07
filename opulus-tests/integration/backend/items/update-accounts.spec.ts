@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { expectOk, expectStatus } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
+import { testDb } from "../../../shared/db.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
   createSandboxItem,
@@ -98,6 +99,53 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
         Date.parse(previous!.syncedAt),
       );
     }
+  });
+
+  test("clears a stored connection error once Plaid reports the item healthy", async ({
+    request,
+  }) => {
+    // Arrange: a healthy sandbox item that a webhook has marked as needing
+    // a reconnect (e.g. ITEM_LOGIN_REQUIRED), as if the user had just fixed it
+    // in Link's update mode.
+    const creds = requireSandboxCredentials();
+    const { cookie } = await createAuthedUser(request);
+    const { itemId } = await createSandboxItem(request, cookie, creds);
+    await testDb().item.update({
+      where: { id: itemId },
+      data: {
+        errorType: "ITEM_ERROR",
+        errorCode: "ITEM_LOGIN_REQUIRED",
+        errorMessage: "the login details of this item have changed",
+        displayMessage: "Please sign in again",
+      },
+    });
+
+    // Act
+    const res = await request.post(`/api/items/${itemId}/update-accounts`, {
+      headers: withSession(cookie),
+    });
+
+    // Assert: the error is gone from the item the client reads.
+    await expectOk(res);
+    const itemsRes = await request.get("/api/items", {
+      headers: withSession(cookie),
+    });
+    const { data } = (await itemsRes.json()) as {
+      data: {
+        items: Array<{
+          id: string;
+          errorType: string | null;
+          errorCode: string | null;
+          errorMessage: string | null;
+          displayMessage: string | null;
+        }>;
+      };
+    };
+    const item = data.items.find((i) => i.id === itemId);
+    expect(item?.errorType).toBeNull();
+    expect(item?.errorCode).toBeNull();
+    expect(item?.errorMessage).toBeNull();
+    expect(item?.displayMessage).toBeNull();
   });
 
   test("rejects an item owned by a different user (401)", async ({
