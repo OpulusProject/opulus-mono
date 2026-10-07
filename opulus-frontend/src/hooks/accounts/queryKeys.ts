@@ -1,4 +1,4 @@
-import type { AccountType } from '@opulus/core';
+import type { AccountType } from '@opulus/core/dto';
 
 /**
  * Query keys for accounts. `all` is the prefix, used to invalidate every
