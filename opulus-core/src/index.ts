@@ -9,13 +9,13 @@ export { default as prisma } from "./client/prisma.js";
 export { Prisma, PrismaClient } from "@prisma/client";
 
 // Service exports
-export * from "./services/accountService.js";
-export * from "./services/itemService.js";
-export * from "./services/liabilityService.js";
-export * from "./services/linkSessionService.js";
+export * from "./repositories/accountRepository.js";
+export * from "./repositories/itemRepository.js";
+export * from "./repositories/liabilityRepository.js";
+export * from "./repositories/linkSessionRepository.js";
 export * from "./services/plaidService.js";
-export * from "./services/transactionService.js";
-export * from "./services/userService.js";
+export * from "./repositories/transactionRepository.js";
+export * from "./repositories/userRepository.js";
 
 // Sync exports
 export * from "./sync/index.js";

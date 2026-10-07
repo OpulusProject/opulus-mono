@@ -2,7 +2,7 @@ import { getValidatedQuery } from "@/middleware/validation.js";
 import { getRequestSession } from "@/middleware/session/requireSession.js";
 import {
   ACCOUNT_TYPES,
-  accountService,
+  accountRepository,
   AccountsResponse,
   toAccountWithConnectionDTO,
 } from "@opulus/core";
@@ -37,7 +37,7 @@ export async function getAccountsController(
 
     const { type } = getValidatedQuery<typeof getAccountsQuerySchema>(req);
 
-    const accounts = await accountService.getAllByUserId(session.user.id, type);
+    const accounts = await accountRepository.getAllByUserId(session.user.id, type);
 
     res.status(200).json({
       data: { accounts: accounts.map(toAccountWithConnectionDTO) },

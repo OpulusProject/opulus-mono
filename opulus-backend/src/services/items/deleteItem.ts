@@ -1,9 +1,9 @@
 import {
-  accountService,
-  itemService,
+  accountRepository,
+  itemRepository,
   plaidService,
   prisma,
-  transactionService,
+  transactionRepository,
 } from "@opulus/core";
 
 import { getItem } from "./getItem.js";
@@ -30,9 +30,9 @@ export async function deleteItem(params: DeleteItemParams): Promise<void> {
   await plaidService.removeItem(item.accessToken);
 
   await prisma.$transaction(async (tx) => {
-    await transactionService.deleteByItemId(item.id, tx);
-    await accountService.deleteByItemId(item.id, tx);
-    await itemService.delete(item.id, tx);
+    await transactionRepository.deleteByItemId(item.id, tx);
+    await accountRepository.deleteByItemId(item.id, tx);
+    await itemRepository.delete(item.id, tx);
   });
 
   // TODO: record deletion of item
