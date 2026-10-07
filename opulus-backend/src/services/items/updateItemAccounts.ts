@@ -1,9 +1,10 @@
 import {
-  itemService,
+  accountRepository,
+  itemRepository,
   logger,
   normalizePlaidAccount,
-  plaidService,
-  prisma,
+  plaidGateway,
+  runInTransaction,
   toItemErrorData,
   trySyncItemLiabilities,
 } from "@opulus/core";
@@ -37,13 +38,13 @@ export async function updateItemAccounts(
   params: UpdateItemAccountsParams
 ): Promise<UpdateItemAccountsResult> {
   const item = await getItem(params);
-  const accountsResponse = await plaidService.getAccounts(item.accessToken);
+  const accountsResponse = await plaidGateway.getAccounts(item.accessToken);
 
   // The user just went through update mode, so whatever error or warning a
   // webhook stored may be resolved. Plaid sends no webhook for that, so take
   // the item's current state from Plaid.
-  const plaidItem = await plaidService.getItem(item.accessToken);
-  await itemService.update(item.id, {
+  const plaidItem = await plaidGateway.getItem(item.accessToken);
+  await itemRepository.update(item.id, {
     ...toItemErrorData(plaidItem.item.error),
     consentExpirationTime: plaidItem.item.consent_expiration_time
       ? new Date(plaidItem.item.consent_expiration_time)
@@ -53,26 +54,22 @@ export async function updateItemAccounts(
   let created = 0;
   let updated = 0;
 
-  await prisma.$transaction(async (tx) => {
+  await runInTransaction(async (tx) => {
     for (const plaidAccount of accountsResponse.accounts) {
       const data = normalizePlaidAccount(plaidAccount, item.id, item.userId);
-      const existing = await tx.account.findUnique({
-        where: {
-          providerAccountId_itemId: {
-            providerAccountId: data.providerAccountId,
-            itemId: item.id,
-          },
-        },
-        select: { id: true },
-      });
+      const existingId = await accountRepository.findIdByProviderAccountId(
+        item.id,
+        data.providerAccountId,
+        tx
+      );
 
-      if (!existing) {
-        await tx.account.create({ data });
+      if (!existingId) {
+        await accountRepository.create(data, tx);
         created += 1;
       } else {
-        await tx.account.update({
-          where: { id: existing.id },
-          data: {
+        await accountRepository.update(
+          existingId,
+          {
             name: data.name,
             officialName: data.officialName,
             type: data.type,
@@ -85,7 +82,8 @@ export async function updateItemAccounts(
             unofficialCurrencyCode: data.unofficialCurrencyCode,
             persistentAccountId: data.persistentAccountId,
           },
-        });
+          tx
+        );
         updated += 1;
       }
     }
@@ -94,11 +92,11 @@ export async function updateItemAccounts(
   // The accounts Plaid flagged as new have been added, so stop prompting.
   // (If the user shared none of them, the flag stays and they can try again.)
   if (created > 0) {
-    await itemService.update(item.id, { newAccountsAvailable: false });
+    await itemRepository.update(item.id, { newAccountsAvailable: false });
   }
 
   // New or re-consented accounts may now have liabilities data.
-  await trySyncItemLiabilities(item);
+  await trySyncItemLiabilities({ item });
 
   logger.info(
     {

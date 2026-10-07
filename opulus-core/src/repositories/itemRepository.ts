@@ -2,7 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import type { PlaidErrorType, Item as PlaidItem } from "plaid";
 import prisma from "../client/prisma.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
-import { accountDtoSelect } from "./accountService.js";
+import { accountDtoSelect } from "./accountRepository.js";
 
 export interface CreateItemData {
   plaidItemId: string;
@@ -83,10 +83,10 @@ export function normalizePlaidItem(
 }
 
 /**
- * Service for managing Plaid items
+ * Repository for Plaid items
  * Handles item creation and retrieval
  */
-class ItemService {
+class ItemRepository {
   constructor(private prisma: PrismaClient) {}
 
   /**
@@ -96,9 +96,12 @@ class ItemService {
    * @throws ConflictError if item already exists
    * @throws AppError if database error occurs
    */
-  async create(data: CreateItemData) {
+  async create(
+    data: CreateItemData,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
     try {
-      return await this.prisma.item.create({ data });
+      return await client.item.create({ data });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -147,6 +150,36 @@ class ItemService {
     }
   }
 
+  /**
+   * Find the id of an item the user has already linked for an institution
+   * @param userId - The user ID
+   * @param institutionId - Plaid's institution id
+   * @returns The item's id, or null if there is none
+   * @throws AppError if database error occurs
+   */
+  async findIdByInstitution(
+    userId: string,
+    institutionId: string
+  ): Promise<string | null> {
+    try {
+      const item = await this.prisma.item.findFirst({
+        where: { userId, institutionId },
+        select: { id: true },
+      });
+      return item?.id ?? null;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to find item: ${error.message}`
+          : "An unexpected error occurred while finding item";
+      throw new AppError(message, 500);
+    }
+  }
+
   async getByPlaidItemId(plaidItemId: string) {
     try {
       const item = await this.prisma.item.findUniqueOrThrow({
@@ -179,13 +212,18 @@ class ItemService {
    * Only updates fields that are provided (undefined fields are ignored)
    * @param itemId - The item ID
    * @param data - Partial item data to update
+   * @param client - Optional transaction client to run inside a transaction
    * @returns Updated item
    * @throws NotFoundError if item not found
    * @throws AppError if database error occurs
    */
-  async update(itemId: string, data: Prisma.ItemUpdateInput) {
+  async update(
+    itemId: string,
+    data: Prisma.ItemUpdateInput,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
     try {
-      return await this.prisma.item.update({
+      return await client.item.update({
         where: { id: itemId },
         data,
       });
@@ -242,7 +280,7 @@ class ItemService {
   /**
    * List every item. Used by the reconcile CLI to walk the full catalog.
    */
-  async listAll() {
+  async getAll() {
     try {
       return await this.prisma.item.findMany({
         select: {
@@ -294,4 +332,4 @@ class ItemService {
 }
 
 // Export singleton instance
-export const itemService = new ItemService(prisma);
+export const itemRepository = new ItemRepository(prisma);

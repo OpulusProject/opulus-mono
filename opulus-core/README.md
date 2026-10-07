@@ -4,7 +4,7 @@ Core business logic, shared services, and infrastructure for Opulus.
 
 ## Overview
 
-Shared package containing database access, external API clients, business logic services, types, and utilities used across all Opulus services.
+Shared package containing repositories (data access), gateways (external APIs), the business logic the backend and webhooks service share, types, and utilities used across all Opulus apps.
 
 ## What's Included
 
@@ -17,15 +17,27 @@ Shared package containing database access, external API clients, business logic 
 ### External APIs
 
 - **Plaid Client** - Plaid API integration
-- **Plaid Service** - Plaid API wrapper with error handling
+- **Plaid Gateway** - Plaid API wrapper with error handling
+
+### Repositories
+
+Data access, one per model.
+
+- **User Repository** - Users
+- **Item Repository** - Plaid items
+- **Account Repository** - Accounts
+- **Transaction Repository** - Transactions
+- **Liability Repository** - Account liabilities, and the normalizers for Plaid's liability shapes
+- **Link Session Repository** - Plaid Link sessions
 
 ### Services
 
-- **User Service** - User management
-- **Item Service** - Plaid item management
-- **Account Service** - Account operations
-- **Transaction Service** - Transaction operations
-- **Link Session Service** - Plaid Link session management
+Business logic that both the backend and the webhooks service need. Logic only one app needs lives in that app.
+
+- **`syncItemTransactions`**, **`syncItemLiabilities`** - Pull an item's data from Plaid and store it
+
+### Other
+
 - **Webhook Queue** - Queue system for webhook processing (Redis + BullMQ)
 
 ### Types
@@ -48,10 +60,10 @@ Shared package containing database access, external API clients, business logic 
 import { prisma } from "@opulus/core";
 
 // Plaid
-import { plaidClient, plaidService } from "@opulus/core";
+import { plaidClient, plaidGateway } from "@opulus/core";
 
-// Services
-import { userService, itemService, transactionService } from "@opulus/core";
+// Repositories
+import { userRepository, itemRepository, transactionRepository } from "@opulus/core";
 
 // Types
 import type { GetItemsResponse, Transaction } from "@opulus/core";
@@ -107,57 +119,69 @@ Open database GUI:
 pnpm prisma:studio
 ```
 
+## Repositories
+
+### User Repository
+
+```typescript
+import { userRepository } from "@opulus/core";
+
+// Get a user by ID
+const user = await userRepository.get(userId);
+```
+
+### Item Repository
+
+```typescript
+import { itemRepository } from "@opulus/core";
+
+// Get an item by Plaid's item ID
+const item = await itemRepository.getByPlaidItemId(plaidItemId);
+
+// Get all of a user's items, with their accounts
+const items = await itemRepository.getAllByUserId(userId);
+```
+
+### Transaction Repository
+
+```typescript
+import { transactionRepository } from "@opulus/core";
+
+// Get a user's transactions, filtered and paginated
+const result = await transactionRepository.getAllByUserId(
+  userId,
+  { startDate: new Date("2024-01-01"), endDate: new Date("2024-12-31") },
+  { page: 1, limit: 50 }
+);
+```
+
 ## Services
 
-### User Service
-
 ```typescript
-import { userService } from "@opulus/core";
+import { syncItemLiabilities, syncItemTransactions } from "@opulus/core";
 
-// Get user by ID
-const user = await userService.getById(userId);
+// Catch an item's transactions up from its stored cursor
+await syncItemTransactions(plaidItemId);
 
-// Get user by email
-const user = await userService.getByEmail(email);
+// Fetch and store an item's liabilities
+await syncItemLiabilities(item);
 ```
 
-### Item Service
+## Plaid
+
+### Plaid Gateway
 
 ```typescript
-import { itemService } from "@opulus/core";
-
-// Get item by Plaid item ID
-const item = await itemService.getByPlaidItemId(plaidItemId);
-
-// Get all items for user
-const items = await itemService.getByUserId(userId);
-```
-
-### Transaction Service
-
-```typescript
-import { transactionService } from "@opulus/core";
-
-// Get transactions for user
-const transactions = await transactionService.getByUserId(userId, {
-  startDate: new Date("2024-01-01"),
-  endDate: new Date("2024-12-31"),
-});
-```
-
-### Plaid Service
-
-```typescript
-import { plaidService } from "@opulus/core";
+import { plaidGateway } from "@opulus/core";
 
 // Create link token
-const linkToken = await plaidService.createLinkToken(userId);
+const linkToken = await plaidGateway.createLinkToken(userId);
 
 // Exchange public token
-const { access_token } = await plaidService.exchangePublicToken(publicToken);
+const { access_token } = await plaidGateway.exchangePublicToken(publicToken);
 
 // Sync transactions
-const result = await plaidService.transactionsSync(accessToken, cursor);
+const result = await plaidGateway.transactionsSync(accessToken, cursor);
 ```
 
 ## Configuration
@@ -219,15 +243,18 @@ opulus-core/
 │   │   └── plaid.ts         # Plaid client
 │   ├── config/
 │   │   └── default.ts       # Configuration
-│   ├── services/
-│   │   ├── userService.ts
-│   │   ├── itemService.ts
-│   │   ├── transactionService.ts
-│   │   ├── plaidService.ts
-│   │   ├── linkSessionService.ts
-│   │   ├── accountService.ts
-│   │   └── queue/
-│   │       └── webhookQueue.ts
+│   ├── repositories/    # Data access, one per model
+│   │   ├── userRepository.ts
+│   │   ├── itemRepository.ts
+│   │   ├── accountRepository.ts
+│   │   ├── transactionRepository.ts
+│   │   ├── liabilityRepository.ts
+│   │   └── linkSessionRepository.ts
+│   ├── gateways/        # External APIs
+│   │   └── plaidGateway.ts
+│   ├── services/        # Business logic shared by the apps
+│   │   ├── syncItemLiabilities.ts
+│   │   └── syncItemTransactions.ts
 │   ├── types/
 │   │   └── dto/             # Data transfer objects
 │   ├── utils/

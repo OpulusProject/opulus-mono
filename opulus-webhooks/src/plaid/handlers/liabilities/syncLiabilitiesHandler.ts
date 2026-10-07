@@ -1,7 +1,7 @@
 import type { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
 import {
   AppError,
-  itemService,
+  itemRepository,
   logger,
   syncItemLiabilities,
 } from "@opulus/core";
@@ -39,10 +39,8 @@ export async function syncLiabilitiesHandler(
     ...new Set([...newAccountIds, ...Object.keys(updatedFields)]),
   ];
 
-  const item = await itemService.getByPlaidItemId(event.item_id);
-  const result = await syncItemLiabilities(item, {
-    providerAccountIds,
-  });
+  const item = await itemRepository.getByPlaidItemId(event.item_id);
+  const result = await syncItemLiabilities({ item, providerAccountIds });
 
   logger.info(
     {

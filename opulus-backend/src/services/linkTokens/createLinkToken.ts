@@ -1,7 +1,7 @@
 import {
-  linkSessionService,
-  plaidService,
-  userService,
+  linkSessionRepository,
+  plaidGateway,
+  userRepository,
 } from "@opulus/core";
 
 export interface CreateLinkTokenParams {
@@ -24,15 +24,15 @@ export async function createLinkToken(
 ): Promise<CreateLinkTokenResult> {
   const { userId } = params;
 
-  const user = await userService.get(userId);
+  const user = await userRepository.getById(userId);
 
   let userToken = user.plaidUserToken;
 
   if (!userToken) {
-    const plaidUserResponse = await plaidService.createUser(userId);
+    const plaidUserResponse = await plaidGateway.createUser(userId);
     const { user_token: plaidUserToken, user_id: plaidId } = plaidUserResponse;
 
-    await userService.update({
+    await userRepository.update({
       id: userId,
       plaidId,
       plaidUserToken,
@@ -41,13 +41,13 @@ export async function createLinkToken(
     userToken = plaidUserToken;
   }
 
-  const linkTokenResponse = await plaidService.createLinkToken(
+  const linkTokenResponse = await plaidGateway.createLinkToken(
     userToken,
     userId
   );
   const linkToken = linkTokenResponse.link_token;
 
-  await linkSessionService.create({
+  await linkSessionRepository.create({
     userId,
     linkToken,
   });

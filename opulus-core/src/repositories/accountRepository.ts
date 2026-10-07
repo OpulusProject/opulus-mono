@@ -68,6 +68,11 @@ export interface CreateAccountData {
   unofficialCurrencyCode?: string | null;
 }
 
+/** The details of an account that can change when Plaid is re-read. */
+export type UpdateAccountData = Partial<
+  Omit<CreateAccountData, "itemId" | "userId" | "providerAccountId">
+>;
+
 /**
  * Normalize Plaid Account to CreateAccountData format
  * Handles field name mapping and type conversions
@@ -96,12 +101,15 @@ export function normalizePlaidAccount(
   };
 }
 
-class AccountService {
+class AccountRepository {
   constructor(private prisma: PrismaClient) {}
 
-  async create(data: CreateAccountData) {
+  async create(
+    data: CreateAccountData,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
     try {
-      return await this.prisma.account.create({ data });
+      return await client.account.create({ data });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -152,6 +160,65 @@ class AccountService {
         error instanceof Error
           ? `Failed to get accounts: ${error.message}`
           : "An unexpected error occurred while fetching accounts";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * Find one of an item's accounts by Plaid's account id
+   * @param itemId - The item the account belongs to
+   * @param providerAccountId - Plaid's account id
+   * @param client - Optional transaction client to run inside a transaction
+   * @returns The account's id, or null if we don't have it
+   * @throws AppError if database error occurs
+   */
+  async findIdByProviderAccountId(
+    itemId: string,
+    providerAccountId: string,
+    client: Prisma.TransactionClient = this.prisma
+  ): Promise<string | null> {
+    try {
+      const account = await client.account.findUnique({
+        where: { providerAccountId_itemId: { providerAccountId, itemId } },
+        select: { id: true },
+      });
+      return account?.id ?? null;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get account: ${error.message}`
+          : "An unexpected error occurred while fetching account";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * Update an account's details
+   * @param id - The account id
+   * @param data - The fields to change
+   * @param client - Optional transaction client to run inside a transaction
+   * @throws AppError if database error occurs
+   */
+  async update(
+    id: string,
+    data: UpdateAccountData,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
+    try {
+      return await client.account.update({ where: { id }, data });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to update account: ${error.message}`
+          : "An unexpected error occurred while updating account";
       throw new AppError(message, 500);
     }
   }
@@ -211,4 +278,4 @@ class AccountService {
 }
 
 // Export singleton instance
-export const accountService = new AccountService(prisma);
+export const accountRepository = new AccountRepository(prisma);

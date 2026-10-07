@@ -1,9 +1,9 @@
-import { accountService } from "../services/accountService.js";
+import { accountRepository } from "../repositories/accountRepository.js";
 import {
-  liabilityService,
+  liabilityRepository,
   normalizePlaidLiabilities,
-} from "../services/liabilityService.js";
-import { plaidService } from "../services/plaidService.js";
+} from "../repositories/liabilityRepository.js";
+import { plaidGateway } from "../gateways/plaidGateway.js";
 import { AppError } from "../utils/errors.js";
 import { logger } from "../utils/logger.js";
 
@@ -31,6 +31,15 @@ interface SyncableItem {
   accessToken: string;
 }
 
+export interface SyncItemLiabilitiesParams {
+  item: SyncableItem;
+  /**
+   * Only fetch these Plaid account ids (e.g. the accounts a LIABILITIES webhook
+   * reported as changed). All of the item's accounts if omitted.
+   */
+  providerAccountIds?: string[];
+}
+
 /**
  * Fetch an item's liabilities from Plaid and store one row per account.
  * Resolves to `unavailable` when Plaid has nothing to give for this item
@@ -40,20 +49,18 @@ interface SyncableItem {
  * updated) and the webhooks service (LIABILITIES updates), which is why it
  * lives in core.
  *
- * @param item - The item to sync
- * @param options.providerAccountIds - Only fetch these Plaid account IDs
- *   (e.g. the accounts a LIABILITIES webhook reported as changed)
  * @throws AppError if Plaid or the database fails unexpectedly
  */
 export async function syncItemLiabilities(
-  item: SyncableItem,
-  options: { providerAccountIds?: string[] } = {}
+  params: SyncItemLiabilitiesParams
 ): Promise<SyncLiabilitiesResult> {
+  const { item, providerAccountIds } = params;
+
   let response;
   try {
-    response = await plaidService.getLiabilities(
+    response = await plaidGateway.getLiabilities(
       item.accessToken,
-      options.providerAccountIds
+      providerAccountIds
     );
   } catch (error) {
     if (
@@ -71,7 +78,7 @@ export async function syncItemLiabilities(
     return { status: "synced", synced: 0, unmatched: 0 };
   }
 
-  const accountIds = await accountService.getIdsByProviderAccountIds(
+  const accountIds = await accountRepository.getIdsByProviderAccountIds(
     item.id,
     normalized.map((entry) => entry.providerAccountId)
   );
@@ -82,7 +89,7 @@ export async function syncItemLiabilities(
   });
 
   if (rows.length > 0) {
-    await liabilityService.upsertMany(item, rows);
+    await liabilityRepository.upsertMany(item, rows);
   }
 
   return {
@@ -93,14 +100,17 @@ export async function syncItemLiabilities(
 }
 
 /**
- * Like `syncItemLiabilities`, but never throws. Use where liabilities are a
- * bonus and must not fail the surrounding flow (e.g. linking an institution).
+ * Like `syncItemLiabilities` for a whole item, but never throws. Use where
+ * liabilities are a bonus and must not fail the surrounding flow (e.g. linking
+ * an institution).
  */
-export async function trySyncItemLiabilities(
-  item: SyncableItem
-): Promise<SyncLiabilitiesResult | { status: "failed" }> {
+export async function trySyncItemLiabilities(params: {
+  item: SyncableItem;
+}): Promise<SyncLiabilitiesResult | { status: "failed" }> {
+  const { item } = params;
+
   try {
-    const result = await syncItemLiabilities(item);
+    const result = await syncItemLiabilities({ item });
     logger.info(
       { item_id: item.id, user_id: item.userId, ...result },
       "Liabilities sync finished"

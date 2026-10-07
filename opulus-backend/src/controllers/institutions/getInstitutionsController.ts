@@ -1,8 +1,5 @@
-import {
-  InstitutionsResponse,
-  plaidService,
-  toInstitutionDTO,
-} from "@opulus/core";
+import { getInstitutions } from "@/services/institutions/getInstitutions.js";
+import { InstitutionsResponse, toInstitutionDTO } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 
 /**
@@ -15,18 +12,16 @@ export async function getInstitutionsController(
   next: NextFunction
 ) {
   try {
-    // Get institutions from Plaid
-    const institutionsResponse = await plaidService.getInstitutions();
+    const { institutions, total } = await getInstitutions();
 
     res.status(200).json({
       data: {
-        institutions: institutionsResponse.institutions.map(toInstitutionDTO),
-        total: institutionsResponse.total,
-        count: institutionsResponse.institutions.length,
+        institutions: institutions.map(toInstitutionDTO),
+        total,
+        count: institutions.length,
       },
     });
   } catch (error) {
     next(error);
   }
 }
-

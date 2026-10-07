@@ -1,4 +1,4 @@
-import { plaidService } from "@opulus/core";
+import { plaidGateway } from "@opulus/core";
 
 import { getItem } from "../items/getItem.js";
 
@@ -30,7 +30,7 @@ export async function createUpdateLinkToken(
 ): Promise<CreateUpdateLinkTokenResult> {
   const item = await getItem(params);
 
-  const linkTokenResponse = await plaidService.createUpdateLinkToken(
+  const linkTokenResponse = await plaidGateway.createUpdateLinkToken(
     item.accessToken,
     params.userId,
     { selectAccounts: params.mode === "add-accounts" }

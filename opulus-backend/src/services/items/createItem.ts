@@ -1,13 +1,14 @@
 import {
+  accountRepository,
+  itemRepository,
   logger,
   normalizePlaidAccount,
   normalizePlaidItem,
-  plaidService,
-  prisma,
+  plaidGateway,
+  runInTransaction,
   trySyncItemLiabilities,
 } from "@opulus/core";
 
-import { findDuplicateItem } from "./findDuplicateItem.js";
 
 export interface CreateItemParams {
   userId: string;
@@ -29,7 +30,11 @@ export async function createItem(
   params: CreateItemParams
 ): Promise<CreateItemResult> {
   const { userId, publicToken, institutionId } = params;
-  const duplicate = await findDuplicateItem(userId, institutionId);
+  // Strict policy: one item per (user, institution)
+  const duplicate = await itemRepository.findIdByInstitution(
+    userId,
+    institutionId
+  );
   if (duplicate) {
     logger.info(
       {
@@ -42,10 +47,10 @@ export async function createItem(
     return { duplicate: true as const, existingItemId: duplicate };
   }
 
-  const exchange = await plaidService.exchangePublicToken(publicToken);
+  const exchange = await plaidGateway.exchangePublicToken(publicToken);
   const accessToken = exchange.access_token;
 
-  const { item } = await plaidService.getItem(accessToken);
+  const { item } = await plaidGateway.getItem(accessToken);
 
   let institution: {
     name: string;
@@ -55,7 +60,7 @@ export async function createItem(
 
   if (item.institution_id) {
     try {
-      const institutionResponse = await plaidService.getInstitutionById(
+      const institutionResponse = await plaidGateway.getInstitutionById(
         item.institution_id
       );
       institution = institutionResponse.institution;
@@ -71,11 +76,11 @@ export async function createItem(
     }
   }
 
-  const accountsResponse = await plaidService.getAccounts(accessToken);
+  const accountsResponse = await plaidGateway.getAccounts(accessToken);
   const itemData = normalizePlaidItem(item, userId, accessToken, institution);
 
-  const createdItem = await prisma.$transaction(async (tx) => {
-    const created = await tx.item.create({ data: itemData });
+  const createdItem = await runInTransaction(async (tx) => {
+    const created = await itemRepository.create(itemData, tx);
 
     for (const plaidAccount of accountsResponse.accounts) {
       const accountData = normalizePlaidAccount(
@@ -83,7 +88,7 @@ export async function createItem(
         created.id,
         userId
       );
-      await tx.account.create({ data: accountData });
+      await accountRepository.create(accountData, tx);
     }
 
     logger.info(
@@ -102,9 +107,7 @@ export async function createItem(
   // Liabilities (APRs, due dates, loan terms) are a bonus: fetch them now, but
   // never fail linking over them. A LIABILITIES webhook refreshes them later.
   await trySyncItemLiabilities({
-    id: createdItem.id,
-    userId,
-    accessToken,
+    item: { id: createdItem.id, userId, accessToken },
   });
 
   return { duplicate: false as const, item: createdItem };

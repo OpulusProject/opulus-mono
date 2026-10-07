@@ -133,9 +133,9 @@ export function normalizePlaidLiabilities(
 }
 
 /**
- * Service for storing liabilities (APRs, payment due dates, loan terms)
+ * Repository for liabilities (APRs, payment due dates, loan terms)
  */
-class LiabilityService {
+class LiabilityRepository {
   constructor(private prisma: PrismaClient) {}
 
   /**
@@ -143,18 +143,21 @@ class LiabilityService {
    * account, all stamped with the same sync time.
    * @param item - The item (and user) the liabilities belong to
    * @param rows - The liability data for each of our account ids
+   * @param client - Optional transaction client. Without one the rows are
+   *   written in their own transaction; with one they join the caller's.
    * @throws AppError if database error occurs
    */
   async upsertMany(
     item: { id: string; userId: string },
-    rows: Array<{ accountId: string; data: NormalizedLiability["data"] }>
+    rows: Array<{ accountId: string; data: NormalizedLiability["data"] }>,
+    client?: Prisma.TransactionClient
   ): Promise<void> {
     const syncedAt = new Date();
 
-    try {
-      await this.prisma.$transaction(
+    const upsertAll = (db: Prisma.TransactionClient) =>
+      Promise.all(
         rows.map(({ accountId, data }) =>
-          this.prisma.accountLiability.upsert({
+          db.accountLiability.upsert({
             where: { accountId },
             create: {
               ...data,
@@ -167,6 +170,11 @@ class LiabilityService {
           })
         )
       );
+
+    try {
+      await (client
+        ? upsertAll(client)
+        : this.prisma.$transaction((tx) => upsertAll(tx)));
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new AppError(`Database error: ${error.message}`, 500, error.code);
@@ -182,4 +190,4 @@ class LiabilityService {
 }
 
 // Export singleton instance
-export const liabilityService = new LiabilityService(prisma);
+export const liabilityRepository = new LiabilityRepository(prisma);

@@ -1,6 +1,6 @@
 import { getRequestSession } from "@/middleware/session/requireSession.js";
 import {
-  itemService,
+  itemRepository,
   ItemsResponse,
   toItemDTO,
 } from "@opulus/core";
@@ -21,7 +21,7 @@ export async function getItemsController(
     const userId = session.user.id;
 
     // Get all items with accounts (service returns full data)
-    const items = await itemService.getAllByUserId(userId);
+    const items = await itemRepository.getAllByUserId(userId);
 
     // Transform to the public shape, leaving out sensitive fields
     res.status(200).json({ data: { items: items.map(toItemDTO) } });

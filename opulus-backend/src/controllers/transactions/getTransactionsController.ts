@@ -2,7 +2,7 @@ import { getValidatedQuery } from "@/middleware/validation.js";
 import { getRequestSession } from "@/middleware/session/requireSession.js";
 import {
   toTransactionDTO,
-  transactionService,
+  transactionRepository,
   TransactionsResponse,
 } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
@@ -69,7 +69,7 @@ export async function getTransactionsController(
       getValidatedQuery<typeof getTransactionsQuerySchema>(req);
 
     // Get transactions with filters and pagination
-    const result = await transactionService.getAllByUserId(
+    const result = await transactionRepository.getAllByUserId(
       userId,
       {
         ...(itemId && { itemId }),

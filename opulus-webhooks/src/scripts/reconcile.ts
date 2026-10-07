@@ -15,7 +15,7 @@
 import "dotenv/config";
 
 import {
-  itemService,
+  itemRepository,
   logger,
   prisma,
   syncItemTransactions,
@@ -43,7 +43,7 @@ async function main(): Promise<void> {
           institutionName: null as string | null,
         },
       ]
-    : await itemService.listAll();
+    : await itemRepository.getAll();
 
   if (items.length === 0) {
     logger.info("No items to reconcile");
@@ -57,7 +57,7 @@ async function main(): Promise<void> {
 
   for (const item of items) {
     try {
-      const result = await syncItemTransactions(item.plaidItemId);
+      const result = await syncItemTransactions({ plaidItemId: item.plaidItemId });
       succeeded += 1;
       logger.info(
         {

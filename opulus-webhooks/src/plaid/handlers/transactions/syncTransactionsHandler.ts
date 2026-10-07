@@ -12,7 +12,7 @@ export async function syncTransactionsHandler(
   }
 
   try {
-    await syncItemTransactions(event.item_id);
+    await syncItemTransactions({ plaidItemId: event.item_id });
   } catch (error) {
     logger.error(
       {

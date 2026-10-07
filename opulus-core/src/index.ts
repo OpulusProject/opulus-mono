@@ -6,19 +6,23 @@ export {
   type RemovedTransaction,
 } from "./client/plaid.js";
 export { default as prisma } from "./client/prisma.js";
+export { runInTransaction } from "./client/transaction.js";
 export { Prisma, PrismaClient } from "@prisma/client";
 
-// Service exports
-export * from "./services/accountService.js";
-export * from "./services/itemService.js";
-export * from "./services/liabilityService.js";
-export * from "./services/linkSessionService.js";
-export * from "./services/plaidService.js";
-export * from "./services/transactionService.js";
-export * from "./services/userService.js";
+// Repository exports (data access)
+export * from "./repositories/accountRepository.js";
+export * from "./repositories/itemRepository.js";
+export * from "./repositories/liabilityRepository.js";
+export * from "./repositories/linkSessionRepository.js";
+export * from "./repositories/transactionRepository.js";
+export * from "./repositories/userRepository.js";
 
-// Sync exports
-export * from "./sync/index.js";
+// Gateway exports (external APIs)
+export * from "./gateways/plaidGateway.js";
+
+// Service exports (business logic shared by the backend and webhooks)
+export * from "./services/syncItemLiabilities.js";
+export * from "./services/syncItemTransactions.js";
 
 // Type exports (DTOs)
 export * from "./types/dto/index.js";
