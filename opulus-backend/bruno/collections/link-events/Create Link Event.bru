@@ -1,0 +1,59 @@
+meta {
+  name: Create Link Event
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/api/link-events
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "eventName": "ERROR",
+    "mode": "new",
+    "linkSessionId": "link_session_id_here",
+    "requestId": "plaid_request_id_here",
+    "institutionId": "ins_109508",
+    "errorType": "ITEM_ERROR",
+    "errorCode": "ITEM_LOGIN_REQUIRED"
+  }
+}
+
+docs {
+  # Create Link Event
+
+  Reports a Plaid Link event from the browser so it is written to the backend logs. Link runs in the browser, so this is how its events, and the session and request ids Plaid support asks for when a connection fails, reach our logs.
+
+  **Endpoint:** `POST /api/link-events`
+
+  ## Authentication
+
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+
+  ## Request Body
+
+  - `eventName` (string, required): the Link event, e.g. `OPEN`, `ERROR`, `EXIT`, `HANDOFF`
+  - `mode` (string, required): `new`, `reconnect` or `add-accounts`
+  - `itemId`, `linkSessionId`, `requestId`, `institutionId`, `institutionName`, `viewName`, `exitStatus`, `errorType`, `errorCode`, `errorMessage` (strings, optional)
+
+  ## Success Response (204)
+
+  No content. The event is logged with the user id; `ERROR` events as warnings, the rest as info.
+
+  ## Error Responses
+
+  - `400 Bad Request`: `eventName` or `mode` missing or invalid
+  - `401 Unauthorized`: no active session
+
+  ## Notes
+
+  - The frontend only sends `OPEN`, `ERROR`, `EXIT` and `HANDOFF`, and ignores failures to report, so this never affects connecting an institution
+}
