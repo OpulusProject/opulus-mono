@@ -191,5 +191,5 @@ containers have no `.env` and env comes from the platform — no symlinks there.
 - [Frontend](./opulus-frontend/README.md) - React app, routing, query hooks, UI integration
 - [Webhooks](./opulus-webhooks/README.md) - Plaid webhook receiver, queueing, local tunnel setup
 - [Core](./opulus-core/README.md) - Shared services, Prisma, DTOs, Plaid client
-- [Docs](./docs/README.md) - Observability and transaction privacy notes
+- [Docs](./docs/README.md) - Conventions, observability and transaction privacy notes
 

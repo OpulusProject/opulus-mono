@@ -7,6 +7,7 @@ package READMEs.
 
 | Doc | Purpose |
 | --- | ------- |
+| [Conventions](./CONVENTIONS.md) | How code is organized and the patterns to follow: backend layers, DTOs, tests, CI and pull requests |
 | [Observability](./OBSERVABILITY.md) | Logging, request IDs, and operational visibility notes |
 | [Transaction Privacy](./TRANSACTION_PRIVACY.md) | Privacy risks and a plan for encrypting sensitive transaction metadata |
 
