@@ -1,4 +1,4 @@
-import type { BankAccountWithConnectionDTO } from '@opulus/core';
+import type { AccountWithConnectionDTO } from '@opulus/core';
 
 import {
   type AccountGroupConfig,
@@ -17,7 +17,7 @@ const GROUPS: AccountGroupConfig[] = [
   { type: 'loan', title: 'Loans and lines of credit' },
 ];
 
-function getSummary(accounts: BankAccountWithConnectionDTO[]): SummaryStat[] {
+function getSummary(accounts: AccountWithConnectionDTO[]): SummaryStat[] {
   const cards = accounts.filter((a) => getAccountType(a) === 'credit');
   const loans = accounts.filter((a) => getAccountType(a) === 'loan');
   const utilization = getOverallUtilization(cards);

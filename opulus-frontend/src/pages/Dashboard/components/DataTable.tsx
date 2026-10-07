@@ -282,9 +282,9 @@ const columns: ColumnDef<TransactionDTO>[] = [
     accessorKey: 'account',
     header: 'Account',
     cell: ({ row }) => {
-      const bankAccount = row.original.bankAccount;
-      const accountName = bankAccount.name;
-      const accountMask = bankAccount.mask;
+      const account = row.original.account;
+      const accountName = account.name;
+      const accountMask = account.mask;
       const displayName = accountMask
         ? `${accountName} ••••${accountMask}`
         : accountName;

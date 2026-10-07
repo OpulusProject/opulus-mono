@@ -89,7 +89,7 @@ export function validateQuery<T extends ZodSchema>(schema: T) {
  * @throws Error if `validateQuery` did not run for this request
  *
  * @example
- * const { type } = getValidatedQuery<typeof getBankAccountsQuerySchema>(req);
+ * const { type } = getValidatedQuery<typeof getAccountsQuerySchema>(req);
  */
 export function getValidatedQuery<T extends ZodSchema>(
   req: Request

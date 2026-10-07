@@ -7,7 +7,7 @@ export interface UpdateItemAccountsResponse {
 }
 
 /**
- * Reconcile a persisted Item's bank accounts with Plaid after a Link
+ * Reconcile a persisted Item's accounts with Plaid after a Link
  * update-mode session completes (Plaid does not fire a webhook for it).
  */
 export function useUpdateItemAccounts() {
@@ -22,7 +22,7 @@ export function useUpdateItemAccounts() {
     },
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: ['items'] });
-      void queryClient.invalidateQueries({ queryKey: ['bank-accounts'] });
+      void queryClient.invalidateQueries({ queryKey: ['accounts'] });
     },
   });
 }

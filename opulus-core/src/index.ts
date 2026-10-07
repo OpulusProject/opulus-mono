@@ -9,7 +9,7 @@ export { default as prisma } from "./client/prisma.js";
 export { Prisma, PrismaClient } from "@prisma/client";
 
 // Service exports
-export * from "./services/bankAccountService.js";
+export * from "./services/accountService.js";
 export * from "./services/itemService.js";
 export * from "./services/liabilityService.js";
 export * from "./services/linkSessionService.js";

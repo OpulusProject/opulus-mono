@@ -1,11 +1,11 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import type { AccountBase as PlaidAccount } from "plaid";
 import prisma from "../client/prisma.js";
-import type { BankAccountType } from "../types/dto/bankAccounts/getBankAccounts.js";
+import type { AccountType } from "../types/dto/accounts/getAccounts.js";
 import { AppError, ConflictError } from "../utils/errors.js";
 
 /**
- * Account columns exposed through the API (see toBankAccountDTO). Shared by every
+ * Account columns exposed through the API (see toAccountDTO). Shared by every
  * query that returns accounts so they cannot drift apart.
  */
 export const accountDtoSelect = {
@@ -20,7 +20,7 @@ export const accountDtoSelect = {
   balanceLimit: true,
   isoCurrencyCode: true,
   liabilityDetails: true,
-} satisfies Prisma.BankAccountSelect;
+} satisfies Prisma.AccountSelect;
 
 /** Plaid types that map to a named account type; anything else is "other". */
 const KNOWN_PLAID_TYPES = [
@@ -33,8 +33,8 @@ const KNOWN_PLAID_TYPES = [
 
 /** Build the `type` filter for the requested account types. */
 function typeFilter(
-  types: BankAccountType[] | undefined
-): Prisma.BankAccountWhereInput {
+  types: AccountType[] | undefined
+): Prisma.AccountWhereInput {
   if (!types?.length) return {};
 
   const exact = types
@@ -43,7 +43,7 @@ function typeFilter(
     .flatMap((type) =>
       type === "investment" ? ["investment", "brokerage"] : [type]
     );
-  const clauses: Prisma.BankAccountWhereInput[] = [];
+  const clauses: Prisma.AccountWhereInput[] = [];
   if (exact.length > 0) clauses.push({ type: { in: exact } });
   if (types.includes("other")) {
     clauses.push({ type: { notIn: KNOWN_PLAID_TYPES } });
@@ -51,7 +51,7 @@ function typeFilter(
   return { OR: clauses };
 }
 
-export interface CreateBankAccountData {
+export interface CreateAccountData {
   providerAccountId: string;
   persistentAccountId?: string | null;
   itemId: string;
@@ -69,14 +69,14 @@ export interface CreateBankAccountData {
 }
 
 /**
- * Normalize Plaid Account to CreateBankAccountData format
+ * Normalize Plaid Account to CreateAccountData format
  * Handles field name mapping and type conversions
  */
 export function normalizePlaidAccount(
   plaidAccount: PlaidAccount,
   itemId: string,
   userId: string
-): CreateBankAccountData {
+): CreateAccountData {
   return {
     providerAccountId: plaidAccount.account_id,
     persistentAccountId: plaidAccount.persistent_account_id ?? null,
@@ -96,33 +96,33 @@ export function normalizePlaidAccount(
   };
 }
 
-class BankAccountService {
+class AccountService {
   constructor(private prisma: PrismaClient) {}
 
-  async create(data: CreateBankAccountData) {
+  async create(data: CreateAccountData) {
     try {
-      return await this.prisma.bankAccount.create({ data });
+      return await this.prisma.account.create({ data });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
-          throw new ConflictError("Bank account already exists");
+          throw new ConflictError("Account already exists");
         }
         throw new AppError(`Database error: ${error.message}`, 500, error.code);
       }
 
       const message =
         error instanceof Error
-          ? `Failed to create bank account: ${error.message}`
-          : "An unexpected error occurred while creating bank account";
+          ? `Failed to create account: ${error.message}`
+          : "An unexpected error occurred while creating account";
       throw new AppError(message, 500);
     }
   }
 
   /**
-   * Delete bank accounts by item ID
-   * @param itemId - the item ID to remove the bank accounts for
+   * Delete accounts by item ID
+   * @param itemId - the item ID to remove the accounts for
    * @param client - Optional transaction client to run the delete inside a transaction
-   * @returns Count of deleted bank accounts
+   * @returns Count of deleted accounts
    */
   /**
    * Get a user's accounts across all their connections
@@ -131,9 +131,9 @@ class BankAccountService {
    * @returns Accounts with the connection each belongs to, by name
    * @throws AppError if database error occurs
    */
-  async getAllByUserId(userId: string, types?: BankAccountType[]) {
+  async getAllByUserId(userId: string, types?: AccountType[]) {
     try {
-      return await this.prisma.bankAccount.findMany({
+      return await this.prisma.account.findMany({
         where: { userId, ...typeFilter(types) },
         select: {
           ...accountDtoSelect,
@@ -150,8 +150,8 @@ class BankAccountService {
 
       const message =
         error instanceof Error
-          ? `Failed to get bank accounts: ${error.message}`
-          : "An unexpected error occurred while fetching bank accounts";
+          ? `Failed to get accounts: ${error.message}`
+          : "An unexpected error occurred while fetching accounts";
       throw new AppError(message, 500);
     }
   }
@@ -161,7 +161,7 @@ class BankAccountService {
     client: Prisma.TransactionClient = this.prisma
   ) {
     try {
-      return await client.bankAccount.deleteMany({
+      return await client.account.deleteMany({
         where: { itemId },
       });
     } catch (error) {
@@ -171,12 +171,12 @@ class BankAccountService {
 
       const message =
         error instanceof Error
-          ? `Failed to delete bank accounts: ${error.message}`
-          : "An unexpected error occurred while deleting bank accounts";
+          ? `Failed to delete accounts: ${error.message}`
+          : "An unexpected error occurred while deleting accounts";
       throw new AppError(message, 500);
     }
   }
 }
 
 // Export singleton instance
-export const bankAccountService = new BankAccountService(prisma);
+export const accountService = new AccountService(prisma);

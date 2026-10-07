@@ -1,4 +1,4 @@
-import type { BankAccountWithConnectionDTO } from '@opulus/core';
+import type { AccountWithConnectionDTO } from '@opulus/core';
 
 import {
   type AccountGroupConfig,
@@ -18,7 +18,7 @@ function countLabel(count: number) {
   return `${count} account${count === 1 ? '' : 's'}`;
 }
 
-function getSummary(accounts: BankAccountWithConnectionDTO[]): SummaryStat[] {
+function getSummary(accounts: AccountWithConnectionDTO[]): SummaryStat[] {
   const cash = accounts.filter((a) => getAccountType(a) === 'depository');
   const investments = accounts.filter(
     (a) => getAccountType(a) === 'investment'

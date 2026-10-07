@@ -23,7 +23,7 @@ Shared package containing database access, external API clients, business logic 
 
 - **User Service** - User management
 - **Item Service** - Plaid item management
-- **Bank Account Service** - Bank account operations
+- **Account Service** - Account operations
 - **Transaction Service** - Transaction operations
 - **Link Session Service** - Plaid Link session management
 - **Webhook Queue** - Queue system for webhook processing (Redis + BullMQ)
@@ -75,7 +75,7 @@ Located at `prisma/schema.prisma`. Contains all database models:
 - User
 - Session
 - Item
-- BankAccount
+- Account
 - Transaction
 - LinkSession
 - TwoFactor
@@ -225,7 +225,7 @@ opulus-core/
 │   │   ├── transactionService.ts
 │   │   ├── plaidService.ts
 │   │   ├── linkSessionService.ts
-│   │   ├── bankAccountService.ts
+│   │   ├── accountService.ts
 │   │   └── queue/
 │   │       └── webhookQueue.ts
 │   ├── types/
@@ -260,7 +260,7 @@ All types are exported from the main entry point:
 import type {
   GetItemsResponse,
   GetTransactionsResponse,
-  BankAccount,
+  Account,
   Transaction,
 } from "@opulus/core";
 

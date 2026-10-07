@@ -23,7 +23,7 @@ model User {
   linkSessions       LinkSession[]
   accountLiabilities AccountLiability[]
   items              Item[]
-  bankAccounts       BankAccount[]
+  accounts           Account[]
   transactions       Transaction[]
   twoFactor          TwoFactor?
 
@@ -113,14 +113,14 @@ model Item {
   createdAt             DateTime           @default(now())
   updatedAt             DateTime           @updatedAt
   user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bankAccounts          BankAccount[]
+  accounts              Account[]
   transactions          Transaction[]
   accountLiabilities    AccountLiability[]
 
   @@map("item")
 }
 
-model BankAccount {
+model Account {
   id                     String            @id @default(cuid())
   providerAccountId      String // Provider's account_id (may change across item updates)
   persistentAccountId    String? // Stable account identifier across item updates
@@ -151,9 +151,9 @@ model BankAccount {
 }
 
 model Transaction {
-  id                      String      @id @default(cuid())
+  id                      String    @id @default(cuid())
   providerTransactionId   String // Plaid transaction_id (unique per transaction)
-  accountId               String // Reference to BankAccount
+  accountId               String // Reference to Account
   itemId                  String // Reference to Item
   userId                  String // Reference to User
   amount                  Decimal // Transaction amount (positive for credits, negative for debits)
@@ -168,18 +168,18 @@ model Transaction {
   paymentMeta             String? // Payment metadata (JSON stringified)
   isoCurrencyCode         String? // ISO 4217 currency code
   unofficialCurrencyCode  String? // Unofficial currency code
-  pending                 Boolean     @default(false) // Whether transaction is pending
+  pending                 Boolean   @default(false) // Whether transaction is pending
   pendingTransactionId    String? // ID of pending transaction if this is a posted transaction
   accountOwner            String? // Account owner name
   transactionCode         String? // Transaction code (e.g., "direct_debit")
   merchantEntityId        String? // Merchant entity ID
   checkNumber             String? // Check number if applicable
   dateTransacted          DateTime? // Date transaction was posted
-  createdAt               DateTime    @default(now())
-  updatedAt               DateTime    @updatedAt
-  user                    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  item                    Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  bankAccount             BankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item                    Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  account                 Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   // Same transaction_id can exist in different accounts
   @@unique([providerTransactionId, accountId])
@@ -191,12 +191,12 @@ model Transaction {
 }
 
 /// Liabilities data (Plaid /liabilities/get) for a credit or loan account.
-/// One row per bank account; refreshed on link and on LIABILITIES webhooks.
+/// One row per account; refreshed on link and on LIABILITIES webhooks.
 /// Deliberately excludes account numbers, property and servicer addresses, and
 /// payment reference numbers.
 model AccountLiability {
-  id                     String      @id @default(cuid())
-  accountId              String      @unique // BankAccount this describes
+  id                     String    @id @default(cuid())
+  accountId              String    @unique // Account this describes
   itemId                 String
   userId                 String
   kind                   String // "credit" | "mortgage" | "student"
@@ -214,11 +214,11 @@ model AccountLiability {
   aprs                   Json? // Credit card APRs: [{ type, percentage, balanceSubjectToApr, interestChargeAmount }]
   details                Json? // Kind-specific extras that do not need their own column yet
   syncedAt               DateTime
-  createdAt              DateTime    @default(now())
-  updatedAt              DateTime    @updatedAt
-  user                   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  item                   Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  bankAccount            BankAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item                   Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  account                Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@index([itemId])
   @@index([userId])

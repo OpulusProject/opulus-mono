@@ -313,7 +313,7 @@ class TransactionService {
       const transactions = await this.prisma.transaction.findMany({
         where,
         include: {
-          bankAccount: {
+          account: {
             select: {
               id: true,
               name: true,

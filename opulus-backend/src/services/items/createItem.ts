@@ -75,7 +75,7 @@ export async function createItem(
         created.id,
         userId
       );
-      await tx.bankAccount.create({ data: accountData });
+      await tx.account.create({ data: accountData });
     }
 
     logger.info(

@@ -20,7 +20,7 @@ params:query {
 docs {
   # Get Items
 
-  Get all Plaid items (connections) for the authenticated user, each with its bank accounts.
+  Get all Plaid items (connections) for the authenticated user, each with its accounts.
 
   **Endpoint:** `GET /api/items`
 
@@ -33,7 +33,7 @@ docs {
   Returns all items for the authenticated user, newest first. Sensitive fields (access token, Plaid item ID) are never included. Each item has:
   - Institution info (`institutionName`, `institutionLogo`, `institutionColor`)
   - Sync and error state (`syncedAt`, `errorType`, `errorCode`, `errorMessage`, `displayMessage`)
-  - `accounts`: the item's bank accounts, each with:
+  - `accounts`: the item's accounts, each with:
     - `name`, `officialName`, `type`, `subtype`, `mask` (last digits)
     - `balanceCurrent`, `balanceAvailable`, `balanceLimit` (credit limit), `isoCurrencyCode`
 

@@ -18,12 +18,12 @@ interface AccountRow {
 const ACCOUNT_TYPES = ["depository", "investment", "credit", "loan", "other"];
 
 /**
- * GET /api/bank-accounts — Plaid Sandbox round-trip.
+ * GET /api/accounts — Plaid Sandbox round-trip.
  *
  * The default sandbox user has cash, investment, credit, and loan accounts, so
  * a freshly linked item exercises every type filter against real data.
  */
-test.describe("GET /api/bank-accounts (sandbox)", () => {
+test.describe("GET /api/accounts (sandbox)", () => {
   test("returns a linked item's accounts, filterable by type, each tied to its connection", async ({
     request,
   }) => {
@@ -32,7 +32,7 @@ test.describe("GET /api/bank-accounts (sandbox)", () => {
     const { cookie } = await createAuthedUser(request);
     const { itemId } = await createSandboxItem(request, cookie, creds);
     const list = async (query = "") => {
-      const res = await request.get(`/api/bank-accounts${query}`, {
+      const res = await request.get(`/api/accounts${query}`, {
         headers: withSession(cookie),
       });
       await expectOk(res);

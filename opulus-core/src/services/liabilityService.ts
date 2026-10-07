@@ -200,7 +200,7 @@ class LiabilityService {
     }
 
     try {
-      const accounts = await this.prisma.bankAccount.findMany({
+      const accounts = await this.prisma.account.findMany({
         where: {
           itemId: item.id,
           providerAccountId: {

@@ -1,6 +1,6 @@
 import { getSession } from "@/services/session/getSession.js";
 import {
-  bankAccountService,
+  accountService,
   itemService,
   plaidService,
   prisma,
@@ -38,7 +38,7 @@ export async function deleteItemController(
     // Delete the item and everything linked to it atomically
     await prisma.$transaction(async (tx) => {
       await transactionService.deleteByItemId(itemId, tx);
-      await bankAccountService.deleteByItemId(itemId, tx);
+      await accountService.deleteByItemId(itemId, tx);
       await itemService.delete(itemId, tx);
     });
 
