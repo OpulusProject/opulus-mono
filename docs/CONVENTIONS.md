@@ -160,7 +160,8 @@ Rules that apply to all of them:
 - Assert responses with `expectMatchesSchema(res, SomeResponseSchema)` so the
   DTO is what is checked.
 - Each test makes its own data with `uniqueId`; don't assert on global counts.
-- One spec per endpoint, named after it, with the 401 test first.
+- One spec per endpoint, named for the verb the code uses (`create`, `get`, `update`,
+  `delete`, `refresh`), with the 401 test first.
 - A required check must not silently skip: integration specs fail when sandbox
   credentials are missing.
 
