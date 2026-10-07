@@ -17,7 +17,7 @@ Shared package containing database access, external API clients, repositories, s
 ### External APIs
 
 - **Plaid Client** - Plaid API integration
-- **Plaid Service** - Plaid API wrapper with error handling
+- **Plaid Gateway** - Plaid API wrapper with error handling
 
 ### Repositories
 
@@ -58,7 +58,7 @@ Data access, one per model.
 import { prisma } from "@opulus/core";
 
 // Plaid
-import { plaidClient, plaidService } from "@opulus/core";
+import { plaidClient, plaidGateway } from "@opulus/core";
 
 // Repositories
 import { userRepository, itemRepository, transactionRepository } from "@opulus/core";
@@ -167,19 +167,19 @@ await syncItemLiabilities(item);
 
 ## Plaid
 
-### Plaid Service
+### Plaid Gateway
 
 ```typescript
-import { plaidService } from "@opulus/core";
+import { plaidGateway } from "@opulus/core";
 
 // Create link token
-const linkToken = await plaidService.createLinkToken(userId);
+const linkToken = await plaidGateway.createLinkToken(userId);
 
 // Exchange public token
-const { access_token } = await plaidService.exchangePublicToken(publicToken);
+const { access_token } = await plaidGateway.exchangePublicToken(publicToken);
 
 // Sync transactions
-const result = await plaidService.transactionsSync(accessToken, cursor);
+const result = await plaidGateway.transactionsSync(accessToken, cursor);
 ```
 
 ## Configuration
@@ -248,8 +248,8 @@ opulus-core/
 │   │   ├── transactionRepository.ts
 │   │   ├── liabilityRepository.ts
 │   │   └── linkSessionRepository.ts
-│   ├── services/
-│   │   └── plaidService.ts
+│   ├── gateways/        # External APIs
+│   │   └── plaidGateway.ts
 │   ├── sync/            # Syncs shared by the backend and webhooks
 │   │   ├── syncItemLiabilities.ts
 │   │   └── syncItemTransactions.ts

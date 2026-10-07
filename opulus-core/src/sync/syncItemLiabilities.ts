@@ -3,7 +3,7 @@ import {
   liabilityRepository,
   normalizePlaidLiabilities,
 } from "../repositories/liabilityRepository.js";
-import { plaidService } from "../services/plaidService.js";
+import { plaidGateway } from "../gateways/plaidGateway.js";
 import { AppError } from "../utils/errors.js";
 import { logger } from "../utils/logger.js";
 
@@ -51,7 +51,7 @@ export async function syncItemLiabilities(
 ): Promise<SyncLiabilitiesResult> {
   let response;
   try {
-    response = await plaidService.getLiabilities(
+    response = await plaidGateway.getLiabilities(
       item.accessToken,
       options.providerAccountIds
     );

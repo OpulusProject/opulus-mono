@@ -8,14 +8,16 @@ export {
 export { default as prisma } from "./client/prisma.js";
 export { Prisma, PrismaClient } from "@prisma/client";
 
-// Service exports
+// Repository exports (data access)
 export * from "./repositories/accountRepository.js";
 export * from "./repositories/itemRepository.js";
 export * from "./repositories/liabilityRepository.js";
 export * from "./repositories/linkSessionRepository.js";
-export * from "./services/plaidService.js";
 export * from "./repositories/transactionRepository.js";
 export * from "./repositories/userRepository.js";
+
+// Gateway exports (external APIs)
+export * from "./gateways/plaidGateway.js";
 
 // Sync exports
 export * from "./sync/index.js";

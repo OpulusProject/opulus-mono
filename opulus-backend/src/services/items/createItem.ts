@@ -2,7 +2,7 @@ import {
   logger,
   normalizePlaidAccount,
   normalizePlaidItem,
-  plaidService,
+  plaidGateway,
   prisma,
   trySyncItemLiabilities,
 } from "@opulus/core";
@@ -42,10 +42,10 @@ export async function createItem(
     return { duplicate: true as const, existingItemId: duplicate };
   }
 
-  const exchange = await plaidService.exchangePublicToken(publicToken);
+  const exchange = await plaidGateway.exchangePublicToken(publicToken);
   const accessToken = exchange.access_token;
 
-  const { item } = await plaidService.getItem(accessToken);
+  const { item } = await plaidGateway.getItem(accessToken);
 
   let institution: {
     name: string;
@@ -55,7 +55,7 @@ export async function createItem(
 
   if (item.institution_id) {
     try {
-      const institutionResponse = await plaidService.getInstitutionById(
+      const institutionResponse = await plaidGateway.getInstitutionById(
         item.institution_id
       );
       institution = institutionResponse.institution;
@@ -71,7 +71,7 @@ export async function createItem(
     }
   }
 
-  const accountsResponse = await plaidService.getAccounts(accessToken);
+  const accountsResponse = await plaidGateway.getAccounts(accessToken);
   const itemData = normalizePlaidItem(item, userId, accessToken, institution);
 
   const createdItem = await prisma.$transaction(async (tx) => {
