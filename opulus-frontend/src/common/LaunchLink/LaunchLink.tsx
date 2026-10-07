@@ -14,7 +14,15 @@ import {
 
 import { useCreateItem } from '@/hooks/items/useCreateItem';
 import { useUpdateItemAccounts } from '@/hooks/items/useUpdateItemAccounts';
+import { useLogLinkEvent } from '@/hooks/linkEvents/useLogLinkEvent';
 import { type UpdateMode, useLinkToken } from '@/hooks/linkTokens/useLinkToken';
+
+/**
+ * The Link events worth logging: a session opening, an error, the user leaving,
+ * and the handoff on success. The rest (typing, view changes) are too chatty to
+ * send.
+ */
+const LOGGED_LINK_EVENTS = new Set(['OPEN', 'ERROR', 'EXIT', 'HANDOFF']);
 
 interface LaunchLinkProps {
   /**
@@ -85,6 +93,7 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
   } = useLinkToken(itemId, updateMode);
   const createItem = useCreateItem();
   const updateItemAccounts = useUpdateItemAccounts();
+  const { mutate: logLinkEvent } = useLogLinkEvent();
 
   const handleSuccess: PlaidLinkOnSuccess = (
     publicToken: string,
@@ -140,14 +149,27 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
     onClose();
   };
 
-  // Event handler for Link events (for analytics/logging)
+  // Report the Link events worth keeping (see LOGGED_LINK_EVENTS) to the backend
   const handleEvent: PlaidLinkOnEvent = (
     eventName: PlaidLinkStableEvent | string,
     metadata: PlaidLinkOnEventMetadata
   ) => {
-    // Log events for debugging/analytics
-    // TODO: Implement proper event logging
-    console.log('Plaid Link Event:', eventName, metadata);
+    if (!LOGGED_LINK_EVENTS.has(eventName)) return;
+
+    logLinkEvent({
+      eventName,
+      mode: itemId ? (updateMode ?? 'reconnect') : 'new',
+      itemId,
+      linkSessionId: metadata.link_session_id,
+      requestId: metadata.request_id,
+      institutionId: metadata.institution_id ?? undefined,
+      institutionName: metadata.institution_name ?? undefined,
+      viewName: metadata.view_name ?? undefined,
+      exitStatus: metadata.exit_status ?? undefined,
+      errorType: metadata.error_type ?? undefined,
+      errorCode: metadata.error_code ?? undefined,
+      errorMessage: metadata.error_message?.slice(0, 500),
+    });
   };
 
   // Configure Plaid Link
