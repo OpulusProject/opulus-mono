@@ -1,4 +1,4 @@
-import type { ItemPublicDTO } from '@opulus/core';
+import type { ItemDTO } from '@opulus/core';
 import React from 'react';
 
 import { ListRow } from '@/common/ListRow';
@@ -9,7 +9,7 @@ import { getStatusNotice } from '@/utils/itemStatus';
 import { ConnectionActions } from './ConnectionActions';
 
 interface ConnectionRowProps {
-  item: ItemPublicDTO;
+  item: ItemDTO;
   onUpdate: (itemId: string, mode: UpdateMode) => void;
 }
 

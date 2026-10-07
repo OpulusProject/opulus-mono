@@ -2,7 +2,7 @@
  * Get Bank Accounts endpoint DTOs
  */
 
-import { Account, toBankAccountDTO } from "../items/bankAccount.js";
+import { BankAccountDTO, toBankAccountDTO } from "./bankAccount.js";
 
 /**
  * Bank account types, matching Plaid's account `type`. `other` also covers any type
@@ -22,14 +22,14 @@ export type BankAccountType = (typeof BANK_ACCOUNT_TYPES)[number];
  * The connection (item) an account belongs to, just enough to say where it is
  * and whether that connection has a problem.
  */
-export interface BankAccountConnection {
+export interface BankAccountConnectionDTO {
   id: string;
   institutionName: string | null;
   errorCode: string | null;
 }
 
-export interface BankAccountWithConnection extends Account {
-  connection: BankAccountConnection;
+export interface BankAccountWithConnectionDTO extends BankAccountDTO {
+  connection: BankAccountConnectionDTO;
 }
 
 /**
@@ -37,7 +37,7 @@ export interface BankAccountWithConnection extends Account {
  */
 export interface BankAccountsResponse {
   data: {
-    accounts: BankAccountWithConnection[];
+    accounts: BankAccountWithConnectionDTO[];
   };
 }
 
@@ -52,7 +52,7 @@ export function toBankAccountWithConnectionDTO(
       errorCode: string | null;
     };
   }
-): BankAccountWithConnection {
+): BankAccountWithConnectionDTO {
   return {
     ...toBankAccountDTO(account),
     connection: {

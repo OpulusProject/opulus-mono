@@ -30,7 +30,7 @@ export const getBankAccountsQuerySchema = z.object({
  */
 export async function getBankAccountsController(
   req: Request,
-  res: Response,
+  res: Response<BankAccountsResponse>,
   next: NextFunction
 ) {
   try {
@@ -46,10 +46,9 @@ export async function getBankAccountsController(
       type
     );
 
-    const response: BankAccountsResponse = {
+    res.status(200).json({
       data: { accounts: bankAccounts.map(toBankAccountWithConnectionDTO) },
-    };
-    res.status(200).json(response);
+    });
   } catch (error) {
     next(error);
   }

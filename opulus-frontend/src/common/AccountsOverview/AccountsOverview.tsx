@@ -1,4 +1,7 @@
-import type { BankAccountType, BankAccountWithConnection } from '@opulus/core';
+import type {
+  BankAccountType,
+  BankAccountWithConnectionDTO,
+} from '@opulus/core';
 import { useMemo } from 'react';
 
 import { AppLayout } from '@/common/AppLayout';
@@ -11,8 +14,10 @@ import { AccountGroup } from './AccountGroup';
 import { EmptyAccountsView } from './EmptyAccountsView';
 import { type SummaryStat, SummaryStats } from './SummaryStats';
 
-const byName = (a: BankAccountWithConnection, b: BankAccountWithConnection) =>
-  a.name.localeCompare(b.name);
+const byName = (
+  a: BankAccountWithConnectionDTO,
+  b: BankAccountWithConnectionDTO
+) => a.name.localeCompare(b.name);
 
 export interface AccountGroupConfig {
   type: BankAccountType;
@@ -27,7 +32,7 @@ interface AccountsOverviewProps {
   /** Groups to show, in order. Their types define which accounts belong here. */
   groups: AccountGroupConfig[];
   /** Headline numbers for every account on this page. */
-  getSummary: (accounts: BankAccountWithConnection[]) => SummaryStat[];
+  getSummary: (accounts: BankAccountWithConnectionDTO[]) => SummaryStat[];
   emptyTitle: string;
   emptyDescription: string;
 }

@@ -2,6 +2,7 @@ import { getSession } from "@/services/session/getSession.js";
 import {
   linkSessionService,
   plaidService,
+  LinkTokenResponse,
   UnauthorizedError,
   userService,
 } from "@opulus/core";
@@ -13,7 +14,7 @@ import { NextFunction, Request, Response } from "express";
  */
 export async function createLinkTokenController(
   req: Request,
-  res: Response,
+  res: Response<LinkTokenResponse>,
   next: NextFunction
 ) {
   try {

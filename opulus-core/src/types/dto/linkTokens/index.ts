@@ -2,5 +2,5 @@
  * Link token DTOs
  */
 
-export * from './linkToken.js';
+export * from './createLinkToken.js';
 

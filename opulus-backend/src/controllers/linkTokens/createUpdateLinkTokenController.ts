@@ -2,6 +2,7 @@ import { getSession } from "@/services/session/getSession.js";
 import {
   itemService,
   plaidService,
+  LinkTokenResponse,
   UnauthorizedError,
 } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
@@ -17,7 +18,7 @@ export const updateLinkTokenBodySchema = z.object({
  */
 export async function createUpdateLinkTokenController(
   req: Request,
-  res: Response,
+  res: Response<LinkTokenResponse>,
   next: NextFunction
 ) {
   try {

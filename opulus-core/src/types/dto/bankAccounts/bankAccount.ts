@@ -1,12 +1,15 @@
+import type { Prisma } from "@prisma/client";
+
+import { toNumber } from "../common.js";
 import {
   type LiabilityDetailsDTO,
   toLiabilityDetailsDTO,
 } from "./liabilityDetails.js";
 
 /**
- * Account (nested in Item)
+ * Bank account (nested in an item, and returned by the bank accounts endpoint)
  */
-export interface Account {
+export interface BankAccountDTO {
   id: string;
   name: string;
   officialName: string | null; // Name the institution uses for the account
@@ -22,7 +25,6 @@ export interface Account {
 
 /**
  * Transform a stored bank account row to its public DTO
- * (converts Prisma decimals to numbers).
  */
 export function toBankAccountDTO(account: {
   id: string;
@@ -31,12 +33,12 @@ export function toBankAccountDTO(account: {
   type: string;
   subtype: string | null;
   mask: string | null;
-  balanceAvailable: any; // Prisma Decimal
-  balanceCurrent: any; // Prisma Decimal
-  balanceLimit: any; // Prisma Decimal
+  balanceAvailable: Prisma.Decimal | null;
+  balanceCurrent: Prisma.Decimal | null;
+  balanceLimit: Prisma.Decimal | null;
   isoCurrencyCode: string | null;
   liabilityDetails: Parameters<typeof toLiabilityDetailsDTO>[0] | null;
-}): Account {
+}): BankAccountDTO {
   return {
     id: account.id,
     name: account.name,
@@ -44,13 +46,9 @@ export function toBankAccountDTO(account: {
     type: account.type,
     subtype: account.subtype,
     mask: account.mask,
-    balanceAvailable: account.balanceAvailable
-      ? Number(account.balanceAvailable)
-      : null,
-    balanceCurrent: account.balanceCurrent
-      ? Number(account.balanceCurrent)
-      : null,
-    balanceLimit: account.balanceLimit ? Number(account.balanceLimit) : null,
+    balanceAvailable: toNumber(account.balanceAvailable),
+    balanceCurrent: toNumber(account.balanceCurrent),
+    balanceLimit: toNumber(account.balanceLimit),
     isoCurrencyCode: account.isoCurrencyCode,
     liabilityDetails: account.liabilityDetails
       ? toLiabilityDetailsDTO(account.liabilityDetails)

@@ -1,11 +1,11 @@
-import type { Account, BankAccountType } from '@opulus/core';
+import type { BankAccountDTO, BankAccountType } from '@opulus/core';
 
 /**
  * An account's type for grouping: Plaid's own `type`, with the deprecated
  * `brokerage` folded into `investment` and anything unrecognized as `other`.
  */
 export function getAccountType(
-  account: Pick<Account, 'type'>
+  account: Pick<BankAccountDTO, 'type'>
 ): BankAccountType {
   switch (account.type) {
     case 'depository':

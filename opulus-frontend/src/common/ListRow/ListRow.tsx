@@ -1,4 +1,4 @@
-import type { ItemPublicDTO } from '@opulus/core';
+import type { ItemDTO } from '@opulus/core';
 import { ChevronRight } from 'lucide-react';
 import * as React from 'react';
 
@@ -18,7 +18,7 @@ interface ListRowProps
   extends Omit<React.ComponentPropsWithoutRef<'div'>, 'className' | 'title'> {
   /** Show this institution's logo (or its initial) before the text. */
   institution?: Pick<
-    ItemPublicDTO,
+    ItemDTO,
     'errorCode' | 'institutionLogo' | 'institutionName'
   >;
   /** Overlay a dot on the logo showing the connection's health. */
