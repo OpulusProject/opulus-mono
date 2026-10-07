@@ -29,5 +29,6 @@ export * from "./utils/plaidErrors.js";
 export { default as config } from "./config/default.js";
 
 // Middleware exports
+export { errorHandler } from "./middleware/errorHandler.js";
 export { requestIdMiddleware } from "./middleware/requestId.js";
 export { requestLogger } from "./middleware/requestLogger.js";
