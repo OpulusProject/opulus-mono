@@ -107,3 +107,53 @@ export async function seedItemWithAccount(
     institutionName,
   };
 }
+
+/**
+ * Seed one more account on an existing item (e.g. one a sandbox item got from
+ * a real link), so a test can stand in for an account Plaid no longer returns.
+ * Returns the ids a follow-up API read needs.
+ */
+export async function seedAccountForItem(params: {
+  itemId: string;
+  userId: string;
+  name?: string;
+}): Promise<{ accountId: string; accountName: string }> {
+  const accountName = params.name ?? uniqueId("Extra");
+  const account = await testDb().account.create({
+    data: {
+      providerAccountId: uniqueId("acct"),
+      itemId: params.itemId,
+      userId: params.userId,
+      name: accountName,
+      type: "depository",
+      subtype: "savings",
+      mask: "9999",
+      balanceCurrent: 10,
+      balanceAvailable: 10,
+      isoCurrencyCode: "CAD",
+    },
+  });
+  return { accountId: account.id, accountName };
+}
+
+/**
+ * Give every account on an item an account id Plaid doesn't know (and drop
+ * its persistent id), as if Plaid had changed all of them. Returns the
+ * accounts' own ids, which don't change.
+ */
+export async function scrambleProviderAccountIds(
+  itemId: string,
+): Promise<string[]> {
+  const db = testDb();
+  const accounts = await db.account.findMany({ where: { itemId } });
+  for (const [i, account] of accounts.entries()) {
+    await db.account.update({
+      where: { id: account.id },
+      data: {
+        providerAccountId: uniqueId(`unknown-${i}`),
+        persistentAccountId: null,
+      },
+    });
+  }
+  return accounts.map((a) => a.id);
+}
