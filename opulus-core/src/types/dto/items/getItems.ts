@@ -20,6 +20,8 @@ export interface ItemDTO {
   errorCode: string | null;
   errorMessage: string | null;
   displayMessage: string | null;
+  /** Plaid found accounts the user has not shared yet; they can add them. */
+  newAccountsAvailable: boolean;
   syncedAt: string | null;
   accounts: AccountDTO[];
 }
@@ -48,6 +50,7 @@ export function toItemDTO(item: {
   errorCode: string | null;
   errorMessage: string | null;
   displayMessage: string | null;
+  newAccountsAvailable: boolean;
   syncedAt: Date | null;
   accounts: Array<Parameters<typeof toAccountDTO>[0]>;
 }): ItemDTO {
@@ -60,6 +63,7 @@ export function toItemDTO(item: {
     errorCode: item.errorCode,
     errorMessage: item.errorMessage,
     displayMessage: item.displayMessage,
+    newAccountsAvailable: item.newAccountsAvailable,
     syncedAt: toIsoString(item.syncedAt),
     accounts: item.accounts.map(toAccountDTO),
   };

@@ -32,6 +32,7 @@ export async function seedItemWithAccount(
     errorCode: string | null;
     errorMessage: string | null;
     displayMessage: string | null;
+    newAccountsAvailable: boolean;
     syncedAt: Date | null;
     /** Overrides for the seeded account (defaults to a CAD checking account). */
     account: Partial<{
@@ -72,6 +73,9 @@ export async function seedItemWithAccount(
         : {}),
       ...(overrides.displayMessage !== undefined
         ? { displayMessage: overrides.displayMessage }
+        : {}),
+      ...(overrides.newAccountsAvailable !== undefined
+        ? { newAccountsAvailable: overrides.newAccountsAvailable }
         : {}),
       ...(overrides.syncedAt !== undefined
         ? { syncedAt: overrides.syncedAt }

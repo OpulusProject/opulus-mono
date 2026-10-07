@@ -12,6 +12,7 @@ export async function handleItemWebhook(
   switch (webhook_code) {
     case "ERROR":
     case "LOGIN_REPAIRED":
+    case "NEW_ACCOUNTS_AVAILABLE":
     case "PENDING_DISCONNECT":
     case "PENDING_EXPIRATION":
     case "USER_PERMISSION_REVOKED":

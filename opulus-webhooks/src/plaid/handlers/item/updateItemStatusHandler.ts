@@ -12,6 +12,11 @@ type ItemUpdate = Parameters<typeof itemService.update>[1];
 /**
  * The item update that an ITEM webhook calls for.
  *
+ * NEW_ACCOUNTS_AVAILABLE only flags the item. Plaid does not return the new
+ * accounts from /accounts/get until the user shares them in update mode, so
+ * there is nothing to fetch yet; the Connections page prompts the user, and
+ * updateItemAccounts picks the accounts up once they have.
+ *
  * Connection problems are stored in the item's error columns, which the
  * Connections page already reads (it shows a Reconnect action for the codes
  * below). The two "pending" warnings are not errors in Plaid's terms, but they
@@ -25,6 +30,9 @@ function statusUpdateFor(event: PlaidWebhookEvent): ItemUpdate {
     case "USER_PERMISSION_REVOKED":
       // Plaid says to keep the item here so the user can re-grant access.
       return toItemErrorData(event.error);
+
+    case "NEW_ACCOUNTS_AVAILABLE":
+      return { newAccountsAvailable: true };
 
     case "LOGIN_REPAIRED":
       // The item healed without the user going through update mode.
@@ -59,7 +67,8 @@ function statusUpdateFor(event: PlaidWebhookEvent): ItemUpdate {
 
 /**
  * Handle ITEM webhooks that change an item's connection status: record the
- * error or warning, or clear it once Plaid reports the item healthy again.
+ * error, warning or new-accounts flag, or clear the error once Plaid reports
+ * the item healthy again.
  */
 export async function updateItemStatusHandler(
   event: PlaidWebhookEvent

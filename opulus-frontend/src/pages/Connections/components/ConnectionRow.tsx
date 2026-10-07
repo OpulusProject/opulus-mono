@@ -3,6 +3,7 @@ import React from 'react';
 
 import { ListRow } from '@/common/ListRow';
 import type { UpdateMode } from '@/hooks/linkTokens/useLinkToken';
+import type { Notice } from '@/types/notice';
 import { formatRelativeTime } from '@/utils/date';
 import { getStatusNotice } from '@/utils/itemStatus';
 
@@ -18,7 +19,12 @@ export const ConnectionRow: React.FC<ConnectionRowProps> = ({
   onUpdate,
 }) => {
   const accountCount = item.accounts.length;
-  const notice = getStatusNotice(item.errorCode);
+  // A problem with the connection takes the slot; otherwise point out new accounts.
+  const notice: Notice | null =
+    getStatusNotice(item.errorCode) ??
+    (item.newAccountsAvailable
+      ? { text: 'New accounts available', tone: 'muted' }
+      : null);
 
   return (
     <ListRow

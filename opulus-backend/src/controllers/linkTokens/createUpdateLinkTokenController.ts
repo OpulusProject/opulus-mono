@@ -10,6 +10,9 @@ import { z } from "zod";
 
 export const updateLinkTokenBodySchema = z.object({
   itemId: z.string().min(1, "itemId is required"),
+  // "reconnect" repairs the item; "add-accounts" also lets the user share
+  // accounts that appeared since it was linked.
+  mode: z.enum(["reconnect", "add-accounts"]).default("reconnect"),
 });
 
 /**
@@ -27,7 +30,7 @@ export async function createUpdateLinkTokenController(
       throw new UnauthorizedError("Authentication required");
     }
 
-    const { itemId } = updateLinkTokenBodySchema.parse(req.body);
+    const { itemId, mode } = updateLinkTokenBodySchema.parse(req.body);
     const item = await itemService.getById(itemId);
 
     if (item.userId !== session.user.id) {
@@ -36,7 +39,8 @@ export async function createUpdateLinkTokenController(
 
     const linkTokenResponse = await plaidService.createUpdateLinkToken(
       item.accessToken,
-      session.user.id
+      session.user.id,
+      { selectAccounts: mode === "add-accounts" }
     );
 
     res.status(200).json({
