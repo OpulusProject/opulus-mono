@@ -1,0 +1,55 @@
+# TypeScript type-check across every package.
+#
+# The test workflows only exercise what the tests reach, so a type error in
+# code they don't touch (or in the frontend, which they never build) could
+# merge unnoticed. This runs `tsc --noEmit` in core, backend, webhooks and
+# frontend on every PR.
+#
+# Lint is not part of this check yet: the core, backend and webhooks lint
+# scripts have no working ESLint config, and the frontend has existing
+# errors to clear first.
+
+name: Type Check
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: type-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  type-check:
+    name: Type check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The other packages import @opulus/core, which needs the generated
+      # Prisma client and a built dist before they can be type-checked.
+      - name: Generate Prisma client
+        run: pnpm --filter @opulus/core prisma:generate
+
+      - name: Build core package
+        run: pnpm --filter @opulus/core build
+
+      - name: Type check all packages
+        run: pnpm -r type-check
