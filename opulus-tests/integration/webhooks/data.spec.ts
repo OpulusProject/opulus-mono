@@ -50,20 +50,33 @@ test.describe("data webhooks (sandbox to receiver)", () => {
     expect(item.syncedAt).not.toBeNull();
 
     // Assert: what Plaid sent was stored in the shape the API documents, read
-    // the way the client reads it. Plaid's sandbox data includes categorised
-    // and merchant-enriched transactions.
-    const res = await request.get(
-      `/api/transactions?itemId=${itemId}&limit=200`,
-      { headers: withSession(cookie) },
+    // the way the client reads it. A new sandbox item has no transactions for
+    // its first few seconds, so keep asking Plaid to sync until some arrive.
+    type Listed = Array<{
+      category: { primary: string; detailed: string | null } | null;
+      logoUrl: string | null;
+      paymentChannel: string | null;
+    }>;
+    let reads = 0;
+    const transactions = await waitFor(
+      async () => {
+        if (++reads % 8 === 0) {
+          await fireSandboxWebhook(
+            creds,
+            accessToken,
+            "TRANSACTIONS",
+            "SYNC_UPDATES_AVAILABLE",
+          );
+        }
+        const res = await request.get(
+          `/api/transactions?itemId=${itemId}&limit=200`,
+          { headers: withSession(cookie) },
+        );
+        return (await res.json()).data.transactions as Listed;
+      },
+      (list) => list.length > 0,
+      "the sandbox transactions to be synced",
     );
-    const { transactions } = (await res.json()).data as {
-      transactions: Array<{
-        category: { primary: string; detailed: string | null } | null;
-        logoUrl: string | null;
-        paymentChannel: string | null;
-      }>;
-    };
-    expect(transactions.length).toBeGreaterThan(0);
     expect(transactions.some((t) => t.category?.primary)).toBe(true);
     expect(transactions.some((t) => t.logoUrl?.startsWith("https://"))).toBe(
       true,
