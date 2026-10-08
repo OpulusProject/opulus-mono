@@ -11,6 +11,7 @@ import {
   createAuthedUser,
   seedItemWithAccount,
   seedTransactions,
+  type SeedTransactionRow,
 } from "../../../shared/fixtures/index.js";
 
 interface TransactionRow {
@@ -418,6 +419,237 @@ test.describe("GET /api/transactions", () => {
     await expectValidationError(res);
   });
 
+  test("filters by category, with UNCATEGORIZED matching transactions that have none", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const item = await seedItemWithAccount(userId);
+    const { names } = await seedTransactions({
+      userId,
+      itemId: item.itemId,
+      accountId: item.accountId,
+      rows: [
+        { categoryPrimary: "FOOD_AND_DRINK" },
+        { categoryPrimary: "TRAVEL", categoryDetailed: "TRAVEL_FLIGHTS" },
+        { categoryPrimary: "INCOME", categoryDetailed: "INCOME_WAGES" },
+        { categoryPrimary: null, categoryDetailed: null },
+      ],
+    });
+
+    // Act
+    const one = await listTransactions(request, cookie, "?category=TRAVEL");
+    const two = await listTransactions(
+      request,
+      cookie,
+      "?category=TRAVEL&category=INCOME",
+    );
+    const none = await listTransactions(
+      request,
+      cookie,
+      "?category=UNCATEGORIZED",
+    );
+    const noneOrFood = await listTransactions(
+      request,
+      cookie,
+      "?category=UNCATEGORIZED&category=FOOD_AND_DRINK",
+    );
+
+    // Assert
+    expect(one.transactions.map((t) => t.name)).toEqual([names[1]]);
+    expect(two.transactions.map((t) => t.name).sort()).toEqual(
+      [names[1], names[2]].sort(),
+    );
+    expect(none.transactions.map((t) => t.name)).toEqual([names[3]]);
+    expect(noneOrFood.transactions.map((t) => t.name).sort()).toEqual(
+      [names[0], names[3]].sort(),
+    );
+  });
+
+  test("searches the name and merchant name, ignoring case", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const item = await seedItemWithAccount(userId);
+    const { names } = await seedTransactions({
+      userId,
+      itemId: item.itemId,
+      accountId: item.accountId,
+      rows: [
+        { name: uniqueName("Blue Bottle"), merchantName: null },
+        { name: uniqueName("POS 4421"), merchantName: "Blue Bottle Coffee" },
+        { name: uniqueName("Shell"), merchantName: "Shell" },
+      ],
+    });
+
+    // Act
+    const data = await listTransactions(request, cookie, "?search=bLuE%20bOtTle");
+
+    // Assert: one matches by name, one by merchant name.
+    expect(data.transactions.map((t) => t.name).sort()).toEqual(
+      [names[0], names[1]].sort(),
+    );
+  });
+
+  test("filters by money in or out", async ({ request }) => {
+    // Arrange: positive amounts are money out, negative are money in.
+    const { cookie, userId } = await createAuthedUser(request);
+    const item = await seedItemWithAccount(userId);
+    const { names } = await seedTransactions({
+      userId,
+      itemId: item.itemId,
+      accountId: item.accountId,
+      rows: [{ amount: 40 }, { amount: -1500 }, { amount: 5 }],
+    });
+
+    // Act
+    const outflow = await listTransactions(request, cookie, "?type=outflow");
+    const inflow = await listTransactions(request, cookie, "?type=inflow");
+
+    // Assert
+    expect(outflow.transactions.map((t) => t.name).sort()).toEqual(
+      [names[0], names[2]].sort(),
+    );
+    expect(inflow.transactions.map((t) => t.name)).toEqual([names[1]]);
+  });
+
+  test("hideTransfers leaves out transfers and credit card payments but keeps uncategorized and other loan payments", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const item = await seedItemWithAccount(userId);
+    const { names } = await seedTransactions({
+      userId,
+      itemId: item.itemId,
+      accountId: item.accountId,
+      rows: [
+        { categoryPrimary: "TRANSFER_OUT", categoryDetailed: "TRANSFER_OUT_ACCOUNT_TRANSFER" },
+        { categoryPrimary: "TRANSFER_IN", categoryDetailed: "TRANSFER_IN_ACCOUNT_TRANSFER" },
+        { categoryPrimary: "LOAN_PAYMENTS", categoryDetailed: "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT" },
+        { categoryPrimary: "LOAN_PAYMENTS", categoryDetailed: "LOAN_PAYMENTS_CAR_PAYMENT" },
+        { categoryPrimary: null, categoryDetailed: null },
+        { categoryPrimary: "FOOD_AND_DRINK", categoryDetailed: null },
+      ],
+    });
+
+    // Act
+    const hidden = await listTransactions(request, cookie, "?hideTransfers=true");
+    const shown = await listTransactions(request, cookie, "?hideTransfers=false");
+
+    // Assert
+    expect(hidden.transactions.map((t) => t.name).sort()).toEqual(
+      [names[3], names[4], names[5]].sort(),
+    );
+    expect(shown.pagination.total).toBe(6);
+  });
+
+  test("includePending=false leaves out pending transactions", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const item = await seedItemWithAccount(userId);
+    const { names } = await seedTransactions({
+      userId,
+      itemId: item.itemId,
+      accountId: item.accountId,
+      rows: [{ pending: true }, { pending: false }],
+    });
+
+    // Act
+    const all = await listTransactions(request, cookie);
+    const settled = await listTransactions(request, cookie, "?includePending=false");
+
+    // Assert
+    expect(all.pagination.total).toBe(2);
+    expect(settled.transactions.map((t) => t.name)).toEqual([names[1]]);
+  });
+
+  test("filters by several items or accounts at once", async ({ request }) => {
+    // Arrange: three connections.
+    const { cookie, userId } = await createAuthedUser(request);
+    const a = await seedItemWithAccount(userId);
+    const b = await seedItemWithAccount(userId);
+    const c = await seedItemWithAccount(userId);
+    const [ta, tb, tc] = await Promise.all(
+      [a, b, c].map((i) =>
+        seedTransactions({
+          userId,
+          itemId: i.itemId,
+          accountId: i.accountId,
+          count: 1,
+        }),
+      ),
+    );
+
+    // Act
+    const items = await listTransactions(
+      request,
+      cookie,
+      `?itemId=${a.itemId}&itemId=${c.itemId}`,
+    );
+    const accounts = await listTransactions(
+      request,
+      cookie,
+      `?accountId=${b.accountId}&accountId=${c.accountId}`,
+    );
+
+    // Assert
+    expect(items.transactions.map((t) => t.name).sort()).toEqual(
+      [...ta.names, ...tc.names].sort(),
+    );
+    expect(accounts.transactions.map((t) => t.name).sort()).toEqual(
+      [...tb.names, ...tc.names].sort(),
+    );
+  });
+
+  test("sorts by amount, and pages through ties without repeating or skipping a row", async ({
+    request,
+  }) => {
+    // Arrange: five transactions where three share the same amount and date.
+    const { cookie, userId } = await createAuthedUser(request);
+    const item = await seedItemWithAccount(userId);
+    const day = new Date("2026-05-01T00:00:00.000Z");
+    const rows: SeedTransactionRow[] = [
+      { amount: 10, date: day },
+      { amount: 99, date: day },
+      { amount: 10, date: day },
+      { amount: 10, date: day },
+      { amount: 55, date: day },
+    ];
+    const { names } = await seedTransactions({
+      userId,
+      itemId: item.itemId,
+      accountId: item.accountId,
+      rows,
+    });
+
+    // Act
+    const desc = await listTransactions(
+      request,
+      cookie,
+      "?sort=amount&order=desc&limit=10",
+    );
+    const asc = await listTransactions(
+      request,
+      cookie,
+      "?sort=amount&order=asc&limit=10",
+    );
+    const paged = [
+      ...(await listTransactions(request, cookie, "?sort=amount&order=desc&limit=2&page=1")).transactions,
+      ...(await listTransactions(request, cookie, "?sort=amount&order=desc&limit=2&page=2")).transactions,
+      ...(await listTransactions(request, cookie, "?sort=amount&order=desc&limit=2&page=3")).transactions,
+    ];
+
+    // Assert
+    expect(desc.transactions.map((t) => t.amount)).toEqual([99, 55, 10, 10, 10]);
+    expect(asc.transactions.map((t) => t.amount)).toEqual([10, 10, 10, 55, 99]);
+    expect(paged.map((t) => t.name)).toEqual(desc.transactions.map((t) => t.name));
+    expect(new Set(paged.map((t) => t.name)).size).toBe(names.length);
+  });
+
   test("returns the category, merchant logo, location and payment details in their documented shape", async ({
     request,
   }) => {
@@ -465,4 +697,28 @@ test.describe("GET /api/transactions", () => {
     expect(bare.location).toBeNull();
     expect(bare.paymentMeta).toBeNull();
   });
+
+  test("rejects filter values that are not valid (validation)", async ({
+    request,
+  }) => {
+    const { cookie } = await createAuthedUser(request);
+    for (const query of [
+      "?category=NOT_A_CATEGORY",
+      "?type=sideways",
+      "?hideTransfers=maybe",
+      "?includePending=1",
+      "?sort=name",
+      "?order=up",
+    ]) {
+      const res = await request.get(`/api/transactions${query}`, {
+        headers: withSession(cookie),
+      });
+      await expectValidationError(res);
+    }
+  });
 });
+
+/** A name that will not collide with other tests' rows. */
+function uniqueName(label: string): string {
+  return `${label} ${Math.random().toString(36).slice(2, 8)}`;
+}
