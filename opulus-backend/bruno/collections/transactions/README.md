@@ -5,6 +5,8 @@ This collection contains requests for managing user transactions.
 ## Endpoints
 
 - **Get Transactions** - Get all transactions for the authenticated user
+- **Get Transactions Summary** - Totals, spending by category and by day for the same filters
+- **Refresh Transactions** - Ask Plaid to refresh an item's transactions
 
 ## Authentication
 

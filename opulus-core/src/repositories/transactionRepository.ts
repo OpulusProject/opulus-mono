@@ -1,7 +1,10 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import type { Transaction as PlaidTransaction } from "plaid";
 import prisma from "../client/prisma.js";
-import { UNCATEGORIZED } from "../types/dto/transactions/index.js";
+import {
+  UNCATEGORIZED,
+  type TransactionsSummary,
+} from "../types/dto/transactions/index.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
 
 export interface CreateTransactionData {
@@ -495,6 +498,102 @@ class TransactionRepository {
         error instanceof Error
           ? `Failed to get transactions: ${error.message}`
           : "An unexpected error occurred while getting transactions";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * Summarize a user's transactions for the same filters as the list: totals
+   * per currency, spending by category, and spending by day. Only money out
+   * counts as spending. The category breakdown ignores the `category` filter,
+   * so a category can be chosen from the full picture.
+   * @param userId - The user ID
+   * @param filters - Which transactions to include
+   * @throws AppError if database error occurs
+   */
+  async getSummaryByUserId(
+    userId: string,
+    filters: TransactionFilters = {}
+  ): Promise<TransactionsSummary> {
+    try {
+      const where = buildWhere(userId, filters);
+      const whereAnyCategory = buildWhere(userId, {
+        ...filters,
+        categories: undefined,
+      });
+      const moneyOut = (base: Prisma.TransactionWhereInput) => ({
+        AND: [base, { amount: { gt: 0 } }],
+      });
+      const moneyIn = (base: Prisma.TransactionWhereInput) => ({
+        AND: [base, { amount: { lt: 0 } }],
+      });
+
+      const [spent, income, counts, byCategory, byDay] = await Promise.all([
+        this.prisma.transaction.groupBy({
+          by: ["isoCurrencyCode"],
+          where: moneyOut(where),
+          _sum: { amount: true },
+        }),
+        this.prisma.transaction.groupBy({
+          by: ["isoCurrencyCode"],
+          where: moneyIn(where),
+          _sum: { amount: true },
+        }),
+        this.prisma.transaction.groupBy({
+          by: ["isoCurrencyCode"],
+          where,
+          _count: { _all: true },
+        }),
+        this.prisma.transaction.groupBy({
+          by: ["isoCurrencyCode", "categoryPrimary"],
+          where: moneyOut(whereAnyCategory),
+          _sum: { amount: true },
+          _count: { _all: true },
+        }),
+        this.prisma.transaction.groupBy({
+          by: ["isoCurrencyCode", "date"],
+          where: moneyOut(where),
+          _sum: { amount: true },
+        }),
+      ]);
+
+      const zero = new Prisma.Decimal(0);
+      const spentBy = new Map(
+        spent.map((row) => [row.isoCurrencyCode, row._sum.amount ?? zero])
+      );
+      const incomeBy = new Map(
+        income.map((row) => [row.isoCurrencyCode, row._sum.amount ?? zero])
+      );
+
+      return {
+        totals: counts.map((row) => ({
+          currency: row.isoCurrencyCode,
+          spent: spentBy.get(row.isoCurrencyCode) ?? zero,
+          // Money in is negative; report it as a positive amount.
+          income: (incomeBy.get(row.isoCurrencyCode) ?? zero).negated(),
+          count: row._count._all,
+        })),
+        byCategory: byCategory.map((row) => ({
+          currency: row.isoCurrencyCode,
+          category: row.categoryPrimary,
+          spent: row._sum.amount ?? zero,
+          count: row._count._all,
+        })),
+        byDay: byDay.map((row) => ({
+          currency: row.isoCurrencyCode,
+          date: row.date,
+          spent: row._sum.amount ?? zero,
+        })),
+      };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to summarize transactions: ${error.message}`
+          : "An unexpected error occurred while summarizing transactions";
       throw new AppError(message, 500);
     }
   }
