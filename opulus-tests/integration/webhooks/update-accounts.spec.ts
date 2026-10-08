@@ -4,7 +4,7 @@ import { withSession } from "../../shared/client.js";
 import { expectOk } from "../../shared/assertions.js";
 import { testDb } from "../../shared/db.js";
 import { createAuthedUser } from "../../shared/fixtures/auth.js";
-import { requireSandboxCredentials } from "../backend/helpers/plaidSandbox.js";
+import { requireSandboxCredentials } from "../helpers/plaidSandbox.js";
 import {
   fireNewAccountsAvailableOrSkip,
   fireSandboxWebhook,

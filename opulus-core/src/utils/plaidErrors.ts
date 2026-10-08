@@ -1,13 +1,26 @@
 import { PlaidError } from "plaid";
 import { AppError } from "./errors.js";
+import { logger } from "./logger.js";
+
+/**
+ * The Plaid error inside whatever was thrown. The Plaid SDK rejects with an axios
+ * error whose response body is the Plaid error; the body itself is accepted too.
+ */
+function toPlaidError(error: unknown): PlaidError | null {
+  const body =
+    (error as { response?: { data?: unknown } } | null)?.response?.data ??
+    error;
+
+  return body && typeof body === "object" && "error_code" in body
+    ? (body as PlaidError)
+    : null;
+}
 
 /**
  * Read the Plaid `error_code` off an error thrown by the Plaid client.
- * The Plaid SDK rejects with an axios error whose body holds the Plaid error.
  */
 export function getPlaidErrorCode(error: unknown): string | undefined {
-  return (error as { response?: { data?: { error_code?: string } } } | null)
-    ?.response?.data?.error_code;
+  return toPlaidError(error)?.error_code;
 }
 
 /**
@@ -16,22 +29,25 @@ export function getPlaidErrorCode(error: unknown): string | undefined {
  * @returns AppError instance with appropriate status code and message
  */
 export function handlePlaidError(error: unknown): AppError {
-  if (error && typeof error === "object" && "error_code" in error) {
-    const plaidError = error as PlaidError;
+  const plaidError = toPlaidError(error);
 
-    // Log the full error for debugging
-    console.error("[PLAID ERROR]", {
-      error_code: plaidError.error_code,
-      error_message: plaidError.error_message,
-      error_type: plaidError.error_type,
-      display_message: plaidError.display_message,
-      request_id: (plaidError as any).request_id,
-    });
+  if (plaidError) {
+    logger.error(
+      {
+        plaid_error_code: plaidError.error_code,
+        plaid_error_type: plaidError.error_type,
+        plaid_error_message: plaidError.error_message,
+        plaid_request_id: plaidError.request_id,
+      },
+      "Plaid API error"
+    );
 
     // Map Plaid error codes to HTTP status codes
     const statusCodeMap: Record<string, number> = {
       INVALID_ACCESS_TOKEN: 401,
-      ITEM_LOGIN_REQUIRED: 401,
+      // The item is in a state the user can fix by reconnecting. Not a 401, which
+      // means the Opulus session; the response's `code` says what to do.
+      ITEM_LOGIN_REQUIRED: 409,
       INVALID_API_KEYS: 401,
       INVALID_CLIENT_ID: 401,
       INVALID_SECRET: 401,

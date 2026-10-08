@@ -8,44 +8,45 @@ import {
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
+/** An absent or empty query value means "no filter"; anything else is parsed. */
+const orUndefined = (val: unknown) =>
+  val === undefined || val === null || val === "" ? undefined : val;
+
+/**
+ * Optional query values arrive as strings. A value that is present but not valid
+ * (`?page=abc`, `?startDate=garbage`) is a 400, not silently ignored: the client
+ * would otherwise get unfiltered or first-page data and not know.
+ */
+const optionalDate = z.preprocess(
+  (val) => {
+    const v = orUndefined(val);
+    return typeof v === "string" ? new Date(v) : v;
+  },
+  z.date({ invalid_type_error: "Must be a valid date" }).optional()
+);
+
+const optionalInt = (max?: number) => {
+  const positiveInt = z.number().int().positive();
+
+  return z.preprocess(
+    (val) => {
+      const v = orUndefined(val);
+      return typeof v === "string" ? Number(v) : v;
+    },
+    (max ? positiveInt.max(max) : positiveInt).optional()
+  );
+};
+
 /**
  * Query parameter schema for transactions endpoint
  */
 export const getTransactionsQuerySchema = z.object({
   itemId: z.string().optional(),
   accountId: z.string().optional(),
-  startDate: z.preprocess((val) => {
-    if (val === undefined || val === null || val === "") return undefined;
-    if (typeof val === "string") {
-      const date = new Date(val);
-      return isNaN(date.getTime()) ? undefined : date;
-    }
-    return val;
-  }, z.date().optional()),
-  endDate: z.preprocess((val) => {
-    if (val === undefined || val === null || val === "") return undefined;
-    if (typeof val === "string") {
-      const date = new Date(val);
-      return isNaN(date.getTime()) ? undefined : date;
-    }
-    return val;
-  }, z.date().optional()),
-  page: z.preprocess((val) => {
-    if (val === undefined || val === null || val === "") return undefined;
-    if (typeof val === "string") {
-      const parsed = parseInt(val, 10);
-      return isNaN(parsed) ? undefined : parsed;
-    }
-    return val;
-  }, z.number().int().positive().optional()),
-  limit: z.preprocess((val) => {
-    if (val === undefined || val === null || val === "") return undefined;
-    if (typeof val === "string") {
-      const parsed = parseInt(val, 10);
-      return isNaN(parsed) ? undefined : parsed;
-    }
-    return val;
-  }, z.number().int().positive().max(10000).optional()),
+  startDate: optionalDate,
+  endDate: optionalDate,
+  page: optionalInt(),
+  limit: optionalInt(10000),
 });
 
 /**

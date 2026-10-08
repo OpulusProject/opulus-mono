@@ -7,7 +7,7 @@ import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
   createSandboxItem,
   requireSandboxCredentials,
-} from "../helpers/plaidSandbox.js";
+} from "../../helpers/plaidSandbox.js";
 
 interface Liability {
   kind: "credit" | "mortgage" | "student";

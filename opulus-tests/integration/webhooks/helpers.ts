@@ -10,7 +10,7 @@ import {
   createSandboxItem,
   PLAID_SANDBOX_URL,
   type SandboxCredentials,
-} from "../backend/helpers/plaidSandbox.js";
+} from "../helpers/plaidSandbox.js";
 
 /**
  * Where Plaid should deliver webhooks: the public URL of the receiver under
@@ -135,16 +135,6 @@ export async function fireNewAccountsAvailableOrSkip(
     }
     throw error;
   }
-}
-
-/** Put the item into ITEM_LOGIN_REQUIRED; Plaid sends the matching error webhook. */
-export function resetSandboxLogin(
-  creds: SandboxCredentials,
-  accessToken: string,
-): Promise<void> {
-  return postSandbox("/sandbox/item/reset_login", creds, {
-    access_token: accessToken,
-  });
 }
 
 /**

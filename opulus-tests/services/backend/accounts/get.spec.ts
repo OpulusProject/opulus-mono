@@ -1,5 +1,7 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
+import { AccountsResponseSchema } from "@opulus/core";
 import {
+  expectMatchesSchema,
   expectOk,
   expectStatus,
   expectValidationError,
@@ -32,6 +34,8 @@ async function listAccounts(
     headers: withSession(cookie),
   });
   await expectOk(res);
+  // Every list call must match the documented shape exactly.
+  await expectMatchesSchema(res, AccountsResponseSchema);
   return (await res.json()).data.accounts as AccountRow[];
 }
 

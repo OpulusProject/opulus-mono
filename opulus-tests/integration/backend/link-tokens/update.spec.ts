@@ -7,7 +7,7 @@ import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
   createSandboxItem,
   requireSandboxCredentials,
-} from "../helpers/plaidSandbox.js";
+} from "../../helpers/plaidSandbox.js";
 
 /**
  * POST /api/link-tokens/update — Plaid Sandbox round-trip.

@@ -12,7 +12,7 @@ import {
   DEFAULT_SANDBOX_INSTITUTION_ID,
   createSandboxPublicToken,
   requireSandboxCredentials,
-} from "../helpers/plaidSandbox.js";
+} from "../../helpers/plaidSandbox.js";
 
 /**
  * POST /api/items — Plaid Sandbox round-trip.
