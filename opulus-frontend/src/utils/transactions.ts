@@ -1,5 +1,7 @@
 import type { TransactionDTO } from '@opulus/core/dto';
 
+import { formatCategory } from './transactionCategory';
+
 /**
  * Calculate largest spending category from transactions
  * @returns The category name with the highest spending, or null if no spending transactions
@@ -53,19 +55,4 @@ export function calculateTotalSpending(transactions: TransactionDTO[]): number {
     }
     return sum;
   }, 0);
-}
-
-/**
- * Turn a Plaid category such as FOOD_AND_DRINK into "Food and Drink"
- */
-export function formatCategory(category: string): string {
-  return category
-    .toLowerCase()
-    .split('_')
-    .map((word, i) =>
-      i > 0 && word === 'and'
-        ? word
-        : word.charAt(0).toUpperCase() + word.slice(1)
-    )
-    .join(' ');
 }

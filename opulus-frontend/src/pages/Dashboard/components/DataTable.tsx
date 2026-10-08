@@ -37,7 +37,7 @@ import {
   TableRow,
 } from '@/components/ui';
 import { useTransactions } from '@/hooks/transactions/useTransactions';
-import { formatCategory } from '@/utils/transactions';
+import { formatCategory } from '@/utils/transactionCategory';
 export function DataTable() {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []

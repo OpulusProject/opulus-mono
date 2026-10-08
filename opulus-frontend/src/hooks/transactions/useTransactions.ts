@@ -4,42 +4,30 @@ import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
 
 import { transactionKeys } from './queryKeys';
+import {
+  QUERY_SERIALIZER,
+  type TransactionListParams,
+  toQueryParams,
+} from './transactionParams';
 
-interface GetTransactionsParams {
-  itemId?: string;
-  accountId?: string;
-  startDate?: Date;
-  endDate?: Date;
-  page?: number;
-  limit?: number;
-}
-
-const getTransactionsApi = async (
-  params?: GetTransactionsParams
+export const getTransactionsApi = async (
+  params?: TransactionListParams
 ): Promise<TransactionsResponse['data']> => {
-  const queryParams = new URLSearchParams();
-  if (params?.itemId) queryParams.append('itemId', params.itemId);
-  if (params?.accountId) queryParams.append('accountId', params.accountId);
-  if (params?.startDate)
-    queryParams.append('startDate', params.startDate.toISOString());
-  if (params?.endDate)
-    queryParams.append('endDate', params.endDate.toISOString());
-  if (params?.page) queryParams.append('page', params.page.toString());
-  if (params?.limit) queryParams.append('limit', params.limit.toString());
-
-  const url = `/api/transactions${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
-  const response = await apiClient.get<TransactionsResponse>(url);
+  const response = await apiClient.get<TransactionsResponse>(
+    '/api/transactions',
+    { params: toQueryParams(params), paramsSerializer: QUERY_SERIALIZER }
+  );
   return response.data.data;
 };
 
 /**
  * Hook to fetch transactions for the authenticated user
- * Supports optional filtering by itemId or accountId, and pagination
+ * Supports filtering, sorting and pagination
  *
  * @param params - Optional filters and pagination parameters
  * @returns TanStack Query result with transactions array and pagination metadata
  */
-export function useTransactions(params?: GetTransactionsParams) {
+export function useTransactions(params?: TransactionListParams) {
   return useQuery<TransactionsResponse['data'], Error>({
     queryKey: transactionKeys.list(params),
     queryFn: () => getTransactionsApi(params),

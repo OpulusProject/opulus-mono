@@ -1,5 +1,5 @@
 import type { ItemDTO } from '@opulus/core/dto';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, type LucideIcon } from 'lucide-react';
 import * as React from 'react';
 
 import {
@@ -21,6 +21,13 @@ interface ListRowProps
     ItemDTO,
     'errorCode' | 'institutionLogo' | 'institutionName'
   >;
+  /**
+   * Show this image before the text, e.g. a merchant's logo. Pair it with
+   * `icon`, which is shown when there is no image or it fails to load.
+   */
+  logoUrl?: string | null;
+  /** Show this icon before the text when there is no `logoUrl`. */
+  icon?: LucideIcon;
   /** Overlay a dot on the logo showing the connection's health. */
   showInstitutionStatus?: boolean;
   title: string;
@@ -76,6 +83,8 @@ export const ListRow = React.forwardRef<HTMLElement, ListRowProps>(
   (
     {
       institution,
+      logoUrl,
+      icon,
       showInstitutionStatus = false,
       title,
       subtitle,
@@ -113,6 +122,10 @@ export const ListRow = React.forwardRef<HTMLElement, ListRowProps>(
             institution={institution}
             showStatus={showInstitutionStatus}
           />
+        )}
+
+        {(logoUrl || icon) && (
+          <LogoOrIcon logoUrl={logoUrl} icon={icon} alt={title} />
         )}
 
         <div className="min-w-0 flex-1">
@@ -205,3 +218,23 @@ const InstitutionAvatar: React.FC<InstitutionAvatarProps> = ({
     </Avatar>
   );
 };
+
+interface LogoOrIconProps {
+  logoUrl?: string | null;
+  icon?: LucideIcon;
+  alt: string;
+}
+
+/** An image such as a merchant logo, or an icon when there is none. */
+const LogoOrIcon: React.FC<LogoOrIconProps> = ({
+  logoUrl,
+  icon: Icon,
+  alt,
+}) => (
+  <Avatar className="size-9 shrink-0 rounded-[10px]">
+    <AvatarImage src={logoUrl ?? undefined} alt={alt} />
+    <AvatarFallback className="rounded-[10px]">
+      {Icon && <Icon className="text-muted-foreground size-4" />}
+    </AvatarFallback>
+  </Avatar>
+);
