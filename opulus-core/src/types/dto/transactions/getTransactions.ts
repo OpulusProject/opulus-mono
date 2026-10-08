@@ -11,6 +11,74 @@ import {
   toIsoString,
 } from "../common.js";
 
+export const TransactionCategoryDTOSchema = z.object({
+  /** High level, e.g. FOOD_AND_DRINK (see TRANSACTION_CATEGORIES). */
+  primary: z.string(),
+  /** Granular, e.g. FOOD_AND_DRINK_FAST_FOOD. */
+  detailed: z.string().nullable(),
+});
+
+export type TransactionCategoryDTO = z.infer<
+  typeof TransactionCategoryDTOSchema
+>;
+
+export const TransactionLocationDTOSchema = z.object({
+  address: z.string().nullable(),
+  city: z.string().nullable(),
+  region: z.string().nullable(),
+  postalCode: z.string().nullable(),
+  country: z.string().nullable(),
+  lat: z.number().nullable(),
+  lon: z.number().nullable(),
+  storeNumber: z.string().nullable(),
+});
+
+export type TransactionLocationDTO = z.infer<
+  typeof TransactionLocationDTOSchema
+>;
+
+export const TransactionPaymentMetaDTOSchema = z.object({
+  referenceNumber: z.string().nullable(),
+  ppdId: z.string().nullable(),
+  payee: z.string().nullable(),
+  byOrderOf: z.string().nullable(),
+  payer: z.string().nullable(),
+  paymentMethod: z.string().nullable(),
+  paymentProcessor: z.string().nullable(),
+  reason: z.string().nullable(),
+});
+
+export type TransactionPaymentMetaDTO = z.infer<
+  typeof TransactionPaymentMetaDTOSchema
+>;
+
+/**
+ * What we keep of Plaid's `location` and `payment_meta` objects, in Plaid's own
+ * (snake_case) names. Anything that doesn't fit is dropped rather than failing
+ * the request.
+ */
+const StoredLocationSchema = z.object({
+  address: z.string().nullish(),
+  city: z.string().nullish(),
+  region: z.string().nullish(),
+  postal_code: z.string().nullish(),
+  country: z.string().nullish(),
+  lat: z.number().nullish(),
+  lon: z.number().nullish(),
+  store_number: z.string().nullish(),
+});
+
+const StoredPaymentMetaSchema = z.object({
+  reference_number: z.string().nullish(),
+  ppd_id: z.string().nullish(),
+  payee: z.string().nullish(),
+  by_order_of: z.string().nullish(),
+  payer: z.string().nullish(),
+  payment_method: z.string().nullish(),
+  payment_processor: z.string().nullish(),
+  reason: z.string().nullish(),
+});
+
 /**
  * Transaction DTO matching the API response
  * Dates are serialized as ISO strings
@@ -26,11 +94,17 @@ export const TransactionDTOSchema = z.object({
   authorizedDate: IsoTimestampSchema.nullable(),
   name: z.string(),
   merchantName: z.string().nullable(),
-  category: z.array(z.string()),
-  categoryId: z.string().nullable(),
-  personalFinanceCategory: z.string().nullable(),
-  location: z.string().nullable(),
-  paymentMeta: z.string().nullable(),
+  /** Plaid's category for the transaction, or null when it has none. */
+  category: TransactionCategoryDTOSchema.nullable(),
+  /** online, in store or other. */
+  paymentChannel: z.string().nullable(),
+  /** The merchant's logo (a 100x100 PNG on Plaid's CDN), when Plaid has one. */
+  logoUrl: z.string().nullable(),
+  website: z.string().nullable(),
+  /** Only for transactions at physical locations. */
+  location: TransactionLocationDTOSchema.nullable(),
+  /** Only for inter-bank transfers. */
+  paymentMeta: TransactionPaymentMetaDTOSchema.nullable(),
   isoCurrencyCode: z.string().nullable(),
   unofficialCurrencyCode: z.string().nullable(),
   pending: z.boolean(),
@@ -39,7 +113,6 @@ export const TransactionDTOSchema = z.object({
   transactionCode: z.string().nullable(),
   merchantEntityId: z.string().nullable(),
   checkNumber: z.string().nullable(),
-  dateTransacted: IsoTimestampSchema.nullable(),
   createdAt: IsoTimestampSchema,
   updatedAt: IsoTimestampSchema,
   account: z.object({
@@ -89,11 +162,17 @@ export function toTransactionDTO(
     authorizedDate: toIsoString(transaction.authorizedDate),
     name: transaction.name,
     merchantName: transaction.merchantName,
-    category: transaction.category,
-    categoryId: transaction.categoryId,
-    personalFinanceCategory: transaction.personalFinanceCategory,
-    location: transaction.location,
-    paymentMeta: transaction.paymentMeta,
+    category: transaction.categoryPrimary
+      ? {
+          primary: transaction.categoryPrimary,
+          detailed: transaction.categoryDetailed,
+        }
+      : null,
+    paymentChannel: transaction.paymentChannel,
+    logoUrl: transaction.logoUrl,
+    website: transaction.website,
+    location: toLocationDTO(transaction.location),
+    paymentMeta: toPaymentMetaDTO(transaction.paymentMeta),
     isoCurrencyCode: transaction.isoCurrencyCode,
     unofficialCurrencyCode: transaction.unofficialCurrencyCode,
     pending: transaction.pending,
@@ -102,7 +181,6 @@ export function toTransactionDTO(
     transactionCode: transaction.transactionCode,
     merchantEntityId: transaction.merchantEntityId,
     checkNumber: transaction.checkNumber,
-    dateTransacted: toIsoString(transaction.dateTransacted),
     createdAt: toIsoString(transaction.createdAt),
     updatedAt: toIsoString(transaction.updatedAt),
     account: {
@@ -110,5 +188,41 @@ export function toTransactionDTO(
       name: transaction.account.name,
       mask: transaction.account.mask,
     },
+  };
+}
+
+function toLocationDTO(
+  stored: Prisma.JsonValue | null
+): TransactionLocationDTO | null {
+  const parsed = StoredLocationSchema.safeParse(stored);
+  if (!parsed.success) return null;
+  const l = parsed.data;
+  return {
+    address: l.address ?? null,
+    city: l.city ?? null,
+    region: l.region ?? null,
+    postalCode: l.postal_code ?? null,
+    country: l.country ?? null,
+    lat: l.lat ?? null,
+    lon: l.lon ?? null,
+    storeNumber: l.store_number ?? null,
+  };
+}
+
+function toPaymentMetaDTO(
+  stored: Prisma.JsonValue | null
+): TransactionPaymentMetaDTO | null {
+  const parsed = StoredPaymentMetaSchema.safeParse(stored);
+  if (!parsed.success) return null;
+  const p = parsed.data;
+  return {
+    referenceNumber: p.reference_number ?? null,
+    ppdId: p.ppd_id ?? null,
+    payee: p.payee ?? null,
+    byOrderOf: p.by_order_of ?? null,
+    payer: p.payer ?? null,
+    paymentMethod: p.payment_method ?? null,
+    paymentProcessor: p.payment_processor ?? null,
+    reason: p.reason ?? null,
   };
 }

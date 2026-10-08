@@ -2,7 +2,6 @@ import type { TransactionDTO } from '@opulus/core/dto';
 
 /**
  * Calculate largest spending category from transactions
- * Uses the first category if a transaction has multiple categories
  * @returns The category name with the highest spending, or null if no spending transactions
  */
 export function calculateLargestCategory(
@@ -12,16 +11,16 @@ export function calculateLargestCategory(
     return null;
   }
 
-  // Map to sum spending by category (using first category if multiple)
+  // Map to sum spending by category
   const categorySpending = new Map<string, number>();
 
   transactions.forEach((transaction: TransactionDTO) => {
     const amount = transaction.amount;
     // Only include positive amounts (spending)
     if (amount > 0) {
-      const categories = transaction.category || [];
-      // Use first category if available
-      const category = categories.length > 0 ? categories[0] : 'Uncategorized';
+      const category = transaction.category
+        ? formatCategory(transaction.category.primary)
+        : 'Uncategorized';
       const current = categorySpending.get(category) || 0;
       categorySpending.set(category, current + amount);
     }
@@ -54,4 +53,19 @@ export function calculateTotalSpending(transactions: TransactionDTO[]): number {
     }
     return sum;
   }, 0);
+}
+
+/**
+ * Turn a Plaid category such as FOOD_AND_DRINK into "Food and Drink"
+ */
+export function formatCategory(category: string): string {
+  return category
+    .toLowerCase()
+    .split('_')
+    .map((word, i) =>
+      i > 0 && word === 'and'
+        ? word
+        : word.charAt(0).toUpperCase() + word.slice(1)
+    )
+    .join(' ');
 }

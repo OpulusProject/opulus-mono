@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { withSession } from "../../shared/client.js";
 import { createAuthedUser } from "../../shared/fixtures/auth.js";
 import { requireSandboxCredentials } from "../helpers/plaidSandbox.js";
 import {
@@ -47,6 +48,36 @@ test.describe("data webhooks (sandbox to receiver)", () => {
       "the item to be re-synced",
     );
     expect(item.syncedAt).not.toBeNull();
+
+    // Assert: what Plaid sent was stored in the shape the API documents, read
+    // the way the client reads it. Only the category is asserted: whether a
+    // transaction has a logo or location depends on which merchants the
+    // sandbox returns. A new sandbox item has no transactions for
+    // its first few seconds, so keep asking Plaid to sync until some arrive.
+    type Listed = Array<{
+      category: { primary: string; detailed: string | null } | null;
+    }>;
+    let reads = 0;
+    const transactions = await waitFor(
+      async () => {
+        if (++reads % 8 === 0) {
+          await fireSandboxWebhook(
+            creds,
+            accessToken,
+            "TRANSACTIONS",
+            "SYNC_UPDATES_AVAILABLE",
+          );
+        }
+        const res = await request.get(
+          `/api/transactions?itemId=${itemId}&limit=200`,
+          { headers: withSession(cookie) },
+        );
+        return (await res.json()).data.transactions as Listed;
+      },
+      (list) => list.length > 0,
+      "the sandbox transactions to be synced",
+    );
+    expect(transactions.some((t) => t.category?.primary)).toBe(true);
   });
 
   test("LIABILITIES DEFAULT_UPDATE makes the receiver refresh the item's liabilities", async ({

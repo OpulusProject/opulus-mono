@@ -3,6 +3,10 @@ import {
   getTransactionsQuerySchema,
 } from "@/controllers/transactions/getTransactionsController.js";
 import {
+  getTransactionsSummaryController,
+  getTransactionsSummaryQuerySchema,
+} from "@/controllers/transactions/getTransactionsSummaryController.js";
+import {
   refreshTransactionsBodySchema,
   refreshTransactionsController,
 } from "@/controllers/transactions/refreshTransactionsController.js";
@@ -21,6 +25,13 @@ router.get(
   requireSession,
   validateQuery(getTransactionsQuerySchema),
   getTransactionsController
+);
+
+router.get(
+  "/summary",
+  requireSession,
+  validateQuery(getTransactionsSummaryQuerySchema),
+  getTransactionsSummaryController
 );
 
 router.post(

@@ -1,0 +1,71 @@
+meta {
+  name: Get Transactions Summary
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/api/transactions/summary
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+params:query {
+  startDate: 
+  endDate: 
+  hideTransfers: true
+  itemId: 
+  accountId: 
+  category: 
+  search: 
+  type: 
+  includePending: 
+}
+
+docs {
+  # Get Transactions Summary
+
+  Totals, spending by category and spending by day for the authenticated user's transactions, computed in the database so the client does not have to download every transaction.
+
+  **Endpoint:** `GET /api/transactions/summary`
+
+  ## Query Parameters
+
+  The same filters as `GET /api/transactions` (`itemId`, `accountId`, `category`, `search`, `type`, `hideTransfers`, `includePending`, `startDate`, `endDate`), so the numbers describe the same transactions as the list. `page`, `limit`, `sort` and `order` do not apply.
+
+  ## Success Response (200)
+
+  Money is never added across currencies: every row carries its `currency`.
+
+  ```json
+  {
+    "data": {
+      "totals": [
+        { "currency": "CAD", "spent": 50.5, "income": 2000, "net": 1949.5, "count": 3 }
+      ],
+      "byCategory": [
+        { "currency": "CAD", "category": "TRAVEL", "spent": 100, "count": 1 },
+        { "currency": "CAD", "category": null, "spent": 7, "count": 1 }
+      ],
+      "byDay": [
+        { "currency": "CAD", "date": "2026-06-01", "spent": 30 }
+      ]
+    }
+  }
+  ```
+
+  - `spent` is money out and `income` is money in (as a positive number); `net` is `income - spent`
+  - `count` in `totals` is every matching transaction
+  - `byCategory` is ordered by currency, then largest spending first; `category` is null for uncategorized spending
+  - `byCategory` ignores the `category` filter, so choosing a category does not make the other bars disappear
+  - `byDay` is ordered by currency, then date ascending
+
+  ## Error Responses
+
+  - `400 Bad Request`: Invalid query parameters
+  - `401 Unauthorized`: No active session found
+}
