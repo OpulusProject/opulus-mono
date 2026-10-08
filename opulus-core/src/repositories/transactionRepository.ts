@@ -13,11 +13,13 @@ export interface CreateTransactionData {
   authorizedDate?: Date | null;
   name: string;
   merchantName?: string | null;
-  category: string[];
-  categoryId?: string | null;
-  personalFinanceCategory?: string | null;
-  location?: string | null;
-  paymentMeta?: string | null;
+  categoryPrimary?: string | null;
+  categoryDetailed?: string | null;
+  paymentChannel?: string | null;
+  logoUrl?: string | null;
+  website?: string | null;
+  location?: Prisma.InputJsonObject | null;
+  paymentMeta?: Prisma.InputJsonObject | null;
   isoCurrencyCode?: string | null;
   unofficialCurrencyCode?: string | null;
   pending: boolean;
@@ -26,12 +28,44 @@ export interface CreateTransactionData {
   transactionCode?: string | null;
   merchantEntityId?: string | null;
   checkNumber?: string | null;
-  dateTransacted?: Date | null;
 }
 
 export interface UpdateTransactionData extends Partial<CreateTransactionData> {
   providerTransactionId: string;
   accountId: string;
+}
+
+/**
+ * Plaid sends `location` and `payment_meta` as objects whose fields are all
+ * null when there is nothing to say (an online purchase has no location). Keep
+ * only objects with something in them, so a missing value is a null column.
+ */
+function nonEmptyObject<T extends object>(
+  value: T | null | undefined
+): Prisma.InputJsonObject | null {
+  if (!value || Object.values(value).every((field) => field == null)) {
+    return null;
+  }
+  return { ...value } as Prisma.InputJsonObject;
+}
+
+/**
+ * A JSON column's value for Prisma: an explicit SQL NULL for null, the value
+ * itself otherwise, and nothing for undefined (leave the column alone).
+ */
+function jsonColumn(value: Prisma.InputJsonObject | null | undefined) {
+  return value === null ? Prisma.DbNull : value;
+}
+
+/**
+ * The columns of a transaction row for Prisma, with the JSON columns converted.
+ */
+function toColumns<T extends Partial<CreateTransactionData>>(data: T) {
+  return {
+    ...data,
+    location: jsonColumn(data.location),
+    paymentMeta: jsonColumn(data.paymentMeta),
+  };
 }
 
 /**
@@ -56,17 +90,15 @@ export function normalizePlaidTransaction(
       : null,
     name: plaidTransaction.name,
     merchantName: plaidTransaction.merchant_name ?? null,
-    category: plaidTransaction.category ?? [],
-    categoryId: plaidTransaction.category_id ?? null,
-    personalFinanceCategory: plaidTransaction.personal_finance_category
-      ? JSON.stringify(plaidTransaction.personal_finance_category)
-      : null,
-    location: plaidTransaction.location
-      ? JSON.stringify(plaidTransaction.location)
-      : null,
-    paymentMeta: plaidTransaction.payment_meta
-      ? JSON.stringify(plaidTransaction.payment_meta)
-      : null,
+    categoryPrimary:
+      plaidTransaction.personal_finance_category?.primary ?? null,
+    categoryDetailed:
+      plaidTransaction.personal_finance_category?.detailed ?? null,
+    paymentChannel: plaidTransaction.payment_channel ?? null,
+    logoUrl: plaidTransaction.logo_url ?? null,
+    website: plaidTransaction.website ?? null,
+    location: nonEmptyObject(plaidTransaction.location),
+    paymentMeta: nonEmptyObject(plaidTransaction.payment_meta),
     isoCurrencyCode: plaidTransaction.iso_currency_code ?? null,
     unofficialCurrencyCode: plaidTransaction.unofficial_currency_code ?? null,
     pending: plaidTransaction.pending ?? false,
@@ -75,7 +107,6 @@ export function normalizePlaidTransaction(
     transactionCode: plaidTransaction.transaction_code ?? null,
     merchantEntityId: plaidTransaction.merchant_entity_id ?? null,
     checkNumber: plaidTransaction.check_number ?? null,
-    dateTransacted: null, // Plaid doesn't provide date_transacted in Transaction type
   };
 }
 
@@ -98,7 +129,7 @@ class TransactionRepository {
     client: Prisma.TransactionClient = this.prisma
   ) {
     try {
-      return await client.transaction.create({ data });
+      return await client.transaction.create({ data: toColumns(data) });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -127,7 +158,7 @@ class TransactionRepository {
   ) {
     try {
       return await client.transaction.createMany({
-        data: dataArray,
+        data: dataArray.map(toColumns),
         skipDuplicates: true, // Skip duplicates instead of throwing error
       });
     } catch (error) {
@@ -164,7 +195,7 @@ class TransactionRepository {
             accountId,
           },
         },
-        data: updateData,
+        data: toColumns(updateData),
       });
     } catch (error) {
       if (

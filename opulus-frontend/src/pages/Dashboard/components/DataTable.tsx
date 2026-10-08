@@ -37,7 +37,7 @@ import {
   TableRow,
 } from '@/components/ui';
 import { useTransactions } from '@/hooks/transactions/useTransactions';
-
+import { formatCategory } from '@/utils/transactions';
 export function DataTable() {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
@@ -259,22 +259,14 @@ const columns: ColumnDef<TransactionDTO>[] = [
     accessorKey: 'category',
     header: 'Category',
     cell: ({ row }) => {
-      const categories = row.original.category || [];
-      if (categories.length === 0) {
+      const category = row.original.category;
+      if (!category) {
         return <Badge variant="outline">Uncategorized</Badge>;
       }
       return (
-        <div className="flex flex-wrap gap-1">
-          {categories.map((cat, index) => (
-            <Badge
-              key={index}
-              variant="outline"
-              className="text-muted-foreground px-1.5"
-            >
-              {cat}
-            </Badge>
-          ))}
-        </div>
+        <Badge variant="outline" className="text-muted-foreground px-1.5">
+          {formatCategory(category.primary)}
+        </Badge>
       );
     },
   },

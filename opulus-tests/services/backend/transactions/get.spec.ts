@@ -15,6 +15,11 @@ import {
 
 interface TransactionRow {
   name: string;
+  amount: number;
+  category: { primary: string; detailed: string | null } | null;
+  logoUrl: string | null;
+  location: Record<string, unknown> | null;
+  paymentMeta: Record<string, unknown> | null;
 }
 
 /** GET /api/transactions with an optional query string; returns the `data` body. */
@@ -411,5 +416,53 @@ test.describe("GET /api/transactions", () => {
       headers: withSession(cookie),
     });
     await expectValidationError(res);
+  });
+
+  test("returns the category, merchant logo, location and payment details in their documented shape", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const item = await seedItemWithAccount(userId);
+    await seedTransactions({
+      userId,
+      itemId: item.itemId,
+      accountId: item.accountId,
+      rows: [
+        {
+          date: new Date("2026-07-02T00:00:00.000Z"),
+          categoryPrimary: "TRAVEL",
+          categoryDetailed: "TRAVEL_FLIGHTS",
+          logoUrl: "https://example.com/logo.png",
+          website: "example.com",
+          paymentChannel: "online",
+          location: { city: "Toronto", postal_code: "M5V", lat: 43.6, store_number: "12" },
+          paymentMeta: { reference_number: "R1", payer: "Ada" },
+        },
+        { date: new Date("2026-07-01T00:00:00.000Z"), categoryPrimary: null, categoryDetailed: null },
+      ],
+    });
+
+    // Act (newest first, so the detailed transaction comes first)
+    const res = await request.get("/api/transactions", {
+      headers: withSession(cookie),
+    });
+
+    // Assert: the stored snake_case keys come back as camelCase, and a
+    // transaction without a category has `category: null`.
+    await expectOk(res);
+    const body = await expectMatchesSchema(res, TransactionsResponseSchema);
+    const [withDetails, bare] = body.data.transactions;
+    expect(withDetails).toMatchObject({
+      category: { primary: "TRAVEL", detailed: "TRAVEL_FLIGHTS" },
+      logoUrl: "https://example.com/logo.png",
+      website: "example.com",
+      paymentChannel: "online",
+      location: { city: "Toronto", postalCode: "M5V", lat: 43.6, storeNumber: "12" },
+      paymentMeta: { referenceNumber: "R1", payer: "Ada" },
+    });
+    expect(bare.category).toBeNull();
+    expect(bare.location).toBeNull();
+    expect(bare.paymentMeta).toBeNull();
   });
 });

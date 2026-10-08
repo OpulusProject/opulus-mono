@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+import { withSession } from "../../shared/client.js";
 import { createAuthedUser } from "../../shared/fixtures/auth.js";
 import { requireSandboxCredentials } from "../helpers/plaidSandbox.js";
 import {
@@ -47,6 +48,27 @@ test.describe("data webhooks (sandbox to receiver)", () => {
       "the item to be re-synced",
     );
     expect(item.syncedAt).not.toBeNull();
+
+    // Assert: what Plaid sent was stored in the shape the API documents, read
+    // the way the client reads it. Plaid's sandbox data includes categorised
+    // and merchant-enriched transactions.
+    const res = await request.get(
+      `/api/transactions?itemId=${itemId}&limit=200`,
+      { headers: withSession(cookie) },
+    );
+    const { transactions } = (await res.json()).data as {
+      transactions: Array<{
+        category: { primary: string; detailed: string | null } | null;
+        logoUrl: string | null;
+        paymentChannel: string | null;
+      }>;
+    };
+    expect(transactions.length).toBeGreaterThan(0);
+    expect(transactions.some((t) => t.category?.primary)).toBe(true);
+    expect(transactions.some((t) => t.logoUrl?.startsWith("https://"))).toBe(
+      true,
+    );
+    expect(transactions.some((t) => t.paymentChannel)).toBe(true);
   });
 
   test("LIABILITIES DEFAULT_UPDATE makes the receiver refresh the item's liabilities", async ({
