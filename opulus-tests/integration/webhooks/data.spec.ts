@@ -50,12 +50,12 @@ test.describe("data webhooks (sandbox to receiver)", () => {
     expect(item.syncedAt).not.toBeNull();
 
     // Assert: what Plaid sent was stored in the shape the API documents, read
-    // the way the client reads it. A new sandbox item has no transactions for
+    // the way the client reads it. Only the category is asserted: whether a
+    // transaction has a logo or location depends on which merchants the
+    // sandbox returns. A new sandbox item has no transactions for
     // its first few seconds, so keep asking Plaid to sync until some arrive.
     type Listed = Array<{
       category: { primary: string; detailed: string | null } | null;
-      logoUrl: string | null;
-      paymentChannel: string | null;
     }>;
     let reads = 0;
     const transactions = await waitFor(
@@ -78,10 +78,6 @@ test.describe("data webhooks (sandbox to receiver)", () => {
       "the sandbox transactions to be synced",
     );
     expect(transactions.some((t) => t.category?.primary)).toBe(true);
-    expect(transactions.some((t) => t.logoUrl?.startsWith("https://"))).toBe(
-      true,
-    );
-    expect(transactions.some((t) => t.paymentChannel)).toBe(true);
   });
 
   test("LIABILITIES DEFAULT_UPDATE makes the receiver refresh the item's liabilities", async ({
