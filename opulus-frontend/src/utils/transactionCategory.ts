@@ -1,6 +1,7 @@
 import type { TransactionCategory } from '@opulus/core/dto';
 import {
-  ArrowLeftRight,
+  ArrowDownLeft,
+  ArrowUpRight,
   Banknote,
   Briefcase,
   Car,
@@ -19,10 +20,11 @@ import {
   Utensils,
 } from 'lucide-react';
 
+/** The lucide icon for each category; every category has its own. */
 const CATEGORY_ICONS: Record<TransactionCategory, LucideIcon> = {
   INCOME: Banknote,
-  TRANSFER_IN: ArrowLeftRight,
-  TRANSFER_OUT: ArrowLeftRight,
+  TRANSFER_IN: ArrowDownLeft,
+  TRANSFER_OUT: ArrowUpRight,
   LOAN_PAYMENTS: HandCoins,
   BANK_FEES: Receipt,
   ENTERTAINMENT: Clapperboard,

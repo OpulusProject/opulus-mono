@@ -27,7 +27,7 @@ export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
         {...(expanded !== undefined && { 'aria-expanded': expanded })}
         {...props}
         className={cn(
-          'bg-muted/40 flex w-full items-center gap-3 px-4 py-2 text-left text-sm',
+          'bg-muted/40 flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-left text-sm',
           clickable && 'hover:bg-muted/70 transition-colors'
         )}
       >
@@ -44,7 +44,9 @@ export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
         )}
 
         {action && (
-          <div className="flex shrink-0 items-center gap-2">{action}</div>
+          <div className="ml-auto flex shrink-0 flex-wrap items-center gap-1">
+            {action}
+          </div>
         )}
 
         {expanded !== undefined && (
