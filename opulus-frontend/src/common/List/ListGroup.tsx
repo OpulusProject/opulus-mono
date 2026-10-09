@@ -10,10 +10,7 @@ import { toListItems } from './items';
 import { ListHeader, type ListHeaderProps } from './ListHeader';
 
 interface ListGroupProps
-  extends Pick<
-    ListHeaderProps,
-    'action' | 'subtitle' | 'title' | 'trailingTitle'
-  > {
+  extends Pick<ListHeaderProps, 'action' | 'title' | 'trailingTitle'> {
   /** The group's rows, each as its own child (not inside a fragment). */
   children?: React.ReactNode;
 }

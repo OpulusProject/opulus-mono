@@ -17,9 +17,6 @@ import { type SummaryStat, SummaryStats } from './SummaryStats';
 const byName = (a: AccountWithConnectionDTO, b: AccountWithConnectionDTO) =>
   a.name.localeCompare(b.name);
 
-const countLabel = (count: number) =>
-  `${count} account${count === 1 ? '' : 's'}`;
-
 export interface AccountGroupConfig {
   type: AccountType;
   title: string;
@@ -96,7 +93,6 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
             <ListGroup
               key={group.type}
               title={group.title}
-              subtitle={countLabel(group.accounts.length)}
               trailingTitle={formatTotals(group.accounts)}
             >
               {group.accounts.map((account) => (

@@ -4,13 +4,14 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * A bar at the top of a list or of a group of rows: a title, optional muted
- * text and a total, and controls. It uses the same props as `ListRow`.
+ * A bar at the top of a list or of a group of rows: a title, a total and
+ * controls. Its props are named like `ListRow`'s (`title`, `trailingTitle`,
+ * `action`, `expanded`).
  *
  * Headers with an `onClick` render as a button (a group's expand/collapse).
  */
 export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
-  ({ title, subtitle, trailingTitle, action, expanded, ...props }, ref) => {
+  ({ title, trailingTitle, action, expanded, ...props }, ref) => {
     const clickable = !!props.onClick;
     const Comp = (clickable ? 'button' : 'div') as React.ElementType<
       React.HTMLAttributes<HTMLElement> & {
@@ -34,11 +35,6 @@ export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
           <span className="truncate font-medium" title={title}>
             {title}
           </span>
-          {subtitle && (
-            <span className="text-muted-foreground truncate text-xs">
-              {subtitle}
-            </span>
-          )}
         </div>
 
         {trailingTitle && (
@@ -67,8 +63,6 @@ export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
 export interface ListHeaderProps
   extends Omit<React.ComponentPropsWithoutRef<'div'>, 'className' | 'title'> {
   title: string;
-  /** Muted text after the title, e.g. a count. */
-  subtitle?: string;
   /** Right-aligned text, e.g. a total. */
   trailingTitle?: string;
   /**
