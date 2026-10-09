@@ -11,8 +11,9 @@ const route = getRouteApi('/_authenticated/transactions');
 /**
  * The page's search and filters, read from and written to the URL.
  *
- * `filters` is what to ask the API for; `isFiltered` is whether the search or
- * any filter is set.
+ * `filters` is what to ask the API for; `hasFilters` is whether a filter is
+ * set (not counting the search) and `isFiltered` whether the search or a filter
+ * is. `clearFilters` clears the filters and `reset` everything.
  */
 export function useTransactionFilters() {
   const search = route.useSearch();
@@ -68,11 +69,30 @@ export function useTransactionFilters() {
     void navigate({ search: {}, replace: true });
   }, [navigate]);
 
+  const hasFilters = !!(
+    search.range ||
+    search.institution?.length ||
+    search.category?.length
+  );
+
+  /** Clear the date, institution and category filters, but not the search. */
+  const clearFilters = useCallback(() => {
+    update({
+      range: undefined,
+      from: undefined,
+      to: undefined,
+      institution: undefined,
+      category: undefined,
+    });
+  }, [update]);
+
   return {
     search,
     filters,
     update,
     reset,
+    hasFilters,
+    clearFilters,
     isFiltered: !!(
       search.q ||
       search.range ||

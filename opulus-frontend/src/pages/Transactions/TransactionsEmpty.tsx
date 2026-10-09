@@ -6,28 +6,28 @@ import { ListEmpty } from '@/common/List';
 import { Button } from '@/components/ui';
 
 interface TransactionsEmptyProps {
-  /** The current search; when set, the list is empty because nothing matched. */
-  query: string;
+  /** A search or filter is set, so the list is empty because nothing matched. */
+  isFiltered: boolean;
   /** Whether anything is connected; `unknown` until that has loaded. */
   connections: 'some' | 'none' | 'unknown';
-  onClearSearch: () => void;
+  onClearFilters: () => void;
 }
 
 /** Why there are no transactions, and what to do about it. */
 export const TransactionsEmpty: React.FC<TransactionsEmptyProps> = ({
-  query,
+  isFiltered,
   connections,
-  onClearSearch,
+  onClearFilters,
 }) => {
-  if (query) {
+  if (isFiltered) {
     return (
       <ListEmpty
         icon={ReceiptText}
         title="No transactions found"
-        description={`Nothing matches "${query}".`}
+        description="Nothing matches. Try a different search or fewer filters."
         action={
-          <Button variant="outline" onClick={onClearSearch}>
-            Clear search
+          <Button variant="outline" onClick={onClearFilters}>
+            Clear search and filters
           </Button>
         }
       />
