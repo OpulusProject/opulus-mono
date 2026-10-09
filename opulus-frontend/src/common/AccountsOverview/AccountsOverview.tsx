@@ -95,7 +95,6 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
           {visibleGroups.map((group) => (
             <ListGroup
               key={group.type}
-              collapsible
               title={group.title}
               subtitle={countLabel(group.accounts.length)}
               trailingTitle={formatTotals(group.accounts)}

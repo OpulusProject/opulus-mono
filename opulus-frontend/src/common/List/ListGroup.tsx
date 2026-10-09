@@ -16,33 +16,18 @@ interface ListGroupProps
   > {
   /** The group's rows, each as its own child (not inside a fragment). */
   children?: React.ReactNode;
-  /** Let the header collapse and expand the rows. */
-  collapsible?: boolean;
-  /** Start expanded (default). Only for a collapsible group. */
-  defaultOpen?: boolean;
 }
 
 /**
  * A header and the rows under it, inside a `List`: the transactions of a day,
- * or the accounts of a type. With `collapsible` the header toggles the rows.
+ * or the accounts of a type. The header collapses and expands the rows, so every
+ * grouped list works the same way.
  */
 export const ListGroup: React.FC<ListGroupProps> = ({
   children,
-  collapsible = false,
-  defaultOpen = true,
   ...header
 }) => {
-  const [open, setOpen] = React.useState(defaultOpen);
-  const rows = <ul className="divide-y border-t">{toListItems(children)}</ul>;
-
-  if (!collapsible) {
-    return (
-      <div>
-        <ListHeader {...header} />
-        {rows}
-      </div>
-    );
-  }
+  const [open, setOpen] = React.useState(true);
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -50,7 +35,7 @@ export const ListGroup: React.FC<ListGroupProps> = ({
         <ListHeader {...header} expanded={open} />
       </CollapsibleTrigger>
       <CollapsibleContent className="data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down overflow-hidden">
-        {rows}
+        <ul className="divide-y border-t">{toListItems(children)}</ul>
       </CollapsibleContent>
     </Collapsible>
   );

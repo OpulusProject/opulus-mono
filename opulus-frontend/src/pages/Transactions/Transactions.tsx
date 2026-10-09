@@ -10,7 +10,7 @@ import { useItems } from '@/hooks/items/useItems';
 import { useInfiniteTransactions } from '@/hooks/transactions/useInfiniteTransactions';
 import { formatDay } from '@/utils/day';
 
-import { groupByDay, spentLabel } from './transactionDays';
+import { countLabel, groupByDay, spentLabel } from './transactionDays';
 import { TransactionRow } from './TransactionRow';
 import { TransactionSearch } from './TransactionSearch';
 import { useTransactionFilters } from './useTransactionFilters';
@@ -91,17 +91,17 @@ export const Transactions: React.FC = () => {
     }
   } else {
     // The pages are an unbroken run from the newest transaction, so every day is
-    // complete except possibly the last one while there are more pages. Its
-    // total waits until the rest of its transactions are in.
+    // complete except possibly the last one while there are more pages. That
+    // day's count and total wait until the rest of its transactions are in.
     content = [
       ...days.map(({ day, transactions: rows }, index) => {
-        const isLastLoadedDay = index === days.length - 1;
-        const spent =
-          isLastLoadedDay && list.hasNextPage ? null : spentLabel(rows);
+        const isPartialDay = index === days.length - 1 && list.hasNextPage;
+        const spent = isPartialDay ? null : spentLabel(rows);
         return (
           <ListGroup
             key={day}
             title={formatDay(day)}
+            subtitle={isPartialDay ? undefined : countLabel(rows.length)}
             trailingTitle={spent ? `Spent ${spent}` : undefined}
           >
             {rows.map((transaction) => (

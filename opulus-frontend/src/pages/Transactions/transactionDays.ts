@@ -8,6 +8,11 @@ export interface TransactionDay {
   transactions: TransactionDTO[];
 }
 
+/** "1 transaction" or "3 transactions". */
+export function countLabel(count: number): string {
+  return `${count} transaction${count === 1 ? '' : 's'}`;
+}
+
 /**
  * Group transactions by day. They arrive newest first, so each day's
  * transactions are next to each other and the days come out in order.
