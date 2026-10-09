@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { CircleAlert, ReceiptText } from 'lucide-react';
 import { useMemo } from 'react';
 
@@ -5,6 +6,7 @@ import { AppLayout } from '@/common/AppLayout';
 import { List, ListEmpty, ListFooter, ListGroup } from '@/common/List';
 import { PageHeader } from '@/common/PageHeader';
 import { Button, Spinner } from '@/components/ui';
+import { useItems } from '@/hooks/items/useItems';
 import { useInfiniteTransactions } from '@/hooks/transactions/useInfiniteTransactions';
 import { formatDay } from '@/utils/day';
 
@@ -17,6 +19,14 @@ export const Transactions: React.FC = () => {
   const { query, filters, setQuery } = useTransactionFilters();
 
   const list = useInfiniteTransactions(filters);
+  const items = useItems();
+  // What an empty list means depends on whether anything is connected; until
+  // that is known (or if it failed to load) the empty state does not guess.
+  const connections = items.data
+    ? items.data.items.length > 0
+      ? 'some'
+      : 'none'
+    : 'unknown';
 
   const transactions = useMemo(
     () => list.data?.pages.flatMap((page) => page.transactions) ?? [],
@@ -40,24 +50,45 @@ export const Transactions: React.FC = () => {
       />
     );
   } else if (transactions.length === 0) {
-    content = (
-      <ListEmpty
-        icon={ReceiptText}
-        title="No transactions found"
-        description={
-          query
-            ? `Nothing matches "${query}".`
-            : 'Connect an account to see your transactions here.'
-        }
-        action={
-          query ? (
+    if (query) {
+      content = (
+        <ListEmpty
+          icon={ReceiptText}
+          title="No transactions found"
+          description={`Nothing matches "${query}".`}
+          action={
             <Button variant="outline" onClick={() => setQuery('')}>
               Clear search
             </Button>
-          ) : undefined
-        }
-      />
-    );
+          }
+        />
+      );
+    } else if (connections === 'none') {
+      content = (
+        <ListEmpty
+          icon={ReceiptText}
+          title="No connections yet"
+          description="Connect an account to see your transactions here."
+          action={
+            <Button asChild>
+              <Link to="/settings/connections">Go to connections</Link>
+            </Button>
+          }
+        />
+      );
+    } else {
+      content = (
+        <ListEmpty
+          icon={ReceiptText}
+          title="No transactions yet"
+          description={
+            connections === 'some'
+              ? 'Transactions from your connected accounts will appear here once they finish syncing.'
+              : undefined
+          }
+        />
+      );
+    }
   } else {
     // The pages are an unbroken run from the newest transaction, so every day is
     // complete except possibly the last one while there are more pages. Its
