@@ -169,6 +169,19 @@ with the schemas, so a field that isn't in the schema fails a test.
 - `src/hooks/<resource>` has the data hooks. Each resource has a `queryKeys.ts`
   with an `all` prefix (for invalidation) and a builder for each query; hooks and
   mutations use those instead of writing key arrays inline.
+- Two layers of components. `src/components/ui` is shadcn's primitives, copied
+  in and kept close to upstream (no app logic), so shadcn updates stay easy to
+  compare. `src/common` is our own components built from those primitives and
+  from `src/utils` (`ListRow`, `PageHeader`, `AppLayout`). A page uses a
+  primitive directly for a one-off (a `Button`, a `Dialog`). When two or more
+  pages repeat the same combination, promote it to `common`; don't wrap a
+  primitive one-to-one with nothing of our own in it.
+- A family of parts is one folder with one `index.ts`: `common/List` has `List`,
+  `ListHeader`, `ListGroup`, `ListRow`, `ListFooter` and `ListEmpty`. A list is
+  a `ul` of `li`s, built from those parts (the `List` wraps each child in an
+  `li`, so pass the parts as direct children, not inside a fragment). It
+  borrows shadcn's naming style (`Header`, `Row`, `Footer`) but not its
+  `Table`, which is for data in aligned columns; use that for real columns.
 - A small component used by one file goes at the bottom of that file, written as
   `const Name: React.FC<NameProps>`. It gets its own file only if several files
   use it or it is large or has real behaviour.
