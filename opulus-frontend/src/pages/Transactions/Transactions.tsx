@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { CircleAlert, ReceiptText } from 'lucide-react';
+import { CircleAlert, ReceiptText, X } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { AppLayout } from '@/common/AppLayout';
@@ -14,7 +14,6 @@ import { PageHeader } from '@/common/PageHeader';
 import { Button, Spinner } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
 import { useInfiniteTransactions } from '@/hooks/transactions/useInfiniteTransactions';
-import { cn } from '@/lib/utils';
 import { formatDay } from '@/utils/day';
 
 import { groupByDay, netLabel } from './transactionDays';
@@ -24,8 +23,15 @@ import { TransactionSearch } from './TransactionSearch';
 import { useTransactionFilters } from './useTransactionFilters';
 
 export const Transactions: React.FC = () => {
-  const { search, filters, update, reset, isFiltered } =
-    useTransactionFilters();
+  const {
+    search,
+    filters,
+    update,
+    reset,
+    hasFilters,
+    clearFilters,
+    isFiltered,
+  } = useTransactionFilters();
   const query = search.q ?? '';
   const setQuery = (q: string) => update({ q });
 
@@ -61,15 +67,15 @@ export const Transactions: React.FC = () => {
       />
     );
   } else if (transactions.length === 0) {
-    if (query) {
+    if (isFiltered) {
       content = (
         <ListEmpty
           icon={ReceiptText}
           title="No transactions found"
-          description={`Nothing matches "${query}".`}
+          description="Nothing matches. Try a different search or fewer filters."
           action={
-            <Button variant="outline" onClick={() => setQuery('')}>
-              Clear search
+            <Button variant="outline" onClick={reset}>
+              Clear search and filters
             </Button>
           }
         />
@@ -146,26 +152,7 @@ export const Transactions: React.FC = () => {
           title="Transactions"
           description="Search everything you've spent and received."
         />
-        <div className="flex items-center">
-          <div className="flex-1">
-            <TransactionSearch value={query} onChange={setQuery} />
-          </div>
-          {/* Always rendered so it can ease in and out; the search gives way. */}
-          <div
-            aria-hidden={!isFiltered}
-            inert={!isFiltered}
-            className={cn(
-              'shrink-0 overflow-hidden transition-[max-width,opacity,margin] duration-300 ease-out motion-reduce:transition-none',
-              isFiltered
-                ? 'ml-2 max-w-24 opacity-100'
-                : 'ml-0 max-w-0 opacity-0'
-            )}
-          >
-            <Button variant="ghost" onClick={reset}>
-              Clear
-            </Button>
-          </div>
-        </div>
+        <TransactionSearch value={query} onChange={setQuery} />
 
         {/* The previous results stay up while new ones load; the list dims them. */}
         <List
@@ -175,6 +162,19 @@ export const Transactions: React.FC = () => {
         >
           <ListHeader
             title={list.isLoading ? 'Transactions' : `${total} transactions`}
+            titleAction={
+              hasFilters ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={clearFilters}
+                >
+                  <X />
+                  Clear filters
+                </Button>
+              ) : undefined
+            }
             action={<TransactionFilters search={search} onChange={update} />}
           />
           {content}
