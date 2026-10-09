@@ -1,21 +1,33 @@
 import { useMemo } from 'react';
 
 import { AppLayout } from '@/common/AppLayout';
-import { List, ListError, ListFooter, ListGroup } from '@/common/List';
+import {
+  List,
+  ListEmpty,
+  ListError,
+  ListFooter,
+  ListGroup,
+  ListHeader,
+} from '@/common/List';
 import { PageHeader } from '@/common/PageHeader';
 import { Button, Spinner } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
 import { useInfiniteTransactions } from '@/hooks/transactions/useInfiniteTransactions';
+import { cn } from '@/lib/utils';
 import { formatDay } from '@/utils/day';
 
 import { groupByDay, netLabel } from './transactionDays';
+import { TransactionFilters } from './TransactionFilters';
 import { TransactionRow } from './TransactionRow';
 import { TransactionSearch } from './TransactionSearch';
 import { TransactionsEmpty } from './TransactionsEmpty';
 import { useTransactionFilters } from './useTransactionFilters';
 
 export const Transactions: React.FC = () => {
-  const { query, filters, setQuery } = useTransactionFilters();
+  const { search, filters, update, reset, isFiltered } =
+    useTransactionFilters();
+  const query = search.q ?? '';
+  const setQuery = (q: string) => update({ q });
 
   const list = useInfiniteTransactions(filters);
   const items = useItems();
@@ -93,7 +105,26 @@ export const Transactions: React.FC = () => {
           title="Transactions"
           description="Search everything you've spent and received."
         />
-        <TransactionSearch value={query} onChange={setQuery} />
+        <div className="flex items-center">
+          <div className="flex-1">
+            <TransactionSearch value={query} onChange={setQuery} />
+          </div>
+          {/* Always rendered so it can ease in and out; the search gives way. */}
+          <div
+            aria-hidden={!isFiltered}
+            inert={!isFiltered}
+            className={cn(
+              'shrink-0 overflow-hidden transition-[max-width,opacity,margin] duration-300 ease-out motion-reduce:transition-none',
+              isFiltered
+                ? 'ml-2 max-w-24 opacity-100'
+                : 'ml-0 max-w-0 opacity-0'
+            )}
+          >
+            <Button variant="ghost" onClick={reset}>
+              Clear
+            </Button>
+          </div>
+        </div>
 
         {/* The previous results stay up while new ones load; the list dims them. */}
         <List
@@ -101,6 +132,10 @@ export const Transactions: React.FC = () => {
           isLoading={list.isLoading}
           isRefreshing={list.isPlaceholderData}
         >
+          <ListHeader
+            title={list.isLoading ? 'Transactions' : `${total} transactions`}
+            action={<TransactionFilters search={search} onChange={update} />}
+          />
           {content}
         </List>
       </div>
