@@ -8,6 +8,7 @@ import {
   reconstructBalanceHistory,
 } from "../utils/balanceHistory.js";
 import { logger } from "../utils/logger.js";
+import { refreshItemBalances } from "./refreshItemBalances.js";
 
 export interface BackfillBalanceHistoryParams {
   /** Plaid's id for the item (not ours). */
@@ -29,8 +30,9 @@ export type BackfillBalanceHistoryResult =
  * transactions we hold. Meant to run after every transactions sync, given that
  * sync's `transactions_update_status`: it does nothing until Plaid reports the
  * item's full history loaded (HISTORICAL_UPDATE_COMPLETE), and then builds the
- * history once; an item that already has history is left alone. Today's
- * balance is not stored: it is read live.
+ * history once; an item that already has history is left alone. Before it
+ * reconstructs it reads the item's balances fresh from Plaid, since the history
+ * works back from them. Today's balance is not stored: it is read live.
  *
  * Lives in core so any service can run it (the webhooks service does, after a
  * sync).
@@ -46,6 +48,27 @@ export async function backfillBalanceHistory(
   const item = await itemRepository.getByPlaidItemId(params.plaidItemId);
   if (await historicBalanceRepository.existsForItem(item.id)) {
     return { skipped: true };
+  }
+
+  // The history is today's balance with later transactions undone, so the
+  // balance has to be as current as the transactions. The one stored when the
+  // item was linked may be older than some of them (or cached by Plaid), which
+  // would leave every earlier day off by their sum. Reading it fresh costs a
+  // Plaid call, once per item. If that fails, a history built from the stored
+  // balances is better than none.
+  try {
+    await refreshItemBalances({
+      itemId: item.id,
+      accessToken: item.accessToken,
+    });
+  } catch (error) {
+    logger.warn(
+      {
+        item_id: params.plaidItemId,
+        error_message: error instanceof Error ? error.message : String(error),
+      },
+      "Could not refresh balances before the balance history; using the stored ones"
+    );
   }
 
   const [accounts, transactions] = await Promise.all([

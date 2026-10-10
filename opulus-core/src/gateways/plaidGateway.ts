@@ -1,4 +1,5 @@
 import {
+  AccountsBalanceGetRequest,
   AccountsGetRequest,
   CountryCode,
   InstitutionsGetByIdRequest,
@@ -288,6 +289,26 @@ class PlaidGateway {
 
     try {
       const response = await this.plaid.accountsGet(request);
+      return response.data;
+    } catch (error) {
+      throw handlePlaidError(error);
+    }
+  }
+
+  /**
+   * Get an item's accounts with their balances read from the institution now.
+   * Unlike `getAccounts`, whose balances Plaid may serve from a cache, this asks
+   * the institution, and Plaid bills each call, so use it sparingly.
+   * @param accessToken - The access token for the item
+   * @returns The accounts from Plaid, with fresh balances
+   */
+  async getBalances(accessToken: string) {
+    const request: AccountsBalanceGetRequest = {
+      access_token: accessToken,
+    };
+
+    try {
+      const response = await this.plaid.accountsBalanceGet(request);
       return response.data;
     } catch (error) {
       throw handlePlaidError(error);
