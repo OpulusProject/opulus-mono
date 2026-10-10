@@ -1,4 +1,3 @@
-import { X } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { AppLayout } from '@/common/AppLayout';
@@ -129,7 +128,6 @@ export const Transactions: React.FC = () => {
                   className="shrink-0"
                   onClick={clearFilters}
                 >
-                  <X />
                   Clear filters
                 </Button>
               ) : undefined
