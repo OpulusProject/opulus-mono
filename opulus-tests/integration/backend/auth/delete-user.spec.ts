@@ -24,12 +24,20 @@ test.describe("POST /api/auth/delete-user (sandbox)", () => {
   test("removes the user's items from Plaid and deletes their data", async ({
     request,
   }) => {
-    // Arrange: a user with two real sandbox items.
+    // Arrange: a user with two real sandbox items. A user can have only one item
+    // per institution, so the second one is at a different sandbox institution.
     const creds = requireSandboxCredentials();
     const user = await signUp(request);
     const itemIds = [
       (await createSandboxItem(request, user.cookie, creds)).itemId,
-      (await createSandboxItem(request, user.cookie, creds)).itemId,
+      (
+        await createSandboxItem(
+          request,
+          user.cookie,
+          creds,
+          "ins_109509", // "First Gingham Credit Union"
+        )
+      ).itemId,
     ];
     const items = await testDb().item.findMany({
       where: { id: { in: itemIds } },
