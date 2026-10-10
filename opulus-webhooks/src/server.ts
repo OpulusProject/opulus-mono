@@ -2,6 +2,7 @@
 import "dotenv/config";
 
 import {
+  assertItemTokenEncryptionKey,
   errorHandler,
   logger,
   prisma,
@@ -22,6 +23,9 @@ import {
 } from "./queue/webhookQueue.js";
 
 const WEBHOOK_PORT = parseInt(process.env.WEBHOOK_PORT || "8081", 10);
+
+// Fail at boot, not on the first webhook, if the token encryption key is bad.
+assertItemTokenEncryptionKey();
 
 const app = express();
 

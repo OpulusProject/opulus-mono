@@ -15,6 +15,7 @@
 import "dotenv/config";
 
 import {
+  assertItemTokenEncryptionKey,
   itemRepository,
   logger,
   prisma,
@@ -35,6 +36,7 @@ function parseItemFlag(argv: string[]): string | undefined {
 }
 
 async function main(): Promise<void> {
+  assertItemTokenEncryptionKey();
   const onlyItem = parseItemFlag(process.argv.slice(2));
   const items = onlyItem
     ? [

@@ -244,6 +244,27 @@ node opulus-webhooks/dist/reconcile.js --item <plaidItemId>
 
 The CLI continues past a single-item failure and exits `1` if any item failed.
 
+## Encrypt item access tokens (one-off backfill)
+
+Plaid access tokens are stored encrypted (`enc:v1:...`, AES-256-GCM, key in
+`ITEM_TOKEN_ENCRYPTION_KEY`). Rows written before that shipped are still plain
+text; this encrypts them. It is idempotent (rows already encrypted are skipped)
+and logs counts only, never a token. Unmigrated rows keep working until it runs.
+
+```bash
+# Count what would change, write nothing
+pnpm --filter @opulus/webhooks encrypt-item-tokens -- --dry-run
+
+# Encrypt
+pnpm --filter @opulus/webhooks encrypt-item-tokens
+```
+
+Needs `DATABASE_URL` for the database you mean to change and the same
+`ITEM_TOKEN_ENCRYPTION_KEY` the services use. On Railway, run it like the
+reconcile above (`railway run --service <webhooks-service> --environment
+production -- pnpm --filter @opulus/webhooks encrypt-item-tokens`), or inside
+the container with `node opulus-webhooks/dist/encryptItemTokens.js`.
+
 ## Related Documentation
 
 - [Main README](../README.md) - Repo-wide setup and prerequisites

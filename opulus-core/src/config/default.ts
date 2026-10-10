@@ -23,4 +23,6 @@ export default {
   betterAuthSecret: getEnv("BETTER_AUTH_SECRET"),
   betterAuthBaseURL: getEnv("BETTER_AUTH_BASE_URL"),
   plaidWebhookUrl: getEnv("PLAID_WEBHOOK_URL"),
+  // 32 bytes, base64. Encrypts Plaid access tokens at rest; see utils/itemTokenCrypto.ts.
+  itemTokenEncryptionKey: getEnv("ITEM_TOKEN_ENCRYPTION_KEY"),
 };

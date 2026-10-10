@@ -199,6 +199,11 @@ const plaidClientId = config.plaidClientId;
 
 See [main README](../README.md) for required environment variables.
 
+`ITEM_TOKEN_ENCRYPTION_KEY` (32 bytes, base64) is required: `Item.accessToken`
+is encrypted by `itemRepository` on write and decrypted on read
+(`utils/itemTokenCrypto.ts`), so services see plaintext and the database never
+holds it. Call `assertItemTokenEncryptionKey()` at startup to fail fast.
+
 ## Error Handling
 
 ### Custom Errors

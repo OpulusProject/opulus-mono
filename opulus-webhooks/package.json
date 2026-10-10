@@ -8,6 +8,7 @@
     "build": "tsup",
     "start": "node dist/server.js",
     "reconcile": "tsx src/scripts/reconcile.ts",
+    "encrypt-item-tokens": "tsx src/scripts/encryptItemTokens.ts",
     "fire-webhook": "tsx src/scripts/fireSandboxWebhook.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "lint": "eslint .",

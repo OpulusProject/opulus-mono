@@ -8,7 +8,11 @@ import {
   expectStatus,
 } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
-import { testDb } from "../../../shared/db.js";
+import {
+  readItemAccessToken,
+  readStoredItemAccessToken,
+  testDb,
+} from "../../../shared/db.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
   createSandboxItem,
@@ -156,6 +160,32 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     expect(await flag()).toBe(false);
   });
 
+  test("still reads an item whose access token is stored as legacy plaintext", async ({
+    request,
+  }) => {
+    // Arrange: a sandbox item whose token is rewritten as plaintext, the way
+    // rows created before token encryption (and not yet backfilled) are stored.
+    // No endpoint can produce that state, so it is written directly.
+    const creds = requireSandboxCredentials();
+    const { cookie } = await createAuthedUser(request);
+    const { itemId } = await createSandboxItem(request, cookie, creds);
+    const plaintext = await readItemAccessToken(itemId);
+    await testDb().item.update({
+      where: { id: itemId },
+      data: { accessToken: plaintext },
+    });
+
+    // Act: update-accounts calls Plaid with the stored token.
+    const res = await request.post(`/api/items/${itemId}/update-accounts`, {
+      headers: withSession(cookie),
+    });
+
+    // Assert: Plaid accepted the token, and the service did not write it back.
+    await expectOk(res);
+    await expectMatchesSchema(res, UpdateItemAccountsResponseSchema);
+    expect(await readStoredItemAccessToken(itemId)).toBe(plaintext);
+  });
+
   test("reports an item whose bank login has changed as 409 ITEM_LOGIN_REQUIRED", async ({
     request,
   }) => {
@@ -163,10 +193,7 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     const creds = requireSandboxCredentials();
     const { cookie } = await createAuthedUser(request);
     const { itemId } = await createSandboxItem(request, cookie, creds);
-    const { accessToken } = await testDb().item.findUniqueOrThrow({
-      where: { id: itemId },
-      select: { accessToken: true },
-    });
+    const accessToken = await readItemAccessToken(itemId);
     await resetSandboxLogin(creds, accessToken);
 
     // Act
