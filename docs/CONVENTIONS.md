@@ -176,6 +176,10 @@ with the schemas, so a field that isn't in the schema fails a test.
   primitive directly for a one-off (a `Button`, a `Dialog`). When two or more
   pages repeat the same combination, promote it to `common`; don't wrap a
   primitive one-to-one with nothing of our own in it.
+- A page does not render `AppLayout`: the `_authenticated` layout route wraps
+  every signed-in page in it, so the sidebar stays mounted as you move between
+  pages. A route sets its header title with `staticData`
+  (`staticData: { title: 'Transactions' }`, plus `section` for a parent).
 - A family of parts is one folder with one `index.ts`: `common/List` has `List`,
   `ListHeader`, `ListGroup`, `ListRow`, `ListFooter` and `ListEmpty`. A list is
   a `ul` of `li`s, built from those parts (the `List` wraps each child in an

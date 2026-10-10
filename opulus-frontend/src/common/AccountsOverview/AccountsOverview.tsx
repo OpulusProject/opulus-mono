@@ -3,7 +3,6 @@ import { Link } from '@tanstack/react-router';
 import { Landmark } from 'lucide-react';
 import { useMemo } from 'react';
 
-import { AppLayout } from '@/common/AppLayout';
 import { List, ListEmpty, ListGroup } from '@/common/List';
 import { PageHeader } from '@/common/PageHeader';
 import { Button } from '@/components/ui';
@@ -23,8 +22,6 @@ export interface AccountGroupConfig {
 }
 
 interface AccountsOverviewProps {
-  /** Page title shown in the top bar. */
-  title: string;
   heading: string;
   description: string;
   /** Groups to show, in order. Their types define which accounts belong here. */
@@ -40,7 +37,6 @@ interface AccountsOverviewProps {
  * collapsible groups of accounts.
  */
 export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
-  title,
   heading,
   description,
   groups,
@@ -106,11 +102,11 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
   }
 
   return (
-    <AppLayout title={title}>
+    <>
       <div className="flex flex-col gap-6 px-4 lg:px-6">
         <PageHeader title={heading} description={description} />
         {content}
       </div>
-    </AppLayout>
+    </>
   );
 };

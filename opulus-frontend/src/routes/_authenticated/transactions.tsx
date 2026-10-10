@@ -5,5 +5,6 @@ import { transactionsSearchSchema } from '@/pages/Transactions/searchSchema';
 
 export const Route = createFileRoute('/_authenticated/transactions')({
   validateSearch: (search) => transactionsSearchSchema.parse(search),
+  staticData: { title: 'Transactions' },
   component: Transactions,
 });

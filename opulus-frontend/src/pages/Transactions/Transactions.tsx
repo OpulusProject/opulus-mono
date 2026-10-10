@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 
-import { AppLayout } from '@/common/AppLayout';
 import {
   List,
   ListError,
@@ -93,7 +92,7 @@ export const Transactions: React.FC = () => {
   }
 
   return (
-    <AppLayout title="Transactions">
+    <>
       <div className="flex flex-col gap-4 px-4 lg:px-6">
         <PageHeader
           title="Transactions"
@@ -136,6 +135,6 @@ export const Transactions: React.FC = () => {
           {content}
         </List>
       </div>
-    </AppLayout>
+    </>
   );
 };

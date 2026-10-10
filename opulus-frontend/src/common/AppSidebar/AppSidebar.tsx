@@ -21,10 +21,11 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
 } from '@/components/ui';
 import { useSession } from '@/hooks/auth/useSession';
 
-import { type NavItem, NavMain, NavSecondary, NavUser } from './components';
+import { type NavItem, NavSection, NavUser } from './components';
 
 const navMain: NavItem[] = [
   {
@@ -52,15 +53,15 @@ const navMain: NavItem[] = [
     url: '/credit-and-loans',
     icon: CreditCard,
   },
+];
+
+const navSecondary: NavItem[] = [
   {
     title: 'Settings',
     url: '/settings',
     icon: Settings,
     items: [{ title: 'Connections', url: '/settings/connections' }],
   },
-];
-
-const navSecondary = [
   {
     title: 'Get Help',
     url: '#',
@@ -85,7 +86,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       };
 
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -102,12 +103,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
-        <NavSecondary items={navSecondary} className="mt-auto" />
+        <NavSection items={navMain} />
+        <NavSection items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }

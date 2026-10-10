@@ -1,7 +1,6 @@
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 
-import { AppLayout } from '@/common/AppLayout';
 import { LaunchLink } from '@/common/LaunchLink';
 import { PageHeader } from '@/common/PageHeader';
 import { Button } from '@/components/ui';
@@ -28,7 +27,7 @@ export const Connections: React.FC = () => {
   };
 
   return (
-    <AppLayout title="Connections" section="Settings">
+    <>
       <div className="flex flex-col gap-6 px-4 lg:px-6">
         <PageHeader
           title="Your connections"
@@ -58,6 +57,6 @@ export const Connections: React.FC = () => {
           }}
         />
       )}
-    </AppLayout>
+    </>
   );
 };

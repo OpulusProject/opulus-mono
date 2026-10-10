@@ -1,3 +1,2 @@
-export { type NavItem, NavMain } from './NavMain';
-export { NavSecondary } from './NavSecondary';
+export { type NavItem, NavSection } from './NavSection';
 export { NavUser } from './NavUser';

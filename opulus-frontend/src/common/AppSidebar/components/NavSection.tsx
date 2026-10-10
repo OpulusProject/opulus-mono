@@ -8,6 +8,11 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
@@ -16,6 +21,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from '@/components/ui';
 
 export interface NavItem {
@@ -37,10 +43,37 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
   );
   const [open, setOpen] = React.useState(hasActiveChild);
 
-  // Landing on a child route (deep link, redirect) expands its group.
+  // Moving onto one of its pages expands the group (also on a deep link or a
+  // redirect), and moving off them collapses it.
   React.useEffect(() => {
-    if (hasActiveChild) setOpen(true);
+    setOpen(hasActiveChild);
   }, [hasActiveChild]);
+
+  // The sidebar is icons only, so there is no room to expand the group inline:
+  // its links open in a menu beside the icon instead.
+  const { state, isMobile } = useSidebar();
+  if (state === 'collapsed' && !isMobile) {
+    return (
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton isActive={hasActiveChild}>
+              {item.icon && <item.icon />}
+              <span>{item.title}</span>
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="right" align="start" sideOffset={4}>
+            <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
+            {children.map((child) => (
+              <DropdownMenuItem key={child.title} asChild>
+                <Link to={child.url}>{child.title}</Link>
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    );
+  }
 
   return (
     <Collapsible open={open} onOpenChange={setOpen} asChild>
@@ -78,12 +111,19 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
   );
 }
 
-export function NavMain({ items }: { items: NavItem[] }) {
+/**
+ * A group of sidebar links: plain links, and groups that expand. Extra props go
+ * to the `SidebarGroup`, e.g. `className="mt-auto"` for the group at the bottom.
+ */
+export function NavSection({
+  items,
+  ...props
+}: { items: NavItem[] } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <SidebarGroup>
-      <SidebarGroupContent className="flex flex-col gap-2">
+    <SidebarGroup {...props}>
+      <SidebarGroupContent>
         <SidebarMenu>
           {items.map((item) =>
             item.items?.length ? (
