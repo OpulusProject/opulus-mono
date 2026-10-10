@@ -129,6 +129,11 @@ webhook for the historical pull finishing triggers one more sync, which sees
 it). Then it fills in the item's `account_historic_balance` rows for the days
 before it was linked, by undoing its transactions from today's balances
 (investments stay flat), once: an item that already has history is left alone.
+Just before it does, it reads the item's balances fresh from Plaid
+(`/accounts/balance/get`, billed per call, once per item) and stores them on the
+accounts, so the balance the history works back from is as current as the
+transactions; if that call fails it logs a warning and uses the stored
+balances.
 Relinking an item creates new accounts, and so new history.
 
 A failure fails the job, and the queue retries it (3 attempts, with backoff);
