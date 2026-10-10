@@ -44,18 +44,14 @@ export const Transactions: React.FC = () => {
   const days = useMemo(() => groupByDay(transactions), [transactions]);
   const total = list.data?.pages[0]?.pagination.total ?? 0;
 
-  // Reaching the end of the list loads the next page. The "Load more" button
-  // is what is watched, and stays as the way to retry after a failed load.
-  const loadMoreRef = useOnVisible<HTMLButtonElement>(
-    () => void list.fetchNextPage(),
-    {
-      enabled:
-        list.hasNextPage &&
-        !list.isFetchingNextPage &&
-        !list.isFetchNextPageError,
-      rootMargin: '300px',
-    }
-  );
+  // Reaching the end of the list loads the next page. The marker in the footer
+  // is what is watched; after a failed load it gives way to a retry button.
+  const loadMore = () => void list.fetchNextPage();
+  const loadFailed = list.isFetchNextPageError;
+  const loadMoreRef = useOnVisible<HTMLDivElement>(loadMore, {
+    enabled: list.hasNextPage && !list.isFetchingNextPage && !loadFailed,
+    rootMargin: '300px',
+  });
 
   let content: React.ReactNode;
   if (list.isError) {
@@ -89,17 +85,19 @@ export const Transactions: React.FC = () => {
         key="footer"
         summary={`Showing ${transactions.length} of ${total}`}
         action={
-          list.hasNextPage ? (
-            <Button
+          loadFailed ? (
+            <Button variant="outline" size="sm" onClick={loadMore}>
+              Try again
+            </Button>
+          ) : list.hasNextPage ? (
+            <div
               ref={loadMoreRef}
-              variant="outline"
-              size="sm"
-              onClick={() => void list.fetchNextPage()}
-              disabled={list.isFetchingNextPage}
+              role="status"
+              aria-label="Loading more transactions"
+              className="size-4"
             >
               {list.isFetchingNextPage && <Spinner />}
-              Load more
-            </Button>
+            </div>
           ) : undefined
         }
       />,
