@@ -13,7 +13,7 @@ const route = getRouteApi('/_authenticated/transactions');
  *
  * `filters` is what to ask the API for; `hasFilters` is whether a filter is
  * set (not counting the search) and `isFiltered` whether the search or a filter
- * is. `clearFilters` clears the filters and `reset` everything.
+ * is. `clearFilters` clears the filters, but not the search.
  */
 export function useTransactionFilters() {
   const search = route.useSearch();
@@ -65,10 +65,6 @@ export function useTransactionFilters() {
     [navigate]
   );
 
-  const reset = useCallback(() => {
-    void navigate({ search: {}, replace: true });
-  }, [navigate]);
-
   const hasFilters = !!(
     search.range ||
     search.institution?.length ||
@@ -90,7 +86,6 @@ export function useTransactionFilters() {
     search,
     filters,
     update,
-    reset,
     hasFilters,
     clearFilters,
     isFiltered: !!(

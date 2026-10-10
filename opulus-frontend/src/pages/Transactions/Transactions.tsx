@@ -22,15 +22,8 @@ import { TransactionsEmpty } from './TransactionsEmpty';
 import { useTransactionFilters } from './useTransactionFilters';
 
 export const Transactions: React.FC = () => {
-  const {
-    search,
-    filters,
-    update,
-    reset,
-    hasFilters,
-    clearFilters,
-    isFiltered,
-  } = useTransactionFilters();
+  const { search, filters, update, hasFilters, clearFilters, isFiltered } =
+    useTransactionFilters();
   const query = search.q ?? '';
   const setQuery = (q: string) => update({ q });
 
@@ -58,11 +51,7 @@ export const Transactions: React.FC = () => {
     );
   } else if (transactions.length === 0) {
     content = (
-      <TransactionsEmpty
-        isFiltered={isFiltered}
-        connections={connections}
-        onClearFilters={reset}
-      />
+      <TransactionsEmpty isFiltered={isFiltered} connections={connections} />
     );
   } else {
     // The pages are an unbroken run from the newest transaction, so every day is

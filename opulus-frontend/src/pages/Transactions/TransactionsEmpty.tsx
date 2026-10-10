@@ -10,14 +10,12 @@ interface TransactionsEmptyProps {
   isFiltered: boolean;
   /** Whether anything is connected; `unknown` until that has loaded. */
   connections: 'some' | 'none' | 'unknown';
-  onClearFilters: () => void;
 }
 
 /** Why there are no transactions, and what to do about it. */
 export const TransactionsEmpty: React.FC<TransactionsEmptyProps> = ({
   isFiltered,
   connections,
-  onClearFilters,
 }) => {
   if (isFiltered) {
     return (
@@ -25,11 +23,6 @@ export const TransactionsEmpty: React.FC<TransactionsEmptyProps> = ({
         icon={ReceiptText}
         title="No transactions found"
         description="Nothing matches. Try a different search or fewer filters."
-        action={
-          <Button variant="outline" onClick={onClearFilters}>
-            Clear filters
-          </Button>
-        }
       />
     );
   }
