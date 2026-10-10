@@ -11,6 +11,7 @@ import { PageHeader } from '@/common/PageHeader';
 import { Button, Spinner } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
 import { useInfiniteTransactions } from '@/hooks/transactions/useInfiniteTransactions';
+import { useOnVisible } from '@/hooks/use-on-visible';
 import { formatDay } from '@/utils/day';
 
 import { groupByDay, netLabel } from './transactionDays';
@@ -42,6 +43,15 @@ export const Transactions: React.FC = () => {
   );
   const days = useMemo(() => groupByDay(transactions), [transactions]);
   const total = list.data?.pages[0]?.pagination.total ?? 0;
+
+  // Reaching the end of the list loads the next page. The marker in the footer
+  // is what is watched; after a failed load it gives way to a retry button.
+  const loadMore = () => void list.fetchNextPage();
+  const loadFailed = list.isFetchNextPageError;
+  const loadMoreRef = useOnVisible<HTMLDivElement>(loadMore, {
+    enabled: list.hasNextPage && !list.isFetchingNextPage && !loadFailed,
+    rootMargin: '300px',
+  });
 
   let content: React.ReactNode;
   if (list.isError) {
@@ -75,16 +85,19 @@ export const Transactions: React.FC = () => {
         key="footer"
         summary={`Showing ${transactions.length} of ${total}`}
         action={
-          list.hasNextPage ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void list.fetchNextPage()}
-              disabled={list.isFetchingNextPage}
+          loadFailed ? (
+            <Button variant="outline" size="sm" onClick={loadMore}>
+              Try again
+            </Button>
+          ) : list.hasNextPage ? (
+            <div
+              ref={loadMoreRef}
+              role="status"
+              aria-label="Loading more transactions"
+              className="size-4"
             >
               {list.isFetchingNextPage && <Spinner />}
-              Load more
-            </Button>
+            </div>
           ) : undefined
         }
       />,
