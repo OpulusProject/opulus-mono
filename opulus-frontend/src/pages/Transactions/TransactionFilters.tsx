@@ -26,6 +26,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
+import { useContainerWidth } from '@/hooks/use-container-width';
 import { cn } from '@/lib/utils';
 import {
   RANGE_LABELS,
@@ -38,6 +39,9 @@ import { getInstitutionLogo } from '@/utils/institution';
 import { getCategoryIcon, getCategoryLabel } from '@/utils/transactionCategory';
 
 import { CATEGORY_OPTIONS, type TransactionsSearch } from './searchSchema';
+
+/** The header width (px) from which the three menus fit side by side. */
+const SIDE_BY_SIDE_MIN_WIDTH = 672;
 
 interface TransactionFiltersProps {
   search: TransactionsSearch;
@@ -80,26 +84,33 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
       ) as TransactionsSearch['category'],
     }));
 
+  // Chosen by the header's width in JS rather than CSS, so a menu that is open
+  // when the window is resized is closed with the version it belongs to.
+  const [ref, width] = useContainerWidth<HTMLSpanElement>(
+    '[data-slot="list-header"]'
+  );
+
   return (
     <>
-      {/* Side by side when the header is wide enough, otherwise in one menu. */}
-      <div className="hidden flex-wrap items-center gap-1 @2xl:flex">
-        <DateMenu search={search} onChange={onChange} />
-        <MultiSelectMenu
-          label="Institution"
-          options={institutions}
-          selected={search.institution ?? []}
-          onChange={changeInstitutions}
-        />
-        <MultiSelectMenu
-          label="Category"
-          options={categories}
-          selected={search.category ?? []}
-          onChange={changeCategories}
-        />
-      </div>
-
-      <div className="@2xl:hidden">
+      <span ref={ref} hidden />
+      {width !== undefined && width >= SIDE_BY_SIDE_MIN_WIDTH && (
+        <div className="flex flex-wrap items-center gap-1">
+          <DateMenu search={search} onChange={onChange} />
+          <MultiSelectMenu
+            label="Institution"
+            options={institutions}
+            selected={search.institution ?? []}
+            onChange={changeInstitutions}
+          />
+          <MultiSelectMenu
+            label="Category"
+            options={categories}
+            selected={search.category ?? []}
+            onChange={changeCategories}
+          />
+        </div>
+      )}
+      {width !== undefined && width < SIDE_BY_SIDE_MIN_WIDTH && (
         <CollapsedFilters
           search={search}
           onChange={onChange}
@@ -108,7 +119,7 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
           onChangeInstitutions={changeInstitutions}
           onChangeCategories={changeCategories}
         />
-      </div>
+      )}
     </>
   );
 };

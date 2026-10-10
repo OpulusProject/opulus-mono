@@ -24,6 +24,7 @@ export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
       <Comp
         ref={ref}
         {...(clickable && { type: 'button' })}
+        data-slot="list-header"
         {...(expanded !== undefined && { 'aria-expanded': expanded })}
         {...props}
         className={cn(
