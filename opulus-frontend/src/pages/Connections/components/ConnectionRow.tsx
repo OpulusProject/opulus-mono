@@ -33,9 +33,7 @@ export const ConnectionRow: React.FC<ConnectionRowProps> = ({
       showInstitutionStatus
       title={item.institutionName || 'Unknown Institution'}
       subtitle={`${accountCount} account${accountCount === 1 ? '' : 's'}${
-        item.syncedAt
-          ? ` · Last synced ${formatRelativeTime(item.syncedAt)}`
-          : ''
+        item.syncedAt ? ` · Synced ${formatRelativeTime(item.syncedAt)}` : ''
       }`}
       notices={notice ? [notice] : undefined}
       action={<ConnectionActions item={item} onUpdate={onUpdate} />}
