@@ -25,7 +25,7 @@ import {
 } from '@/components/ui';
 import { useSession } from '@/hooks/auth/useSession';
 
-import { type NavItem, NavMain, NavSecondary, NavUser } from './components';
+import { type NavItem, NavSection, NavUser } from './components';
 
 const navMain: NavItem[] = [
   {
@@ -103,8 +103,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
-        <NavSecondary items={navSecondary} className="mt-auto" />
+        <NavSection items={navMain} />
+        <NavSection items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={user} />

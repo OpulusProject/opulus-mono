@@ -13,6 +13,8 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  SidebarGroup,
+  SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -109,30 +111,40 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
   );
 }
 
-/** The links of a sidebar group: plain links, and groups that expand. */
-export function NavMenu({ items }: { items: NavItem[] }) {
+/**
+ * A group of sidebar links: plain links, and groups that expand. Extra props go
+ * to the `SidebarGroup`, e.g. `className="mt-auto"` for the group at the bottom.
+ */
+export function NavSection({
+  items,
+  ...props
+}: { items: NavItem[] } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   return (
-    <SidebarMenu>
-      {items.map((item) =>
-        item.items?.length ? (
-          <NavGroup key={item.title} item={item} pathname={pathname} />
-        ) : (
-          <SidebarMenuItem key={item.title}>
-            <SidebarMenuButton
-              tooltip={item.title}
-              isActive={isPathActive(pathname, item.url)}
-              asChild
-            >
-              <Link to={item.url}>
-                {item.icon && <item.icon />}
-                <span>{item.title}</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        )
-      )}
-    </SidebarMenu>
+    <SidebarGroup {...props}>
+      <SidebarGroupContent>
+        <SidebarMenu>
+          {items.map((item) =>
+            item.items?.length ? (
+              <NavGroup key={item.title} item={item} pathname={pathname} />
+            ) : (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  tooltip={item.title}
+                  isActive={isPathActive(pathname, item.url)}
+                  asChild
+                >
+                  <Link to={item.url}>
+                    {item.icon && <item.icon />}
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          )}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }
