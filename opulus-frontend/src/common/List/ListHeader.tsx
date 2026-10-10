@@ -45,7 +45,7 @@ export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
         )}
 
         {action && (
-          <div className="flex w-full shrink-0 flex-wrap items-center gap-1 @2xl:ml-auto @2xl:w-auto">
+          <div className="ml-auto flex shrink-0 flex-wrap items-center gap-1">
             {action}
           </div>
         )}

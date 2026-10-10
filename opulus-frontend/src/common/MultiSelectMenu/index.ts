@@ -1,1 +1,5 @@
-export { type MenuOption, MultiSelectMenu } from './MultiSelectMenu';
+export {
+  type MenuOption,
+  MultiSelectItems,
+  MultiSelectMenu,
+} from './MultiSelectMenu';

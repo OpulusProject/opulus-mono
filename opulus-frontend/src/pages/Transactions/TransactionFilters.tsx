@@ -1,10 +1,22 @@
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ListFilter } from 'lucide-react';
 import React from 'react';
 
-import { MultiSelectMenu } from '@/common/MultiSelectMenu';
+import {
+  type MenuOption,
+  MultiSelectItems,
+  MultiSelectMenu,
+} from '@/common/MultiSelectMenu';
 import {
   Button,
   Calendar,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -42,43 +54,57 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   onChange,
 }) => {
   const { data } = useItems();
-  const institutions = (data?.items ?? []).map((item) => ({
+  const institutions: MenuOption[] = (data?.items ?? []).map((item) => ({
     value: item.id,
     label: item.institutionName ?? 'Unknown institution',
     logoUrl: getInstitutionLogo(item),
   }));
+  const categories: MenuOption[] = CATEGORY_OPTIONS.map((category) => ({
+    value: category,
+    label: getCategoryLabel(category),
+    icon: getCategoryIcon(category),
+  }));
+
+  const changeInstitutions = (change: (selected: string[]) => string[]): void =>
+    onChange((previous) => ({
+      institution: change(previous.institution ?? []),
+    }));
+  const changeCategories = (change: (selected: string[]) => string[]): void =>
+    onChange((previous) => ({
+      category: change(
+        previous.category ?? []
+      ) as TransactionsSearch['category'],
+    }));
 
   return (
     <>
-      <DateMenu search={search} onChange={onChange} />
+      {/* Side by side when the header is wide enough, otherwise in one menu. */}
+      <div className="hidden flex-wrap items-center gap-1 @2xl:flex">
+        <DateMenu search={search} onChange={onChange} />
+        <MultiSelectMenu
+          label="Institution"
+          options={institutions}
+          selected={search.institution ?? []}
+          onChange={changeInstitutions}
+        />
+        <MultiSelectMenu
+          label="Category"
+          options={categories}
+          selected={search.category ?? []}
+          onChange={changeCategories}
+        />
+      </div>
 
-      <MultiSelectMenu
-        label="Institution"
-        options={institutions}
-        selected={search.institution ?? []}
-        onChange={(change) =>
-          onChange((previous) => ({
-            institution: change(previous.institution ?? []),
-          }))
-        }
-      />
-
-      <MultiSelectMenu
-        label="Category"
-        options={CATEGORY_OPTIONS.map((category) => ({
-          value: category,
-          label: getCategoryLabel(category),
-          icon: getCategoryIcon(category),
-        }))}
-        selected={search.category ?? []}
-        onChange={(change) =>
-          onChange((previous) => ({
-            category: change(
-              previous.category ?? []
-            ) as TransactionsSearch['category'],
-          }))
-        }
-      />
+      <div className="@2xl:hidden">
+        <CollapsedFilters
+          search={search}
+          onChange={onChange}
+          institutions={institutions}
+          categories={categories}
+          onChangeInstitutions={changeInstitutions}
+          onChangeCategories={changeCategories}
+        />
+      </div>
     </>
   );
 };
@@ -96,6 +122,22 @@ function formatRangeDay(day: string): string {
   );
 }
 
+/** What the date filter is set to, or nothing for "any time". */
+function dateValue(search: TransactionsSearch): string | undefined {
+  const custom = search.range === 'custom';
+  if (custom && search.from && search.to) {
+    return search.from === search.to
+      ? formatRangeDay(search.from)
+      : `${formatRangeDay(search.from)} – ${formatRangeDay(search.to)}`;
+  }
+  if (custom && search.from) return `From ${formatRangeDay(search.from)}`;
+  if (custom) return 'Custom range';
+  if (search.range && search.range !== 'custom') {
+    return RANGE_LABELS[search.range];
+  }
+  return undefined;
+}
+
 interface DateMenuProps {
   search: TransactionsSearch;
   onChange: TransactionFiltersProps['onChange'];
@@ -108,27 +150,7 @@ interface DateMenuProps {
  */
 const DateMenu: React.FC<DateMenuProps> = ({ search, onChange }) => {
   const [open, setOpen] = React.useState(false);
-  const custom = search.range === 'custom';
-
-  // What is chosen, when it is not "any time".
-  let value: string | undefined;
-  if (custom && search.from && search.to) {
-    value =
-      search.from === search.to
-        ? formatRangeDay(search.from)
-        : `${formatRangeDay(search.from)} – ${formatRangeDay(search.to)}`;
-  } else if (custom && search.from) {
-    value = `From ${formatRangeDay(search.from)}`;
-  } else if (custom) {
-    value = 'Custom range';
-  } else if (search.range && search.range !== 'custom') {
-    value = RANGE_LABELS[search.range];
-  }
-
-  const choose = (range: RangePreset | undefined) => {
-    onChange({ range, from: undefined, to: undefined });
-    setOpen(false);
-  };
+  const value = dateValue(search);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -159,49 +181,180 @@ const DateMenu: React.FC<DateMenuProps> = ({ search, onChange }) => {
         collisionPadding={16}
         className="w-max max-w-[var(--radix-popover-content-available-width)] p-0"
       >
-        <div className="flex flex-col sm:flex-row">
-          <div
-            role="radiogroup"
-            aria-label="Date range"
-            className="flex flex-wrap gap-1 border-b p-2 sm:w-40 sm:shrink-0 sm:flex-col sm:flex-nowrap sm:border-r sm:border-b-0"
-          >
-            <PresetItem
-              selected={!search.range}
-              onClick={() => choose(undefined)}
-            >
-              Any time
-            </PresetItem>
-            {(Object.keys(RANGE_LABELS) as RangePreset[]).map((preset) => (
-              <PresetItem
-                key={preset}
-                selected={search.range === preset}
-                onClick={() => choose(preset)}
-              >
-                {RANGE_LABELS[preset]}
-              </PresetItem>
-            ))}
-          </div>
-          <Calendar
-            mode="range"
-            numberOfMonths={1}
-            defaultMonth={search.from ? fromDay(search.from) : undefined}
-            selected={{
-              from: search.from ? fromDay(search.from) : undefined,
-              to: search.to ? fromDay(search.to) : undefined,
-            }}
-            onSelect={(range) =>
-              onChange({
-                range: range?.from ? 'custom' : undefined,
-                from: range?.from ? toDay(range.from) : undefined,
-                to: range?.to ? toDay(range.to) : undefined,
-              })
-            }
-          />
-        </div>
+        <DatePanel
+          search={search}
+          onChange={onChange}
+          onPreset={() => setOpen(false)}
+        />
       </PopoverContent>
     </Popover>
   );
 };
+
+interface DatePanelProps {
+  search: TransactionsSearch;
+  onChange: TransactionFiltersProps['onChange'];
+  /** Called after a preset is chosen, e.g. to close the popover. */
+  onPreset?: () => void;
+}
+
+/** The presets beside a range calendar. */
+const DatePanel: React.FC<DatePanelProps> = ({
+  search,
+  onChange,
+  onPreset,
+}) => {
+  const choose = (range: RangePreset | undefined) => {
+    onChange({ range, from: undefined, to: undefined });
+    onPreset?.();
+  };
+
+  return (
+    <div className="flex flex-col sm:flex-row">
+      <div
+        role="radiogroup"
+        aria-label="Date range"
+        className="flex flex-wrap gap-1 border-b p-2 sm:w-40 sm:shrink-0 sm:flex-col sm:flex-nowrap sm:border-r sm:border-b-0"
+      >
+        <PresetItem selected={!search.range} onClick={() => choose(undefined)}>
+          Any time
+        </PresetItem>
+        {(Object.keys(RANGE_LABELS) as RangePreset[]).map((preset) => (
+          <PresetItem
+            key={preset}
+            selected={search.range === preset}
+            onClick={() => choose(preset)}
+          >
+            {RANGE_LABELS[preset]}
+          </PresetItem>
+        ))}
+      </div>
+      <Calendar
+        mode="range"
+        numberOfMonths={1}
+        defaultMonth={search.from ? fromDay(search.from) : undefined}
+        selected={{
+          from: search.from ? fromDay(search.from) : undefined,
+          to: search.to ? fromDay(search.to) : undefined,
+        }}
+        onSelect={(range) =>
+          onChange({
+            range: range?.from ? 'custom' : undefined,
+            from: range?.from ? toDay(range.from) : undefined,
+            to: range?.to ? toDay(range.to) : undefined,
+          })
+        }
+      />
+    </div>
+  );
+};
+
+interface CollapsedFiltersProps {
+  search: TransactionsSearch;
+  onChange: TransactionFiltersProps['onChange'];
+  institutions: MenuOption[];
+  categories: MenuOption[];
+  onChangeInstitutions: (change: (selected: string[]) => string[]) => void;
+  onChangeCategories: (change: (selected: string[]) => string[]) => void;
+}
+
+/**
+ * All the filters behind one button, for a header too narrow for the menus
+ * side by side: it lists the filters, and each opens its own choices.
+ */
+const CollapsedFilters: React.FC<CollapsedFiltersProps> = ({
+  search,
+  onChange,
+  institutions,
+  categories,
+  onChangeInstitutions,
+  onChangeCategories,
+}) => {
+  const date = dateValue(search);
+  const institutionCount = search.institution?.length ?? 0;
+  const categoryCount = search.category?.length ?? 0;
+  const isSet = !!date || institutionCount > 0 || categoryCount > 0;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn('text-muted-foreground', isSet && 'text-foreground')}
+        >
+          <ListFilter />
+          <span className={cn(isSet && 'font-semibold')}>Filters</span>
+          {isSet && (
+            <span
+              aria-hidden
+              className="bg-primary size-1.5 shrink-0 rounded-full"
+            />
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-48">
+        <DropdownMenuLabel>Filter by</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <FilterSubmenu label="Date" value={date}>
+          <DropdownMenuSubContent className="max-w-[calc(100vw-2rem)] p-0">
+            <DatePanel search={search} onChange={onChange} />
+          </DropdownMenuSubContent>
+        </FilterSubmenu>
+        <FilterSubmenu
+          label="Institution"
+          value={institutionCount ? `${institutionCount} selected` : undefined}
+        >
+          <DropdownMenuSubContent className="max-h-80 min-w-56 overflow-y-auto">
+            <MultiSelectItems
+              options={institutions}
+              selected={search.institution ?? []}
+              onChange={onChangeInstitutions}
+            />
+          </DropdownMenuSubContent>
+        </FilterSubmenu>
+        <FilterSubmenu
+          label="Category"
+          value={categoryCount ? `${categoryCount} selected` : undefined}
+        >
+          <DropdownMenuSubContent className="max-h-80 min-w-56 overflow-y-auto">
+            <MultiSelectItems
+              options={categories}
+              selected={search.category ?? []}
+              onChange={onChangeCategories}
+            />
+          </DropdownMenuSubContent>
+        </FilterSubmenu>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+interface FilterSubmenuProps {
+  label: string;
+  /** What the filter is set to, shown after the label. */
+  value?: string;
+  children: React.ReactNode;
+}
+
+/** One filter in the collapsed menu; `children` is its `DropdownMenuSubContent`. */
+const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
+  label,
+  value,
+  children,
+}) => (
+  <DropdownMenuSub>
+    <DropdownMenuSubTrigger>
+      <span className={cn(value && 'font-semibold')}>{label}</span>
+      {value && (
+        <span className="text-muted-foreground ml-auto pl-4 text-xs">
+          {value}
+        </span>
+      )}
+    </DropdownMenuSubTrigger>
+    {children}
+  </DropdownMenuSub>
+);
 
 interface PresetItemProps extends React.ComponentProps<'button'> {
   selected: boolean;

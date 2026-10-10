@@ -27,9 +27,7 @@ export interface MenuOption {
   logoUrl?: string | null;
 }
 
-interface MultiSelectMenuProps {
-  /** The menu's name: "Category". */
-  label: string;
+interface MultiSelectItemsProps {
   options: MenuOption[];
   selected: string[];
   /**
@@ -38,6 +36,47 @@ interface MultiSelectMenuProps {
    */
   onChange: (change: (selected: string[]) => string[]) => void;
 }
+
+interface MultiSelectMenuProps extends MultiSelectItemsProps {
+  /** The menu's name: "Category". */
+  label: string;
+}
+
+/**
+ * The checkbox items of a multi-select, to put in any dropdown or submenu
+ * content. They keep the menu open so several can be picked.
+ */
+export const MultiSelectItems: React.FC<MultiSelectItemsProps> = ({
+  options,
+  selected,
+  onChange,
+}) => (
+  <>
+    {options.map((option) => (
+      <DropdownMenuCheckboxItem
+        key={option.value}
+        checked={selected.includes(option.value)}
+        // Keep the list open so several can be picked.
+        onSelect={(event) => event.preventDefault()}
+        onCheckedChange={(checked) =>
+          onChange((current) =>
+            checked
+              ? [...current, option.value]
+              : current.filter((value) => value !== option.value)
+          )
+        }
+      >
+        <OptionIcon option={option} />
+        {option.label}
+      </DropdownMenuCheckboxItem>
+    ))}
+    {options.length === 0 && (
+      <div className="text-muted-foreground px-2 py-1.5 text-sm">
+        Nothing to choose from
+      </div>
+    )}
+  </>
+);
 
 /**
  * A borderless button for a list's header that opens a list of checkboxes to
@@ -85,29 +124,11 @@ export const MultiSelectMenu: React.FC<MultiSelectMenuProps> = ({
       >
         <DropdownMenuLabel>Filter by {label.toLowerCase()}</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {options.map((option) => (
-          <DropdownMenuCheckboxItem
-            key={option.value}
-            checked={selected.includes(option.value)}
-            // Keep the list open so several can be picked.
-            onSelect={(event) => event.preventDefault()}
-            onCheckedChange={(checked) =>
-              onChange((current) =>
-                checked
-                  ? [...current, option.value]
-                  : current.filter((value) => value !== option.value)
-              )
-            }
-          >
-            <OptionIcon option={option} />
-            {option.label}
-          </DropdownMenuCheckboxItem>
-        ))}
-        {options.length === 0 && (
-          <div className="text-muted-foreground px-2 py-1.5 text-sm">
-            Nothing to choose from
-          </div>
-        )}
+        <MultiSelectItems
+          options={options}
+          selected={selected}
+          onChange={onChange}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
   );
