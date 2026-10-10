@@ -200,7 +200,7 @@ interface DatePanelProps {
   onChange: TransactionFiltersProps['onChange'];
   /** Called after a preset is chosen, e.g. to close the popover. */
   onPreset?: () => void;
-  /** Always put the presets above the calendar, in a fixed narrow width. */
+  /** Always put the presets above the calendar, as narrow as the calendar. */
   stacked?: boolean;
 }
 
@@ -217,7 +217,7 @@ const DatePanel: React.FC<DatePanelProps> = ({
   };
 
   return (
-    <div className={cn('flex flex-col', stacked ? 'w-72' : 'sm:flex-row')}>
+    <div className={cn('flex flex-col', stacked ? 'w-min' : 'sm:flex-row')}>
       <div
         role="radiogroup"
         aria-label="Date range"
