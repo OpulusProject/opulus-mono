@@ -125,7 +125,13 @@ export const Transactions: React.FC = () => {
                 </Button>
               ) : undefined
             }
-            action={<TransactionFilters search={search} onChange={update} />}
+            action={({ width }) => (
+              <TransactionFilters
+                search={search}
+                width={width}
+                onChange={update}
+              />
+            )}
           />
           {content}
         </List>

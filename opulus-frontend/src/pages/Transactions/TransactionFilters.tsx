@@ -26,7 +26,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
-import { useContainerWidth } from '@/hooks/use-container-width';
 import { cn } from '@/lib/utils';
 import {
   RANGE_LABELS,
@@ -40,11 +39,18 @@ import { getCategoryIcon, getCategoryLabel } from '@/utils/transactionCategory';
 
 import { CATEGORY_OPTIONS, type TransactionsSearch } from './searchSchema';
 
-/** The header width (px) from which the three menus fit side by side. */
-const SIDE_BY_SIDE_MIN_WIDTH = 672;
+/**
+ * How the filters fit the list header, by the header's width in px. Every
+ * layout choice is made here so the thresholds are in one place.
+ */
+const COLLAPSE_BELOW = 672; // the three menus no longer fit side by side
+const SHOW_PICKS_FROM = 896; // room for a menu to show what is picked
+const ICON_ONLY_BELOW = 320; // no room for "Filters" beside Clear filters
 
 interface TransactionFiltersProps {
   search: TransactionsSearch;
+  /** The width of the list header the filters are in. */
+  width: number;
   onChange: (
     changes:
       | Partial<TransactionsSearch>
@@ -59,6 +65,7 @@ interface TransactionFiltersProps {
  */
 export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   search,
+  width,
   onChange,
 }) => {
   const { data } = useItems();
@@ -84,43 +91,39 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
       ) as TransactionsSearch['category'],
     }));
 
-  // Chosen by the header's width in JS rather than CSS, so a menu that is open
-  // when the window is resized is closed with the version it belongs to.
-  const [ref, width] = useContainerWidth<HTMLSpanElement>(
-    '[data-slot="list-header"]'
-  );
+  if (width < COLLAPSE_BELOW) {
+    return (
+      <CollapsedFilters
+        search={search}
+        onChange={onChange}
+        institutions={institutions}
+        categories={categories}
+        onChangeInstitutions={changeInstitutions}
+        onChangeCategories={changeCategories}
+        iconOnly={width < ICON_ONLY_BELOW}
+      />
+    );
+  }
 
+  const compact = width < SHOW_PICKS_FROM;
   return (
-    <>
-      <span ref={ref} hidden />
-      {width !== undefined && width >= SIDE_BY_SIDE_MIN_WIDTH && (
-        <div className="flex flex-wrap items-center gap-1">
-          <DateMenu search={search} onChange={onChange} />
-          <MultiSelectMenu
-            label="Institution"
-            options={institutions}
-            selected={search.institution ?? []}
-            onChange={changeInstitutions}
-          />
-          <MultiSelectMenu
-            label="Category"
-            options={categories}
-            selected={search.category ?? []}
-            onChange={changeCategories}
-          />
-        </div>
-      )}
-      {width !== undefined && width < SIDE_BY_SIDE_MIN_WIDTH && (
-        <CollapsedFilters
-          search={search}
-          onChange={onChange}
-          institutions={institutions}
-          categories={categories}
-          onChangeInstitutions={changeInstitutions}
-          onChangeCategories={changeCategories}
-        />
-      )}
-    </>
+    <div className="flex flex-wrap items-center gap-1">
+      <DateMenu search={search} onChange={onChange} compact={compact} />
+      <MultiSelectMenu
+        label="Institution"
+        options={institutions}
+        selected={search.institution ?? []}
+        onChange={changeInstitutions}
+        compact={compact}
+      />
+      <MultiSelectMenu
+        label="Category"
+        options={categories}
+        selected={search.category ?? []}
+        onChange={changeCategories}
+        compact={compact}
+      />
+    </div>
   );
 };
 
@@ -155,6 +158,8 @@ function dateValue(search: TransactionsSearch): string | undefined {
 
 interface DateMenuProps {
   search: TransactionsSearch;
+  /** Show a dot rather than what is chosen. */
+  compact: boolean;
   onChange: TransactionFiltersProps['onChange'];
 }
 
@@ -163,7 +168,7 @@ interface DateMenuProps {
  * beside a range calendar: a preset applies and closes the popover; picking
  * days on the calendar is a custom range.
  */
-const DateMenu: React.FC<DateMenuProps> = ({ search, onChange }) => {
+const DateMenu: React.FC<DateMenuProps> = ({ search, onChange, compact }) => {
   const [open, setOpen] = React.useState(false);
   const value = dateValue(search);
 
@@ -174,18 +179,19 @@ const DateMenu: React.FC<DateMenuProps> = ({ search, onChange }) => {
           variant="ghost"
           size="sm"
           className={cn(
-            'text-muted-foreground px-1.5 @4xl:px-3',
+            'text-muted-foreground',
+            compact && 'px-1.5',
             value && 'text-foreground'
           )}
         >
           <span className={cn(value && 'font-semibold')}>
             Date
-            {value && <span className="hidden @4xl:inline">: {value}</span>}
+            {value && !compact && <span>: {value}</span>}
           </span>
-          {value && (
+          {value && compact && (
             <span
               aria-hidden
-              className="bg-primary size-1.5 shrink-0 rounded-full @4xl:hidden"
+              className="bg-primary size-1.5 shrink-0 rounded-full"
             />
           )}
           <ChevronDown />
@@ -278,6 +284,8 @@ interface CollapsedFiltersProps {
   categories: MenuOption[];
   onChangeInstitutions: (change: (selected: string[]) => string[]) => void;
   onChangeCategories: (change: (selected: string[]) => string[]) => void;
+  /** Just the icon, for a header with no room for the word. */
+  iconOnly: boolean;
 }
 
 type CollapsedView = 'filters' | 'institution' | 'category';
@@ -296,6 +304,7 @@ const CollapsedFilters: React.FC<CollapsedFiltersProps> = ({
   categories,
   onChangeInstitutions,
   onChangeCategories,
+  iconOnly,
 }) => {
   const [view, setView] = React.useState<CollapsedView>('filters');
   const [dateOpen, setDateOpen] = React.useState(false);
@@ -330,8 +339,7 @@ const CollapsedFilters: React.FC<CollapsedFiltersProps> = ({
                 className="text-muted-foreground"
               >
                 <ListFilter />
-                {/* Icon only when the header is too narrow to keep Clear filters beside it. */}
-                <span className="hidden @xs:inline">Filters</span>
+                {!iconOnly && 'Filters'}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
@@ -341,8 +349,7 @@ const CollapsedFilters: React.FC<CollapsedFiltersProps> = ({
                 if (openingDate.current) {
                   event.preventDefault();
                   openingDate.current = false;
-                  // After the menu's own focus handling is done.
-                  setTimeout(() => setDateOpen(true), 50);
+                  setDateOpen(true);
                 }
               }}
             >

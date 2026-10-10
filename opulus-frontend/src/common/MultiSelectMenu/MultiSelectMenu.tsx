@@ -40,6 +40,8 @@ interface MultiSelectItemsProps {
 interface MultiSelectMenuProps extends MultiSelectItemsProps {
   /** The menu's name: "Category". */
   label: string;
+  /** Show a dot when something is picked, rather than what is picked. */
+  compact?: boolean;
 }
 
 /**
@@ -81,13 +83,14 @@ export const MultiSelectItems: React.FC<MultiSelectItemsProps> = ({
 /**
  * A borderless button for a list's header that opens a list of checkboxes to
  * pick several from. When something is picked the button shows the first pick
- * in bold (and a count of the rest); on a narrow screen it shows a dot instead.
+ * in bold (and a count of the rest); when `compact` it shows a dot instead.
  */
 export const MultiSelectMenu: React.FC<MultiSelectMenuProps> = ({
   label,
   options,
   selected,
   onChange,
+  compact,
 }) => {
   const first = options.find((option) => option.value === selected[0]);
   const summary = first
@@ -101,18 +104,19 @@ export const MultiSelectMenu: React.FC<MultiSelectMenuProps> = ({
           variant="ghost"
           size="sm"
           className={cn(
-            'text-muted-foreground px-1.5 @4xl:px-3',
+            'text-muted-foreground',
+            compact && 'px-1.5',
             summary && 'text-foreground'
           )}
         >
           <span className={cn(summary && 'font-semibold')}>
             {label}
-            {summary && <span className="hidden @4xl:inline">: {summary}</span>}
+            {summary && !compact && <span>: {summary}</span>}
           </span>
-          {summary && (
+          {summary && compact && (
             <span
               aria-hidden
-              className="bg-primary size-1.5 shrink-0 rounded-full @4xl:hidden"
+              className="bg-primary size-1.5 shrink-0 rounded-full"
             />
           )}
           <ChevronDown />
