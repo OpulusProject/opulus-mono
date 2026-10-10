@@ -27,7 +27,7 @@ export const TransactionsEmpty: React.FC<TransactionsEmptyProps> = ({
         description="Nothing matches. Try a different search or fewer filters."
         action={
           <Button variant="outline" onClick={onClearFilters}>
-            Clear search and filters
+            Clear filters
           </Button>
         }
       />

@@ -123,9 +123,9 @@ export const Transactions: React.FC = () => {
             titleAction={
               hasFilters ? (
                 <Button
-                  variant="ghost"
+                  variant="link"
                   size="sm"
-                  className="shrink-0"
+                  className="shrink-0 px-0"
                   onClick={clearFilters}
                 >
                   Clear filters

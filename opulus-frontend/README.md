@@ -37,6 +37,7 @@ opulus-frontend/
 │   │   ├── AppSidebar/      # Sidebar navigation
 │   │   ├── LaunchLink/     # Plaid Link wrapper
 │   │   ├── List/           # List, ListHeader, ListGroup, ListRow, ListFooter, ListEmpty
+│   │   ├── MultiSelectMenu/ # Header button that opens checkboxes to pick several
 │   │   └── PageHeader/     # Page title and actions
 │   ├── hooks/               # React hooks, one folder per resource
 │   │   ├── accounts/       # Accounts hooks

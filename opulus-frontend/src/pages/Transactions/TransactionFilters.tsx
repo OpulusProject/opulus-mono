@@ -1,6 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 import React from 'react';
 
+import { MultiSelectMenu } from '@/common/MultiSelectMenu';
 import {
   Button,
   Calendar,
@@ -20,7 +21,6 @@ import { formatDay } from '@/utils/day';
 import { getInstitutionLogo } from '@/utils/institution';
 import { getCategoryIcon, getCategoryLabel } from '@/utils/transactionCategory';
 
-import { MultiSelectMenu } from './MultiSelectMenu';
 import { CATEGORY_OPTIONS, type TransactionsSearch } from './searchSchema';
 
 interface TransactionFiltersProps {
