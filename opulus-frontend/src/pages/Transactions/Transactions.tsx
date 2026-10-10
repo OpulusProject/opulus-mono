@@ -10,6 +10,7 @@ import {
   ListHeader,
 } from '@/common/List';
 import { Page } from '@/common/Page';
+import { TransactionRow } from '@/common/TransactionRow';
 import { Button, Spinner } from '@/components/ui';
 import { useInfiniteTransactions } from '@/hooks/transactions/useInfiniteTransactions';
 import { useOnVisible } from '@/hooks/use-on-visible';
@@ -17,7 +18,6 @@ import { formatDay } from '@/utils/day';
 
 import { groupByDay, netLabel } from './transactionDays';
 import { TransactionFilters } from './TransactionFilters';
-import { TransactionRow } from './TransactionRow';
 import { TransactionSearch } from './TransactionSearch';
 import { useTransactionFilters } from './useTransactionFilters';
 
