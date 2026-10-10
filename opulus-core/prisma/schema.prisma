@@ -8,20 +8,21 @@ datasource db {
 }
 
 model User {
-  id                 String             @id
+  id                 String                   @id
   name               String
   email              String
-  emailVerified      Boolean            @default(false)
+  emailVerified      Boolean                  @default(false)
   image              String?
-  plaidId            String?            @unique
-  plaidUserToken     String?            @unique
-  twoFactorEnabled   Boolean            @default(false)
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @default(now()) @updatedAt
+  plaidId            String?                  @unique
+  plaidUserToken     String?                  @unique
+  twoFactorEnabled   Boolean                  @default(false)
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @default(now()) @updatedAt
   sessions           Session[]
   authAccounts       AuthAccount[]
   linkSessions       LinkSession[]
   accountLiabilities AccountLiability[]
+  historicBalances   AccountHistoricBalance[]
   items              Item[]
   accounts           Account[]
   transactions       Transaction[]
@@ -122,7 +123,7 @@ model Item {
 }
 
 model Account {
-  id                     String            @id @default(cuid())
+  id                     String                   @id @default(cuid())
   providerAccountId      String // Provider's account_id (may change across item updates)
   persistentAccountId    String? // Stable account identifier across item updates
   itemId                 String // Reference to Item (connection to financial institution)
@@ -137,12 +138,13 @@ model Account {
   balanceLimit           Decimal? // Credit limit (for credit accounts)
   isoCurrencyCode        String? // ISO 4217 currency code (e.g., "USD", "CAD")
   unofficialCurrencyCode String? // Unofficial currency code (used when ISO currency unavailable)
-  createdAt              DateTime          @default(now())
-  updatedAt              DateTime          @updatedAt
-  user                   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  item                   Item              @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  user                   User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item                   Item                     @relation(fields: [itemId], references: [id], onDelete: Cascade)
   transactions           Transaction[]
   liabilityDetails       AccountLiability?
+  historicBalances       AccountHistoricBalance[]
 
   // Same account_id can exist in different items
   // Index for stable account lookups
@@ -152,36 +154,36 @@ model Account {
 }
 
 model Transaction {
-  id                      String    @id @default(cuid())
-  providerTransactionId   String // Plaid transaction_id (unique per transaction)
-  accountId               String // Reference to Account
-  itemId                  String // Reference to Item
-  userId                  String // Reference to User
-  amount                  Decimal   @db.Decimal(19, 4) // Positive = money out, negative = money in (Plaid's convention)
-  date                    DateTime // Date transaction occurred (YYYY-MM-DD)
-  authorizedDate          DateTime? // Date transaction was authorized (YYYY-MM-DD)
-  name                    String // Merchant name or transaction description
-  merchantName            String? // Merchant name if available
-  categoryPrimary         String? // Plaid personal finance category, high level (e.g. FOOD_AND_DRINK)
-  categoryDetailed        String? // Plaid personal finance category, granular (e.g. FOOD_AND_DRINK_FAST_FOOD)
-  paymentChannel          String? // online, in store or other
-  logoUrl                 String? // Merchant logo (100x100 PNG), when Plaid has one
-  website                 String? // Merchant website, when Plaid has one
-  location                Json? // Plaid's location object; only for physical locations
-  paymentMeta             Json? // Plaid's payment_meta object; only for inter-bank transfers
-  isoCurrencyCode         String? // ISO 4217 currency code
-  unofficialCurrencyCode  String? // Unofficial currency code
-  pending                 Boolean   @default(false) // Whether transaction is pending
-  pendingTransactionId    String? // ID of pending transaction if this is a posted transaction
-  accountOwner            String? // Account owner name
-  transactionCode         String? // Transaction code (e.g., "direct_debit")
-  merchantEntityId        String? // Merchant entity ID
-  checkNumber             String? // Check number if applicable
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  item                    Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  account                 Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  id                     String    @id @default(cuid())
+  providerTransactionId  String // Plaid transaction_id (unique per transaction)
+  accountId              String // Reference to Account
+  itemId                 String // Reference to Item
+  userId                 String // Reference to User
+  amount                 Decimal   @db.Decimal(19, 4) // Positive = money out, negative = money in (Plaid's convention)
+  date                   DateTime // Date transaction occurred (YYYY-MM-DD)
+  authorizedDate         DateTime? // Date transaction was authorized (YYYY-MM-DD)
+  name                   String // Merchant name or transaction description
+  merchantName           String? // Merchant name if available
+  categoryPrimary        String? // Plaid personal finance category, high level (e.g. FOOD_AND_DRINK)
+  categoryDetailed       String? // Plaid personal finance category, granular (e.g. FOOD_AND_DRINK_FAST_FOOD)
+  paymentChannel         String? // online, in store or other
+  logoUrl                String? // Merchant logo (100x100 PNG), when Plaid has one
+  website                String? // Merchant website, when Plaid has one
+  location               Json? // Plaid's location object; only for physical locations
+  paymentMeta            Json? // Plaid's payment_meta object; only for inter-bank transfers
+  isoCurrencyCode        String? // ISO 4217 currency code
+  unofficialCurrencyCode String? // Unofficial currency code
+  pending                Boolean   @default(false) // Whether transaction is pending
+  pendingTransactionId   String? // ID of pending transaction if this is a posted transaction
+  accountOwner           String? // Account owner name
+  transactionCode        String? // Transaction code (e.g., "direct_debit")
+  merchantEntityId       String? // Merchant entity ID
+  checkNumber            String? // Check number if applicable
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item                   Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  account                Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   // Same transaction_id can exist in different accounts
   @@unique([providerTransactionId, accountId])
@@ -191,6 +193,30 @@ model Transaction {
   @@index([date])
   @@index([userId, date])
   @@map("transaction")
+}
+
+/// An account's balance on one completed day (its closing balance), for the net
+/// worth history. Today's balance is not here: it is read live from
+/// Account.balanceCurrent. A row is written once its day is over, never for
+/// today; the history before an item was linked is filled in from its
+/// transactions when it is first synced.
+model AccountHistoricBalance {
+  id              String   @id @default(cuid())
+  accountId       String // Reference to Account
+  userId          String // Reference to User
+  date            DateTime @db.Date // The day it closed (UTC); always before today
+  balanceCurrent  Decimal  @db.Decimal(19, 4) // Credit and loan balances stay positive, as in Account
+  isoCurrencyCode String? // ISO 4217 currency code, copied from the account
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account         Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  // One row per account per day
+  @@unique([accountId, date])
+  // One user's rows over a date range (the net worth query)
+  @@index([userId, date])
+  @@map("account_historic_balance")
 }
 
 /// Liabilities data (Plaid /liabilities/get) for a credit or loan account.
