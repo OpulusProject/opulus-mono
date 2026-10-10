@@ -11,6 +11,7 @@ import { PageHeader } from '@/common/PageHeader';
 import { Button, Spinner } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
 import { useInfiniteTransactions } from '@/hooks/transactions/useInfiniteTransactions';
+import { useOnVisible } from '@/hooks/use-on-visible';
 import { formatDay } from '@/utils/day';
 
 import { groupByDay, netLabel } from './transactionDays';
@@ -42,6 +43,19 @@ export const Transactions: React.FC = () => {
   );
   const days = useMemo(() => groupByDay(transactions), [transactions]);
   const total = list.data?.pages[0]?.pagination.total ?? 0;
+
+  // Reaching the end of the list loads the next page. The "Load more" button
+  // is what is watched, and stays as the way to retry after a failed load.
+  const loadMoreRef = useOnVisible<HTMLButtonElement>(
+    () => void list.fetchNextPage(),
+    {
+      enabled:
+        list.hasNextPage &&
+        !list.isFetchingNextPage &&
+        !list.isFetchNextPageError,
+      rootMargin: '300px',
+    }
+  );
 
   let content: React.ReactNode;
   if (list.isError) {
@@ -77,6 +91,7 @@ export const Transactions: React.FC = () => {
         action={
           list.hasNextPage ? (
             <Button
+              ref={loadMoreRef}
               variant="outline"
               size="sm"
               onClick={() => void list.fetchNextPage()}
