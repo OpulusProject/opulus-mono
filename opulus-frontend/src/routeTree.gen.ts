@@ -18,6 +18,7 @@ import { Route as AuthenticatedTransactionsRouteImport } from './routes/_authent
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCreditAndLoansRouteImport } from './routes/_authenticated/credit-and-loans'
 import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
+import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedSettingsConnectionsRouteImport } from './routes/_authenticated/settings.connections'
 
@@ -67,6 +68,11 @@ const AuthenticatedAccountsRoute = AuthenticatedAccountsRouteImport.update({
   path: '/accounts',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedAccountRoute = AuthenticatedAccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSettingsIndexRoute =
   AuthenticatedSettingsIndexRouteImport.update({
     id: '/settings/',
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/$': typeof SplatRoute
   '/login': typeof LoginRoute
   '/two-factor': typeof TwoFactorRoute
+  '/account': typeof AuthenticatedAccountRoute
   '/accounts': typeof AuthenticatedAccountsRoute
   '/credit-and-loans': typeof AuthenticatedCreditAndLoansRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/$': typeof SplatRoute
   '/login': typeof LoginRoute
   '/two-factor': typeof TwoFactorRoute
+  '/account': typeof AuthenticatedAccountRoute
   '/accounts': typeof AuthenticatedAccountsRoute
   '/credit-and-loans': typeof AuthenticatedCreditAndLoansRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/two-factor': typeof TwoFactorRoute
+  '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/accounts': typeof AuthenticatedAccountsRoute
   '/_authenticated/credit-and-loans': typeof AuthenticatedCreditAndLoansRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/login'
     | '/two-factor'
+    | '/account'
     | '/accounts'
     | '/credit-and-loans'
     | '/dashboard'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/$'
     | '/login'
     | '/two-factor'
+    | '/account'
     | '/accounts'
     | '/credit-and-loans'
     | '/dashboard'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/two-factor'
+    | '/_authenticated/account'
     | '/_authenticated/accounts'
     | '/_authenticated/credit-and-loans'
     | '/_authenticated/dashboard'
@@ -231,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAccountsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/account': {
+      id: '/_authenticated/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AuthenticatedAccountRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/settings/': {
       id: '/_authenticated/settings/'
       path: '/settings'
@@ -249,6 +268,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedAccountsRoute: typeof AuthenticatedAccountsRoute
   AuthenticatedCreditAndLoansRoute: typeof AuthenticatedCreditAndLoansRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -258,6 +278,7 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedAccountsRoute: AuthenticatedAccountsRoute,
   AuthenticatedCreditAndLoansRoute: AuthenticatedCreditAndLoansRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
