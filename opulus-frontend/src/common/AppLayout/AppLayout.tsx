@@ -4,6 +4,8 @@ import { SiteHeader } from '@/common/AppLayout/components/SiteHeader';
 import { AppSidebar } from '@/common/AppSidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui';
 
+import { useSidebarPreference } from './useSidebarPreference';
+
 interface AppLayoutProps {
   children: React.ReactNode;
   title?: string;
@@ -11,19 +13,13 @@ interface AppLayoutProps {
   section?: string;
 }
 
-/**
- * Whether the sidebar was left open, from the cookie that `SidebarProvider`
- * writes when it is toggled. Each page renders its own `AppLayout`, so without
- * this the sidebar would open again on every navigation.
- */
-function wasSidebarOpen() {
-  return !document.cookie.split('; ').includes('sidebar_state=false');
-}
-
 export function AppLayout({ children, title, section }: AppLayoutProps) {
+  const { open, setOpen } = useSidebarPreference();
+
   return (
     <SidebarProvider
-      defaultOpen={wasSidebarOpen()}
+      open={open}
+      onOpenChange={setOpen}
       style={
         {
           '--sidebar-width': '18rem',
