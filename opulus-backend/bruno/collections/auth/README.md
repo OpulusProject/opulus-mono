@@ -7,6 +7,7 @@ All routes under `/api/auth/*` are handled by Better Auth:
 - **Sign Up** - Register a new user account (`POST /api/auth/sign-up/email`)
 - **Sign In** - Authenticate with email and password (`POST /api/auth/sign-in/email`)
 - **Sign Out** - Sign out the current user (`POST /api/auth/sign-out`)
+- **Delete Account** - Delete the user and all their data (`POST /api/auth/delete-user`)
 - **TOTP/2FA** - Two-factor authentication endpoints (when plugin is enabled)
 
 ## Custom Auth Endpoints (handled by custom controllers)

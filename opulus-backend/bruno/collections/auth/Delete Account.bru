@@ -1,0 +1,59 @@
+meta {
+  name: Delete Account
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{base_url}}/api/auth/delete-user
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+body:json {
+  {
+    "password": "{{test_password}}"
+  }
+}
+
+docs {
+  # Delete Account
+
+  Permanently delete the signed-in user and all of their data. Better Auth's built-in `delete-user` endpoint, configured in `opulus-backend/src/auth.ts`.
+
+  **Endpoint:** `POST /api/auth/delete-user`
+
+  ## Authentication
+
+  Requires an active session cookie.
+
+  ## Request Body
+
+  - `password` (string, required): the user's password. Better Auth would also accept a fresh session instead, but an `auth.ts` hook makes the password mandatory.
+
+  ## Behavior
+
+  1. Checks the password
+  2. Removes each of the user's items from Plaid (`/item/remove`). A failure for an item is logged (item id, no tokens) and does not stop the deletion; the item then stays connected on Plaid's side until removed there
+  3. Deletes the user. Sessions, linked logins, 2FA, items, accounts, transactions and liabilities are deleted with it (foreign keys cascade)
+  4. Ends all of the user's sessions and clears the session cookie
+
+  ## Success Response (200)
+
+  ```json
+  { "success": true, "message": "User deleted" }
+  ```
+
+  ## Error Responses
+
+  - `401`: No active session
+  - `400`: `PASSWORD_REQUIRED` (no password sent) or `INVALID_PASSWORD` (wrong password); nothing is deleted
+
+  ## Notes
+
+  - Destructive and cannot be undone. Use a throwaway user (see **Sign Up**), never your own data
+}
