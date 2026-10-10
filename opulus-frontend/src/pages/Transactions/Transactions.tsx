@@ -8,6 +8,7 @@ import {
   ListHeader,
 } from '@/common/List';
 import { PageHeader } from '@/common/PageHeader';
+import { TransactionRow } from '@/common/TransactionRow';
 import { Button, Spinner } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
 import { useInfiniteTransactions } from '@/hooks/transactions/useInfiniteTransactions';
@@ -16,7 +17,6 @@ import { formatDay } from '@/utils/day';
 
 import { groupByDay, netLabel } from './transactionDays';
 import { TransactionFilters } from './TransactionFilters';
-import { TransactionRow } from './TransactionRow';
 import { TransactionSearch } from './TransactionSearch';
 import { TransactionsEmpty } from './TransactionsEmpty';
 import { useTransactionFilters } from './useTransactionFilters';
