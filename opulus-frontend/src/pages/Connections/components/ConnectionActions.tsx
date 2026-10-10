@@ -41,30 +41,27 @@ export const ConnectionActions: React.FC<ConnectionActionsProps> = ({
 
   return (
     <>
-      {/* Fixed width so the menu lines up whether or not a button shows. */}
-      <div className="flex w-28 justify-end">
-        {status.ctaLabel ? (
+      {status.ctaLabel ? (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => onUpdate(item.id, 'reconnect')}
+        >
+          {status.ctaLabel}
+        </Button>
+      ) : (
+        item.newAccountsAvailable && (
           <Button
             type="button"
             variant="outline"
             size="sm"
-            onClick={() => onUpdate(item.id, 'reconnect')}
+            onClick={() => onUpdate(item.id, 'add-accounts')}
           >
-            {status.ctaLabel}
+            Add accounts
           </Button>
-        ) : (
-          item.newAccountsAvailable && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onUpdate(item.id, 'add-accounts')}
-            >
-              Add accounts
-            </Button>
-          )
-        )}
-      </div>
+        )
+      )}
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
