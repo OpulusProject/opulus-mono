@@ -15,6 +15,7 @@
 import "dotenv/config";
 
 import {
+  backfillBalanceHistory,
   itemRepository,
   logger,
   prisma,
@@ -58,12 +59,19 @@ async function main(): Promise<void> {
   for (const item of items) {
     try {
       const result = await syncItemTransactions({ plaidItemId: item.plaidItemId });
+      // Also fills in the balance history of an item that is complete but has
+      // none (for instance after a failed backfill).
+      const history = await backfillBalanceHistory({
+        plaidItemId: item.plaidItemId,
+        transactionsUpdateStatus: result.transactionsUpdateStatus,
+      });
       succeeded += 1;
       logger.info(
         {
           item_id: item.plaidItemId,
           institution: item.institutionName,
           ...result,
+          history_rows: history.skipped ? null : history.rows,
         },
         "Reconciled item"
       );

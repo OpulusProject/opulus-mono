@@ -255,6 +255,39 @@ class AccountRepository {
     }
   }
 
+  /**
+   * An item's accounts with their current balances, for the balance history
+   * @param itemId - The item
+   * @throws AppError if database error occurs
+   */
+  async getBalancesByItemId(itemId: string) {
+    try {
+      const accounts = await this.prisma.account.findMany({
+        where: { itemId },
+        select: {
+          id: true,
+          type: true,
+          balanceCurrent: true,
+          isoCurrencyCode: true,
+        },
+      });
+      return accounts.map((account) => ({
+        ...account,
+        balanceCurrent: account.balanceCurrent?.toNumber() ?? null,
+      }));
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get accounts: ${error.message}`
+          : "An unexpected error occurred while fetching accounts";
+      throw new AppError(message, 500);
+    }
+  }
+
   async deleteByItemId(
     itemId: string,
     client: Prisma.TransactionClient = this.prisma
