@@ -1,3 +1,4 @@
+import { useMatches } from '@tanstack/react-router';
 import * as React from 'react';
 
 import { SiteHeader } from '@/common/AppLayout/components/SiteHeader';
@@ -8,13 +9,17 @@ import { useSidebarPreference } from './useSidebarPreference';
 
 interface AppLayoutProps {
   children: React.ReactNode;
-  title?: string;
-  /** Parent section shown before the title in the header, e.g. "Settings". */
-  section?: string;
 }
 
-export function AppLayout({ children, title, section }: AppLayoutProps) {
+/**
+ * The sidebar and header around every signed-in page. The header's title and
+ * section come from the current route's `staticData`.
+ */
+export function AppLayout({ children }: AppLayoutProps) {
   const { open, setOpen } = useSidebarPreference();
+  const { title, section } = useMatches({
+    select: (matches) => matches[matches.length - 1]?.staticData ?? {},
+  });
 
   return (
     <SidebarProvider

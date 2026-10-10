@@ -46,7 +46,6 @@ function getSummary(accounts: AccountWithConnectionDTO[]): SummaryStat[] {
 export const Accounts: React.FC = () => {
   return (
     <AccountsOverview
-      title="Accounts"
       heading="Cash and investments"
       description="Balances across your checking, savings, and investment accounts."
       groups={GROUPS}

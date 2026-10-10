@@ -43,9 +43,10 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
   );
   const [open, setOpen] = React.useState(hasActiveChild);
 
-  // Landing on a child route (deep link, redirect) expands its group.
+  // Moving onto one of its pages expands the group (also on a deep link or a
+  // redirect), and moving off them collapses it.
   React.useEffect(() => {
-    if (hasActiveChild) setOpen(true);
+    setOpen(hasActiveChild);
   }, [hasActiveChild]);
 
   // The sidebar is icons only, so there is no room to expand the group inline:

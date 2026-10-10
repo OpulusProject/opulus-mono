@@ -11,6 +11,13 @@ declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router;
   }
+
+  /** What a route can set for the layout around it, e.g. the page title. */
+  interface StaticDataRouteOption {
+    title?: string;
+    /** The parent section shown before the title, e.g. "Settings". */
+    section?: string;
+  }
 }
 
 function App() {

@@ -35,8 +35,8 @@ function subscribeToWidth(onChange: () => void) {
  * choice, so opening it on a desktop does not open it on a tablet. With no
  * choice made yet it is open on a wide screen and icons only on a narrow one.
  *
- * Each page renders its own `AppLayout`, so this is read again on every
- * navigation, from storage rather than from state.
+ * The choice is read from storage on each render rather than kept in state, so
+ * it follows the account and the screen size when either changes.
  */
 export function useSidebarPreference() {
   const { data: session } = useSession();
