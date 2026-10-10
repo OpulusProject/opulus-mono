@@ -16,6 +16,7 @@ headers {
 
 params:query {
   range: 1m
+  ~accountId: acct_1
 }
 
 docs {
@@ -37,6 +38,7 @@ docs {
     - `3m`: 90 days
     - `1y`: 365 days
     - `all`: from the earliest day we have a balance for
+  - `accountId` (optional): only add up these accounts. Repeat the parameter for several (`?accountId=a&accountId=b`). An id that is not one of the user's accounts is ignored, so it adds nothing; if no account is left, `series` is empty. Omit it to add up every account.
 
   ## Response
 
