@@ -62,18 +62,18 @@ export const MultiSelectMenu: React.FC<MultiSelectMenuProps> = ({
           variant="ghost"
           size="sm"
           className={cn(
-            'text-muted-foreground px-1.5 sm:px-3',
+            'text-muted-foreground px-1.5 @4xl:px-3',
             summary && 'text-foreground'
           )}
         >
           <span className={cn(summary && 'font-semibold')}>
             {label}
-            {summary && <span className="hidden sm:inline">: {summary}</span>}
+            {summary && <span className="hidden @4xl:inline">: {summary}</span>}
           </span>
           {summary && (
             <span
               aria-hidden
-              className="bg-primary size-1.5 shrink-0 rounded-full sm:hidden"
+              className="bg-primary size-1.5 shrink-0 rounded-full @4xl:hidden"
             />
           )}
           <ChevronDown />

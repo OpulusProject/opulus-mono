@@ -137,18 +137,18 @@ const DateMenu: React.FC<DateMenuProps> = ({ search, onChange }) => {
           variant="ghost"
           size="sm"
           className={cn(
-            'text-muted-foreground px-1.5 sm:px-3',
+            'text-muted-foreground px-1.5 @4xl:px-3',
             value && 'text-foreground'
           )}
         >
           <span className={cn(value && 'font-semibold')}>
             Date
-            {value && <span className="hidden sm:inline">: {value}</span>}
+            {value && <span className="hidden @4xl:inline">: {value}</span>}
           </span>
           {value && (
             <span
               aria-hidden
-              className="bg-primary size-1.5 shrink-0 rounded-full sm:hidden"
+              className="bg-primary size-1.5 shrink-0 rounded-full @4xl:hidden"
             />
           )}
           <ChevronDown />
