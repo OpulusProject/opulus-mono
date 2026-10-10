@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
  * Headers with an `onClick` render as a button (a group's expand/collapse).
  */
 export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
-  ({ title, trailingTitle, action, expanded, ...props }, ref) => {
+  ({ title, titleAction, trailingTitle, action, expanded, ...props }, ref) => {
     const clickable = !!props.onClick;
     const Comp = (clickable ? 'button' : 'div') as React.ElementType<
       React.HTMLAttributes<HTMLElement> & {
@@ -27,14 +27,15 @@ export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
         {...(expanded !== undefined && { 'aria-expanded': expanded })}
         {...props}
         className={cn(
-          'bg-muted/40 flex w-full items-center gap-3 px-4 py-2 text-left text-sm',
+          'bg-muted/40 flex w-full flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2 text-left text-sm',
           clickable && 'hover:bg-muted/70 transition-colors'
         )}
       >
-        <div className="flex min-w-0 flex-1 items-baseline gap-2">
+        <div className="flex min-w-0 flex-auto items-center gap-2">
           <span className="truncate font-medium" title={title}>
             {title}
           </span>
+          {titleAction}
         </div>
 
         {trailingTitle && (
@@ -44,7 +45,9 @@ export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
         )}
 
         {action && (
-          <div className="flex shrink-0 items-center gap-2">{action}</div>
+          <div className="ml-auto flex shrink-0 flex-wrap items-center gap-1">
+            {action}
+          </div>
         )}
 
         {expanded !== undefined && (
@@ -63,6 +66,11 @@ export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
 export interface ListHeaderProps
   extends Omit<React.ComponentPropsWithoutRef<'div'>, 'className' | 'title'> {
   title: string;
+  /**
+   * A button after the title, e.g. "Clear filters". It stays in the same place
+   * however many menus are in `action`.
+   */
+  titleAction?: React.ReactNode;
   /** Right-aligned text, e.g. a total. */
   trailingTitle?: string;
   /**

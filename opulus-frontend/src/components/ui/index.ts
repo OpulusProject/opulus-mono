@@ -44,6 +44,9 @@ export {
   type ChartConfig,
 } from './chart';
 
+// Calendar component
+export { Calendar, CalendarDayButton } from './calendar';
+
 // Checkbox component
 export { Checkbox } from './checkbox';
 
@@ -142,6 +145,9 @@ export {
 
 // Label component
 export { Label } from './label';
+
+// Popover components
+export { Popover, PopoverContent, PopoverTrigger } from './popover';
 
 // Select components
 export {
