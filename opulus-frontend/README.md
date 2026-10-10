@@ -36,7 +36,7 @@ opulus-frontend/
 │   │   ├── AppLayout/       # Main layout component
 │   │   ├── AppSidebar/      # Sidebar navigation
 │   │   ├── LaunchLink/     # Plaid Link wrapper
-│   │   ├── ListRow/        # Shared row for institutions and accounts
+│   │   ├── List/           # List, ListHeader, ListGroup, ListRow, ListFooter, ListEmpty
 │   │   └── PageHeader/     # Page title and actions
 │   ├── hooks/               # React hooks, one folder per resource
 │   │   ├── accounts/       # Accounts hooks

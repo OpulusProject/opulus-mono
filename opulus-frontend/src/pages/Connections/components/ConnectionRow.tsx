@@ -1,7 +1,7 @@
 import type { ItemDTO } from '@opulus/core/dto';
 import React from 'react';
 
-import { ListRow } from '@/common/ListRow';
+import { ListRow } from '@/common/List';
 import type { UpdateMode } from '@/hooks/linkTokens/useLinkToken';
 import type { Notice } from '@/types/notice';
 import { formatRelativeTime } from '@/utils/date';

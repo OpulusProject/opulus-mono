@@ -1,14 +1,17 @@
 import type { AccountType, AccountWithConnectionDTO } from '@opulus/core/dto';
+import { Link } from '@tanstack/react-router';
+import { Landmark } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { AppLayout } from '@/common/AppLayout';
+import { List, ListEmpty, ListGroup } from '@/common/List';
 import { PageHeader } from '@/common/PageHeader';
-import { Spinner } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { useAccounts } from '@/hooks/accounts/useAccounts';
+import { formatTotals } from '@/utils/accountDisplay';
 import { getAccountType } from '@/utils/accountType';
 
-import { AccountGroup } from './AccountGroup';
-import { EmptyAccountsView } from './EmptyAccountsView';
+import { AccountRow } from './AccountRow';
 import { type SummaryStat, SummaryStats } from './SummaryStats';
 
 const byName = (a: AccountWithConnectionDTO, b: AccountWithConnectionDTO) =>
@@ -64,29 +67,40 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
 
   let content: React.ReactNode;
   if (isLoading) {
-    content = (
-      <div className="flex items-center justify-center py-12">
-        <Spinner className="size-6" />
-      </div>
-    );
+    content = <List isLoading />;
   } else if (accounts.length === 0) {
     content = (
-      <EmptyAccountsView title={emptyTitle} description={emptyDescription} />
+      <List>
+        <ListEmpty
+          icon={Landmark}
+          title={emptyTitle}
+          description={emptyDescription}
+          action={
+            <Button asChild>
+              <Link to="/settings/connections">Go to connections</Link>
+            </Button>
+          }
+        />
+      </List>
     );
   } else {
     content = (
       <>
         <SummaryStats stats={getSummary(accounts)} />
 
-        <div className="flex flex-col gap-4">
+        <List aria-label={heading}>
           {visibleGroups.map((group) => (
-            <AccountGroup
+            <ListGroup
               key={group.type}
               title={group.title}
-              accounts={group.accounts}
-            />
+              trailingTitle={formatTotals(group.accounts)}
+            >
+              {group.accounts.map((account) => (
+                <AccountRow key={account.id} account={account} />
+              ))}
+            </ListGroup>
           ))}
-        </div>
+        </List>
       </>
     );
   }

@@ -1,7 +1,7 @@
 import type { AccountWithConnectionDTO } from '@opulus/core/dto';
 import React from 'react';
 
-import { ListRow } from '@/common/ListRow';
+import { ListRow } from '@/common/List';
 import {
   formatMoney,
   getAccountTypeLabel,
