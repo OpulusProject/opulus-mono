@@ -13,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui';
+import { useCloseWhenHidden } from '@/hooks/use-close-when-hidden';
 import { cn } from '@/lib/utils';
 
 export interface MenuOption {
@@ -89,15 +90,20 @@ export const MultiSelectMenu: React.FC<MultiSelectMenuProps> = ({
   selected,
   onChange,
 }) => {
+  const [open, setOpen] = React.useState(false);
+  const triggerRef = useCloseWhenHidden<HTMLButtonElement>(() =>
+    setOpen(false)
+  );
   const first = options.find((option) => option.value === selected[0]);
   const summary = first
     ? `${first.label}${selected.length > 1 ? ` +${selected.length - 1}` : ''}`
     : undefined;
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button
+          ref={triggerRef}
           variant="ghost"
           size="sm"
           className={cn(

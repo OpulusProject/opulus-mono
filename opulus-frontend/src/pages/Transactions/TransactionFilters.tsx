@@ -26,6 +26,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
+import { useCloseWhenHidden } from '@/hooks/use-close-when-hidden';
 import { cn } from '@/lib/utils';
 import {
   RANGE_LABELS,
@@ -154,12 +155,16 @@ interface DateMenuProps {
  */
 const DateMenu: React.FC<DateMenuProps> = ({ search, onChange }) => {
   const [open, setOpen] = React.useState(false);
+  const triggerRef = useCloseWhenHidden<HTMLButtonElement>(() =>
+    setOpen(false)
+  );
   const value = dateValue(search);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
+          ref={triggerRef}
           variant="ghost"
           size="sm"
           className={cn(
@@ -287,7 +292,12 @@ const CollapsedFilters: React.FC<CollapsedFiltersProps> = ({
   onChangeCategories,
 }) => {
   const [view, setView] = React.useState<CollapsedView>('filters');
+  const [menuOpen, setMenuOpen] = React.useState(false);
   const [dateOpen, setDateOpen] = React.useState(false);
+  const triggerRef = useCloseWhenHidden<HTMLButtonElement>(() => {
+    setMenuOpen(false);
+    setDateOpen(false);
+  });
   // Set when Date is picked: once the menu has closed, the date popover opens
   // in its place instead of the focus going back to the button.
   const openingDate = React.useRef(false);
@@ -307,12 +317,15 @@ const CollapsedFilters: React.FC<CollapsedFiltersProps> = ({
       <PopoverAnchor asChild>
         <div>
           <DropdownMenu
+            open={menuOpen}
             onOpenChange={(open) => {
+              setMenuOpen(open);
               if (open) setView('filters');
             }}
           >
             <DropdownMenuTrigger asChild>
               <Button
+                ref={triggerRef}
                 variant="ghost"
                 size="sm"
                 aria-label="Filters"
