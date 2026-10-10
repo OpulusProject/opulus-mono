@@ -7,6 +7,7 @@ import {
   isTransactionHistoryComplete,
   reconstructBalanceHistory,
 } from "../utils/balanceHistory.js";
+import { toDay } from "../utils/day.js";
 import { logger } from "../utils/logger.js";
 
 export interface BackfillBalanceHistoryParams {
@@ -56,7 +57,7 @@ export async function backfillBalanceHistory(
   const history = reconstructBalanceHistory({
     accounts,
     transactions,
-    today: now.toISOString().slice(0, 10),
+    today: toDay(now),
   });
 
   const rows = await runInTransaction((tx) =>

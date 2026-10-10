@@ -1,0 +1,84 @@
+meta {
+  name: Get Net Worth History
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/api/accounts/net-worth
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+params:query {
+  range: 1m
+}
+
+docs {
+  # Get Net Worth History
+
+  Get the authenticated user's net worth for each day in a range, one series per currency.
+
+  **Endpoint:** `GET /api/accounts/net-worth`
+
+  ## Authentication
+
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+
+  ## Query Parameters
+
+  - `range` (optional, default `1m`): how far back to go, counting back from today.
+    - `1w`: 7 days
+    - `1m`: 30 days
+    - `3m`: 90 days
+    - `1y`: 365 days
+    - `all`: from the earliest day we have a balance for
+
+  ## Response
+
+  One series per currency (currencies are never added together), sorted by currency code. Each series has a point for every day from the start of the range to today, oldest first. A point's `date` is a UTC day (`YYYY-MM-DD`) and `netWorth` is everything owned minus everything owed (credit and loan balances are what is owed).
+
+  - **Today** is the accounts' live balances, so the last point always equals what the accounts add up to now.
+  - **Earlier days** come from the stored daily historic balances, per account. A day with no historic balance takes that account's latest earlier one; a day before its first historic balance takes the first (flat before the history starts). An account with no historic balances is held at its live balance throughout.
+  - Accounts without a balance are left out. A user with no accounts gets an empty `series`.
+
+  ## Success Response (200)
+
+  ```json
+  {
+    "data": {
+      "range": "1w",
+      "series": [
+        {
+          "currency": "CAD",
+          "points": [
+            { "date": "2026-10-03", "netWorth": 61200.5 },
+            { "date": "2026-10-04", "netWorth": 61200.5 },
+            { "date": "2026-10-10", "netWorth": 62589 }
+          ]
+        }
+      ]
+    }
+  }
+  ```
+
+  ## Error Responses
+
+  - `400 Bad Request`: `range` is not one of the supported ranges
+    ```json
+    {
+      "error": "Validation failed",
+      "details": [{ "field": "range", "message": "Invalid enum value..." }]
+    }
+    ```
+
+  - `401 Unauthorized`: No active session found
+
+  ## Notes
+
+  - The history before an item was linked is rebuilt from its transactions when it is first synced (investment accounts are held flat); see the webhooks service README.
+}

@@ -80,6 +80,39 @@ test.describe("data webhooks (sandbox to receiver)", () => {
     expect(transactions.some((t) => t.category?.primary)).toBe(true);
   });
 
+  test("syncing a new item's transactions also fills in its balance history", async ({
+    request,
+  }) => {
+    // Arrange
+    const creds = requireSandboxCredentials();
+    const { cookie } = await createAuthedUser(request);
+    const { accessToken } = await linkItemWithWebhook(request, cookie, creds);
+
+    // Act + Assert: the handler backfills the history after each sync. A new
+    // item has no transactions for its first few seconds, so keep asking Plaid
+    // to sync until the history is there.
+    let reads = 0;
+    const series = await waitFor(
+      async () => {
+        if (reads++ % 8 === 0) {
+          await fireSandboxWebhook(
+            creds,
+            accessToken,
+            "TRANSACTIONS",
+            "SYNC_UPDATES_AVAILABLE",
+          );
+        }
+        const res = await request.get("/api/accounts/net-worth?range=all", {
+          headers: withSession(cookie),
+        });
+        return (await res.json()).data.series as Array<{ points: unknown[] }>;
+      },
+      (list) => list.length > 0 && list[0].points.length > 1,
+      "the balance history to be filled in",
+    );
+    expect(series[0].points.length).toBeGreaterThan(1);
+  });
+
   test("LIABILITIES DEFAULT_UPDATE makes the receiver refresh the item's liabilities", async ({
     request,
   }) => {

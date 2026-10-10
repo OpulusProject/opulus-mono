@@ -31,6 +31,7 @@ export * from "./types/dto/index.js";
 
 // Util exports
 export * from "./utils/balanceHistory.js";
+export * from "./utils/day.js";
 export * from "./utils/errors.js";
 export * from "./utils/logger.js";
 export * from "./utils/plaidErrors.js";

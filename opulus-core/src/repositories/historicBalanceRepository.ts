@@ -40,6 +40,37 @@ class HistoricBalanceRepository {
   }
 
   /**
+   * All of a user's balance history, oldest first. A user has about one row per
+   * account per day, so this stays small.
+   * @param userId - The user
+   * @throws AppError if database error occurs
+   */
+  async getAllByUserId(userId: string) {
+    try {
+      const rows = await this.prisma.accountHistoricBalance.findMany({
+        where: { userId },
+        select: { accountId: true, date: true, balanceCurrent: true },
+        orderBy: { date: "asc" },
+      });
+      return rows.map((row) => ({
+        accountId: row.accountId,
+        date: row.date.toISOString().slice(0, 10),
+        balanceCurrent: row.balanceCurrent.toNumber(),
+      }));
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get balance history: ${error.message}`
+          : "An unexpected error occurred while fetching balance history";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
    * Replace some accounts' balance history with these rows
    * @param accountIds - The accounts whose existing history is cleared first
    * @param rows - The history to store
