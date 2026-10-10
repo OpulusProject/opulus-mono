@@ -12,6 +12,7 @@ import {
   Products,
   TransactionsRefreshRequest,
   TransactionsSyncRequest,
+  TransactionsUpdateStatus,
   UserCreateRequest,
 } from "plaid";
 import plaidClient from "../client/plaid.js";
@@ -310,6 +311,7 @@ class PlaidGateway {
     const allRemoved: any[] = [];
     let nextCursor: string | null = cursor;
     let originalCursor: string | null = cursor; // Track original cursor for pagination restarts
+    let transactionsUpdateStatus: TransactionsUpdateStatus | undefined;
 
     try {
       // Pagination loop - continue until has_more is false
@@ -320,8 +322,14 @@ class PlaidGateway {
         };
 
         const response = await this.plaid.transactionsSync(request);
-        const { added, modified, removed, has_more, next_cursor } =
-          response.data;
+        const {
+          added,
+          modified,
+          removed,
+          has_more,
+          next_cursor,
+          transactions_update_status,
+        } = response.data;
 
         // Accumulate transactions
         allAdded.push(...(added || []));
@@ -333,8 +341,9 @@ class PlaidGateway {
           originalCursor = next_cursor;
         }
 
-        // Update next cursor
+        // Keep the last page's cursor and update status
         nextCursor = next_cursor ?? null;
+        transactionsUpdateStatus = transactions_update_status;
 
         // If no more pages, break
         if (!has_more) {
@@ -347,6 +356,11 @@ class PlaidGateway {
         modified: allModified,
         removed: allRemoved,
         nextCursor,
+        /**
+         * How far Plaid's pull for the item has got, as of the last page:
+         * HISTORICAL_UPDATE_COMPLETE once all of its history is loaded.
+         */
+        transactionsUpdateStatus,
       };
     } catch (error) {
       // If pagination fails, Plaid docs say to restart from original cursor

@@ -120,6 +120,22 @@ A **temporary share** is perfect for local development and testing. The URL chan
    [WEBHOOK QUEUE] Successfully processed TRANSACTIONS:SYNC_UPDATES_AVAILABLE
    ```
 
+### Balance history
+
+After every transactions sync the handler runs core's `backfillBalanceHistory`,
+passing the sync's `transactions_update_status`. It does nothing until that is
+`HISTORICAL_UPDATE_COMPLETE` (Plaid has loaded all of the item's history; the
+webhook for the historical pull finishing triggers one more sync, which sees
+it). Then it fills in the item's `account_historic_balance` rows for the days
+before it was linked, by undoing its transactions from today's balances
+(investments stay flat), once: an item that already has history is left alone.
+Relinking an item creates new accounts, and so new history.
+
+A failure fails the job, and the queue retries it (3 attempts, with backoff);
+syncing again is harmless, so the retry is effectively just the backfill. If it
+still fails, the item gets its history the next time it syncs, or from
+`reconcile`, which runs the backfill too.
+
 ## Troubleshooting
 
 ### Queue Not Processing

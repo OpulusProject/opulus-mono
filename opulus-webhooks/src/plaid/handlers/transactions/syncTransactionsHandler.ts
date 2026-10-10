@@ -1,5 +1,10 @@
 import { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
-import { AppError, logger, syncItemTransactions } from "@opulus/core";
+import {
+  AppError,
+  backfillBalanceHistory,
+  logger,
+  syncItemTransactions,
+} from "@opulus/core";
 
 /**
  * Handle transaction sync webhook events.
@@ -12,7 +17,18 @@ export async function syncTransactionsHandler(
   }
 
   try {
-    await syncItemTransactions({ plaidItemId: event.item_id });
+    const { transactionsUpdateStatus } = await syncItemTransactions({
+      plaidItemId: event.item_id,
+    });
+    // Fills in the item's balance history once Plaid has loaded all of its
+    // transactions, and does nothing until then or when it already has history.
+    // A failure fails the job and the queue retries it: syncing again is
+    // harmless (nothing new to fetch, and the status is still reported), so
+    // the retry is effectively just the backfill.
+    await backfillBalanceHistory({
+      plaidItemId: event.item_id,
+      transactionsUpdateStatus,
+    });
   } catch (error) {
     logger.error(
       {

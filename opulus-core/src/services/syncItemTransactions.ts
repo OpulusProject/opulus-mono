@@ -18,6 +18,11 @@ export interface SyncItemTransactionsResult {
   added: number;
   modified: number;
   removed: number;
+  /**
+   * How far Plaid's pull for the item has got: HISTORICAL_UPDATE_COMPLETE once
+   * all of its history is loaded.
+   */
+  transactionsUpdateStatus: string | undefined;
 }
 
 /**
@@ -31,8 +36,11 @@ export async function syncItemTransactions(
 ): Promise<SyncItemTransactionsResult> {
   const item = await itemRepository.getByPlaidItemId(params.plaidItemId);
 
-  const { added, modified, removed, nextCursor } =
-    await plaidGateway.transactionsSync(item.accessToken, item.transactionCursor);
+  const { added, modified, removed, nextCursor, transactionsUpdateStatus } =
+    await plaidGateway.transactionsSync(
+      item.accessToken,
+      item.transactionCursor
+    );
 
   // Only the accounts these transactions belong to need looking up.
   const accountIds = await accountRepository.getIdsByProviderAccountIds(
@@ -82,6 +90,7 @@ export async function syncItemTransactions(
     added: added.length,
     modified: modified.length,
     removed: removed.length,
+    transactionsUpdateStatus,
   };
 
   logger.info(
@@ -90,6 +99,7 @@ export async function syncItemTransactions(
       added_count: result.added,
       modified_count: result.modified,
       removed_count: result.removed,
+      transactions_update_status: transactionsUpdateStatus,
     },
     "Transactions synced successfully"
   );
