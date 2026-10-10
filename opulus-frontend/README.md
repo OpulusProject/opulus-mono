@@ -38,7 +38,8 @@ opulus-frontend/
 │   │   ├── LaunchLink/     # Plaid Link wrapper
 │   │   ├── List/           # List, ListHeader, ListGroup, ListRow, ListFooter, ListEmpty
 │   │   ├── MultiSelectMenu/ # Header button that opens checkboxes to pick several
-│   │   └── PageHeader/     # Page title and actions
+│   │   ├── PageHeader/     # Page title and actions
+│   │   └── TransactionRow/ # One transaction as a list row (Dashboard, Transactions)
 │   ├── hooks/               # React hooks, one folder per resource
 │   │   ├── accounts/       # Accounts hooks
 │   │   ├── auth/           # Authentication hooks
