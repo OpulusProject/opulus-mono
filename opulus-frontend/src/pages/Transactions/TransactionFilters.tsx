@@ -1,4 +1,4 @@
-import { ChevronDown, ListFilter } from 'lucide-react';
+import { ChevronDown, ChevronRight, ListFilter } from 'lucide-react';
 import React from 'react';
 
 import {
@@ -11,6 +11,7 @@ import {
   Calendar,
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuSub,
@@ -18,6 +19,7 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
   Popover,
+  PopoverAnchor,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui';
@@ -196,6 +198,8 @@ interface DatePanelProps {
   onChange: TransactionFiltersProps['onChange'];
   /** Called after a preset is chosen, e.g. to close the popover. */
   onPreset?: () => void;
+  /** Always put the presets above the calendar, in a fixed narrow width. */
+  stacked?: boolean;
 }
 
 /** The presets beside a range calendar. */
@@ -203,6 +207,7 @@ const DatePanel: React.FC<DatePanelProps> = ({
   search,
   onChange,
   onPreset,
+  stacked,
 }) => {
   const choose = (range: RangePreset | undefined) => {
     onChange({ range, from: undefined, to: undefined });
@@ -210,11 +215,15 @@ const DatePanel: React.FC<DatePanelProps> = ({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row">
+    <div className={cn('flex flex-col', stacked ? 'w-72' : 'sm:flex-row')}>
       <div
         role="radiogroup"
         aria-label="Date range"
-        className="flex flex-wrap gap-1 border-b p-2 sm:w-40 sm:shrink-0 sm:flex-col sm:flex-nowrap sm:border-r sm:border-b-0"
+        className={cn(
+          'flex flex-wrap gap-1 border-b p-2',
+          !stacked &&
+            'sm:w-40 sm:shrink-0 sm:flex-col sm:flex-nowrap sm:border-r sm:border-b-0'
+        )}
       >
         <PresetItem selected={!search.range} onClick={() => choose(undefined)}>
           Any time
@@ -273,60 +282,94 @@ const CollapsedFilters: React.FC<CollapsedFiltersProps> = ({
   const date = dateValue(search);
   const institutionCount = search.institution?.length ?? 0;
   const categoryCount = search.category?.length ?? 0;
-  const isSet = !!date || institutionCount > 0 || categoryCount > 0;
+
+  const [dateOpen, setDateOpen] = React.useState(false);
+  // Set when Date is picked: once the menu has closed, the date popover opens
+  // in its place instead of the focus going back to the button.
+  const openingDate = React.useRef(false);
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={cn('text-muted-foreground', isSet && 'text-foreground')}
-        >
-          <ListFilter />
-          <span className={cn(isSet && 'font-semibold')}>Filters</span>
-          {isSet && (
-            <span
-              aria-hidden
-              className="bg-primary size-1.5 shrink-0 rounded-full"
-            />
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="min-w-48">
-        <DropdownMenuLabel>Filter by</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <FilterSubmenu label="Date" value={date}>
-          <DropdownMenuSubContent className="max-w-[calc(100vw-2rem)] p-0">
-            <DatePanel search={search} onChange={onChange} />
-          </DropdownMenuSubContent>
-        </FilterSubmenu>
-        <FilterSubmenu
-          label="Institution"
-          value={institutionCount ? `${institutionCount} selected` : undefined}
-        >
-          <DropdownMenuSubContent className="max-h-80 min-w-56 overflow-y-auto">
-            <MultiSelectItems
-              options={institutions}
-              selected={search.institution ?? []}
-              onChange={onChangeInstitutions}
-            />
-          </DropdownMenuSubContent>
-        </FilterSubmenu>
-        <FilterSubmenu
-          label="Category"
-          value={categoryCount ? `${categoryCount} selected` : undefined}
-        >
-          <DropdownMenuSubContent className="max-h-80 min-w-56 overflow-y-auto">
-            <MultiSelectItems
-              options={categories}
-              selected={search.category ?? []}
-              onChange={onChangeCategories}
-            />
-          </DropdownMenuSubContent>
-        </FilterSubmenu>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    // A date range does not fit in a side submenu on a phone, so Date opens a
+    // popover under the button instead.
+    <Popover open={dateOpen} onOpenChange={setDateOpen}>
+      <PopoverAnchor asChild>
+        <div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-muted-foreground"
+              >
+                <ListFilter />
+                Filters
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="min-w-48"
+              onCloseAutoFocus={(event) => {
+                if (openingDate.current) {
+                  event.preventDefault();
+                  openingDate.current = false;
+                  // After the menu's own focus handling is done.
+                  setTimeout(() => setDateOpen(true), 50);
+                }
+              }}
+            >
+              <DropdownMenuLabel>Filter by</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => {
+                  openingDate.current = true;
+                }}
+              >
+                <FilterLabel label="Date" value={date} />
+                <ChevronRight className="text-muted-foreground size-4" />
+              </DropdownMenuItem>
+              <FilterSubmenu
+                label="Institution"
+                value={
+                  institutionCount ? `${institutionCount} selected` : undefined
+                }
+              >
+                <DropdownMenuSubContent className="max-h-80 min-w-56 overflow-y-auto">
+                  <MultiSelectItems
+                    options={institutions}
+                    selected={search.institution ?? []}
+                    onChange={onChangeInstitutions}
+                  />
+                </DropdownMenuSubContent>
+              </FilterSubmenu>
+              <FilterSubmenu
+                label="Category"
+                value={categoryCount ? `${categoryCount} selected` : undefined}
+              >
+                <DropdownMenuSubContent className="max-h-80 min-w-56 overflow-y-auto">
+                  <MultiSelectItems
+                    options={categories}
+                    selected={search.category ?? []}
+                    onChange={onChangeCategories}
+                  />
+                </DropdownMenuSubContent>
+              </FilterSubmenu>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </PopoverAnchor>
+      <PopoverContent
+        align="end"
+        collisionPadding={16}
+        className="w-max max-w-[var(--radix-popover-content-available-width)] p-0"
+      >
+        <DatePanel
+          search={search}
+          onChange={onChange}
+          onPreset={() => setDateOpen(false)}
+          stacked
+        />
+      </PopoverContent>
+    </Popover>
   );
 };
 
@@ -345,15 +388,23 @@ const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
 }) => (
   <DropdownMenuSub>
     <DropdownMenuSubTrigger>
-      <span className={cn(value && 'font-semibold')}>{label}</span>
-      {value && (
-        <span className="text-muted-foreground ml-auto pl-4 text-xs">
-          {value}
-        </span>
-      )}
+      <FilterLabel label={label} value={value} />
     </DropdownMenuSubTrigger>
     {children}
   </DropdownMenuSub>
+);
+
+/** A row of the collapsed menu: the filter's name and what it is set to. */
+const FilterLabel: React.FC<{ label: string; value?: string }> = ({
+  label,
+  value,
+}) => (
+  <>
+    <span className={cn('flex-1', value && 'font-semibold')}>{label}</span>
+    {value && (
+      <span className="text-muted-foreground pl-4 text-xs">{value}</span>
+    )}
+  </>
 );
 
 interface PresetItemProps extends React.ComponentProps<'button'> {
