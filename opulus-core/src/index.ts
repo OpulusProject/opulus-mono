@@ -29,6 +29,7 @@ export * from "./types/dto/index.js";
 
 // Util exports
 export * from "./utils/errors.js";
+export * from "./utils/itemTokenCrypto.js";
 export * from "./utils/logger.js";
 export * from "./utils/plaidErrors.js";
 

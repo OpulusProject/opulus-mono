@@ -2,6 +2,10 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import type { PlaidErrorType, Item as PlaidItem } from "plaid";
 import prisma from "../client/prisma.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
+import {
+  decryptItemToken,
+  encryptItemToken,
+} from "../utils/itemTokenCrypto.js";
 import { accountDtoSelect } from "./accountRepository.js";
 
 export interface CreateItemData {
@@ -83,6 +87,18 @@ export function normalizePlaidItem(
 }
 
 /**
+ * Give a row read from the database its plaintext access token.
+ *
+ * `Item.accessToken` is stored encrypted (see utils/itemTokenCrypto.ts). The
+ * repository is the only place that converts: every write encrypts and every
+ * read that returns the token decrypts, so callers only ever see plaintext and
+ * nothing else needs to know about the storage format.
+ */
+function withPlainToken<T extends { accessToken: string }>(row: T): T {
+  return { ...row, accessToken: decryptItemToken(row.accessToken) };
+}
+
+/**
  * Repository for Plaid items
  * Handles item creation and retrieval
  */
@@ -101,7 +117,10 @@ class ItemRepository {
     client: Prisma.TransactionClient = this.prisma
   ) {
     try {
-      return await client.item.create({ data });
+      const row = await client.item.create({
+        data: { ...data, accessToken: encryptItemToken(data.accessToken) },
+      });
+      return withPlainToken(row);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -127,9 +146,10 @@ class ItemRepository {
    */
   async getById(id: string) {
     try {
-      return await this.prisma.item.findUniqueOrThrow({
+      const item = await this.prisma.item.findUniqueOrThrow({
         where: { id },
       });
+      return withPlainToken(item);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -186,7 +206,7 @@ class ItemRepository {
         where: { plaidItemId },
       });
 
-      return item;
+      return withPlainToken(item);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -219,14 +239,22 @@ class ItemRepository {
    */
   async update(
     itemId: string,
-    data: Prisma.ItemUpdateInput,
+    data: Omit<Prisma.ItemUpdateInput, "accessToken"> & {
+      accessToken?: string;
+    },
     client: Prisma.TransactionClient = this.prisma
   ) {
     try {
-      return await client.item.update({
+      const row = await client.item.update({
         where: { id: itemId },
-        data,
+        data: {
+          ...data,
+          ...(data.accessToken !== undefined
+            ? { accessToken: encryptItemToken(data.accessToken) }
+            : {}),
+        },
       });
+      return withPlainToken(row);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -255,9 +283,10 @@ class ItemRepository {
    */
   async delete(itemId: string, client: Prisma.TransactionClient = this.prisma) {
     try {
-      return await client.item.delete({
+      const row = await client.item.delete({
         where: { id: itemId },
       });
+      return withPlainToken(row);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new AppError(`Database error: ${error.message}`, 500, error.code);
@@ -308,6 +337,8 @@ class ItemRepository {
     try {
       const items = await this.prisma.item.findMany({
         where: { userId },
+        // The list is for display; it never needs the token.
+        omit: { accessToken: true },
         include: {
           accounts: { select: accountDtoSelect },
         },
@@ -327,6 +358,44 @@ class ItemRepository {
           ? `Failed to get items: ${error.message}`
           : "An unexpected error occurred while fetching items";
       throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * Encrypt every access token still stored as legacy plaintext. Idempotent:
+   * rows already encrypted are skipped, so it is safe to re-run. Used by the
+   * backfill script only.
+   * @param options.dryRun - Count the rows that would change without writing
+   * @returns How many legacy rows were found and how many were encrypted
+   * @throws AppError if database error occurs
+   */
+  async encryptLegacyAccessTokens(options: { dryRun?: boolean } = {}) {
+    try {
+      const rows = await this.prisma.item.findMany({
+        where: { NOT: { accessToken: { startsWith: "enc:" } } },
+        select: { id: true, accessToken: true },
+      });
+
+      let encrypted = 0;
+      if (!options.dryRun) {
+        for (const row of rows) {
+          // Guard on the value we read so a concurrent writer is never clobbered.
+          const result = await this.prisma.item.updateMany({
+            where: { id: row.id, accessToken: row.accessToken },
+            data: { accessToken: encryptItemToken(row.accessToken) },
+          });
+          encrypted += result.count;
+        }
+      }
+      return { legacy: rows.length, encrypted };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError("Failed to encrypt legacy item access tokens", 500);
     }
   }
 }

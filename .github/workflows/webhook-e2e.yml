@@ -46,6 +46,8 @@ jobs:
       DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
       TEST_DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
       BETTER_AUTH_SECRET: ci-webhook-e2e-secret-not-for-production
+      # Test-only key, shared by the backend, the receiver and the tests.
+      ITEM_TOKEN_ENCRYPTION_KEY: Y2ktdGVzdC1vbmx5LW5vdC1hLXJlYWwta2V5LTAwMDA=
       CLIENT_URL: http://localhost:5173
       NODE_ENV: test
       PORT: "8080"

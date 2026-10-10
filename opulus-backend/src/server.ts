@@ -4,6 +4,7 @@ import "dotenv/config";
 import { auth } from "@/auth.js";
 import router from "@/routes/index.js";
 import {
+  assertItemTokenEncryptionKey,
   config,
   errorHandler,
   logger,
@@ -15,6 +16,9 @@ import { toNodeHandler } from "better-auth/node";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import express, { json, urlencoded } from "express";
+
+// Fail at boot, not on the first item, if the token encryption key is bad.
+assertItemTokenEncryptionKey();
 
 const app = express();
 

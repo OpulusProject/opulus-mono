@@ -4,6 +4,7 @@ export default defineConfig({
   entry: {
     server: "src/server.ts",
     reconcile: "src/scripts/reconcile.ts",
+    encryptItemTokens: "src/scripts/encryptItemTokens.ts",
   },
   format: ["esm"],
   target: "es2022",

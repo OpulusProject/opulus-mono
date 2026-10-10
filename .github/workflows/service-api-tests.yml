@@ -45,6 +45,9 @@ jobs:
       # this same isolated CI database via the db helper; reads stay over HTTP.
       TEST_DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
       BETTER_AUTH_SECRET: ci-service-api-tests-secret-not-for-production
+      # Test-only key (the base64 of a fixed 32-character string). Encrypts
+      # nothing of value; production sets its own.
+      ITEM_TOKEN_ENCRYPTION_KEY: Y2ktdGVzdC1vbmx5LW5vdC1hLXJlYWwta2V5LTAwMDA=
       CLIENT_URL: http://localhost:5173
       NODE_ENV: test
       PORT: "8080"
@@ -110,6 +113,9 @@ jobs:
           echo "Backend did not become healthy in time" >&2
           exit 1
 
+      - name: Run core unit tests
+        run: pnpm --filter @opulus/tests test:unit-core
+
       - name: Run backend service-api tests
         run: pnpm --filter @opulus/tests test:services-backend
 
@@ -124,6 +130,8 @@ jobs:
     env:
       DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
       NODE_ENV: test
+      # Test-only key, as in the backend job above.
+      ITEM_TOKEN_ENCRYPTION_KEY: Y2ktdGVzdC1vbmx5LW5vdC1hLXJlYWwta2V5LTAwMDA=
       WEBHOOK_PORT: "8081"
       REDIS_HOST: localhost
       REDIS_PORT: "6379"

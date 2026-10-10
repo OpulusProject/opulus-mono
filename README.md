@@ -182,6 +182,7 @@ containers have no `.env` and env comes from the platform — no symlinks there.
 | `REDIS_PORT`           | `6379`                                                               | Webhook queue Redis port                  |
 | `BETTER_AUTH_SECRET`   | *none*                                                               | Generate with `openssl rand -base64 32`   |
 | `BETTER_AUTH_BASE_URL` | `http://localhost:8080`                                              | Backend auth base URL                     |
+| `ITEM_TOKEN_ENCRYPTION_KEY` | *none*                                                          | Required. `openssl rand -base64 32`; encrypts Plaid access tokens at rest |
 | `PLAID_CLIENT_ID`      | *sandbox client id*                                                  | Plaid sandbox credential                  |
 | `PLAID_SECRET`         | *sandbox secret*                                                     | Plaid sandbox credential                  |
 | `PLAID_ENV`            | `sandbox`                                                            | Keep public/demo work in sandbox          |

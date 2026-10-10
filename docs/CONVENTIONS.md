@@ -153,6 +153,14 @@ with the schemas, so a field that isn't in the schema fails a test.
 - Schema changes go in a Prisma migration. A renaming migration should be
   hand-written so data is kept, and `prisma migrate diff` against the schema
   should report no difference afterwards.
+- `Item.accessToken` (Plaid's access token) is stored encrypted: `itemRepository`
+  encrypts on every write and decrypts on every read that returns it, so
+  services see plaintext and never handle the storage format. Read and write
+  items only through the repository (a raw Prisma write would store plaintext),
+  never log a token, and never add it to a DTO. The key is
+  `ITEM_TOKEN_ENCRYPTION_KEY` (32 bytes, base64, required at startup). A value
+  without the `enc:` prefix is a legacy plaintext token: still readable, never
+  written. See `opulus-core/src/utils/itemTokenCrypto.ts`.
 - Deleting an account deletes its transactions and liabilities (cascade).
   Disconnecting an institution and deleting its data are the same operation.
 
@@ -204,6 +212,7 @@ with the schemas, so a field that isn't in the schema fails a test.
 
 | Suite | What it covers | Needs |
 | --- | --- | --- |
+| `unit/core` | Pure functions in core that no endpoint can observe (the access-token crypto). The one suite that isn't black-box over HTTP. | Nothing |
 | `services/backend`, `services/webhooks` | The service's own behaviour over HTTP: auth, validation, response shape. No third party. | A running service and `TEST_DATABASE_URL` |
 | `integration/backend` | Real round-trips through Plaid's sandbox | Sandbox credentials |
 | `integration/webhooks` | Plaid's sandbox delivering real webhooks to the real receiver | A public tunnel to the receiver, plus the above |
@@ -227,7 +236,7 @@ Rules that apply to all of them:
 
 | Workflow | Runs | Required to merge |
 | --- | --- | --- |
-| Service API Tests | Backend and webhooks service suites | "Backend service-api tests", "Webhooks service-api tests" |
+| Service API Tests | Core unit specs, then the backend and webhooks service suites | "Backend service-api tests", "Webhooks service-api tests" |
 | Integration Tests | Plaid sandbox suite, plus nightly | "Backend integration tests" |
 | Type Check | `tsc --noEmit` in every package | No |
 | Lint | `pnpm -r lint` | No |
