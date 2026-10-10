@@ -21,6 +21,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
+  SidebarTrigger,
 } from '@/components/ui';
 import { useSession } from '@/hooks/auth/useSession';
 
@@ -52,15 +54,15 @@ const navMain: NavItem[] = [
     url: '/credit-and-loans',
     icon: CreditCard,
   },
+];
+
+const navSecondary: NavItem[] = [
   {
     title: 'Settings',
     url: '/settings',
     icon: Settings,
     items: [{ title: 'Connections', url: '/settings/connections' }],
   },
-];
-
-const navSecondary = [
   {
     title: 'Get Help',
     url: '#',
@@ -85,10 +87,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       };
 
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
+    <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
-          <SidebarMenuItem>
+          {/* The collapse button sits beside the logo, or under it when only icons show. */}
+          <SidebarMenuItem className="flex items-center gap-1 group-data-[collapsible=icon]:flex-col">
             <SidebarMenuButton
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
@@ -98,6 +101,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <span className="text-base font-semibold">Opulus</span>
               </Link>
             </SidebarMenuButton>
+            <SidebarTrigger className="shrink-0" />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
@@ -108,6 +112,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter>
         <NavUser user={user} />
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }

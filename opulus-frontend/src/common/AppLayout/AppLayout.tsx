@@ -11,9 +11,19 @@ interface AppLayoutProps {
   section?: string;
 }
 
+/**
+ * Whether the sidebar was left open, from the cookie that `SidebarProvider`
+ * writes when it is toggled. Each page renders its own `AppLayout`, so without
+ * this the sidebar would open again on every navigation.
+ */
+function wasSidebarOpen() {
+  return !document.cookie.split('; ').includes('sidebar_state=false');
+}
+
 export function AppLayout({ children, title, section }: AppLayoutProps) {
   return (
     <SidebarProvider
+      defaultOpen={wasSidebarOpen()}
       style={
         {
           '--sidebar-width': '18rem',
