@@ -147,3 +147,25 @@ export async function createSandboxItem(
   };
   return { itemId: body.data.itemId };
 }
+
+/**
+ * Whether Plaid still serves the item behind this access token (/item/get).
+ * After /item/remove Plaid answers with an error (INVALID_ACCESS_TOKEN or
+ * ITEM_NOT_FOUND), so `false` is evidence the removal really happened on
+ * Plaid's side. Takes the Plaid access token read from the test DB.
+ */
+export async function plaidStillServesItem(
+  creds: SandboxCredentials,
+  accessToken: string,
+): Promise<boolean> {
+  const res = await fetch(`${PLAID_SANDBOX_URL}/item/get`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_id: creds.clientId,
+      secret: creds.secret,
+      access_token: accessToken,
+    }),
+  });
+  return res.ok;
+}
