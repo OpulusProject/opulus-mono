@@ -313,6 +313,95 @@ test.describe("GET /api/accounts/net-worth", () => {
     expect(none.series[0].points).toEqual([{ date: day(), netWorth: 1000 }]);
   });
 
+  test("limits to the accounts given with accountId, which may be repeated", async ({
+    request,
+  }) => {
+    // Arrange: three accounts worth 100, 20 and 3.
+    const { cookie, userId } = await createAuthedUser(request);
+    const small = await seedItemWithAccount(userId, {
+      account: { balanceCurrent: 3 },
+    });
+    const medium = await seedItemWithAccount(userId, {
+      account: { balanceCurrent: 20 },
+    });
+    await seedItemWithAccount(userId, { account: { balanceCurrent: 100 } });
+
+    // Act
+    const one = await getNetWorth(
+      request,
+      cookie,
+      `?range=1w&accountId=${medium.accountId}`,
+    );
+    const two = await getNetWorth(
+      request,
+      cookie,
+      `?range=1w&accountId=${small.accountId}&accountId=${medium.accountId}`,
+    );
+
+    // Assert
+    expect(one.series[0].points.at(-1)?.netWorth).toBe(20);
+    expect(two.series[0].points.at(-1)?.netWorth).toBe(23);
+  });
+
+  test("ignores an accountId that is not the user's, leaving nothing to add up", async ({
+    request,
+  }) => {
+    // Arrange: another user's account, and the user's own.
+    const other = await createAuthedUser(request);
+    const theirs = await seedItemWithAccount(other.userId, {
+      account: { balanceCurrent: 9999 },
+    });
+    const { cookie, userId } = await createAuthedUser(request);
+    const mine = await seedItemWithAccount(userId, {
+      account: { balanceCurrent: 50 },
+    });
+
+    // Act
+    const onlyTheirs = await getNetWorth(
+      request,
+      cookie,
+      `?range=1w&accountId=${theirs.accountId}`,
+    );
+    const both = await getNetWorth(
+      request,
+      cookie,
+      `?range=1w&accountId=${theirs.accountId}&accountId=${mine.accountId}`,
+    );
+
+    // Assert
+    expect(onlyTheirs.series).toEqual([]);
+    expect(both.series[0].points.at(-1)?.netWorth).toBe(50);
+  });
+
+  test("applies the same fill rules to the accounts it is limited to", async ({
+    request,
+  }) => {
+    // Arrange: two accounts; only one has history.
+    const { cookie, userId } = await createAuthedUser(request);
+    const withHistory = await seedItemWithAccount(userId, {
+      account: { balanceCurrent: 1000 },
+    });
+    await seedItemWithAccount(userId, { account: { balanceCurrent: 500 } });
+    await seedHistoricBalances({
+      userId,
+      accountId: withHistory.accountId,
+      balances: [{ date: day(-1), balanceCurrent: 900 }],
+    });
+
+    // Act
+    const { series } = await getNetWorth(
+      request,
+      cookie,
+      `?range=1w&accountId=${withHistory.accountId}`,
+    );
+
+    // Assert: yesterday from its history, today live; the other account is out.
+    expect(series[0].points.slice(-2)).toEqual([
+      { date: day(-1), netWorth: 900 },
+      { date: day(), netWorth: 1000 },
+    ]);
+  });
+
   test("never includes another user's accounts or history", async ({
     request,
   }) => {
