@@ -12,6 +12,11 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
+      // The dto entry first: it must win over the broader '@opulus/core' alias.
+      '@opulus/core/dto': path.resolve(
+        __dirname,
+        '../opulus-core/src/types/dto/index.ts'
+      ),
       '@opulus/core': path.resolve(__dirname, '../opulus-core/src/index.ts'),
     },
     dedupe: ['react', 'react-dom'],

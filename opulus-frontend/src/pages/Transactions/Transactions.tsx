@@ -1,7 +1,13 @@
 import { useMemo } from 'react';
 
 import { AppLayout } from '@/common/AppLayout';
-import { List, ListError, ListFooter, ListGroup } from '@/common/List';
+import {
+  List,
+  ListError,
+  ListFooter,
+  ListGroup,
+  ListHeader,
+} from '@/common/List';
 import { PageHeader } from '@/common/PageHeader';
 import { Button, Spinner } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
@@ -9,13 +15,17 @@ import { useInfiniteTransactions } from '@/hooks/transactions/useInfiniteTransac
 import { formatDay } from '@/utils/day';
 
 import { groupByDay, netLabel } from './transactionDays';
+import { TransactionFilters } from './TransactionFilters';
 import { TransactionRow } from './TransactionRow';
 import { TransactionSearch } from './TransactionSearch';
 import { TransactionsEmpty } from './TransactionsEmpty';
 import { useTransactionFilters } from './useTransactionFilters';
 
 export const Transactions: React.FC = () => {
-  const { query, filters, setQuery } = useTransactionFilters();
+  const { search, filters, update, hasFilters, clearFilters, isFiltered } =
+    useTransactionFilters();
+  const query = search.q ?? '';
+  const setQuery = (q: string) => update({ q });
 
   const list = useInfiniteTransactions(filters);
   const items = useItems();
@@ -41,11 +51,7 @@ export const Transactions: React.FC = () => {
     );
   } else if (transactions.length === 0) {
     content = (
-      <TransactionsEmpty
-        query={query}
-        connections={connections}
-        onClearSearch={() => setQuery('')}
-      />
+      <TransactionsEmpty isFiltered={isFiltered} connections={connections} />
     );
   } else {
     // The pages are an unbroken run from the newest transaction, so every day is
@@ -101,6 +107,32 @@ export const Transactions: React.FC = () => {
           isLoading={list.isLoading}
           isRefreshing={list.isPlaceholderData}
         >
+          <ListHeader
+            title={
+              list.isLoading
+                ? 'Transactions'
+                : `${total} ${total === 1 ? 'transaction' : 'transactions'}`
+            }
+            titleAction={
+              hasFilters ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={clearFilters}
+                >
+                  Clear filters
+                </Button>
+              ) : undefined
+            }
+            action={({ width }) => (
+              <TransactionFilters
+                search={search}
+                width={width}
+                onChange={update}
+              />
+            )}
+          />
           {content}
         </List>
       </div>

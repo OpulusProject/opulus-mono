@@ -6,6 +6,8 @@ export const QUERY_SERIALIZER = { indexes: null } as const;
 /** The filters for a list of transactions. */
 export interface TransactionFilterParams {
   itemId?: string;
+  /** Only these connections (institutions). */
+  itemIds?: string[];
   accountIds?: string[];
   categories?: Array<TransactionCategory | 'UNCATEGORIZED'>;
   search?: string;
@@ -30,7 +32,7 @@ export interface TransactionListParams extends TransactionFilterParams {
 /** Turn the params into the API's query values, leaving out the unset ones. */
 export function toQueryParams(params: TransactionListParams = {}) {
   return {
-    itemId: params.itemId,
+    itemId: params.itemIds?.length ? params.itemIds : params.itemId,
     accountId: params.accountIds?.length ? params.accountIds : params.accountId,
     category: params.categories?.length ? params.categories : undefined,
     search: params.search || undefined,

@@ -37,6 +37,7 @@ opulus-frontend/
 │   │   ├── AppSidebar/      # Sidebar navigation
 │   │   ├── LaunchLink/     # Plaid Link wrapper
 │   │   ├── List/           # List, ListHeader, ListGroup, ListRow, ListFooter, ListEmpty
+│   │   ├── MultiSelectMenu/ # Header button that opens checkboxes to pick several
 │   │   └── PageHeader/     # Page title and actions
 │   ├── hooks/               # React hooks, one folder per resource
 │   │   ├── accounts/       # Accounts hooks
@@ -53,7 +54,7 @@ opulus-frontend/
 │   │   ├── CreditAndLoans/ # Credit cards and loans
 │   │   ├── Dashboard/      # Dashboard page
 │   │   ├── Login/          # Login page
-│   │   ├── Transactions/   # Searchable list of transactions
+│   │   ├── Transactions/   # Searchable, filterable list of transactions
 │   │   └── TwoFactor/     # 2FA page
 │   ├── routes/              # TanStack Router routes (_authenticated/ is the route guard)
 │   ├── types/              # TypeScript types
@@ -71,7 +72,7 @@ Uses TanStack Router for file-based routing:
 - `/` - Dashboard (protected)
 - `/login` - Login page
 - `/accounts` - Accounts management (protected)
-- `/transactions` - Searchable list of transactions, the search in the URL (`?q=uber`) (protected)
+- `/transactions` - Searchable, filterable list of transactions; the search and filters are in the URL, e.g. `?q=uber` (protected)
 - `/two-factor` - 2FA setup (protected)
 - `*` - 404 page
 

@@ -29,6 +29,10 @@ everything from `@/common/List`.
 - **Parts must be direct children of `List`.** `List` wraps each child in an
   `li`, so a part inside a fragment is wrapped as one item. Pass an array (with
   `key`s) instead of a fragment.
+- **To change a header's controls by its width, pass `action` a function**
+  (`action={({ width }) => ...}`) rather than using container queries. Only the
+  version you return is mounted, so a menu open in the one that goes away
+  closes with it instead of jumping to the corner of the page.
 - **Don't hand-roll empty or error states.** Use `ListEmpty` / `ListError`.
 - **Empty logic with more than one case gets its own component** next to the
   page, e.g. `pages/Transactions/TransactionsEmpty.tsx`: it takes the facts

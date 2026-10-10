@@ -12,6 +12,9 @@ import { cn } from '@/lib/utils';
  */
 export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
   ({ title, titleAction, trailingTitle, action, expanded, ...props }, ref) => {
+    const innerRef = React.useRef<HTMLElement>(null);
+    React.useImperativeHandle(ref, () => innerRef.current as HTMLElement);
+    const width = useElementWidth(innerRef, typeof action === 'function');
     const clickable = !!props.onClick;
     const Comp = (clickable ? 'button' : 'div') as React.ElementType<
       React.HTMLAttributes<HTMLElement> & {
@@ -22,7 +25,7 @@ export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
 
     return (
       <Comp
-        ref={ref}
+        ref={innerRef}
         {...(clickable && { type: 'button' })}
         {...(expanded !== undefined && { 'aria-expanded': expanded })}
         {...props}
@@ -46,7 +49,9 @@ export const ListHeader = React.forwardRef<HTMLElement, ListHeaderProps>(
 
         {action && (
           <div className="ml-auto flex shrink-0 flex-wrap items-center gap-1">
-            {action}
+            {typeof action === 'function'
+              ? width !== undefined && action({ width })
+              : action}
           </div>
         )}
 
@@ -76,8 +81,14 @@ export interface ListHeaderProps
   /**
    * Buttons or a menu at the right. Pass them as siblings or a fragment;
    * ListHeader spaces them in a row.
+   *
+   * Pass a function to choose what to show by the header's width (in px, not
+   * counting its padding): it is called with `{ width }` once that is known.
+   * Choosing in JS rather than with container queries means only one version
+   * is mounted, so a menu left open in the one that goes away closes with it
+   * instead of losing its anchor and jumping to the corner of the page.
    */
-  action?: React.ReactNode;
+  action?: React.ReactNode | ((header: { width: number }) => React.ReactNode);
   /**
    * Show an expand chevron: pointing down when true, right when false. Leave
    * undefined for a header that does not expand.
@@ -85,3 +96,23 @@ export interface ListHeaderProps
   expanded?: boolean;
 }
 ListHeader.displayName = 'ListHeader';
+
+/** The element's content width, once measured; only measures when `enabled`. */
+function useElementWidth(
+  ref: React.RefObject<HTMLElement | null>,
+  enabled: boolean
+) {
+  const [width, setWidth] = React.useState<number>();
+
+  React.useLayoutEffect(() => {
+    const element = ref.current;
+    if (!enabled || !element) return;
+    const observer = new ResizeObserver(([entry]) =>
+      setWidth(entry?.contentRect.width)
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [ref, enabled]);
+
+  return width;
+}
