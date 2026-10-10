@@ -22,7 +22,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  SidebarTrigger,
 } from '@/components/ui';
 import { useSession } from '@/hooks/auth/useSession';
 
@@ -90,8 +89,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
-          {/* The collapse button sits beside the logo, or under it when only icons show. */}
-          <SidebarMenuItem className="flex items-center gap-1 group-data-[collapsible=icon]:flex-col">
+          <SidebarMenuItem>
             <SidebarMenuButton
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
@@ -101,7 +99,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <span className="text-base font-semibold">Opulus</span>
               </Link>
             </SidebarMenuButton>
-            <SidebarTrigger className="shrink-0" />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
