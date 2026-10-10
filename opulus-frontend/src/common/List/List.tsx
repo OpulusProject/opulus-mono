@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 import { toListItems } from './items';
+import { ListHeader } from './ListHeader';
 
 interface ListProps {
   /** Names the list for screen readers. */
@@ -13,7 +14,10 @@ interface ListProps {
    * `ListEmpty`, each as its own child (not inside a fragment).
    */
   children?: React.ReactNode;
-  /** Show placeholder rows instead of the children while the data loads. */
+  /**
+   * Show placeholder rows instead of the children while the data loads. A
+   * `ListHeader` stays, since it holds controls that must remain available.
+   */
   isLoading?: boolean;
   /** Dim the rows while new ones load and the old ones are still showing. */
   isRefreshing?: boolean;
@@ -44,7 +48,18 @@ export const List: React.FC<ListProps> = ({
       isRefreshing && 'opacity-60 transition-opacity'
     )}
   >
-    {isLoading ? <ListSkeleton /> : toListItems(children)}
+    {isLoading ? (
+      <>
+        {toListItems(
+          React.Children.toArray(children).filter(
+            (child) => React.isValidElement(child) && child.type === ListHeader
+          )
+        )}
+        <ListSkeleton />
+      </>
+    ) : (
+      toListItems(children)
+    )}
   </ul>
 );
 
