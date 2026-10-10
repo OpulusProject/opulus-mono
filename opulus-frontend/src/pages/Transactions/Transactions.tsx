@@ -119,7 +119,11 @@ export const Transactions: React.FC = () => {
           isRefreshing={list.isPlaceholderData}
         >
           <ListHeader
-            title={list.isLoading ? 'Transactions' : `${total} transactions`}
+            title={
+              list.isLoading
+                ? 'Transactions'
+                : `${total} ${total === 1 ? 'transaction' : 'transactions'}`
+            }
             titleAction={
               hasFilters ? (
                 <Button

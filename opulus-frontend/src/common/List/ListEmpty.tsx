@@ -12,7 +12,8 @@ interface ListEmptyProps {
 
 /**
  * What a list shows when there is nothing to list (or it failed to load): a row
- * shaped like a `ListRow`, so the list is about the same height either way.
+ * shaped like a `ListRow`, so the list is about the same height either way. On
+ * a narrow screen the action wraps below the text.
  */
 export const ListEmpty: React.FC<ListEmptyProps> = ({
   icon: Icon,
@@ -20,11 +21,11 @@ export const ListEmpty: React.FC<ListEmptyProps> = ({
   description,
   action,
 }) => (
-  <div className="flex items-center gap-3 px-4 py-3">
+  <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
     <div className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-[10px]">
       <Icon className="size-4" />
     </div>
-    <div className="min-w-0 flex-1">
+    <div className="min-w-40 flex-1">
       <div className="text-sm font-medium">{title}</div>
       {description && (
         <div className="text-muted-foreground text-xs">{description}</div>

@@ -1,4 +1,9 @@
-import { ChevronDown, ChevronRight, ListFilter } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ListFilter,
+} from 'lucide-react';
 import React from 'react';
 
 import {
@@ -14,9 +19,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
   Popover,
   PopoverAnchor,
@@ -267,9 +269,14 @@ interface CollapsedFiltersProps {
   onChangeCategories: (change: (selected: string[]) => string[]) => void;
 }
 
+type CollapsedView = 'filters' | 'institution' | 'category';
+
 /**
  * All the filters behind one button, for a header too narrow for the menus
- * side by side: it lists the filters, and each opens its own choices.
+ * side by side. The menu lists the filters; picking Institution or Category
+ * swaps the list for that filter's choices (with a way back) rather than
+ * opening a submenu, which would not fit beside the menu on a phone. Date opens
+ * a popover under the button, as a calendar does not fit in a menu either.
  */
 const CollapsedFilters: React.FC<CollapsedFiltersProps> = ({
   search,
@@ -279,35 +286,46 @@ const CollapsedFilters: React.FC<CollapsedFiltersProps> = ({
   onChangeInstitutions,
   onChangeCategories,
 }) => {
-  const date = dateValue(search);
-  const institutionCount = search.institution?.length ?? 0;
-  const categoryCount = search.category?.length ?? 0;
-
+  const [view, setView] = React.useState<CollapsedView>('filters');
   const [dateOpen, setDateOpen] = React.useState(false);
   // Set when Date is picked: once the menu has closed, the date popover opens
   // in its place instead of the focus going back to the button.
   const openingDate = React.useRef(false);
 
+  const date = dateValue(search);
+  const institutionCount = search.institution?.length ?? 0;
+  const categoryCount = search.category?.length ?? 0;
+
+  const goTo = (next: CollapsedView) => (event: Event) => {
+    // Keep the menu open; only its contents change.
+    event.preventDefault();
+    setView(next);
+  };
+
   return (
-    // A date range does not fit in a side submenu on a phone, so Date opens a
-    // popover under the button instead.
     <Popover open={dateOpen} onOpenChange={setDateOpen}>
       <PopoverAnchor asChild>
         <div>
-          <DropdownMenu>
+          <DropdownMenu
+            onOpenChange={(open) => {
+              if (open) setView('filters');
+            }}
+          >
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
+                aria-label="Filters"
                 className="text-muted-foreground"
               >
                 <ListFilter />
-                Filters
+                {/* Icon only when the header is too narrow to keep Clear filters beside it. */}
+                <span className="hidden @xs:inline">Filters</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="min-w-48"
+              className="max-h-80 min-w-56 max-w-[var(--radix-dropdown-menu-content-available-width)] overflow-y-auto"
               onCloseAutoFocus={(event) => {
                 if (openingDate.current) {
                   event.preventDefault();
@@ -317,42 +335,60 @@ const CollapsedFilters: React.FC<CollapsedFiltersProps> = ({
                 }
               }}
             >
-              <DropdownMenuLabel>Filter by</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => {
-                  openingDate.current = true;
-                }}
-              >
-                <FilterLabel label="Date" value={date} />
-                <ChevronRight className="text-muted-foreground size-4" />
-              </DropdownMenuItem>
-              <FilterSubmenu
-                label="Institution"
-                value={
-                  institutionCount ? `${institutionCount} selected` : undefined
-                }
-              >
-                <DropdownMenuSubContent className="max-h-80 min-w-56 overflow-y-auto">
+              {view === 'filters' && (
+                <>
+                  <DropdownMenuLabel>Filter by</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onSelect={() => {
+                      openingDate.current = true;
+                    }}
+                  >
+                    <FilterLabel label="Date" value={date} />
+                    <ChevronRight className="text-muted-foreground size-4" />
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={goTo('institution')}>
+                    <FilterLabel
+                      label="Institution"
+                      value={
+                        institutionCount
+                          ? `${institutionCount} selected`
+                          : undefined
+                      }
+                    />
+                    <ChevronRight className="text-muted-foreground size-4" />
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={goTo('category')}>
+                    <FilterLabel
+                      label="Category"
+                      value={
+                        categoryCount ? `${categoryCount} selected` : undefined
+                      }
+                    />
+                    <ChevronRight className="text-muted-foreground size-4" />
+                  </DropdownMenuItem>
+                </>
+              )}
+              {view === 'institution' && (
+                <>
+                  <BackItem label="Institution" onSelect={goTo('filters')} />
                   <MultiSelectItems
                     options={institutions}
                     selected={search.institution ?? []}
                     onChange={onChangeInstitutions}
                   />
-                </DropdownMenuSubContent>
-              </FilterSubmenu>
-              <FilterSubmenu
-                label="Category"
-                value={categoryCount ? `${categoryCount} selected` : undefined}
-              >
-                <DropdownMenuSubContent className="max-h-80 min-w-56 overflow-y-auto">
+                </>
+              )}
+              {view === 'category' && (
+                <>
+                  <BackItem label="Category" onSelect={goTo('filters')} />
                   <MultiSelectItems
                     options={categories}
                     selected={search.category ?? []}
                     onChange={onChangeCategories}
                   />
-                </DropdownMenuSubContent>
-              </FilterSubmenu>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -373,25 +409,18 @@ const CollapsedFilters: React.FC<CollapsedFiltersProps> = ({
   );
 };
 
-interface FilterSubmenuProps {
+/** The first row of a filter's choices in the collapsed menu: back to the list. */
+const BackItem: React.FC<{
   label: string;
-  /** What the filter is set to, shown after the label. */
-  value?: string;
-  children: React.ReactNode;
-}
-
-/** One filter in the collapsed menu; `children` is its `DropdownMenuSubContent`. */
-const FilterSubmenu: React.FC<FilterSubmenuProps> = ({
-  label,
-  value,
-  children,
-}) => (
-  <DropdownMenuSub>
-    <DropdownMenuSubTrigger>
-      <FilterLabel label={label} value={value} />
-    </DropdownMenuSubTrigger>
-    {children}
-  </DropdownMenuSub>
+  onSelect: (event: Event) => void;
+}> = ({ label, onSelect }) => (
+  <>
+    <DropdownMenuItem onSelect={onSelect}>
+      <ChevronLeft className="text-muted-foreground size-4" />
+      <span className="font-semibold">{label}</span>
+    </DropdownMenuItem>
+    <DropdownMenuSeparator />
+  </>
 );
 
 /** A row of the collapsed menu: the filter's name and what it is set to. */
