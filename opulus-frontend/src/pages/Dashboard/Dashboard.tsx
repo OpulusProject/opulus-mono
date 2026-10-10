@@ -1,4 +1,4 @@
-import { DataTable, SectionCards, SpendingChart } from './components';
+import { SectionCards, SpendingChart } from './components';
 
 export default function Dashboard() {
   return (
@@ -7,7 +7,6 @@ export default function Dashboard() {
       <div className="px-4 lg:px-6">
         <SpendingChart />
       </div>
-      <DataTable />
     </>
   );
 }

@@ -5,10 +5,8 @@ import {
   ArrowLeftRight,
   CreditCard,
   GemIcon,
-  HelpCircle,
   Landmark,
   LayoutDashboard,
-  Search,
   Settings,
 } from 'lucide-react';
 import * as React from 'react';
@@ -28,11 +26,6 @@ import { useSession } from '@/hooks/auth/useSession';
 import { type NavItem, NavSection, NavUser } from './components';
 
 const navMain: NavItem[] = [
-  {
-    title: 'Search',
-    url: '#',
-    icon: Search,
-  },
   {
     title: 'Dashboard',
     url: '/dashboard',
@@ -61,11 +54,6 @@ const navSecondary: NavItem[] = [
     url: '/settings',
     icon: Settings,
     items: [{ title: 'Connections', url: '/settings/connections' }],
-  },
-  {
-    title: 'Get Help',
-    url: '#',
-    icon: HelpCircle,
   },
 ];
 
