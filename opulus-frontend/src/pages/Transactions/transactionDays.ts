@@ -24,23 +24,27 @@ export function groupByDay(transactions: TransactionDTO[]): TransactionDay[] {
 }
 
 /**
- * What was spent in these transactions (money out), per currency: "$12.00", or
- * "$12.00 + US$3.00" across currencies (in currency code order). Null when
- * nothing was spent.
+ * The net change of these transactions, per currency, signed: "−$87.39" when
+ * more went out than came in, "+$2,100.00" when more came in, "$0.00" when they
+ * cancel out. Currencies are in code order, separated by "·": "+$26.04 · −US$29.00".
  */
-export function spentLabel(transactions: TransactionDTO[]): string | null {
+export function netLabel(transactions: TransactionDTO[]): string {
   const byCurrency = new Map<string | null, number>();
   for (const { amount, isoCurrencyCode } of transactions) {
-    if (amount > 0) {
-      byCurrency.set(
-        isoCurrencyCode,
-        (byCurrency.get(isoCurrencyCode) ?? 0) + amount
-      );
-    }
+    // Plaid's amounts are positive for money out, so the change is the negative.
+    byCurrency.set(
+      isoCurrencyCode,
+      (byCurrency.get(isoCurrencyCode) ?? 0) - amount
+    );
   }
-  if (byCurrency.size === 0) return null;
   return [...byCurrency]
     .sort(([a], [b]) => (a ?? '').localeCompare(b ?? ''))
-    .map(([currency, amount]) => formatMoney(amount, currency))
-    .join(' + ');
+    .map(([currency, net]) => formatNet(Math.round(net * 100) / 100, currency))
+    .join(' · ');
+}
+
+function formatNet(net: number, currency: string | null): string {
+  if (net > 0) return `+${formatMoney(net, currency)}`;
+  if (net < 0) return `\u2212${formatMoney(-net, currency)}`;
+  return formatMoney(0, currency);
 }
