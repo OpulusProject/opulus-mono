@@ -1,3 +1,5 @@
+import { itemTokenKeyProblem } from "../utils/itemTokenCrypto.js";
+
 /**
  * What each service needs in its environment to run in production. The config
  * module falls back to empty strings and localhost defaults so development
@@ -31,6 +33,11 @@ const plaid = (env: Env): string[] => [
       ]),
 ];
 
+const itemTokenKey = (env: Env): string[] => {
+  const problem = itemTokenKeyProblem(env.ITEM_TOKEN_ENCRYPTION_KEY);
+  return problem ? [problem] : [];
+};
+
 /**
  * The problems with an environment for a service, as sentences; empty when it
  * is fine. Pure: the environment is passed in, so it can be checked in a test.
@@ -59,11 +66,11 @@ export function findConfigProblems(service: ServiceName, env: Env): string[] {
         "CLIENT_URL is not set (it is the only origin allowed to call the API)"
       );
     }
-    problems.push(...plaid(env));
+    problems.push(...plaid(env), ...itemTokenKey(env));
   }
 
   if (service === "webhooks") {
-    problems.push(...plaid(env));
+    problems.push(...plaid(env), ...itemTokenKey(env));
   }
 
   if (service === "webhooks" || service === "scheduler") {

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { expectOk, expectStatus } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
-import { testDb } from "../../../shared/db.js";
+import { readItemAccessToken, testDb } from "../../../shared/db.js";
 import {
   enrollTwoFactor,
   seedItemWithAccount,
@@ -20,9 +20,9 @@ import {
  * Deleting an account removes the user's items from Plaid first, which the
  * service suite cannot see (its items have fake access tokens). Here the items
  * are real sandbox items created through the backend's own POST /api/items. The
- * Plaid access token is read from the isolated test DB (a setup lookup; it is
- * never exposed over HTTP) so that, after the delete, Plaid itself can be asked
- * whether it still serves the item.
+ * Plaid access token is read from the isolated test DB and decrypted (a setup
+ * lookup; it is never exposed over HTTP) so that, after the delete, Plaid
+ * itself can be asked whether it still serves the item.
  */
 test.describe("POST /api/auth/delete-user (sandbox)", () => {
   test("removes the user's items from Plaid and deletes their data", async ({
@@ -37,12 +37,9 @@ test.describe("POST /api/auth/delete-user (sandbox)", () => {
         await createSandboxItem(request, user.cookie, creds, "ins_109509")
       ).itemId,
     ];
-    const items = await testDb().item.findMany({
-      where: { id: { in: itemIds } },
-      select: { accessToken: true },
-    });
-    expect(items).toHaveLength(2);
-    for (const { accessToken } of items) {
+    const accessTokens = await Promise.all(itemIds.map(readItemAccessToken));
+    expect(accessTokens).toHaveLength(2);
+    for (const accessToken of accessTokens) {
       expect(await plaidStillServesItem(creds, accessToken)).toBe(true);
     }
 
@@ -54,7 +51,7 @@ test.describe("POST /api/auth/delete-user (sandbox)", () => {
 
     // Assert: Plaid no longer serves either item, and the user and their data are gone.
     await expectOk(res);
-    for (const { accessToken } of items) {
+    for (const accessToken of accessTokens) {
       expect(await plaidStillServesItem(creds, accessToken)).toBe(false);
     }
     await expectStatus(
@@ -73,10 +70,7 @@ test.describe("POST /api/auth/delete-user (sandbox)", () => {
     const staying = await enrollTwoFactor(request, await signUp(request));
     await createSandboxItem(request, leaving.cookie, creds);
     const { itemId } = await createSandboxItem(request, staying.cookie, creds);
-    const { accessToken } = await testDb().item.findUniqueOrThrow({
-      where: { id: itemId },
-      select: { accessToken: true },
-    });
+    const accessToken = await readItemAccessToken(itemId);
 
     // Act
     await request.post("/api/auth/delete-user", {

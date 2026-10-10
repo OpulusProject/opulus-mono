@@ -5,7 +5,7 @@
 import { type APIRequestContext, type TestType } from "@playwright/test";
 
 import { withSession } from "../../shared/client.js";
-import { testDb } from "../../shared/db.js";
+import { readItemAccessToken } from "../../shared/db.js";
 import {
   createSandboxItem,
   PLAID_SANDBOX_URL,
@@ -51,11 +51,7 @@ export async function linkItemWithWebhook(
     undefined,
     { webhookUrl: requireWebhookUrl() },
   );
-  const item = await testDb().item.findUniqueOrThrow({
-    where: { id: itemId },
-    select: { accessToken: true },
-  });
-  return { itemId, accessToken: item.accessToken };
+  return { itemId, accessToken: await readItemAccessToken(itemId) };
 }
 
 /** An error response from one of Plaid's sandbox endpoints. */

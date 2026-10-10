@@ -2,6 +2,10 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import type { PlaidErrorType, Item as PlaidItem } from "plaid";
 import prisma from "../client/prisma.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
+import {
+  decryptItemToken,
+  encryptItemToken,
+} from "../utils/itemTokenCrypto.js";
 import { accountDtoSelect } from "./accountRepository.js";
 
 export interface CreateItemData {
@@ -83,6 +87,18 @@ export function normalizePlaidItem(
 }
 
 /**
+ * Give a row read from the database its plaintext access token.
+ *
+ * `Item.accessToken` is stored encrypted (see utils/itemTokenCrypto.ts). The
+ * repository is the only place that converts: every write encrypts and every
+ * read that returns the token decrypts, so callers only ever see plaintext and
+ * nothing else needs to know about the storage format.
+ */
+function withPlainToken<T extends { accessToken: string }>(row: T): T {
+  return { ...row, accessToken: decryptItemToken(row.accessToken) };
+}
+
+/**
  * Repository for Plaid items
  * Handles item creation and retrieval
  */
@@ -101,7 +117,10 @@ class ItemRepository {
     client: Prisma.TransactionClient = this.prisma
   ) {
     try {
-      return await client.item.create({ data });
+      const row = await client.item.create({
+        data: { ...data, accessToken: encryptItemToken(data.accessToken) },
+      });
+      return withPlainToken(row);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === "P2002") {
@@ -127,9 +146,10 @@ class ItemRepository {
    */
   async getById(id: string) {
     try {
-      return await this.prisma.item.findUniqueOrThrow({
+      const item = await this.prisma.item.findUniqueOrThrow({
         where: { id },
       });
+      return withPlainToken(item);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -186,7 +206,7 @@ class ItemRepository {
         where: { plaidItemId },
       });
 
-      return item;
+      return withPlainToken(item);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -219,14 +239,22 @@ class ItemRepository {
    */
   async update(
     itemId: string,
-    data: Prisma.ItemUpdateInput,
+    data: Omit<Prisma.ItemUpdateInput, "accessToken"> & {
+      accessToken?: string;
+    },
     client: Prisma.TransactionClient = this.prisma
   ) {
     try {
-      return await client.item.update({
+      const row = await client.item.update({
         where: { id: itemId },
-        data,
+        data: {
+          ...data,
+          ...(data.accessToken !== undefined
+            ? { accessToken: encryptItemToken(data.accessToken) }
+            : {}),
+        },
       });
+      return withPlainToken(row);
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -255,9 +283,10 @@ class ItemRepository {
    */
   async delete(itemId: string, client: Prisma.TransactionClient = this.prisma) {
     try {
-      return await client.item.delete({
+      const row = await client.item.delete({
         where: { id: itemId },
       });
+      return withPlainToken(row);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         throw new AppError(`Database error: ${error.message}`, 500, error.code);
@@ -304,10 +333,39 @@ class ItemRepository {
     }
   }
 
+  /**
+   * The id and plaintext access token of each of a user's items, for the one
+   * caller that has to talk to Plaid for all of them (disconnecting before the
+   * user is deleted). `getAllByUserId` leaves the token out on purpose.
+   * @throws AppError if database error occurs
+   */
+  async getAccessTokensByUserId(userId: string) {
+    try {
+      const items = await this.prisma.item.findMany({
+        where: { userId },
+        select: { id: true, accessToken: true },
+        orderBy: { createdAt: "desc" },
+      });
+      return items.map(withPlainToken);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get item tokens: ${error.message}`
+          : "An unexpected error occurred while fetching item tokens";
+      throw new AppError(message, 500);
+    }
+  }
+
   async getAllByUserId(userId: string) {
     try {
       const items = await this.prisma.item.findMany({
         where: { userId },
+        // The list is for display; it never needs the token.
+        omit: { accessToken: true },
         include: {
           accounts: { select: accountDtoSelect },
         },
