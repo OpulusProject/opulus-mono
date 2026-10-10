@@ -1,7 +1,14 @@
 import { config, prisma } from "@opulus/core";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import {
+  APIError,
+  createAuthMiddleware,
+  getSessionFromCtx,
+} from "better-auth/api";
 import { twoFactor } from "better-auth/plugins";
+
+import { disconnectUserItems } from "@/services/users/disconnectUserItems.js";
 
 /**
  * Cookie Configuration for Cross-Subdomain Setup
@@ -38,6 +45,31 @@ export const auth = betterAuth({
   // better-auth's account table is our AuthAccount model (see schema.prisma)
   account: {
     modelName: "authAccount",
+  },
+  // Account deletion (POST /api/auth/delete-user). The user's rows go with the
+  // user (every relation cascades); beforeDelete first removes their items from
+  // Plaid, which would otherwise keep the connections.
+  user: {
+    deleteUser: {
+      enabled: true,
+      beforeDelete: async (user) => {
+        await disconnectUserItems({ userId: user.id });
+      },
+    },
+  },
+  hooks: {
+    // Better Auth accepts a delete-user call without a password when the session
+    // is "fresh", and its freshness check is too lenient to rely on. Deleting an
+    // account always requires the password.
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/delete-user" || ctx.body?.password) return;
+      // Let the endpoint answer 401 for callers who are not signed in.
+      if (!(await getSessionFromCtx(ctx))) return;
+      throw new APIError("BAD_REQUEST", {
+        message: "Password is required to delete your account",
+        code: "PASSWORD_REQUIRED",
+      });
+    }),
   },
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
