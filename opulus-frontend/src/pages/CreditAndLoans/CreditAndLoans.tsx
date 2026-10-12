@@ -1,44 +1,42 @@
-import type { AccountWithConnectionDTO } from '@opulus/core/dto';
-
 import {
   type AccountGroupConfig,
   AccountsOverview,
   type SummaryStat,
 } from '@/common/AccountsOverview';
 import {
-  formatMoney,
-  formatTotals,
-  getOverallUtilization,
-} from '@/utils/accountDisplay';
-import { getAccountType } from '@/utils/accountType';
+  type AccountsSummary,
+  countLabel,
+  formatBalance,
+  typeSummary,
+} from '@/common/AccountsOverview/summary';
 
 const GROUPS: AccountGroupConfig[] = [
   { type: 'credit', title: 'Credit cards' },
   { type: 'loan', title: 'Loans and lines of credit' },
 ];
 
-function getSummary(accounts: AccountWithConnectionDTO[]): SummaryStat[] {
-  const cards = accounts.filter((a) => getAccountType(a) === 'credit');
-  const loans = accounts.filter((a) => getAccountType(a) === 'loan');
-  const utilization = getOverallUtilization(cards);
+function getSummary(summary: AccountsSummary): SummaryStat[] {
+  const cards = typeSummary(summary, 'credit');
+  const loans = typeSummary(summary, 'loan');
+  const used = cards?.credit
+    ? `${Math.round(cards.credit.utilization * 100)}% of ${formatBalance(summary, cards.credit.limit)} limit used`
+    : undefined;
 
   return [
     {
       label: 'Total owed',
-      value: formatTotals(accounts),
-      detail: `${accounts.length} account${accounts.length === 1 ? '' : 's'}`,
+      value: formatBalance(summary, summary.total.balance),
+      detail: countLabel(summary.count),
     },
     {
       label: 'Credit cards',
-      value: formatTotals(cards),
-      detail: utilization
-        ? `${Math.round(utilization.utilization * 100)}% of ${formatMoney(utilization.limit, utilization.currency)} limit used`
-        : `${cards.length} card${cards.length === 1 ? '' : 's'}`,
+      value: formatBalance(summary, cards?.balance ?? 0),
+      detail: used ?? countLabel(cards?.count ?? 0, 'card'),
     },
     {
       label: 'Loans',
-      value: formatTotals(loans),
-      detail: `${loans.length} loan${loans.length === 1 ? '' : 's'}`,
+      value: formatBalance(summary, loans?.balance ?? 0),
+      detail: countLabel(loans?.count ?? 0, 'loan'),
     },
   ];
 }

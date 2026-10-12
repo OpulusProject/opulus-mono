@@ -39,11 +39,6 @@ function titleCase(value: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-export interface CurrencyTotal {
-  currency: string | null;
-  amount: number;
-}
-
 /**
  * Format a money amount in the account's own currency. Falls back to a plain
  * two-decimal number when the currency is unknown or invalid.
@@ -67,14 +62,6 @@ export function formatMoney(
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
-}
-
-/** "$1,000.00", or "$1,000.00 + US$50.00" when accounts span currencies. */
-export function formatTotals(accounts: AccountDTO[]): string {
-  if (accounts.length === 0) return formatMoney(0, null);
-  return sumByCurrency(accounts)
-    .map(({ currency, amount }) => formatMoney(amount, currency))
-    .join(' + ');
 }
 
 /** Human-friendly account type, preferring the more specific subtype. */
@@ -139,34 +126,4 @@ export function getCreditLimit(account: AccountDTO): number | null {
     return account.balanceCurrent + account.balanceAvailable;
   }
   return null;
-}
-
-/**
- * Overall credit utilization (0-1) across accounts that report a limit, or
- * null when no limits are known or the accounts span currencies.
- */
-export function getOverallUtilization(accounts: AccountDTO[]): {
-  utilization: number;
-  limit: number;
-  currency: string | null;
-} | null {
-  const withLimits = accounts.filter((a) => getCreditLimit(a) !== null);
-  if (withLimits.length === 0) return null;
-  const currency = withLimits[0].isoCurrencyCode;
-  if (withLimits.some((a) => a.isoCurrencyCode !== currency)) return null;
-
-  const limit = withLimits.reduce((s, a) => s + (getCreditLimit(a) ?? 0), 0);
-  const owed = withLimits.reduce((s, a) => s + (a.balanceCurrent ?? 0), 0);
-  if (limit <= 0) return null;
-  return { utilization: owed / limit, limit, currency };
-}
-
-/** Sum current balances, kept separate per currency (never mix currencies). */
-export function sumByCurrency(accounts: AccountDTO[]): CurrencyTotal[] {
-  const totals = new Map<string | null, number>();
-  for (const account of accounts) {
-    const key = account.isoCurrencyCode;
-    totals.set(key, (totals.get(key) ?? 0) + (account.balanceCurrent ?? 0));
-  }
-  return [...totals].map(([currency, amount]) => ({ currency, amount }));
 }
