@@ -1,0 +1,123 @@
+# The jobs suite: each scheduled job run through opulus-scheduler's jobs API,
+# against a stub of its provider, checking what the job stored. Runs on every PR
+# (including ones stacked on another branch) and on main after each merge.
+#
+# The pipeline provisions everything the suite needs: Postgres and Redis, the
+# migrations, the Frankfurter stub, and the scheduler pointed at the stub. The
+# suite only drives the scheduler over HTTP and reads the isolated test database.
+#
+# Not yet a required check. To make it one, add "Scheduler jobs tests" to the
+# branch protection rules for main.
+
+name: Jobs Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jobs-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scheduler-jobs-tests:
+    name: Scheduler jobs tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      TEST_DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      NODE_ENV: test
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
+      SCHEDULER_PORT: "8082"
+      # A fixed, test-only token for the scheduler's jobs API.
+      SCHEDULER_ADMIN_TOKEN: ci-jobs-tests-token-not-a-secret
+      # The specs run every job themselves; a start-up run would race them.
+      SCHEDULER_RUN_ON_START: "false"
+      # No third party: the scheduler asks the stub for rates.
+      FRANKFURTER_BASE_URL: http://localhost:4545/v1
+      STUB_URL: http://localhost:4545
+      TEST_BASE_URL: http://localhost:8082
+
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app_dev
+          POSTGRES_DB: app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @opulus/core prisma:generate
+
+      - name: Build core package
+        run: pnpm --filter @opulus/core build
+
+      - name: Apply database migrations
+        run: pnpm --filter @opulus/core exec prisma migrate deploy --schema=./prisma/schema.prisma
+
+      - name: Start the Frankfurter stub
+        run: |
+          node opulus-tests/jobs/scheduler/stub/frankfurter.mjs &
+          for i in $(seq 1 30); do
+            if curl -sf "$STUB_URL/health" >/dev/null; then
+              echo "Stub is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Stub did not start in time" >&2
+          exit 1
+
+      - name: Boot the scheduler
+        run: |
+          pnpm --filter @opulus/scheduler exec tsx src/server.ts &
+          for i in $(seq 1 60); do
+            if curl -sf "$TEST_BASE_URL/health" >/dev/null; then
+              echo "Scheduler is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Scheduler did not become healthy in time" >&2
+          exit 1
+
+      - name: Run the scheduler jobs tests
+        run: pnpm --filter @opulus/tests test:jobs-scheduler

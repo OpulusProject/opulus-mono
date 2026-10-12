@@ -9,6 +9,7 @@
     "test:services-webhooks": "playwright test --config services/webhooks/playwright.config.ts",
     "test:integration-backend": "playwright test --config integration/backend/playwright.config.ts",
     "test:integration-webhooks": "playwright test --config integration/webhooks/playwright.config.ts",
+    "test:jobs-scheduler": "playwright test --config jobs/scheduler/playwright.config.ts",
     "test:report": "playwright show-report"
   },
   "dependencies": {
