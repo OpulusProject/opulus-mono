@@ -1,0 +1,75 @@
+meta {
+  name: Get Spending By Category
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/api/transactions/spending-by-category
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+params:query {
+  top: 5
+  startDate: 
+  endDate: 
+  hideTransfers: true
+  itemId: 
+  accountId: 
+  category: 
+  search: 
+  type: 
+  includePending: 
+}
+
+docs {
+  # Get Spending By Category
+
+  What the authenticated user spent in each category, with each category's share of the total, computed in the database so the client only displays it.
+
+  **Endpoint:** `GET /api/transactions/spending-by-category`
+
+  ## Query Parameters
+
+  The same filters as `GET /api/transactions` (`itemId`, `accountId`, `category`, `search`, `type`, `hideTransfers`, `includePending`, `startDate`, `endDate`), so the numbers describe the same transactions as the list. `page`, `limit`, `sort` and `order` do not apply.
+
+  - `top` (optional, 1-50): list only this many categories, and add the rest up in `other`. Without it every category is listed and `other` is null.
+
+  ## Success Response (200)
+
+  Money is never added across currencies: there is one entry per currency.
+
+  ```json
+  {
+    "data": {
+      "spending": [
+        {
+          "currency": "CAD",
+          "spent": 200,
+          "categories": [
+            { "category": "TRAVEL", "spent": 100, "count": 1, "share": 0.5 },
+            { "category": "FOOD_AND_DRINK", "spent": 50, "count": 2, "share": 0.25 }
+          ],
+          "other": { "categories": 1, "spent": 50, "count": 1, "share": 0.25 }
+        }
+      ]
+    }
+  }
+  ```
+
+  - `spent` is money out; money in is not spending
+  - `share` is the category's `spent` as a fraction (0 to 1) of the currency's total `spent`
+  - `categories` are largest first, ties by name with uncategorized (`category: null`) last
+  - `other` is null unless `top` left categories out; `other.categories` is how many it adds up
+  - Unlike `byCategory` in the summary, the `category` filter applies here, so the shares add up to what the filters select
+
+  ## Error Responses
+
+  - `400 Bad Request`: Invalid query parameters
+  - `401 Unauthorized`: No active session found
+}

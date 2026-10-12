@@ -1,4 +1,8 @@
 import {
+  getSpendingByCategoryController,
+  getSpendingByCategoryQuerySchema,
+} from "@/controllers/transactions/getSpendingByCategoryController.js";
+import {
   getTransactionsController,
   getTransactionsQuerySchema,
 } from "@/controllers/transactions/getTransactionsController.js";
@@ -32,6 +36,13 @@ router.get(
   requireSession,
   validateQuery(getTransactionsSummaryQuerySchema),
   getTransactionsSummaryController
+);
+
+router.get(
+  "/spending-by-category",
+  requireSession,
+  validateQuery(getSpendingByCategoryQuerySchema),
+  getSpendingByCategoryController
 );
 
 router.post(
