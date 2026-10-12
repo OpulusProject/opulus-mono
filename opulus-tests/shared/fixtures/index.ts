@@ -10,6 +10,7 @@
  * integration suite, which gates on sandbox credentials.
  */
 export * from "./auth.js";
+export * from "./historic-balances.js";
 export * from "./two-factor.js";
 export * from "./items.js";
 export * from "./liabilities.js";

@@ -3,6 +3,8 @@
  * before it was linked. Pure: no database, no clock (the caller passes today).
  */
 
+import { addDays } from "./day.js";
+
 /**
  * Whether Plaid has loaded all of an item's transaction history, from the
  * `transactions_update_status` of a /transactions/sync response. Only then are
@@ -44,14 +46,6 @@ export interface BalanceHistoryRow {
 /** Plaid's amounts have at most 4 decimals; whole units avoid float drift. */
 const SCALE = 10_000;
 const toUnits = (amount: number) => Math.round(amount * SCALE);
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function addDays(day: string, days: number): string {
-  return new Date(Date.parse(`${day}T00:00:00Z`) + days * DAY_MS)
-    .toISOString()
-    .slice(0, 10);
-}
 
 /**
  * How a past balance follows from today's and the transactions in between.

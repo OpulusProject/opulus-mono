@@ -41,6 +41,7 @@ All authentication routes are handled by Better Auth at `/api/auth/*`:
 ### Accounts
 
 - `GET /api/accounts` - Get the user's accounts across all connections, optionally filtered by `type` (`depository`, `investment`, `credit`, `loan`, `other`; repeat the parameter for several, e.g. `?type=credit&type=loan`) (requires authentication)
+- `GET /api/accounts/net-worth?range=1m` - Get the user's net worth for each day in a range (`1w`, `1m`, `3m`, `1y` or `all`; default `1m`; optionally limited to some accounts by repeating `accountId`), one series per currency, ending with today's live balances (requires authentication)
 
 ### Items
 
