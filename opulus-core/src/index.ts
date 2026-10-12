@@ -11,6 +11,7 @@ export { Prisma, PrismaClient } from "@prisma/client";
 
 // Repository exports (data access)
 export * from "./repositories/accountRepository.js";
+export * from "./repositories/exchangeRateRepository.js";
 export * from "./repositories/historicBalanceRepository.js";
 export * from "./repositories/itemRepository.js";
 export * from "./repositories/liabilityRepository.js";

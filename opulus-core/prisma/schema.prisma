@@ -263,3 +263,25 @@ model TwoFactor {
 
   @@map("two_factor")
 }
+
+/// Daily reference exchange rates, as units of a currency for one euro (the
+/// European Central Bank publishes against the euro; any other base is a cross
+/// rate of two rows on the same day). One row per currency per published day;
+/// weekends and holidays have none. The euro itself is stored as 1, so a
+/// lookup never needs a special case. Not per user: shared by everyone.
+/// Refreshed daily by opulus-scheduler, with about two years of history.
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  date      DateTime @db.Date // The day the rate was published (UTC)
+  currency  String // ISO 4217 code, e.g. "USD"
+  perEur    Decimal  @db.Decimal(20, 10) // Units of `currency` for one euro
+  source    String // Where the rate came from, e.g. "frankfurter"
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One rate per currency per day
+  @@unique([date, currency])
+  // A currency's rates over a date range (converting amounts)
+  @@index([currency, date])
+  @@map("exchange_rate")
+}
