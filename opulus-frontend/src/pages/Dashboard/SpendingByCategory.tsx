@@ -1,16 +1,12 @@
-import type { SpendingCurrencyDTO } from '@opulus/core/dto';
+import type {
+  SpendingAmountDTO,
+  SpendingByCategoryResponse,
+} from '@opulus/core/dto';
 import { Link } from '@tanstack/react-router';
 import { Ellipsis, PiggyBank } from 'lucide-react';
 import * as React from 'react';
 
-import {
-  List,
-  ListEmpty,
-  ListError,
-  ListGroup,
-  ListHeader,
-  ListRow,
-} from '@/common/List';
+import { List, ListEmpty, ListError, ListHeader, ListRow } from '@/common/List';
 import { Button } from '@/components/ui';
 import { useSpendingByCategory } from '@/hooks/transactions/useSpendingByCategory';
 import { formatMoney } from '@/utils/accountDisplay';
@@ -39,7 +35,7 @@ export const SpendingByCategory: React.FC = () => {
     hideTransfers: true,
     top: TOP_CATEGORIES,
   });
-  const spending = query.data?.spending ?? [];
+  const data = query.data;
 
   return (
     <List aria-label="Spending by category" isLoading={query.isLoading}>
@@ -56,39 +52,34 @@ export const SpendingByCategory: React.FC = () => {
           subject="your spending"
           onRetry={() => void query.refetch()}
         />
-      ) : spending.length === 0 ? (
+      ) : !data || data.categories.length === 0 ? (
         <ListEmpty
           icon={PiggyBank}
           title="No spending yet"
           description={`Nothing spent so far in ${month.name}.`}
         />
-      ) : spending.length === 1 ? (
-        categoryRows(spending[0])
       ) : (
-        // Several currencies are never added together, so each gets its own group.
-        spending.map((entry) => (
-          <ListGroup
-            key={entry.currency ?? 'none'}
-            title={entry.currency ?? 'Other currency'}
-            trailingTitle={formatMoney(entry.spent, entry.currency)}
-          >
-            {categoryRows(entry)}
-          </ListGroup>
-        ))
+        categoryRows(data)
       )}
     </List>
   );
 };
 
 /**
- * A row per category, then one for the categories the server added up. A list's
- * rows must be its direct children, so this returns them rather than being a
- * component.
+ * A row per category, then one for the categories the server added up. Each
+ * shows what was paid in each currency and its share of all spending, which the
+ * server works out in the base currency. A list's rows must be its direct
+ * children, so this returns them rather than being a component.
  */
-function categoryRows({ currency, categories, other }: SpendingCurrencyDTO) {
+function categoryRows({
+  categories,
+  other,
+}: SpendingByCategoryResponse['data']) {
   const subtitle = (count: number) =>
     `${count} ${count === 1 ? 'transaction' : 'transactions'}`;
   const share = (value: number) => `${Math.round(value * 100)}%`;
+  const amounts = (paid: SpendingAmountDTO[]) =>
+    paid.map(({ currency, spent }) => formatMoney(spent, currency)).join(' + ');
 
   return [
     ...categories.map((row) => (
@@ -97,7 +88,7 @@ function categoryRows({ currency, categories, other }: SpendingCurrencyDTO) {
         icon={getCategoryIcon(row.category)}
         title={getCategoryLabel(row.category)}
         subtitle={subtitle(row.count)}
-        trailingTitle={formatMoney(row.spent, currency)}
+        trailingTitle={amounts(row.amounts)}
         trailingSubtitle={share(row.share)}
       />
     )),
@@ -107,7 +98,7 @@ function categoryRows({ currency, categories, other }: SpendingCurrencyDTO) {
         icon={Ellipsis}
         title={`${other.categories} other categories`}
         subtitle={subtitle(other.count)}
-        trailingTitle={formatMoney(other.spent, currency)}
+        trailingTitle={amounts(other.amounts)}
         trailingSubtitle={share(other.share)}
       />
     ),
