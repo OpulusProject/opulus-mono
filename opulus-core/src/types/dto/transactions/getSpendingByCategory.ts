@@ -39,18 +39,11 @@ export const SpendingOtherDTOSchema = z.object({
 
 export type SpendingOtherDTO = z.infer<typeof SpendingOtherDTOSchema>;
 
-/** How a currency was converted: units of the base currency for one unit of it. */
-export const SpendingRateDTOSchema = z.object({
-  currency: z.string(),
-  rate: z.number(),
-});
-
-export type SpendingRateDTO = z.infer<typeof SpendingRateDTOSchema>;
-
 /**
  * Spending by category API response, for the same filters as the transaction
- * list. Amounts in other currencies are converted to `baseCurrency` so
- * categories can be ranked and compared in one list. Unlike the summary's
+ * list. Amounts in other currencies are converted to `baseCurrency`, each at
+ * the rate of the day it was spent, so categories can be ranked and compared
+ * in one list. Unlike the summary's
  * `byCategory`, the `category` filter applies, so the shares add up to what the
  * filters select.
  */
@@ -64,8 +57,6 @@ export const SpendingByCategoryResponseSchema = z.object({
     categories: z.array(SpendingCategoryDTOSchema),
     /** The rest, when `top` left some out; otherwise null. */
     other: SpendingOtherDTOSchema.nullable(),
-    /** The rate used for each currency other than the base one. */
-    rates: z.array(SpendingRateDTOSchema),
     /**
      * Spending in currencies with no known rate. It is left out of everything
      * above, so shares are of the spending that could be converted.
@@ -82,17 +73,25 @@ export type SpendingByCategoryResponse = z.infer<
 export interface CategorySpend {
   currency: string | null;
   category: string | null;
+  /** The day it was spent, "YYYY-MM-DD". */
+  date: string;
   spent: Prisma.Decimal;
   count: number;
 }
 
 export interface SpendingByCategoryOptions {
   baseCurrency: string;
-  /** Base-currency units per unit of each other currency; missing means unknown. */
-  rates: Map<string, number>;
+  /**
+   * Base-currency units for one unit of `currency` on `day`, or undefined when
+   * there is no rate (see `loadExchangeRateConverter`).
+   */
+  rateOn: (currency: string, day: string) => number | undefined;
   /** List only this many categories and add the rest up in `other`. */
   top?: number;
 }
+
+/** A converted amount, to Plaid's 4 decimal places (a rate is a quotient, so the product can run on). */
+const money = (amount: Prisma.Decimal) => amount.toDecimalPlaces(4).toNumber();
 
 /** The spending added up, or null for none. */
 const sum = (values: Prisma.Decimal[]) =>
@@ -120,23 +119,25 @@ function toAmounts(rows: CategorySpend[]): SpendingAmountDTO[] {
 }
 
 /**
- * Transform the repository's rows to the public DTO. Each row is converted to
- * the base currency with its rate (a row with no currency, or already in the
- * base currency, is taken as is) so categories can be ranked and given a share
- * of the total. Rows in a currency with no rate are reported in `unconverted`
- * instead. A category's `amounts` keep what was actually spent, per currency.
+ * Transform the repository's rows to the public DTO. Each row (one currency,
+ * category and day) is converted to the base currency at that day's rate (a
+ * row with no currency, or already in the base currency, is taken as is) so
+ * categories can be ranked and given a share of the total. Rows in a currency
+ * with no rate are reported in `unconverted` instead. A category's `amounts`
+ * keep what was actually spent, per currency.
  */
 export function toSpendingByCategoryDTO(
   rows: CategorySpend[],
-  { baseCurrency, rates, top }: SpendingByCategoryOptions
+  { baseCurrency, rateOn, top }: SpendingByCategoryOptions
 ): SpendingByCategoryResponse["data"] {
-  const rateOf = (currency: string | null) =>
-    currency === null || currency === baseCurrency ? 1 : rates.get(currency);
+  const rateOf = (row: CategorySpend) =>
+    row.currency === null || row.currency === baseCurrency
+      ? 1
+      : rateOn(row.currency, row.date);
 
   const positive = rows.filter((row) => row.spent.gt(0));
-  const convertible = positive.filter((row) => rateOf(row.currency));
-  const converted = (row: CategorySpend) =>
-    row.spent.times(rateOf(row.currency)!);
+  const convertible = positive.filter((row) => rateOf(row));
+  const converted = (row: CategorySpend) => row.spent.times(rateOf(row)!);
 
   const byCategory = new Map<string | null, CategorySpend[]>();
   for (const row of convertible) {
@@ -168,18 +169,12 @@ export function toSpendingByCategoryDTO(
   const rest = top === undefined ? [] : categories.slice(top);
   const restSpent = sum(rest.map((entry) => entry.spent));
 
-  const usedRates = new Set(
-    convertible.flatMap((row) =>
-      row.currency && row.currency !== baseCurrency ? [row.currency] : []
-    )
-  );
-
   return {
     baseCurrency,
-    spent: total?.toNumber() ?? 0,
+    spent: total ? money(total) : 0,
     categories: shown.map((entry) => ({
       category: entry.category,
-      spent: entry.spent.toNumber(),
+      spent: money(entry.spent),
       count: entry.count,
       share: share(entry.spent),
       amounts: toAmounts(entry.rows),
@@ -187,15 +182,12 @@ export function toSpendingByCategoryDTO(
     other: restSpent
       ? {
           categories: rest.length,
-          spent: restSpent.toNumber(),
+          spent: money(restSpent),
           count: rest.reduce((count, entry) => count + entry.count, 0),
           share: share(restSpent),
           amounts: toAmounts(rest.flatMap((entry) => entry.rows)),
         }
       : null,
-    rates: [...usedRates]
-      .sort()
-      .map((currency) => ({ currency, rate: rates.get(currency)! })),
-    unconverted: toAmounts(positive.filter((row) => !rateOf(row.currency))),
+    unconverted: toAmounts(positive.filter((row) => !rateOf(row))),
   };
 }

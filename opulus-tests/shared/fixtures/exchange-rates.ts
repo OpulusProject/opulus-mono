@@ -14,6 +14,33 @@ export interface StoredExchangeRate {
   source: string;
 }
 
+/**
+ * Store rates (units of each currency per euro), replacing any already stored
+ * for the same currency and day, so a spec gets exactly the rates it asks for.
+ * The euro is not added for you.
+ */
+export async function seedExchangeRates(
+  rates: { date: string; currency: string; perEur: number }[],
+): Promise<void> {
+  const db = testDb();
+  await db.$transaction(
+    rates.map(({ date, currency, perEur }) =>
+      db.exchangeRate.upsert({
+        where: {
+          date_currency: { date: new Date(`${date}T00:00:00Z`), currency },
+        },
+        create: {
+          date: new Date(`${date}T00:00:00Z`),
+          currency,
+          perEur,
+          source: "seed",
+        },
+        update: { perEur, source: "seed" },
+      }),
+    ),
+  );
+}
+
 /** Empty the table, so a spec starts from a known state. */
 export async function clearExchangeRates(): Promise<void> {
   await testDb().exchangeRate.deleteMany({});

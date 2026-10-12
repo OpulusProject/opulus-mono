@@ -57,10 +57,6 @@ jobs:
       PLAID_CLIENT_ID: ci-test
       PLAID_SECRET: ci-test
       PLAID_ENV: sandbox
-      # No third-party calls in this suite: exchange rates are fixed, in base
-      # currency (CAD) units per 1 unit of each currency.
-      EXCHANGE_RATES_SOURCE: fixed
-      FIXED_EXCHANGE_RATES: '{"USD":1.25,"EUR":1.5}'
       TEST_BASE_URL: http://localhost:8080
 
     services:

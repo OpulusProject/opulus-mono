@@ -38,6 +38,7 @@ Business logic that both the backend and the webhooks service need. Logic only o
 
 - **`syncItemTransactions`**, **`syncItemLiabilities`** - Pull an item's data from Plaid and store it
 - **`refreshExchangeRates`** - Bring `exchange_rate` up to date (about two years on an empty table, then the days since the last stored one); run daily by `opulus-scheduler`
+- **`loadExchangeRateConverter`** - Convert amounts to a base currency day by day from `exchange_rate` (a day without a rate uses the latest before it)
 
 ### Other
 

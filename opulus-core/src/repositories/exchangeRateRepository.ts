@@ -13,6 +13,37 @@ export interface CreateExchangeRateData {
   source: string;
 }
 
+/** A stored rate, as read back for a conversion. */
+export interface StoredExchangeRate {
+  /** "YYYY-MM-DD". */
+  date: string;
+  currency: string;
+  /** Units of `currency` for one euro. */
+  perEur: Prisma.Decimal;
+}
+
+const toStored = (row: {
+  date: Date;
+  currency: string;
+  perEur: Prisma.Decimal;
+}): StoredExchangeRate => ({
+  date: row.date.toISOString().slice(0, 10),
+  currency: row.currency,
+  perEur: row.perEur,
+});
+
+function readError(error: unknown): AppError {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return new AppError(`Database error: ${error.message}`, 500, error.code);
+  }
+  return new AppError(
+    error instanceof Error
+      ? `Failed to read exchange rates: ${error.message}`
+      : "An unexpected error occurred while reading exchange rates",
+    500
+  );
+}
+
 /** Rows per insert, well under Postgres' limit on parameters in one query. */
 const CHUNK = 5000;
 
@@ -72,6 +103,59 @@ class ExchangeRateRepository {
           ? `Failed to read exchange rates: ${error.message}`
           : "An unexpected error occurred while reading exchange rates";
       throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * The stored rates of some currencies from a little before `from` to `to`, so
+   * every day in the range has the latest rate on or before it (weekends and
+   * holidays have none; two weeks covers the longest gap). Oldest first.
+   * @param params.currencies - ISO 4217 codes
+   * @param params.from - "YYYY-MM-DD"
+   * @param params.to - "YYYY-MM-DD"
+   * @throws AppError if database error occurs
+   */
+  async getForCurrencies(params: {
+    currencies: string[];
+    from: string;
+    to: string;
+  }): Promise<StoredExchangeRate[]> {
+    try {
+      const from = new Date(`${params.from}T00:00:00Z`);
+      from.setUTCDate(from.getUTCDate() - 14);
+      const rows = await this.prisma.exchangeRate.findMany({
+        where: {
+          currency: { in: params.currencies },
+          date: { gte: from, lte: new Date(`${params.to}T00:00:00Z`) },
+        },
+        select: { date: true, currency: true, perEur: true },
+        orderBy: { date: "asc" },
+      });
+      return rows.map(toStored);
+    } catch (error) {
+      throw readError(error);
+    }
+  }
+
+  /**
+   * Each currency's earliest stored rate, for an amount older than the stored
+   * history.
+   * @param currencies - ISO 4217 codes
+   * @throws AppError if database error occurs
+   */
+  async getEarliestForCurrencies(
+    currencies: string[]
+  ): Promise<StoredExchangeRate[]> {
+    try {
+      const rows = await this.prisma.exchangeRate.findMany({
+        where: { currency: { in: currencies } },
+        select: { date: true, currency: true, perEur: true },
+        orderBy: [{ currency: "asc" }, { date: "asc" }],
+        distinct: ["currency"],
+      });
+      return rows.map(toStored);
+    } catch (error) {
+      throw readError(error);
     }
   }
 }

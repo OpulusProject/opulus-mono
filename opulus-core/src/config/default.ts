@@ -29,9 +29,4 @@ export default {
     "FRANKFURTER_BASE_URL",
     "https://api.frankfurter.dev/v1"
   ),
-  // Where exchange rates come from: "frankfurter" (the ECB's daily rates, no
-  // key needed) or "fixed" (the rates in FIXED_EXCHANGE_RATES, for tests).
-  exchangeRatesSource: getEnv("EXCHANGE_RATES_SOURCE", "frankfurter"),
-  // For "fixed": JSON of base-currency units per 1 unit, e.g. {"USD":1.25}.
-  fixedExchangeRates: getEnv("FIXED_EXCHANGE_RATES"),
 };

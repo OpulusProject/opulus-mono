@@ -7,7 +7,9 @@ import {
   expectValidationError,
 } from "../../../shared/assertions.js";
 import {
+  clearExchangeRates,
   createAuthedUser,
+  seedExchangeRates,
   seedItemWithAccount,
   seedTransactions,
   type SeedTransactionRow,
@@ -23,10 +25,7 @@ async function getSpending(
     `/api/transactions/spending-by-category${query}`,
     { headers: withSession(cookie) },
   );
-  const body = await expectMatchesSchema(
-    res,
-    SpendingByCategoryResponseSchema,
-  );
+  const body = await expectMatchesSchema(res, SpendingByCategoryResponseSchema);
   return body.data;
 }
 
@@ -46,14 +45,44 @@ async function setup(request: APIRequestContext, rows: SeedTransactionRow[]) {
 const day = (d: number) =>
   new Date(`2026-06-${String(d).padStart(2, "0")}T00:00:00.000Z`);
 
+const iso = (d: number) => `2026-06-${String(d).padStart(2, "0")}`;
+
+/**
+ * The rates in exchange_rate for these specs, per euro: on every weekday of
+ * June 2026, CAD 1.5 and USD 1.2 (so 1 USD = 1.25 CAD and 1 EUR = 1.5 CAD),
+ * except June 15 (USD 1.0: 1 USD = 1.5 CAD) and Friday June 19 (USD 0.75:
+ * 1 USD = 2 CAD). Weekends have none, like the real rates.
+ */
+function juneRates() {
+  const rates: { date: string; currency: string; perEur: number }[] = [];
+  for (let d = 1; d <= 30; d++) {
+    const weekday = day(d).getUTCDay();
+    if (weekday === 0 || weekday === 6) continue;
+    const usd = d === 15 ? 1.0 : d === 19 ? 0.75 : 1.2;
+    rates.push(
+      { date: iso(d), currency: "EUR", perEur: 1 },
+      { date: iso(d), currency: "CAD", perEur: 1.5 },
+      { date: iso(d), currency: "USD", perEur: usd },
+    );
+  }
+  return rates;
+}
+
 /**
  * This file: the spending-by-category endpoint (each category's spending and
  * share of the total for the filtered transactions, in the base currency, with
- * an optional top N). The backend is started with fixed exchange rates
- * (EXCHANGE_RATES_SOURCE=fixed, USD 1.25 and EUR 1.5 to the CAD base), so no
- * third party is involved.
+ * an optional top N). Conversions read exchange_rate, which these specs seed
+ * with known rates (see juneRates); it is shared by every user, so it is
+ * cleared and seeded once for the file rather than per test (the backend
+ * suite has no other use for it), and no third party is involved.
  */
 test.describe("GET /api/transactions/spending-by-category", () => {
+  test.beforeAll(async () => {
+    // Only these rates, so the "earliest stored rate" is June 1's.
+    await clearExchangeRates();
+    await seedExchangeRates(juneRates());
+  });
+
   test("requires authentication (401)", async ({ request }) => {
     const res = await request.get("/api/transactions/spending-by-category");
     await expectStatus(res, 401);
@@ -69,7 +98,6 @@ test.describe("GET /api/transactions/spending-by-category", () => {
       spent: 0,
       categories: [],
       other: null,
-      rates: [],
       unconverted: [],
     });
   });
@@ -81,7 +109,12 @@ test.describe("GET /api/transactions/spending-by-category", () => {
       { amount: 30, categoryPrimary: "FOOD_AND_DRINK", date: day(1) },
       { amount: 20, categoryPrimary: "FOOD_AND_DRINK", date: day(2) },
       { amount: 100, categoryPrimary: "TRAVEL", date: day(2) },
-      { amount: 50, categoryPrimary: null, categoryDetailed: null, date: day(3) },
+      {
+        amount: 50,
+        categoryPrimary: null,
+        categoryDetailed: null,
+        date: day(3),
+      },
       // Money in is not spending.
       { amount: -500, categoryPrimary: "INCOME", date: day(3) },
     ]);
@@ -115,7 +148,6 @@ test.describe("GET /api/transactions/spending-by-category", () => {
         },
       ],
       other: null,
-      rates: [],
       unconverted: [],
     });
   });
@@ -125,8 +157,18 @@ test.describe("GET /api/transactions/spending-by-category", () => {
   }) => {
     // 100 USD is 125 CAD, so food outranks the 100 CAD of travel.
     const { cookie } = await setup(request, [
-      { amount: 100, isoCurrencyCode: "CAD", categoryPrimary: "TRAVEL", date: day(1) },
-      { amount: 100, isoCurrencyCode: "USD", categoryPrimary: "FOOD_AND_DRINK", date: day(1) },
+      {
+        amount: 100,
+        isoCurrencyCode: "CAD",
+        categoryPrimary: "TRAVEL",
+        date: day(1),
+      },
+      {
+        amount: 100,
+        isoCurrencyCode: "USD",
+        categoryPrimary: "FOOD_AND_DRINK",
+        date: day(1),
+      },
     ]);
 
     const data = await getSpending(request, cookie);
@@ -138,17 +180,100 @@ test.describe("GET /api/transactions/spending-by-category", () => {
     ]);
     expect(data.categories[0].share).toBeCloseTo(125 / 225, 10);
     expect(data.categories[1].share).toBeCloseTo(100 / 225, 10);
-    expect(data.categories[0].amounts).toEqual([{ currency: "USD", spent: 100 }]);
-    expect(data.rates).toEqual([{ currency: "USD", rate: 1.25 }]);
+    expect(data.categories[0].amounts).toEqual([
+      { currency: "USD", spent: 100 },
+    ]);
+  });
+
+  test("converts each day's spending at that day's rate", async ({
+    request,
+  }) => {
+    // 100 USD on June 15 (1.5 CAD each) and 100 USD on June 16 (1.25 CAD each).
+    const { cookie } = await setup(request, [
+      {
+        amount: 100,
+        isoCurrencyCode: "USD",
+        categoryPrimary: "TRAVEL",
+        date: day(15),
+      },
+      {
+        amount: 100,
+        isoCurrencyCode: "USD",
+        categoryPrimary: "TRAVEL",
+        date: day(16),
+      },
+    ]);
+
+    const data = await getSpending(request, cookie);
+
+    expect(data.categories).toMatchObject([
+      {
+        category: "TRAVEL",
+        spent: 275,
+        count: 2,
+        amounts: [{ currency: "USD", spent: 200 }],
+      },
+    ]);
+  });
+
+  test("uses the latest earlier rate on a day with none, like a weekend", async ({
+    request,
+  }) => {
+    // Saturday June 20 has no rate, so Friday June 19's applies (2 CAD per USD).
+    const { cookie } = await setup(request, [
+      {
+        amount: 10,
+        isoCurrencyCode: "USD",
+        categoryPrimary: "TRAVEL",
+        date: day(20),
+      },
+    ]);
+
+    const data = await getSpending(request, cookie);
+
+    expect(data.spent).toBe(20);
+  });
+
+  test("uses the earliest stored rate for spending older than the stored history", async ({
+    request,
+  }) => {
+    // May 4 is before the first stored rate (June 1: 1.25 CAD per USD).
+    const { cookie } = await setup(request, [
+      {
+        amount: 100,
+        isoCurrencyCode: "USD",
+        categoryPrimary: "TRAVEL",
+        date: new Date("2026-05-04T00:00:00.000Z"),
+      },
+    ]);
+
+    const data = await getSpending(request, cookie);
+
+    expect(data.spent).toBe(125);
   });
 
   test("lists a category once, with what was spent in each currency", async ({
     request,
   }) => {
     const { cookie } = await setup(request, [
-      { amount: 50, isoCurrencyCode: "CAD", categoryPrimary: "TRAVEL", date: day(1) },
-      { amount: 40, isoCurrencyCode: "USD", categoryPrimary: "TRAVEL", date: day(2) },
-      { amount: 30, isoCurrencyCode: "EUR", categoryPrimary: "FOOD_AND_DRINK", date: day(2) },
+      {
+        amount: 50,
+        isoCurrencyCode: "CAD",
+        categoryPrimary: "TRAVEL",
+        date: day(1),
+      },
+      {
+        amount: 40,
+        isoCurrencyCode: "USD",
+        categoryPrimary: "TRAVEL",
+        date: day(2),
+      },
+      {
+        amount: 30,
+        isoCurrencyCode: "EUR",
+        categoryPrimary: "FOOD_AND_DRINK",
+        date: day(2),
+      },
     ]);
 
     const data = await getSpending(request, cookie);
@@ -166,18 +291,24 @@ test.describe("GET /api/transactions/spending-by-category", () => {
       },
       { category: "FOOD_AND_DRINK", spent: 45, count: 1 },
     ]);
-    expect(data.rates).toEqual([
-      { currency: "EUR", rate: 1.5 },
-      { currency: "USD", rate: 1.25 },
-    ]);
   });
 
   test("takes spending with no currency as the base currency", async ({
     request,
   }) => {
     const { cookie } = await setup(request, [
-      { amount: 25, isoCurrencyCode: null, categoryPrimary: "TRAVEL", date: day(1) },
-      { amount: 25, isoCurrencyCode: "CAD", categoryPrimary: "TRAVEL", date: day(1) },
+      {
+        amount: 25,
+        isoCurrencyCode: null,
+        categoryPrimary: "TRAVEL",
+        date: day(1),
+      },
+      {
+        amount: 25,
+        isoCurrencyCode: "CAD",
+        categoryPrimary: "TRAVEL",
+        date: day(1),
+      },
     ]);
 
     const data = await getSpending(request, cookie);
@@ -189,12 +320,22 @@ test.describe("GET /api/transactions/spending-by-category", () => {
     ]);
   });
 
-  test("leaves out currencies with no known rate, and reports them", async ({
+  test("leaves out currencies with no stored rate, and reports them", async ({
     request,
   }) => {
     const { cookie } = await setup(request, [
-      { amount: 40, isoCurrencyCode: "CAD", categoryPrimary: "TRAVEL", date: day(1) },
-      { amount: 80, isoCurrencyCode: "XXX", categoryPrimary: "TRAVEL", date: day(1) },
+      {
+        amount: 40,
+        isoCurrencyCode: "CAD",
+        categoryPrimary: "TRAVEL",
+        date: day(1),
+      },
+      {
+        amount: 80,
+        isoCurrencyCode: "XXX",
+        categoryPrimary: "TRAVEL",
+        date: day(1),
+      },
     ]);
 
     const data = await getSpending(request, cookie);
@@ -202,7 +343,12 @@ test.describe("GET /api/transactions/spending-by-category", () => {
     // Shares are of what could be converted.
     expect(data.spent).toBe(40);
     expect(data.categories).toMatchObject([
-      { category: "TRAVEL", spent: 40, share: 1, amounts: [{ currency: "CAD", spent: 40 }] },
+      {
+        category: "TRAVEL",
+        spent: 40,
+        share: 1,
+        amounts: [{ currency: "CAD", spent: 40 }],
+      },
     ]);
     expect(data.unconverted).toEqual([{ currency: "XXX", spent: 80 }]);
   });
@@ -213,7 +359,12 @@ test.describe("GET /api/transactions/spending-by-category", () => {
     const { cookie } = await setup(request, [
       { amount: 50, categoryPrimary: "TRAVEL", date: day(1) },
       { amount: 30, categoryPrimary: "FOOD_AND_DRINK", date: day(1) },
-      { amount: 8, isoCurrencyCode: "USD", categoryPrimary: "PERSONAL_CARE", date: day(1) },
+      {
+        amount: 8,
+        isoCurrencyCode: "USD",
+        categoryPrimary: "PERSONAL_CARE",
+        date: day(1),
+      },
       { amount: 5, categoryPrimary: "PERSONAL_CARE", date: day(2) },
       { amount: 5, categoryPrimary: "TRANSPORTATION", date: day(1) },
     ]);
@@ -256,8 +407,18 @@ test.describe("GET /api/transactions/spending-by-category", () => {
     request,
   }) => {
     const { cookie } = await setup(request, [
-      { amount: 30, categoryPrimary: "FOOD_AND_DRINK", date: day(1), name: "Coffee Shop" },
-      { amount: 20, categoryPrimary: "FOOD_AND_DRINK", date: day(10), name: "Coffee Roasters" },
+      {
+        amount: 30,
+        categoryPrimary: "FOOD_AND_DRINK",
+        date: day(1),
+        name: "Coffee Shop",
+      },
+      {
+        amount: 20,
+        categoryPrimary: "FOOD_AND_DRINK",
+        date: day(10),
+        name: "Coffee Roasters",
+      },
       { amount: 100, categoryPrimary: "TRAVEL", date: day(10), name: "Hotel" },
     ]);
 
@@ -280,8 +441,18 @@ test.describe("GET /api/transactions/spending-by-category", () => {
   }) => {
     const { cookie } = await setup(request, [
       { amount: 25, categoryPrimary: "FOOD_AND_DRINK", date: day(1) },
-      { amount: 1000, date: day(1), categoryPrimary: "TRANSFER_OUT", categoryDetailed: "TRANSFER_OUT_ACCOUNT_TRANSFER" },
-      { amount: 300, date: day(1), categoryPrimary: "LOAN_PAYMENTS", categoryDetailed: "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT" },
+      {
+        amount: 1000,
+        date: day(1),
+        categoryPrimary: "TRANSFER_OUT",
+        categoryDetailed: "TRANSFER_OUT_ACCOUNT_TRANSFER",
+      },
+      {
+        amount: 300,
+        date: day(1),
+        categoryPrimary: "LOAN_PAYMENTS",
+        categoryDetailed: "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT",
+      },
     ]);
 
     const hidden = await getSpending(request, cookie, "?hideTransfers=true");

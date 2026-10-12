@@ -1,6 +1,6 @@
 import {
   BASE_CURRENCY,
-  exchangeRateGateway,
+  loadExchangeRateConverter,
   toSpendingByCategoryDTO,
   transactionRepository,
   type SpendingByCategoryResponse,
@@ -16,8 +16,10 @@ export interface GetSpendingByCategoryParams {
 
 /**
  * What a user spent in each category, converted to the base currency so the
- * categories can be ranked and given a share of the total. Rates are only
- * looked up when some spending is in another currency.
+ * categories can be ranked and given a share of the total. Each day's spending
+ * is converted at that day's rate from `exchange_rate`, which opulus-scheduler
+ * keeps up to date; rates are only read when some spending is in another
+ * currency.
  */
 export async function getSpendingByCategory(
   params: GetSpendingByCategoryParams
@@ -27,14 +29,23 @@ export async function getSpendingByCategory(
     params.filters
   );
 
-  const rates = await exchangeRateGateway.getRates(
-    BASE_CURRENCY,
-    rows.flatMap((row) => (row.currency ? [row.currency] : []))
+  const foreign = rows.filter(
+    (row) => row.currency !== null && row.currency !== BASE_CURRENCY
   );
+  const days = foreign.map((row) => row.date).sort();
+  const converter =
+    foreign.length > 0
+      ? await loadExchangeRateConverter({
+          baseCurrency: BASE_CURRENCY,
+          currencies: foreign.map((row) => row.currency!),
+          from: days[0]!,
+          to: days.at(-1)!,
+        })
+      : undefined;
 
   return toSpendingByCategoryDTO(rows, {
     baseCurrency: BASE_CURRENCY,
-    rates,
+    rateOn: (currency, day) => converter?.rateOn(currency, day),
     top: params.top,
   });
 }
