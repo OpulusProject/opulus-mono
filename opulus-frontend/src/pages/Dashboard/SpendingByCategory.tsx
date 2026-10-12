@@ -2,10 +2,12 @@ import type {
   TransactionsCategorySpendDTO,
   TransactionsSummaryResponse,
 } from '@opulus/core/dto';
+import { Link } from '@tanstack/react-router';
 import { Ellipsis, PiggyBank } from 'lucide-react';
 import * as React from 'react';
 
 import { List, ListError, ListGroup, ListHeader, ListRow } from '@/common/List';
+import { Button } from '@/components/ui';
 import { useAccounts } from '@/hooks/accounts/useAccounts';
 import { useTransactionsSummary } from '@/hooks/transactions/useTransactionsSummary';
 import { formatMoney } from '@/utils/accountDisplay';
@@ -44,9 +46,6 @@ export const SpendingByCategory: React.FC = () => {
     () => (summary.data ? groupSpending(summary.data) : []),
     [summary.data]
   );
-  const total = spending
-    .map(({ currency, spent }) => formatMoney(spent, currency))
-    .join(' + ');
 
   let content: React.ReactNode;
   if (summary.isError) {
@@ -84,7 +83,11 @@ export const SpendingByCategory: React.FC = () => {
     <List aria-label="Spending by category" isLoading={summary.isLoading}>
       <ListHeader
         title={`Spending in ${month.name}`}
-        trailingTitle={spending.length > 0 ? total : undefined}
+        action={
+          <Button asChild variant="ghost" size="sm">
+            <Link to="/spending">View details</Link>
+          </Button>
+        }
       />
       {content}
     </List>
