@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 
-import { AccountTypeSchema } from "./getAccounts.js";
+import { AccountTypeSchema } from "./accountType.js";
 
 /**
  * What the matching accounts add up to, in the base currency. Balances in

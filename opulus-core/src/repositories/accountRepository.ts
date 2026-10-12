@@ -1,7 +1,7 @@
 import { Prisma, PrismaClient } from "@prisma/client";
 import type { AccountBase as PlaidAccount } from "plaid";
 import prisma from "../client/prisma.js";
-import type { AccountType } from "../types/dto/accounts/getAccounts.js";
+import type { AccountType } from "../types/dto/accounts/accountType.js";
 import { AppError, ConflictError } from "../utils/errors.js";
 
 /**

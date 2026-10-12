@@ -17,6 +17,8 @@ interface AccountRow {
   id: string;
   name: string;
   type: string;
+  creditLimit: number | null;
+  availableCredit: number | null;
   connection: {
     id: string;
     institutionName: string | null;
@@ -170,6 +172,101 @@ test.describe("GET /api/accounts", () => {
     // Assert
     expect(investments.map((a) => a.id)).toEqual([brokerage.accountId]);
     expect(other.map((a) => a.id)).toEqual([unknown.accountId]);
+  });
+
+  test("returns the normalized type: brokerage as investment, an unrecognized type as other", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const brokerage = await seedItemWithAccount(userId, {
+      account: { type: "brokerage" },
+    });
+    const unknown = await seedItemWithAccount(userId, {
+      account: { type: "crypto" },
+    });
+
+    // Act
+    const accounts = await listAccounts(request, cookie);
+
+    // Assert
+    const byId = new Map(accounts.map((a) => [a.id, a]));
+    expect(byId.get(brokerage.accountId)?.type).toBe("investment");
+    expect(byId.get(unknown.accountId)?.type).toBe("other");
+  });
+
+  test("works out a credit account's limit and available credit when Plaid sent only one", async ({
+    request,
+  }) => {
+    // Arrange: each card reports a different part of the picture.
+    const { cookie, userId } = await createAuthedUser(request);
+    const both = await seedItemWithAccount(userId, {
+      account: {
+        type: "credit",
+        balanceCurrent: 250.5,
+        balanceLimit: 5000,
+        balanceAvailable: 4749.5,
+      },
+    });
+    const onlyAvailable = await seedItemWithAccount(userId, {
+      account: {
+        type: "credit",
+        balanceCurrent: 100.1,
+        balanceLimit: null,
+        balanceAvailable: 899.9,
+      },
+    });
+    const onlyLimit = await seedItemWithAccount(userId, {
+      account: {
+        type: "credit",
+        balanceCurrent: 300.3,
+        balanceLimit: 1000,
+        balanceAvailable: null,
+      },
+    });
+    const neither = await seedItemWithAccount(userId, {
+      account: {
+        type: "credit",
+        balanceCurrent: 50,
+        balanceLimit: null,
+        balanceAvailable: null,
+      },
+    });
+
+    // Act
+    const accounts = await listAccounts(request, cookie);
+
+    // Assert
+    const byId = new Map(accounts.map((a) => [a.id, a]));
+    const fields = (id: string) => {
+      const account = byId.get(id);
+      return [account?.creditLimit, account?.availableCredit];
+    };
+    expect(fields(both.accountId)).toEqual([5000, 4749.5]);
+    expect(fields(onlyAvailable.accountId)).toEqual([1000, 899.9]);
+    expect(fields(onlyLimit.accountId)).toEqual([1000, 699.7]);
+    expect(fields(neither.accountId)).toEqual([null, null]);
+  });
+
+  test("leaves the credit fields null for accounts that are not credit cards", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const checking = await seedItemWithAccount(userId);
+    const loan = await seedItemWithAccount(userId, {
+      account: { type: "loan", balanceLimit: 5000 },
+    });
+
+    // Act
+    const accounts = await listAccounts(request, cookie);
+
+    // Assert
+    const byId = new Map(accounts.map((a) => [a.id, a]));
+    for (const { accountId } of [checking, loan]) {
+      expect(byId.get(accountId)?.creditLimit).toBeNull();
+      expect(byId.get(accountId)?.availableCredit).toBeNull();
+    }
   });
 
   test("rejects an unknown type (400)", async ({ request }) => {

@@ -8,7 +8,6 @@ import { Page } from '@/common/Page';
 import { Button } from '@/components/ui';
 import { useAccounts } from '@/hooks/accounts/useAccounts';
 import { useAccountsSummary } from '@/hooks/accounts/useAccountsSummary';
-import { getAccountType } from '@/utils/accountType';
 
 import { AccountRow } from './AccountRow';
 import {
@@ -87,7 +86,7 @@ const AccountGroups: React.FC<Omit<AccountsOverviewProps, 'description'>> = ({
         .map((group) => ({
           ...group,
           accounts: accounts
-            .filter((account) => getAccountType(account) === group.type)
+            .filter((account) => account.type === group.type)
             .sort(byName),
         }))
         .filter((group) => group.accounts.length > 0),
