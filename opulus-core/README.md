@@ -29,6 +29,7 @@ Data access, one per model.
 - **Transaction Repository** - Transactions
 - **Liability Repository** - Account liabilities, and the normalizers for Plaid's liability shapes
 - **Link Session Repository** - Plaid Link sessions
+- **Exchange Rate Repository** - Daily exchange rates (units of a currency per euro), shared by all users
 
 ### Services
 
