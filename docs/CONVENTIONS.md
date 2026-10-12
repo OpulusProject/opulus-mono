@@ -133,6 +133,49 @@ file the conventions above already describe.
   the rules for them (signs, currencies, filling gaps) live where they are
   tested, and a filter is a new query, not client work.
 
+## The server owns the data
+
+The server decides what the data is and what is done to it; the client asks and
+displays.
+
+**The server owns**
+- Filtering, searching, sorting and paging.
+- Aggregates: totals, counts, averages, shares, rankings, "top N and the rest".
+- The rules behind a number: which sign a balance has, that currencies are never
+  added together, rounding, filling gaps in a series.
+- Values derived from a field (an account's credit limit when Plaid only sent
+  the available credit, a type normalized to the ones we use). These are fields
+  of the DTO, not helpers in the client.
+
+**The client owns**
+- Calling the API with the user's choices as query parameters, and showing the
+  result: formatting money, dates and labels, picking an icon, laying rows out.
+- UI state: the chosen range, an open menu, which page is scrolled to.
+- Low-level display work on rows it was given, such as putting day headings
+  between rows that are already in order.
+
+**The test:** if the client would add, compare, rank or reinterpret the API's
+data using a rule of the domain, that rule belongs in the API. A second client
+(a phone app) should not have to write it again. Two copies of a rule also
+drift: net worth computed on the server for the chart and in the client for the
+headline would not always agree.
+
+**Costs, and how to keep them small.** More endpoints, and a request for each
+change of filter. Keep an endpoint about a resource and its filters, not about
+one screen (`/transactions/summary`, not `/dashboard`), so the next screen can
+use it too; use `placeholderData` so a filter change dims the old rows instead
+of blanking them. Prefer a parameter (`top=5`) to a second endpoint.
+
+**How it is kept**
+- A new endpoint comes with service-api tests and a Bruno doc (see "Adding an
+  endpoint"), so the rule lives where it is tested. Frontend logic is not
+  tested yet, which is one more reason to keep rules out of it.
+- In review, ask of any new code in `pages/`, `common/` or `utils/`: does it
+  sum, group, rank or reinterpret API data? If so, is there an endpoint or a DTO
+  field for it, or should there be?
+- ESLint flags `.reduce` and building a `Map` in `pages/` and `common/`, where
+  sums tend to appear. An exception needs a comment saying why.
+
 ## DTOs
 
 The API contract lives in `opulus-core/src/types/dto`, one folder per resource
@@ -175,6 +218,7 @@ with the schemas, so a field that isn't in the schema fails a test.
 - Import contracts from `@opulus/core/dto`, never the `@opulus/core` root: the
   root also exports Prisma, the Plaid gateway and the queue, which must not reach
   the browser. A lint rule enforces it.
+- The client displays; it does not compute. See "The server owns the data".
 - `src/lib` is glue to frameworks and servers (the API client, the auth client,
   shadcn's `cn`). `src/utils` is display and formatting helpers for our own data
   (account types, item status, dates).
@@ -254,6 +298,8 @@ runs because it needs a public tunnel.
 ## Pull requests
 
 - Branch from `main`; merge commits; branches are deleted when merged.
+- Say in the description whether the client computes anything from API data
+  (see "The server owns the data").
 - One concern per PR, but a concern can be big: a new endpoint with its DTO,
   service, repository method, tests and Bruno doc is one PR. Prefer a few larger
   PRs over a chain of small ones. Every PR runs the full suites against Plaid's
