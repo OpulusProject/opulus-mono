@@ -1,10 +1,7 @@
 import { getValidatedQuery } from "@/middleware/validation.js";
 import { getRequestSession } from "@/middleware/session/requireSession.js";
-import {
-  SpendingByCategoryResponse,
-  toSpendingByCategoryDTO,
-  transactionRepository,
-} from "@opulus/core";
+import { getSpendingByCategory } from "@/services/transactions/getSpendingByCategory.js";
+import { SpendingByCategoryResponse } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import {
   optionalInt,
@@ -19,8 +16,8 @@ export const getSpendingByCategoryQuerySchema =
   });
 
 /**
- * Spending by category for the filtered transactions, each with its share of
- * the total
+ * Spending by category for the filtered transactions, converted to the base
+ * currency, each with its share of the total
  * GET /api/transactions/spending-by-category?startDate=2026-09-01&hideTransfers=true&top=5
  *
  * Query parameters are validated by validateQuery middleware
@@ -36,12 +33,13 @@ export async function getSpendingByCategoryController(
     const query =
       getValidatedQuery<typeof getSpendingByCategoryQuerySchema>(req);
 
-    const rows = await transactionRepository.getCategorySpendByUserId(
-      session.user.id,
-      toTransactionFilters(query)
-    );
+    const data = await getSpendingByCategory({
+      userId: session.user.id,
+      filters: toTransactionFilters(query),
+      top: query.top,
+    });
 
-    res.status(200).json({ data: toSpendingByCategoryDTO(rows, query.top) });
+    res.status(200).json({ data });
   } catch (error) {
     next(error);
   }

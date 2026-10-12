@@ -23,6 +23,7 @@ export * from "./repositories/userRepository.js";
 // Gateway exports (external APIs)
 export * from "./gateways/exchangeRateProvider.js";
 export * from "./gateways/frankfurterGateway.js";
+export * from "./gateways/exchangeRateGateway.js";
 export * from "./gateways/plaidGateway.js";
 
 // Service exports (business logic shared by the backend and webhooks)
@@ -37,6 +38,7 @@ export * from "./types/dto/index.js";
 
 // Util exports
 export * from "./utils/balanceHistory.js";
+export * from "./utils/currency.js";
 export * from "./utils/day.js";
 export * from "./utils/errors.js";
 export * from "./utils/logger.js";
