@@ -85,7 +85,9 @@ export const SpendingByCategory: React.FC = () => {
         title={`Spending in ${month.name}`}
         action={
           <Button asChild variant="ghost" size="sm">
-            <Link to="/spending">View details</Link>
+            <Link to="/spending" aria-label="View spending">
+              View
+            </Link>
           </Button>
         }
       />
