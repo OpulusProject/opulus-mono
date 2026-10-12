@@ -7,6 +7,11 @@ import { PageHeader } from '@/common/PageHeader';
 import { Button } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
 
+interface ConnectionsPrompt {
+  title: string;
+  description: string;
+}
+
 interface PageProps {
   title: string;
   description?: React.ReactNode;
@@ -14,11 +19,10 @@ interface PageProps {
   actions?: React.ReactNode;
   /**
    * The page shows data from connected accounts, so with none connected it
-   * shows one prompt to connect instead of its content.
+   * shows one prompt to connect instead of its content. This is what the
+   * prompt says, in the page's own terms.
    */
-  requiresConnections?: boolean;
-  /** What the prompt says when nothing is connected, in the page's own terms. */
-  noConnections?: { title: string; description: string };
+  requiresConnections?: ConnectionsPrompt;
   children?: React.ReactNode;
 }
 
@@ -32,7 +36,14 @@ interface PageProps {
  * says nothing about whether any are connected.
  *
  * @example
- * <Page title="Spending" description="Where your money went." requiresConnections>
+ * <Page
+ *   title="Spending"
+ *   description="Where your money went."
+ *   requiresConnections={{
+ *     title: 'No spending yet',
+ *     description: 'Connect an account to see where your money goes.',
+ *   }}
+ * >
  *   <SpendingByCategory />
  * </Page>
  */
@@ -40,25 +51,23 @@ export const Page: React.FC<PageProps> = ({
   title,
   description,
   actions,
-  requiresConnections = false,
-  noConnections,
+  requiresConnections,
   children,
 }) => (
   <div className="flex flex-col gap-6 px-4 lg:px-6">
     <PageHeader title={title} description={description} actions={actions} />
     {requiresConnections ? (
-      <ConnectionsGate noConnections={noConnections}>
-        {children}
-      </ConnectionsGate>
+      <ConnectionsGate prompt={requiresConnections}>{children}</ConnectionsGate>
     ) : (
       children
     )}
   </div>
 );
 
-const ConnectionsGate: React.FC<
-  Pick<PageProps, 'noConnections' | 'children'>
-> = ({ noConnections, children }) => {
+const ConnectionsGate: React.FC<{
+  prompt: ConnectionsPrompt;
+  children?: React.ReactNode;
+}> = ({ prompt, children }) => {
   const items = useItems();
 
   if (items.isLoading) {
@@ -69,10 +78,8 @@ const ConnectionsGate: React.FC<
       <List>
         <ListEmpty
           icon={Landmark}
-          title={noConnections?.title ?? 'No connections yet'}
-          description={
-            noConnections?.description ?? 'Connect an account to get started.'
-          }
+          title={prompt.title}
+          description={prompt.description}
           action={
             <Button asChild>
               <Link to="/settings/connections">Go to connections</Link>

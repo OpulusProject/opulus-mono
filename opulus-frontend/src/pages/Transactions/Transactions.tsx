@@ -24,8 +24,7 @@ export const Transactions: React.FC = () => (
   <Page
     title="Transactions"
     description="Search everything you've spent and received."
-    requiresConnections
-    noConnections={{
+    requiresConnections={{
       title: 'No transactions yet',
       description: 'Connect an account to see your transactions here.',
     }}
