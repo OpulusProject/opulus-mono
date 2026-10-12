@@ -4,7 +4,7 @@ import { Landmark } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { List, ListEmpty, ListGroup } from '@/common/List';
-import { PageHeader } from '@/common/PageHeader';
+import { Page } from '@/common/Page';
 import { Button } from '@/components/ui';
 import { useAccounts } from '@/hooks/accounts/useAccounts';
 import { formatTotals } from '@/utils/accountDisplay';
@@ -39,6 +39,28 @@ interface AccountsOverviewProps {
 export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
   heading,
   description,
+  groups,
+  getSummary,
+  emptyTitle,
+  emptyDescription,
+}) => {
+  return (
+    <Page title={heading} description={description} requiresConnections>
+      <AccountGroups
+        heading={heading}
+        groups={groups}
+        getSummary={getSummary}
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
+      />
+    </Page>
+  );
+};
+
+// Its own component so that its query waits until the page knows something is
+// connected.
+const AccountGroups: React.FC<Omit<AccountsOverviewProps, 'description'>> = ({
+  heading,
   groups,
   getSummary,
   emptyTitle,
@@ -101,12 +123,5 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
     );
   }
 
-  return (
-    <>
-      <div className="flex flex-col gap-6 px-4 lg:px-6">
-        <PageHeader title={heading} description={description} />
-        {content}
-      </div>
-    </>
-  );
+  return <>{content}</>;
 };

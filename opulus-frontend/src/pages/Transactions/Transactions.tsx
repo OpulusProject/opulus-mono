@@ -7,9 +7,8 @@ import {
   ListGroup,
   ListHeader,
 } from '@/common/List';
-import { PageHeader } from '@/common/PageHeader';
+import { Page } from '@/common/Page';
 import { Button, Spinner } from '@/components/ui';
-import { useItems } from '@/hooks/items/useItems';
 import { useInfiniteTransactions } from '@/hooks/transactions/useInfiniteTransactions';
 import { useOnVisible } from '@/hooks/use-on-visible';
 import { formatDay } from '@/utils/day';
@@ -21,21 +20,26 @@ import { TransactionSearch } from './TransactionSearch';
 import { TransactionsEmpty } from './TransactionsEmpty';
 import { useTransactionFilters } from './useTransactionFilters';
 
-export const Transactions: React.FC = () => {
+export const Transactions: React.FC = () => (
+  <Page
+    title="Transactions"
+    description="Search everything you've spent and received."
+    requiresConnections
+    className="gap-4"
+  >
+    <TransactionsContent />
+  </Page>
+);
+
+// Its own component so that its queries wait until the page knows something is
+// connected.
+const TransactionsContent: React.FC = () => {
   const { search, filters, update, hasFilters, clearFilters, isFiltered } =
     useTransactionFilters();
   const query = search.q ?? '';
   const setQuery = (q: string) => update({ q });
 
   const list = useInfiniteTransactions(filters);
-  const items = useItems();
-  // What an empty list means depends on whether anything is connected; until
-  // that is known (or if it failed to load) the empty state does not guess.
-  const connections = items.data
-    ? items.data.items.length > 0
-      ? 'some'
-      : 'none'
-    : 'unknown';
 
   const transactions = useMemo(
     () => list.data?.pages.flatMap((page) => page.transactions) ?? [],
@@ -59,9 +63,7 @@ export const Transactions: React.FC = () => {
       <ListError subject="transactions" onRetry={() => void list.refetch()} />
     );
   } else if (transactions.length === 0) {
-    content = (
-      <TransactionsEmpty isFiltered={isFiltered} connections={connections} />
-    );
+    content = <TransactionsEmpty isFiltered={isFiltered} />;
   } else {
     // The pages are an unbroken run from the newest transaction, so every day is
     // complete except possibly the last one while there are more pages. That
@@ -106,48 +108,42 @@ export const Transactions: React.FC = () => {
 
   return (
     <>
-      <div className="flex flex-col gap-4 px-4 lg:px-6">
-        <PageHeader
-          title="Transactions"
-          description="Search everything you've spent and received."
-        />
-        <TransactionSearch value={query} onChange={setQuery} />
+      <TransactionSearch value={query} onChange={setQuery} />
 
-        {/* The previous results stay up while new ones load; the list dims them. */}
-        <List
-          aria-label="Transactions"
-          isLoading={list.isLoading}
-          isRefreshing={list.isPlaceholderData}
-        >
-          <ListHeader
-            title={
-              list.isLoading
-                ? 'Transactions'
-                : `${total} ${total === 1 ? 'transaction' : 'transactions'}`
-            }
-            titleAction={
-              hasFilters ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={clearFilters}
-                >
-                  Clear filters
-                </Button>
-              ) : undefined
-            }
-            action={({ width }) => (
-              <TransactionFilters
-                search={search}
-                width={width}
-                onChange={update}
-              />
-            )}
-          />
-          {content}
-        </List>
-      </div>
+      {/* The previous results stay up while new ones load; the list dims them. */}
+      <List
+        aria-label="Transactions"
+        isLoading={list.isLoading}
+        isRefreshing={list.isPlaceholderData}
+      >
+        <ListHeader
+          title={
+            list.isLoading
+              ? 'Transactions'
+              : `${total} ${total === 1 ? 'transaction' : 'transactions'}`
+          }
+          titleAction={
+            hasFilters ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="shrink-0"
+                onClick={clearFilters}
+              >
+                Clear filters
+              </Button>
+            ) : undefined
+          }
+          action={({ width }) => (
+            <TransactionFilters
+              search={search}
+              width={width}
+              onChange={update}
+            />
+          )}
+        />
+        {content}
+      </List>
     </>
   );
 };
