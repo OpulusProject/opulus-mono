@@ -18,6 +18,7 @@ Shared package containing repositories (data access), gateways (external APIs), 
 
 - **Plaid Client** - Plaid API integration
 - **Plaid Gateway** - Plaid API wrapper with error handling
+- **Frankfurter Gateway** - Daily exchange rates against the euro (the European Central Bank's), from `FRANKFURTER_BASE_URL`; implements `ExchangeRateProvider`
 
 ### Repositories
 
@@ -36,6 +37,7 @@ Data access, one per model.
 Business logic that both the backend and the webhooks service need. Logic only one app needs lives in that app.
 
 - **`syncItemTransactions`**, **`syncItemLiabilities`** - Pull an item's data from Plaid and store it
+- **`refreshExchangeRates`** - Bring `exchange_rate` up to date (about two years on an empty table, then the days since the last stored one); run daily by `opulus-scheduler`
 
 ### Other
 

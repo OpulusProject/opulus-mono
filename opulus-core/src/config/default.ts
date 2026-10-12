@@ -23,4 +23,10 @@ export default {
   betterAuthSecret: getEnv("BETTER_AUTH_SECRET"),
   betterAuthBaseURL: getEnv("BETTER_AUTH_BASE_URL"),
   plaidWebhookUrl: getEnv("PLAID_WEBHOOK_URL"),
+  // Frankfurter (the European Central Bank's daily rates). Point it elsewhere
+  // to use another deployment of Frankfurter, or a stub in tests.
+  frankfurterBaseUrl: getEnv(
+    "FRANKFURTER_BASE_URL",
+    "https://api.frankfurter.dev/v1"
+  ),
 };
