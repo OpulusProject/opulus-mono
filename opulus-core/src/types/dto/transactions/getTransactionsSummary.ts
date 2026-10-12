@@ -36,16 +36,18 @@ export type TransactionsCategorySpendDTO = z.infer<
   typeof TransactionsCategorySpendDTOSchema
 >;
 
-export const TransactionsDaySpendDTOSchema = z.object({
+/** One day in one currency. Only days with a matching transaction appear. */
+export const TransactionsDayDTOSchema = z.object({
   currency: z.string().nullable(),
   /** YYYY-MM-DD. */
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   spent: z.number(),
+  income: z.number(),
+  /** income minus spent. */
+  net: z.number(),
 });
 
-export type TransactionsDaySpendDTO = z.infer<
-  typeof TransactionsDaySpendDTOSchema
->;
+export type TransactionsDayDTO = z.infer<typeof TransactionsDayDTOSchema>;
 
 /**
  * Transactions summary API response, for the same filters as the list.
@@ -57,7 +59,7 @@ export const TransactionsSummaryResponseSchema = z.object({
   data: z.object({
     totals: z.array(TransactionsTotalDTOSchema),
     byCategory: z.array(TransactionsCategorySpendDTOSchema),
-    byDay: z.array(TransactionsDaySpendDTOSchema),
+    byDay: z.array(TransactionsDayDTOSchema),
   }),
 });
 
@@ -83,6 +85,7 @@ export interface TransactionsSummary {
     currency: string | null;
     date: Date;
     spent: Prisma.Decimal;
+    income: Prisma.Decimal;
   }>;
 }
 
@@ -119,6 +122,8 @@ export function toTransactionsSummaryDTO(
         currency: row.currency,
         date: row.date.toISOString().slice(0, 10),
         spent: row.spent.toNumber(),
+        income: row.income.toNumber(),
+        net: row.income.minus(row.spent).toNumber(),
       }))
       .sort((a, b) => byCurrency(a, b) || a.date.localeCompare(b.date)),
   };

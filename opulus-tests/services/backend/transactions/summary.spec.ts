@@ -93,7 +93,7 @@ test.describe("GET /api/transactions/summary", () => {
     ]);
   });
 
-  test("breaks spending down by category, largest first, and by day, oldest first", async ({
+  test("breaks spending down by category, largest first, and the days oldest first", async ({
     request,
   }) => {
     const { cookie } = await setup(request, [
@@ -106,16 +106,35 @@ test.describe("GET /api/transactions/summary", () => {
 
     const data = await getSummary(request, cookie);
 
-    // Income is not spending, so it is not in the category or day breakdowns.
+    // Income is not spending, so it is not in the category breakdown.
     expect(data.byCategory).toEqual([
       { currency: "CAD", category: "TRAVEL", spent: 100, count: 1 },
       { currency: "CAD", category: "FOOD_AND_DRINK", spent: 50, count: 2 },
       { currency: "CAD", category: null, spent: 7, count: 1 },
     ]);
     expect(data.byDay).toEqual([
-      { currency: "CAD", date: "2026-06-01", spent: 30 },
-      { currency: "CAD", date: "2026-06-02", spent: 120 },
-      { currency: "CAD", date: "2026-06-03", spent: 7 },
+      { currency: "CAD", date: "2026-06-01", spent: 30, income: 0, net: -30 },
+      { currency: "CAD", date: "2026-06-02", spent: 120, income: 0, net: -120 },
+      { currency: "CAD", date: "2026-06-03", spent: 7, income: 500, net: 493 },
+    ]);
+  });
+
+  test("gives each day's net, including a day with only money in, per currency", async ({
+    request,
+  }) => {
+    const { cookie } = await setup(request, [
+      { amount: 12.5, date: day(1) },
+      { amount: -2000, date: day(2), categoryPrimary: "INCOME" },
+      { amount: 5, isoCurrencyCode: "USD", date: day(1) },
+      { amount: -1.25, isoCurrencyCode: "USD", date: day(1) },
+    ]);
+
+    const data = await getSummary(request, cookie);
+
+    expect(data.byDay).toEqual([
+      { currency: "CAD", date: "2026-06-01", spent: 12.5, income: 0, net: -12.5 },
+      { currency: "CAD", date: "2026-06-02", spent: 0, income: 2000, net: 2000 },
+      { currency: "USD", date: "2026-06-01", spent: 5, income: 1.25, net: -3.75 },
     ]);
   });
 
@@ -159,7 +178,9 @@ test.describe("GET /api/transactions/summary", () => {
 
     // Totals and days follow the filter; the category bars do not.
     expect(data.totals[0]).toMatchObject({ spent: 100, count: 1 });
-    expect(data.byDay).toEqual([{ currency: "CAD", date: "2026-06-01", spent: 100 }]);
+    expect(data.byDay).toEqual([
+      { currency: "CAD", date: "2026-06-01", spent: 100, income: 0, net: -100 },
+    ]);
     expect(data.byCategory.map((c) => c.category).sort()).toEqual([
       "FOOD_AND_DRINK",
       "TRAVEL",
