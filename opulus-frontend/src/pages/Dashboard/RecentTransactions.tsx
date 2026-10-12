@@ -52,9 +52,7 @@ export const RecentTransactions: React.FC = () => {
         title="Recent transactions"
         action={
           <Button asChild variant="ghost" size="sm">
-            <Link to="/transactions" aria-label="View all transactions">
-              View
-            </Link>
+            <Link to="/transactions">View all</Link>
           </Button>
         }
       />
