@@ -20,10 +20,13 @@ export * from "./repositories/transactionRepository.js";
 export * from "./repositories/userRepository.js";
 
 // Gateway exports (external APIs)
+export * from "./gateways/exchangeRateProvider.js";
+export * from "./gateways/frankfurterGateway.js";
 export * from "./gateways/plaidGateway.js";
 
 // Service exports (business logic shared by the backend and webhooks)
 export * from "./services/backfillBalanceHistory.js";
+export * from "./services/refreshExchangeRates.js";
 export * from "./services/refreshItemBalances.js";
 export * from "./services/syncItemLiabilities.js";
 export * from "./services/syncItemTransactions.js";
