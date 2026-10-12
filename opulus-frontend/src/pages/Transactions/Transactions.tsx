@@ -25,7 +25,10 @@ export const Transactions: React.FC = () => (
     title="Transactions"
     description="Search everything you've spent and received."
     requiresConnections
-    className="gap-4"
+    noConnections={{
+      title: 'No connections yet',
+      description: 'Connect an account to see your transactions here.',
+    }}
   >
     <TransactionsContent />
   </Page>
@@ -107,7 +110,7 @@ const TransactionsContent: React.FC = () => {
   }
 
   return (
-    <>
+    <div className="flex flex-col gap-4">
       <TransactionSearch value={query} onChange={setQuery} />
 
       {/* The previous results stay up while new ones load; the list dims them. */}
@@ -144,6 +147,6 @@ const TransactionsContent: React.FC = () => {
         />
         {content}
       </List>
-    </>
+    </div>
   );
 };

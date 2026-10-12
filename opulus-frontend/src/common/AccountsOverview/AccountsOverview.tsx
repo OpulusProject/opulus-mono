@@ -45,7 +45,12 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
   emptyDescription,
 }) => {
   return (
-    <Page title={heading} description={description} requiresConnections>
+    <Page
+      title={heading}
+      description={description}
+      requiresConnections
+      noConnections={{ title: emptyTitle, description: emptyDescription }}
+    >
       <AccountGroups
         heading={heading}
         groups={groups}

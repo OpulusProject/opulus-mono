@@ -6,7 +6,6 @@ import { List, ListEmpty } from '@/common/List';
 import { PageHeader } from '@/common/PageHeader';
 import { Button } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
-import { cn } from '@/lib/utils';
 
 interface PageProps {
   title: string;
@@ -18,8 +17,8 @@ interface PageProps {
    * shows one prompt to connect instead of its content.
    */
   requiresConnections?: boolean;
-  /** Spacing and the like for the page's own layout. */
-  className?: string;
+  /** What the prompt says when nothing is connected, in the page's own terms. */
+  noConnections?: { title: string; description: string };
   children?: React.ReactNode;
 }
 
@@ -42,22 +41,24 @@ export const Page: React.FC<PageProps> = ({
   description,
   actions,
   requiresConnections = false,
-  className,
+  noConnections,
   children,
 }) => (
-  <div className={cn('flex flex-col gap-6 px-4 lg:px-6', className)}>
+  <div className="flex flex-col gap-6 px-4 lg:px-6">
     <PageHeader title={title} description={description} actions={actions} />
     {requiresConnections ? (
-      <ConnectionsGate>{children}</ConnectionsGate>
+      <ConnectionsGate noConnections={noConnections}>
+        {children}
+      </ConnectionsGate>
     ) : (
       children
     )}
   </div>
 );
 
-const ConnectionsGate: React.FC<{ children?: React.ReactNode }> = ({
-  children,
-}) => {
+const ConnectionsGate: React.FC<
+  Pick<PageProps, 'noConnections' | 'children'>
+> = ({ noConnections, children }) => {
   const items = useItems();
 
   if (items.isLoading) {
@@ -68,8 +69,10 @@ const ConnectionsGate: React.FC<{ children?: React.ReactNode }> = ({
       <List>
         <ListEmpty
           icon={Landmark}
-          title="No connections yet"
-          description="Connect an account to get started."
+          title={noConnections?.title ?? 'No connections yet'}
+          description={
+            noConnections?.description ?? 'Connect an account to get started.'
+          }
           action={
             <Button asChild>
               <Link to="/settings/connections">Go to connections</Link>
