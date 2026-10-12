@@ -90,6 +90,28 @@ module.exports = {
       },
     ],
   },
+  overrides: [
+    {
+      // Pages and shared components display what the API returns; they do not
+      // add it up. See "The server owns the data" in docs/CONVENTIONS.md.
+      files: ['src/pages/**/*.{ts,tsx}', 'src/common/**/*.{ts,tsx}'],
+      rules: {
+        'no-restricted-syntax': [
+          'error',
+          {
+            selector: "CallExpression[callee.property.name='reduce']",
+            message:
+              'Do not add up API data in the client: the server owns aggregates (docs/CONVENTIONS.md, "The server owns the data"). If this is display work, say why in an eslint-disable comment.',
+          },
+          {
+            selector: "NewExpression[callee.name='Map']",
+            message:
+              'Do not group or total API data in the client: the server owns aggregates (docs/CONVENTIONS.md, "The server owns the data"). If this is display work, say why in an eslint-disable comment.',
+          },
+        ],
+      },
+    },
+  ],
   settings: {
     'import/resolver': {
       typescript: {
