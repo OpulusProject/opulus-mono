@@ -33,6 +33,7 @@ frontend.
 │   ├── src/gateways/            the Plaid API wrapper
 │   └── src/services/            business logic shared by the backend and webhooks
 ├── opulus-webhooks/             Plaid webhook receiver + Redis/BullMQ worker
+├── opulus-scheduler/            Recurring jobs (BullMQ job schedulers): exchange rates
 ├── docs/                        Notes on observability and privacy
 ├── docker-compose.yml           Local Postgres + Redis
 ├── package.json                 pnpm workspace orchestration
@@ -102,6 +103,7 @@ From the repo root:
 pnpm dev:backend      # API on http://localhost:8080, core in watch mode
 pnpm dev:frontend     # frontend on http://localhost:5173
 pnpm dev:webhooks     # webhook receiver on http://localhost:8081, core in watch mode
+pnpm dev:scheduler    # recurring jobs, health on http://localhost:8082, core in watch mode
 ```
 
 The root scripts are thin wrappers around `pnpm --filter ...` commands. You can
@@ -118,6 +120,7 @@ Run these from the repo root unless noted.
 | `pnpm dev:frontend`    | Run the frontend dev server               |
 | `pnpm dev:backend`     | Run backend + core watch mode             |
 | `pnpm dev:webhooks`    | Run webhook service + core watch mode     |
+| `pnpm dev:scheduler`   | Run the scheduler + core watch mode       |
 | `pnpm build`           | Build core, then all workspace packages   |
 | `pnpm lint`            | Run lint scripts across workspaces        |
 | `pnpm format`          | Run formatting across workspaces          |
@@ -168,6 +171,7 @@ read it via symlinks so there's only one file to edit:
 cp .env.example .env               # fill in local values
 ln -s ../.env opulus-backend/.env
 ln -s ../.env opulus-webhooks/.env
+ln -s ../.env opulus-scheduler/.env
 ```
 
 Each service still loads env with plain `import "dotenv/config"`; the symlink
@@ -189,6 +193,7 @@ containers have no `.env` and env comes from the platform — no symlinks there.
 | `CLIENT_URL`           | `http://localhost:5173`                                              | CORS origin for frontend                  |
 | `PORT`                 | `8080`                                                               | Backend API port                          |
 | `WEBHOOK_PORT`         | `8081`                                                               | Webhook receiver port                     |
+| `SCHEDULER_PORT`       | `8082`                                                               | Scheduler port (see its README for the rest) |
 
 
 ## Service Documentation
@@ -196,6 +201,7 @@ containers have no `.env` and env comes from the platform — no symlinks there.
 - [Backend](./opulus-backend/README.md) - Express API, auth, endpoints, Bruno testing
 - [Frontend](./opulus-frontend/README.md) - React app, routing, query hooks, UI integration
 - [Webhooks](./opulus-webhooks/README.md) - Plaid webhook receiver, queueing, local tunnel setup
+- [Scheduler](./opulus-scheduler/README.md) - Recurring jobs, the jobs API, adding a job
 - [Core](./opulus-core/README.md) - Repositories, gateways, Prisma, DTOs
 - [Docs](./docs/README.md) - Conventions, observability and transaction privacy notes
 
