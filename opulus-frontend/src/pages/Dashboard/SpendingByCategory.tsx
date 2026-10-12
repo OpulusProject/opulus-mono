@@ -1,7 +1,4 @@
-import type {
-  TransactionsCategorySpendDTO,
-  TransactionsSummaryResponse,
-} from '@opulus/core/dto';
+import type { SpendingCurrencyDTO } from '@opulus/core/dto';
 import { Link } from '@tanstack/react-router';
 import { Ellipsis, PiggyBank } from 'lucide-react';
 import * as React from 'react';
@@ -15,15 +12,13 @@ import {
   ListRow,
 } from '@/common/List';
 import { Button } from '@/components/ui';
-import { useTransactionsSummary } from '@/hooks/transactions/useTransactionsSummary';
+import { useSpendingByCategory } from '@/hooks/transactions/useSpendingByCategory';
 import { formatMoney } from '@/utils/accountDisplay';
 import { toDay } from '@/utils/dateRange';
 import { getCategoryIcon, getCategoryLabel } from '@/utils/transactionCategory';
 
-/** Categories shown by name; the rest are added up into one row. */
+/** Categories shown by name; the server adds the rest up into one row. */
 const TOP_CATEGORIES = 5;
-
-type Summary = TransactionsSummaryResponse['data'];
 
 /** This month's spending: the top categories, each with its share of the total. */
 export const SpendingByCategory: React.FC = () => {
@@ -38,19 +33,16 @@ export const SpendingByCategory: React.FC = () => {
   });
 
   // Transfers and credit card payments would otherwise count as spending twice.
-  const summary = useTransactionsSummary({
+  const query = useSpendingByCategory({
     startDate: month.startDate,
     endDate: month.endDate,
     hideTransfers: true,
+    top: TOP_CATEGORIES,
   });
-
-  const spending = React.useMemo(
-    () => (summary.data ? groupSpending(summary.data) : []),
-    [summary.data]
-  );
+  const spending = query.data?.spending ?? [];
 
   return (
-    <List aria-label="Spending by category" isLoading={summary.isLoading}>
+    <List aria-label="Spending by category" isLoading={query.isLoading}>
       <ListHeader
         title={`Spending in ${month.name}`}
         action={
@@ -59,10 +51,10 @@ export const SpendingByCategory: React.FC = () => {
           </Button>
         }
       />
-      {summary.isError ? (
+      {query.isError ? (
         <ListError
           subject="your spending"
-          onRetry={() => void summary.refetch()}
+          onRetry={() => void query.refetch()}
         />
       ) : spending.length === 0 ? (
         <ListEmpty
@@ -71,16 +63,16 @@ export const SpendingByCategory: React.FC = () => {
           description={`Nothing spent so far in ${month.name}.`}
         />
       ) : spending.length === 1 ? (
-        spending[0].rows.map(renderRow)
+        categoryRows(spending[0])
       ) : (
         // Several currencies are never added together, so each gets its own group.
-        spending.map(({ currency, spent, rows }) => (
+        spending.map((entry) => (
           <ListGroup
-            key={currency ?? 'none'}
-            title={currency ?? 'Other currency'}
-            trailingTitle={formatMoney(spent, currency)}
+            key={entry.currency ?? 'none'}
+            title={entry.currency ?? 'Other currency'}
+            trailingTitle={formatMoney(entry.spent, entry.currency)}
           >
-            {rows.map(renderRow)}
+            {categoryRows(entry)}
           </ListGroup>
         ))
       )}
@@ -88,74 +80,36 @@ export const SpendingByCategory: React.FC = () => {
   );
 };
 
-interface SpendingRow {
-  key: string;
-  /** null when Plaid did not categorize; unused on the `more` row. */
-  category: string | null | undefined;
-  count: number;
-  spent: number;
-  share: number;
-  currency: string | null;
-  /** Set on the row that adds up the smaller categories. */
-  more?: number;
-}
-
-interface CurrencySpending {
-  currency: string | null;
-  spent: number;
-  rows: SpendingRow[];
-}
-
 /**
- * The summary as one entry per currency: its total spent and its biggest
- * categories, with the rest added up into a final row.
+ * A row per category, then one for the categories the server added up. A list's
+ * rows must be its direct children, so this returns them rather than being a
+ * component.
  */
-function groupSpending(summary: Summary): CurrencySpending[] {
-  return summary.totals
-    .filter((total) => total.spent > 0)
-    .map(({ currency, spent }) => {
-      const categories = summary.byCategory
-        .filter((row) => row.currency === currency && row.spent > 0)
-        .sort((a, b) => b.spent - a.spent);
-      const toRow = (row: TransactionsCategorySpendDTO): SpendingRow => ({
-        key: row.category ?? 'uncategorized',
-        category: row.category,
-        count: row.count,
-        spent: row.spent,
-        share: row.spent / spent,
-        currency,
-      });
+function categoryRows({ currency, categories, other }: SpendingCurrencyDTO) {
+  const subtitle = (count: number) =>
+    `${count} ${count === 1 ? 'transaction' : 'transactions'}`;
+  const share = (value: number) => `${Math.round(value * 100)}%`;
 
-      const rows = categories.slice(0, TOP_CATEGORIES).map(toRow);
-      const rest = categories.slice(TOP_CATEGORIES);
-      if (rest.length > 0) {
-        const restSpent = rest.reduce((sum, row) => sum + row.spent, 0);
-        rows.push({
-          key: 'rest',
-          category: undefined,
-          count: rest.reduce((sum, row) => sum + row.count, 0),
-          spent: restSpent,
-          share: restSpent / spent,
-          currency,
-          more: rest.length,
-        });
-      }
-      return { currency, spent, rows };
-    });
-}
-
-function renderRow(row: SpendingRow) {
-  const label = row.more
-    ? `${row.more} other categories`
-    : getCategoryLabel(row.category);
-  return (
-    <ListRow
-      key={row.key}
-      icon={row.more ? Ellipsis : getCategoryIcon(row.category)}
-      title={label}
-      subtitle={`${row.count} ${row.count === 1 ? 'transaction' : 'transactions'}`}
-      trailingTitle={formatMoney(row.spent, row.currency)}
-      trailingSubtitle={`${Math.round(row.share * 100)}%`}
-    />
-  );
+  return [
+    ...categories.map((row) => (
+      <ListRow
+        key={row.category ?? 'uncategorized'}
+        icon={getCategoryIcon(row.category)}
+        title={getCategoryLabel(row.category)}
+        subtitle={subtitle(row.count)}
+        trailingTitle={formatMoney(row.spent, currency)}
+        trailingSubtitle={share(row.share)}
+      />
+    )),
+    other && (
+      <ListRow
+        key="other"
+        icon={Ellipsis}
+        title={`${other.categories} other categories`}
+        subtitle={subtitle(other.count)}
+        trailingTitle={formatMoney(other.spent, currency)}
+        trailingSubtitle={share(other.share)}
+      />
+    ),
+  ];
 }
