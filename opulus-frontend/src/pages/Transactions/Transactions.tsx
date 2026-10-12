@@ -1,7 +1,9 @@
+import { ReceiptText } from 'lucide-react';
 import { useMemo } from 'react';
 
 import {
   List,
+  ListEmpty,
   ListError,
   ListFooter,
   ListGroup,
@@ -17,7 +19,6 @@ import { groupByDay, netLabel } from './transactionDays';
 import { TransactionFilters } from './TransactionFilters';
 import { TransactionRow } from './TransactionRow';
 import { TransactionSearch } from './TransactionSearch';
-import { TransactionsEmpty } from './TransactionsEmpty';
 import { useTransactionFilters } from './useTransactionFilters';
 
 export const Transactions: React.FC = () => (
@@ -59,54 +60,7 @@ const TransactionsContent: React.FC = () => {
     rootMargin: '300px',
   });
 
-  let content: React.ReactNode;
-  if (list.isError) {
-    content = (
-      <ListError subject="transactions" onRetry={() => void list.refetch()} />
-    );
-  } else if (transactions.length === 0) {
-    content = <TransactionsEmpty isFiltered={isFiltered} />;
-  } else {
-    // The pages are an unbroken run from the newest transaction, so every day is
-    // complete except possibly the last one while there are more pages. That
-    // day's net waits until the rest of its transactions are in.
-    content = [
-      ...days.map(({ day, transactions: rows }, index) => {
-        const isPartialDay = index === days.length - 1 && list.hasNextPage;
-        return (
-          <ListGroup
-            key={day}
-            title={formatDay(day)}
-            trailingTitle={isPartialDay ? undefined : netLabel(rows)}
-          >
-            {rows.map((transaction) => (
-              <TransactionRow key={transaction.id} transaction={transaction} />
-            ))}
-          </ListGroup>
-        );
-      }),
-      <ListFooter
-        key="footer"
-        summary={`Showing ${transactions.length} of ${total}`}
-        action={
-          loadFailed ? (
-            <Button variant="outline" size="sm" onClick={loadMore}>
-              Try again
-            </Button>
-          ) : list.hasNextPage ? (
-            <div
-              ref={loadMoreRef}
-              role="status"
-              aria-label="Loading more transactions"
-              className="size-4"
-            >
-              {list.isFetchingNextPage && <Spinner />}
-            </div>
-          ) : undefined
-        }
-      />,
-    ];
-  }
+  const hasResults = !list.isError && transactions.length > 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -144,8 +98,76 @@ const TransactionsContent: React.FC = () => {
             />
           )}
         />
-        {content}
+        {list.isError ? (
+          <ListError
+            subject="transactions"
+            onRetry={() => void list.refetch()}
+          />
+        ) : transactions.length === 0 ? (
+          <TransactionsEmpty isFiltered={isFiltered} />
+        ) : (
+          // The pages are an unbroken run from the newest transaction, so every
+          // day is complete except possibly the last one while there are more
+          // pages. That day's net waits until the rest of its transactions are in.
+          days.map(({ day, transactions: rows }, index) => (
+            <ListGroup
+              key={day}
+              title={formatDay(day)}
+              trailingTitle={
+                index === days.length - 1 && list.hasNextPage
+                  ? undefined
+                  : netLabel(rows)
+              }
+            >
+              {rows.map((transaction) => (
+                <TransactionRow
+                  key={transaction.id}
+                  transaction={transaction}
+                />
+              ))}
+            </ListGroup>
+          ))
+        )}
+        {hasResults && (
+          <ListFooter
+            summary={`Showing ${transactions.length} of ${total}`}
+            action={
+              loadFailed ? (
+                <Button variant="outline" size="sm" onClick={loadMore}>
+                  Try again
+                </Button>
+              ) : list.hasNextPage ? (
+                <div
+                  ref={loadMoreRef}
+                  role="status"
+                  aria-label="Loading more transactions"
+                  className="size-4"
+                >
+                  {list.isFetchingNextPage && <Spinner />}
+                </div>
+              ) : undefined
+            }
+          />
+        )}
       </List>
     </div>
   );
 };
+
+/** Why there are no transactions: nothing matched, or none have synced yet. */
+const TransactionsEmpty: React.FC<{ isFiltered: boolean }> = ({
+  isFiltered,
+}) =>
+  isFiltered ? (
+    <ListEmpty
+      icon={ReceiptText}
+      title="No transactions found"
+      description="Nothing matches. Try a different search or fewer filters."
+    />
+  ) : (
+    <ListEmpty
+      icon={ReceiptText}
+      title="No transactions yet"
+      description="Transactions from your connected accounts will appear here once they finish syncing."
+    />
+  );

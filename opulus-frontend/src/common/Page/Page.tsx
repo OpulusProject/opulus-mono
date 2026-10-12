@@ -14,7 +14,7 @@ interface ConnectionsPrompt {
 
 interface PageProps {
   title: string;
-  description?: React.ReactNode;
+  description?: string;
   /** Primary page actions, right-aligned on wide screens. */
   actions?: React.ReactNode;
   /**

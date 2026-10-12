@@ -87,11 +87,11 @@ const AccountGroups: React.FC<Omit<AccountsOverviewProps, 'description'>> = ({
     [accounts, groups]
   );
 
-  let content: React.ReactNode;
   if (isLoading) {
-    content = <List isLoading />;
-  } else if (accounts.length === 0) {
-    content = (
+    return <List isLoading />;
+  }
+  if (accounts.length === 0) {
+    return (
       <List>
         <ListEmpty
           icon={Landmark}
@@ -105,27 +105,24 @@ const AccountGroups: React.FC<Omit<AccountsOverviewProps, 'description'>> = ({
         />
       </List>
     );
-  } else {
-    content = (
-      <>
-        <SummaryStats stats={getSummary(accounts)} />
-
-        <List aria-label={heading}>
-          {visibleGroups.map((group) => (
-            <ListGroup
-              key={group.type}
-              title={group.title}
-              trailingTitle={formatTotals(group.accounts)}
-            >
-              {group.accounts.map((account) => (
-                <AccountRow key={account.id} account={account} />
-              ))}
-            </ListGroup>
-          ))}
-        </List>
-      </>
-    );
   }
+  return (
+    <>
+      <SummaryStats stats={getSummary(accounts)} />
 
-  return <>{content}</>;
+      <List aria-label={heading}>
+        {visibleGroups.map((group) => (
+          <ListGroup
+            key={group.type}
+            title={group.title}
+            trailingTitle={formatTotals(group.accounts)}
+          >
+            {group.accounts.map((account) => (
+              <AccountRow key={account.id} account={account} />
+            ))}
+          </ListGroup>
+        ))}
+      </List>
+    </>
+  );
 };
