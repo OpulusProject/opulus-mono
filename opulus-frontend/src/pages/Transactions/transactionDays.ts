@@ -29,6 +29,9 @@ export function groupByDay(transactions: TransactionDTO[]): TransactionDay[] {
  * cancel out. Currencies are in code order, separated by "·": "+$26.04 · −US$29.00".
  */
 export function netLabel(transactions: TransactionDTO[]): string {
+  // The server should supply each day's net (the summary's per-day totals), so
+  // this goes away with that change; until then it is the one place we sum.
+  // eslint-disable-next-line no-restricted-syntax
   const byCurrency = new Map<string | null, number>();
   for (const { amount, isoCurrencyCode } of transactions) {
     // Plaid's amounts are positive for money out, so the change is the negative.
