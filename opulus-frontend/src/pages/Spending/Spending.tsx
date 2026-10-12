@@ -1,15 +1,18 @@
 import { PiggyBank } from 'lucide-react';
 
 import { List, ListEmpty } from '@/common/List';
-import { PageHeader } from '@/common/PageHeader';
+import { Page } from '@/common/Page';
 
 /** Placeholder until the page is built: spending by month, category and merchant. */
 export const Spending: React.FC = () => (
-  <div className="flex flex-col gap-6 px-4 lg:px-6">
-    <PageHeader
-      title="Spending"
-      description="Where your money went, by month and category."
-    />
+  <Page
+    title="Spending"
+    description="Where your money went, by month and category."
+    requiresConnections={{
+      title: 'No spending yet',
+      description: 'Connect an account to see where your money goes.',
+    }}
+  >
     <List aria-label="Spending">
       <ListEmpty
         icon={PiggyBank}
@@ -17,5 +20,5 @@ export const Spending: React.FC = () => (
         description="A breakdown of your spending will appear here."
       />
     </List>
-  </div>
+  </Page>
 );

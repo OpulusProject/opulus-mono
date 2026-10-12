@@ -1,13 +1,11 @@
 import { Landmark } from 'lucide-react';
 import * as React from 'react';
 
-import { List, ListError } from '@/common/List';
+import { List, ListEmpty, ListError } from '@/common/List';
 import { Skeleton } from '@/components/ui';
 import { useAccounts } from '@/hooks/accounts/useAccounts';
 import { formatMoney } from '@/utils/accountDisplay';
 import { type NetWorth as NetWorthTotals, getNetWorth } from '@/utils/netWorth';
-
-import { DashboardEmpty } from './DashboardEmpty';
 
 /** "$1,000.00", or "$1,000.00 + US$50.00" when the accounts span currencies. */
 const format = (
@@ -40,9 +38,8 @@ export const NetWorth: React.FC = () => {
   if (totals.length === 0) {
     return (
       <List>
-        <DashboardEmpty
+        <ListEmpty
           icon={Landmark}
-          noConnections
           title="No accounts yet"
           description="Connect an account to see your net worth."
         />

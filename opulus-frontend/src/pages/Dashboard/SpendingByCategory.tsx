@@ -6,15 +6,19 @@ import { Link } from '@tanstack/react-router';
 import { Ellipsis, PiggyBank } from 'lucide-react';
 import * as React from 'react';
 
-import { List, ListError, ListGroup, ListHeader, ListRow } from '@/common/List';
+import {
+  List,
+  ListEmpty,
+  ListError,
+  ListGroup,
+  ListHeader,
+  ListRow,
+} from '@/common/List';
 import { Button } from '@/components/ui';
-import { useAccounts } from '@/hooks/accounts/useAccounts';
 import { useTransactionsSummary } from '@/hooks/transactions/useTransactionsSummary';
 import { formatMoney } from '@/utils/accountDisplay';
 import { toDay } from '@/utils/dateRange';
 import { getCategoryIcon, getCategoryLabel } from '@/utils/transactionCategory';
-
-import { DashboardEmpty } from './DashboardEmpty';
 
 /** Categories shown by name; the rest are added up into one row. */
 const TOP_CATEGORIES = 5;
@@ -39,45 +43,11 @@ export const SpendingByCategory: React.FC = () => {
     endDate: month.endDate,
     hideTransfers: true,
   });
-  const accounts = useAccounts();
-  const noConnections = accounts.data?.accounts.length === 0;
 
   const spending = React.useMemo(
     () => (summary.data ? groupSpending(summary.data) : []),
     [summary.data]
   );
-
-  let content: React.ReactNode;
-  if (summary.isError) {
-    content = (
-      <ListError
-        subject="your spending"
-        onRetry={() => void summary.refetch()}
-      />
-    );
-  } else if (spending.length === 0) {
-    content = (
-      <DashboardEmpty
-        icon={PiggyBank}
-        noConnections={noConnections}
-        title="No spending yet"
-        description={`Nothing spent so far in ${month.name}.`}
-      />
-    );
-  } else if (spending.length === 1) {
-    content = spending[0].rows.map(renderRow);
-  } else {
-    // Several currencies are never added together, so each gets its own group.
-    content = spending.map(({ currency, spent, rows }) => (
-      <ListGroup
-        key={currency ?? 'none'}
-        title={currency ?? 'Other currency'}
-        trailingTitle={formatMoney(spent, currency)}
-      >
-        {rows.map(renderRow)}
-      </ListGroup>
-    ));
-  }
 
   return (
     <List aria-label="Spending by category" isLoading={summary.isLoading}>
@@ -89,7 +59,31 @@ export const SpendingByCategory: React.FC = () => {
           </Button>
         }
       />
-      {content}
+      {summary.isError ? (
+        <ListError
+          subject="your spending"
+          onRetry={() => void summary.refetch()}
+        />
+      ) : spending.length === 0 ? (
+        <ListEmpty
+          icon={PiggyBank}
+          title="No spending yet"
+          description={`Nothing spent so far in ${month.name}.`}
+        />
+      ) : spending.length === 1 ? (
+        spending[0].rows.map(renderRow)
+      ) : (
+        // Several currencies are never added together, so each gets its own group.
+        spending.map(({ currency, spent, rows }) => (
+          <ListGroup
+            key={currency ?? 'none'}
+            title={currency ?? 'Other currency'}
+            trailingTitle={formatMoney(spent, currency)}
+          >
+            {rows.map(renderRow)}
+          </ListGroup>
+        ))
+      )}
     </List>
   );
 };
