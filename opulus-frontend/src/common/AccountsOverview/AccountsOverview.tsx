@@ -4,7 +4,7 @@ import { Landmark } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { List, ListEmpty, ListGroup } from '@/common/List';
-import { PageHeader } from '@/common/PageHeader';
+import { Page } from '@/common/Page';
 import { Button } from '@/components/ui';
 import { useAccounts } from '@/hooks/accounts/useAccounts';
 import { formatTotals } from '@/utils/accountDisplay';
@@ -44,6 +44,32 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
   emptyTitle,
   emptyDescription,
 }) => {
+  return (
+    <Page
+      title={heading}
+      description={description}
+      requiresConnections={{ title: emptyTitle, description: emptyDescription }}
+    >
+      <AccountGroups
+        heading={heading}
+        groups={groups}
+        getSummary={getSummary}
+        emptyTitle={emptyTitle}
+        emptyDescription={emptyDescription}
+      />
+    </Page>
+  );
+};
+
+// Its own component so that its query waits until the page knows something is
+// connected.
+const AccountGroups: React.FC<Omit<AccountsOverviewProps, 'description'>> = ({
+  heading,
+  groups,
+  getSummary,
+  emptyTitle,
+  emptyDescription,
+}) => {
   const types = useMemo(() => groups.map((group) => group.type), [groups]);
   const { data, isLoading } = useAccounts(types);
   const accounts = useMemo(() => data?.accounts ?? [], [data]);
@@ -61,11 +87,11 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
     [accounts, groups]
   );
 
-  let content: React.ReactNode;
   if (isLoading) {
-    content = <List isLoading />;
-  } else if (accounts.length === 0) {
-    content = (
+    return <List isLoading />;
+  }
+  if (accounts.length === 0) {
+    return (
       <List>
         <ListEmpty
           icon={Landmark}
@@ -79,34 +105,24 @@ export const AccountsOverview: React.FC<AccountsOverviewProps> = ({
         />
       </List>
     );
-  } else {
-    content = (
-      <>
-        <SummaryStats stats={getSummary(accounts)} />
-
-        <List aria-label={heading}>
-          {visibleGroups.map((group) => (
-            <ListGroup
-              key={group.type}
-              title={group.title}
-              trailingTitle={formatTotals(group.accounts)}
-            >
-              {group.accounts.map((account) => (
-                <AccountRow key={account.id} account={account} />
-              ))}
-            </ListGroup>
-          ))}
-        </List>
-      </>
-    );
   }
-
   return (
     <>
-      <div className="flex flex-col gap-6 px-4 lg:px-6">
-        <PageHeader title={heading} description={description} />
-        {content}
-      </div>
+      <SummaryStats stats={getSummary(accounts)} />
+
+      <List aria-label={heading}>
+        {visibleGroups.map((group) => (
+          <ListGroup
+            key={group.type}
+            title={group.title}
+            trailingTitle={formatTotals(group.accounts)}
+          >
+            {group.accounts.map((account) => (
+              <AccountRow key={account.id} account={account} />
+            ))}
+          </ListGroup>
+        ))}
+      </List>
     </>
   );
 };

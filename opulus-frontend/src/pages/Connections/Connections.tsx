@@ -31,7 +31,7 @@ export const Connections: React.FC = () => {
       <div className="flex flex-col gap-6 px-4 lg:px-6">
         <PageHeader
           title="Your connections"
-          description="Connect the banks and cards Opulus tracks. Your accounts and transactions stay in sync automatically."
+          description="Connect the banks and cards Opulus tracks."
           actions={
             <Button type="button" onClick={() => openLink()}>
               <Plus className="size-4" />
