@@ -1,4 +1,4 @@
-import type { TransactionDTO } from '@opulus/core/dto';
+import type { TransactionDTO, TransactionsDayDTO } from '@opulus/core/dto';
 
 import { formatMoney } from '@/utils/accountDisplay';
 
@@ -6,6 +6,21 @@ export interface TransactionDay {
   /** The day, as `YYYY-MM-DD`. */
   day: string;
   transactions: TransactionDTO[];
+}
+
+/**
+ * A day's net change for its heading, from the server's per-day totals: "−$87.39"
+ * when more went out than came in, "+$2,100.00" when more came in, "$0.00" when
+ * they cancel out. Currencies come in code order (the server's), separated by
+ * "·": "+$26.04 · −US$29.00". Undefined when the totals have no entry for the day.
+ */
+export function dayNetLabel(
+  byDay: TransactionsDayDTO[],
+  day: string
+): string | undefined {
+  const rows = byDay.filter((row) => row.date === day);
+  if (rows.length === 0) return undefined;
+  return rows.map(({ currency, net }) => formatNet(net, currency)).join(' · ');
 }
 
 /**
@@ -21,29 +36,6 @@ export function groupByDay(transactions: TransactionDTO[]): TransactionDay[] {
     else days.push({ day, transactions: [transaction] });
   }
   return days;
-}
-
-/**
- * The net change of these transactions, per currency, signed: "−$87.39" when
- * more went out than came in, "+$2,100.00" when more came in, "$0.00" when they
- * cancel out. Currencies are in code order, separated by "·": "+$26.04 · −US$29.00".
- */
-export function netLabel(transactions: TransactionDTO[]): string {
-  // The server should supply each day's net (the summary's per-day totals), so
-  // this goes away with that change; until then it is the one place we sum.
-  // eslint-disable-next-line no-restricted-syntax
-  const byCurrency = new Map<string | null, number>();
-  for (const { amount, isoCurrencyCode } of transactions) {
-    // Plaid's amounts are positive for money out, so the change is the negative.
-    byCurrency.set(
-      isoCurrencyCode,
-      (byCurrency.get(isoCurrencyCode) ?? 0) - amount
-    );
-  }
-  return [...byCurrency]
-    .sort(([a], [b]) => (a ?? '').localeCompare(b ?? ''))
-    .map(([currency, net]) => formatNet(Math.round(net * 100) / 100, currency))
-    .join(' · ');
 }
 
 function formatNet(net: number, currency: string | null): string {
