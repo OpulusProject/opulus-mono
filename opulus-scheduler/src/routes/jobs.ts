@@ -34,11 +34,20 @@ function requireAdminToken(adminToken: string) {
 const iso = (ms: number | undefined) =>
   ms ? new Date(ms).toISOString() : null;
 
-async function toJobRunDTO(job: Job): Promise<JobRunDTO> {
+async function toJobRunDTO(listed: Job): Promise<JobRunDTO> {
+  const state = await listed.getState();
+  // The job was read before its state was. If it finished in between, what it
+  // holds (result, error, times) is from before it finished, so read it again:
+  // a run must not be "completed" with no result.
+  const job =
+    state === "completed" || state === "failed"
+      ? ((await schedulerQueue.getJob(listed.id ?? "")) ?? listed)
+      : listed;
+
   return {
     id: job.id ?? "",
     job: job.name,
-    state: await job.getState(),
+    state,
     attempts: job.attemptsMade,
     result: job.returnvalue ?? null,
     error: job.failedReason || null,
