@@ -2,6 +2,7 @@
 import "dotenv/config";
 
 import {
+  checkRedisConnection,
   errorHandler,
   logger,
   prisma,
@@ -9,7 +10,6 @@ import {
   requestLogger,
 } from "@opulus/core";
 import express from "express";
-import { checkRedisConnection } from "./queue/redis.js";
 import {
   createSchedulerWorker,
   registerSchedules,
@@ -68,8 +68,10 @@ if (adminToken) {
 
 app.use(errorHandler);
 
-const server = app.listen(SCHEDULER_PORT, "0.0.0.0", () => {
-  logger.info(`Scheduler is up at http://0.0.0.0:${SCHEDULER_PORT}`);
+// "::" accepts IPv4 and IPv6, so Railway's private network reaches it either
+// way (older environments route private traffic over IPv6 only).
+const server = app.listen(SCHEDULER_PORT, "::", () => {
+  logger.info(`Scheduler is up on port ${SCHEDULER_PORT}`);
 });
 
 async function shutdown(signal: string) {

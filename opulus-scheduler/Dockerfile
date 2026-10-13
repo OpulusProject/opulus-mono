@@ -42,8 +42,9 @@ COPY --from=base /app/opulus-scheduler/node_modules ./opulus-scheduler/node_modu
 COPY --from=base /app/opulus-core/dist ./opulus-core/dist
 COPY --from=base /app/opulus-scheduler/dist ./opulus-scheduler/dist
 
-# The schema, for generating the client (migrations are applied by the backend
-# and webhooks services, not here)
+# The schema, for generating the client. Migrations are applied by the backend
+# and webhooks services on their start, not here (Prisma only applies the ones
+# not yet applied, and takes a lock while it does)
 COPY --from=base /app/opulus-core/prisma ./opulus-core/prisma
 RUN pnpm --filter @opulus/core prisma:generate
 

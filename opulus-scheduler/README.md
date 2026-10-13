@@ -62,7 +62,7 @@ The response shape is `JobRunResponse` in `@opulus/core` (`types/dto/jobs`).
 | --- | --- | --- |
 | `DATABASE_URL` | | Same database as the other services |
 | `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_TLS` | `localhost`, `6379` | Same Redis as the webhooks service |
-| `SCHEDULER_PORT` | `8082` | HTTP port |
+| `SCHEDULER_PORT` | `8082` | HTTP port (listens on `::`) |
 | `SCHEDULER_ADMIN_TOKEN` | *unset* | Turns on the jobs API; generate with `openssl rand -base64 32` |
 | `SCHEDULER_RUN_ON_START` | `true` | `false` to skip the start-up runs |
 | `EXCHANGE_RATES_CRON` | `0 17 * * *` | When `refresh-exchange-rates` runs (UTC) |
@@ -79,7 +79,11 @@ Needs Postgres and Redis (`docker compose up -d` at the root) and the root `.env
 
 ### Railway (production)
 
-Deploy it as its own service from `opulus-scheduler/Dockerfile`, with the same `DATABASE_URL` and Redis variables as the webhooks service. Run a job by hand:
+Deploy it as its own service from `opulus-scheduler/Dockerfile`, with the same `DATABASE_URL` and Redis variables as the webhooks service.
+
+**Keep it private: do not give it a public domain.** Only our own services should be able to reach it, and Railway services in the same project and environment can already reach each other over private networking (`<service>.railway.internal:8082`). Nothing calls the jobs API in production anyway: to run a job by hand use `run-job` (below), which needs no HTTP. The server listens on `::` (IPv4 and IPv6) so private networking works in older Railway environments too. The admin token stays as a second layer in case a domain is ever added by mistake; the endpoints are not rate limited, which is fine while the service is private, but would need a limit if it were ever exposed.
+
+Run a job by hand:
 
 ```bash
 railway run --service <scheduler-service> --environment production -- \

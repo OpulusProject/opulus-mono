@@ -21,5 +21,5 @@ export default defineConfig({
     };
   },
   // External dependencies that shouldn't be bundled
-  external: ["@opulus/core", "express", "bullmq", "ioredis", "dotenv"],
+  external: ["@opulus/core", "express", "bullmq", "dotenv"],
 });

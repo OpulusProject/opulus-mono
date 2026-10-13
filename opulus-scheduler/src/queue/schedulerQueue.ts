@@ -1,7 +1,6 @@
-import { logger } from "@opulus/core";
+import { logger, redisConnection } from "@opulus/core";
 import { Queue, Worker } from "bullmq";
 import { isJobName, jobs } from "../jobs/index.js";
-import { redisConnection } from "./redis.js";
 
 const QUEUE = "scheduler";
 

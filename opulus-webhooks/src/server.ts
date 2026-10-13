@@ -2,6 +2,7 @@
 import "dotenv/config";
 
 import {
+  checkRedisConnection,
   errorHandler,
   logger,
   prisma,
@@ -15,7 +16,6 @@ import { handleItemWebhook } from "./plaid/handlers/item/index.js";
 import { handleLiabilitiesWebhook } from "./plaid/handlers/liabilities/index.js";
 import { handleTransactionsWebhook } from "./plaid/handlers/transactions/index.js";
 import {
-  checkRedisConnection,
   createQueueEvents,
   createWebhookWorker,
   shutdownQueue,
