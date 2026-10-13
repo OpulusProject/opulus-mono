@@ -11,6 +11,7 @@ packages consistent.
 | `opulus-core` | Prisma schema and migrations, repositories (data access), gateways (external APIs), the services both apps share, config, logging, the shared error classes and error handler, and the DTOs |
 | `opulus-backend` | The REST API (Express) and Better Auth |
 | `opulus-webhooks` | The Plaid webhook receiver, its Redis queue and the handlers |
+| `opulus-scheduler` | Recurring jobs: BullMQ job schedulers and a worker; each job calls a core service |
 | `opulus-frontend` | The React app |
 | `opulus-tests` | Playwright suites: service, integration and webhook end-to-end |
 

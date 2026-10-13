@@ -6,6 +6,7 @@ export {
   type RemovedTransaction,
 } from "./client/plaid.js";
 export { default as prisma } from "./client/prisma.js";
+export { checkRedisConnection, redisConnection } from "./client/redis.js";
 export { runInTransaction } from "./client/transaction.js";
 export { Prisma, PrismaClient } from "@prisma/client";
 

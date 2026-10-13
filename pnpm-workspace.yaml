@@ -3,5 +3,6 @@ packages:
   - 'opulus-frontend'
   - 'opulus-core'
   - 'opulus-webhooks'
+  - 'opulus-scheduler'
   - 'opulus-tests'
 
