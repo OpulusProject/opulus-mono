@@ -92,4 +92,5 @@ railway run --service <scheduler-service> --environment production -- \
 
 ## Tests
 
-`opulus-tests/jobs/scheduler` runs the jobs through this HTTP API against a stub of Frankfurter and checks what they stored.
+- `opulus-tests/services/scheduler`: the jobs API and what each job stores, run through this HTTP API against a stub of Frankfurter (`pnpm --filter @opulus/tests test:services-scheduler`; part of the Service API Tests workflow).
+- `opulus-tests/integration/scheduler`: the refresh job against the real Frankfurter API (`test:integration-scheduler`; the Scheduler Integration workflow, nightly and on changes to the scheduler or the rate code).

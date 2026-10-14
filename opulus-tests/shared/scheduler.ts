@@ -1,9 +1,6 @@
 import { expect, type APIRequestContext } from "@playwright/test";
 import { JobRunResponseSchema, type JobRunDTO } from "@opulus/core";
-import {
-  expectMatchesSchema,
-  expectStatus,
-} from "../../../shared/assertions.js";
+import { expectMatchesSchema, expectStatus } from "./assertions.js";
 
 /**
  * Talking to the scheduler's jobs API. Every request needs the admin token the
@@ -76,7 +73,8 @@ export async function waitForRun(
 export async function runToEnd(
   request: APIRequestContext,
   job: string,
+  timeoutMs?: number,
 ): Promise<JobRunDTO> {
   const run = await startRun(request, job);
-  return waitForRun(request, job, run.id);
+  return waitForRun(request, job, run.id, timeoutMs);
 }

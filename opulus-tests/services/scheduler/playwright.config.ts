@@ -1,14 +1,17 @@
 import { defineConfig } from "@playwright/test";
 
 /**
- * Playwright config for the @opulus/scheduler jobs suite.
+ * Playwright config for the @opulus/scheduler black-box API suite.
  *
  *   TEST_BASE_URL=http://localhost:8082 SCHEDULER_ADMIN_TOKEN=... \
- *     pnpm --filter @opulus/tests test:jobs-scheduler
+ *     pnpm --filter @opulus/tests test:services-scheduler
  *
- * Each spec runs a scheduled job through the scheduler's jobs API (run now,
- * then follow the run) and checks what the job stored in the ISOLATED test
- * database (TEST_DATABASE_URL), which is how a job's work can be seen.
+ * Covers the scheduler's own behaviour with no third party: its jobs API (a
+ * run is queued, followed, fails and retries) and what each job stores, run
+ * through that API against a stub of its provider. A job has no response beyond
+ * its result, so what it stored is read from the ISOLATED test database
+ * (TEST_DATABASE_URL), the exception to "verify over HTTP" for jobs. The real
+ * provider is covered by the integration suite (opulus-tests/integration/scheduler).
  *
  * The scheduler must be started pointed at the Frankfurter stub
  * (FRANKFURTER_BASE_URL=http://localhost:4545/v1), with SCHEDULER_RUN_ON_START=false
@@ -43,5 +46,5 @@ export default defineConfig({
     timeout: 10_000,
   },
 
-  projects: [{ name: "jobs", testMatch: /.*\.spec\.ts$/ }],
+  projects: [{ name: "api", testMatch: /.*\.spec\.ts$/ }],
 });

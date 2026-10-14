@@ -28,7 +28,7 @@ export async function deleteExchangeRatesFrom(day: string): Promise<number> {
 }
 
 /**
- * Reads, for the jobs suite. A job has no response beyond its result, so what
+ * Reads, for the scheduler specs. A job has no response beyond its result, so what
  * it stored is checked in the table itself: the exception to "verify over
  * HTTP" for jobs. Oldest first, then by currency.
  */

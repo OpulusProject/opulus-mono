@@ -4,20 +4,20 @@ import {
   clearExchangeRates,
   deleteExchangeRatesFrom,
   readExchangeRates,
-} from "../../shared/fixtures/index.js";
+} from "../../../shared/fixtures/index.js";
 import {
   failStub,
   resetStub,
   stubRequests,
-} from "./helpers/frankfurterStub.js";
-import { runToEnd } from "./helpers/scheduler.js";
+} from "../helpers/frankfurterStub.js";
+import { runToEnd } from "../../../shared/scheduler.js";
 import {
   STUB_CURRENCIES,
   addDays,
   lastPublishingDay,
   publishingDays,
   stubRatesFor,
-} from "./stub/rates.mjs";
+} from "../stub/rates.mjs";
 
 const JOB = "refresh-exchange-rates";
 

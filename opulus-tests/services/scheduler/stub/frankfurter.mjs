@@ -1,5 +1,5 @@
 /**
- * A stand-in for Frankfurter, so the jobs suite runs with no third party. The
+ * A stand-in for Frankfurter, so the scheduler's service suite runs with no third party. The
  * scheduler is pointed at it with FRANKFURTER_BASE_URL=http://localhost:4545/v1.
  *
  *   GET  /v1/<from>..<to>?base=EUR   a time series, like Frankfurter's

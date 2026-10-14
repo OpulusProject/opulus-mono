@@ -1,9 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { JobRunResponseSchema } from "@opulus/core";
-import { expectMatchesSchema, expectStatus } from "../../shared/assertions.js";
-import { clearExchangeRates } from "../../shared/fixtures/index.js";
-import { failStub, resetStub } from "./helpers/frankfurterStub.js";
-import { startRun, waitForRun, withAdminToken } from "./helpers/scheduler.js";
+import {
+  expectMatchesSchema,
+  expectStatus,
+} from "../../../shared/assertions.js";
+import { clearExchangeRates } from "../../../shared/fixtures/index.js";
+import { failStub, resetStub } from "../helpers/frankfurterStub.js";
+import {
+  startRun,
+  waitForRun,
+  withAdminToken,
+} from "../../../shared/scheduler.js";
 
 /**
  * This file: GET /jobs/:name/runs/:id, a run's state, attempts, result or
