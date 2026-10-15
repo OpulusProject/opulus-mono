@@ -143,11 +143,18 @@ displays.
 **The server owns**
 - Filtering, searching, sorting and paging.
 - Aggregates: totals, counts, averages, shares, rankings, "top N and the rest".
-- The rules behind a number: which sign a balance has, that currencies are never
-  added together, rounding, filling gaps in a series.
+- The rules behind a number: which sign a balance has, converting every
+  aggregate to the base currency (see below), rounding, filling gaps in a series.
 - Values derived from a field (an account's credit limit when Plaid only sent
   the available credit, a type normalized to the ones we use). These are fields
   of the DTO, not helpers in the client.
+
+**Currency.** An aggregate (a total, a share, a net worth, a day's net) is in
+one currency, the base currency (CAD for now), converted by the server at the
+rate of the day it is for from `exchange_rate`; the response says which with
+`baseCurrency`. A single transaction or a single account keeps its own currency.
+The currencies in `exchange_rate` are the ones we support, so there is no
+handling for an amount in another one: the converter throws if a rate is missing.
 
 **The client owns**
 - Calling the API with the user's choices as query parameters, and showing the
