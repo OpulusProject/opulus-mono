@@ -43,6 +43,7 @@ export * from "./utils/currency.js";
 export * from "./utils/day.js";
 export * from "./utils/errors.js";
 export * from "./utils/logger.js";
+export * from "./utils/money.js";
 export * from "./utils/plaidErrors.js";
 
 // Config export

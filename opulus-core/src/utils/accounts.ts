@@ -2,9 +2,10 @@ import {
   ACCOUNT_TYPES,
   type AccountType,
 } from "../types/dto/accounts/accountType.js";
+import { fromUnits, toUnits } from "./money.js";
 
-/** Plaid's amounts have at most 4 decimals; rounding keeps derived ones clean. */
-const round = (amount: number) => Math.round(amount * 10_000) / 10_000;
+/** Rounding to Plaid's 4 decimals keeps derived amounts clean. */
+const round = (amount: number) => fromUnits(toUnits(amount));
 
 /**
  * An account's type as we group it: Plaid's own `type`, with the deprecated
