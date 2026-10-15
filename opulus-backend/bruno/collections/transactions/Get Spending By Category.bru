@@ -30,7 +30,7 @@ params:query {
 docs {
   # Get Spending By Category
 
-  What the authenticated user spent in each category, with each category's share of the total, computed on the server so the client only displays it. Spending in other currencies is converted to a base currency (CAD for now) so categories can be ranked and compared in one list, and each category also says what was paid in each currency.
+  What the authenticated user spent in each category, with each category's share of the total, computed on the server so the client only displays it. Spending in other currencies is converted to a base currency (CAD for now), each day's spending at that day's rate, so categories can be ranked and compared in one list; each category also says what was paid in each currency.
 
   **Endpoint:** `GET /api/transactions/spending-by-category`
 
@@ -67,7 +67,6 @@ docs {
         }
       ],
       "other": null,
-      "rates": [{ "currency": "USD", "rate": 1.25 }],
       "unconverted": []
     }
   }
@@ -77,8 +76,9 @@ docs {
   - `amounts` is what was actually spent in the category, one entry per currency, largest first (ties by code, no currency last)
   - Only money out counts. Categories are largest first by converted `spent` (ties by name, uncategorized, `category: null`, last)
   - Spending with no currency is taken as `baseCurrency`
-  - `rates` lists the rate used for each other currency (units of the base for one unit of it), from the European Central Bank's daily rates; rates are cached for 6 hours and are only looked up when some spending is not in the base currency
-  - `unconverted` is spending in a currency with no known rate (or when rates could not be fetched). It is left out of `spent`, `categories` and every share, so shares are of what could be converted
+  - Each day's spending is converted at that day's rate from the `exchange_rate` table (the European Central Bank's daily rates, refreshed daily by opulus-scheduler). A day without a rate (a weekend or holiday) uses the latest rate before it; spending older than the stored history (about two years) uses the earliest stored rate. Rates are only read when some spending is not in the base currency
+  - `unconverted` is spending in a currency with no stored rate. It is left out of `spent`, `categories` and every share, so shares are of what could be converted
+  - Converted amounts are rounded to 4 decimal places
   - `other` is null unless `top` left categories out; `other.categories` is how many it adds up, and its `amounts` are merged per currency
   - Unlike `byCategory` in the summary, the `category` filter applies here, so the shares add up to what the filters select
 

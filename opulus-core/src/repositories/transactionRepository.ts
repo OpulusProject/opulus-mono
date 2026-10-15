@@ -631,7 +631,8 @@ class TransactionRepository {
   }
 
   /**
-   * Money out added up by currency and category, for the filtered transactions.
+   * Money out added up by currency, category and day, for the filtered
+   * transactions.
    * Unlike the summary's categories this applies the category filter too, so it
    * adds up to exactly what the filters select.
    *
@@ -645,7 +646,8 @@ class TransactionRepository {
   ): Promise<CategorySpend[]> {
     try {
       const rows = await this.prisma.transaction.groupBy({
-        by: ["isoCurrencyCode", "categoryPrimary"],
+        // By day too, so each day's spending can be converted at that day's rate.
+        by: ["isoCurrencyCode", "categoryPrimary", "date"],
         where: { AND: [buildWhere(userId, filters), { amount: { gt: 0 } }] },
         _sum: { amount: true },
         _count: { _all: true },
@@ -654,6 +656,7 @@ class TransactionRepository {
       return rows.map((row) => ({
         currency: row.isoCurrencyCode,
         category: row.categoryPrimary,
+        date: row.date.toISOString().slice(0, 10),
         spent: row._sum.amount ?? new Prisma.Decimal(0),
         count: row._count._all,
       }));
