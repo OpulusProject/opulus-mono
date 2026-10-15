@@ -1,12 +1,14 @@
 import {
+  BASE_CURRENCY,
   accountRepository,
   addDays,
   historicBalanceRepository,
   isOwed,
+  loadExchangeRateConverter,
   toDay,
   toNumber,
+  type NetWorthPointDTO,
   type NetWorthRange,
-  type NetWorthSeriesDTO,
 } from "@opulus/core";
 
 export interface GetNetWorthHistoryParams {
@@ -22,7 +24,8 @@ export interface GetNetWorthHistoryParams {
 }
 
 export interface GetNetWorthHistoryResult {
-  series: NetWorthSeriesDTO[];
+  /** In the base currency; empty when no account has a balance to count. */
+  points: NetWorthPointDTO[];
 }
 
 /** Days back from today for each range but "all". */
@@ -61,10 +64,11 @@ function dailyBalances(
 }
 
 /**
- * A user's net worth for each day in a range, one series per currency: each
- * account's daily balances (see `dailyBalances`) added up, with what is owed
- * subtracted. Today is the accounts' live balances, so the last point always
- * equals what the accounts add up to now.
+ * A user's net worth in the base currency for each day in a range: each
+ * account's daily balances (see `dailyBalances`) converted at that day's rate
+ * and added up, with what is owed subtracted. Today is the accounts' live
+ * balances, so the last point always equals what the accounts add up to now.
+ * An account in a currency with no stored rate is left out.
  */
 export async function getNetWorthHistory(
   params: GetNetWorthHistoryParams
@@ -76,9 +80,11 @@ export async function getNetWorthHistory(
     accountRepository.getAllByUserId(userId),
     historicBalanceRepository.getAllByUserId(userId),
   ]);
-  const accounts = accountIds
-    ? allAccounts.filter((account) => accountIds.includes(account.id))
-    : allAccounts;
+  const accounts = (
+    accountIds
+      ? allAccounts.filter((account) => accountIds.includes(account.id))
+      : allAccounts
+  ).filter((account) => toNumber(account.balanceCurrent) !== null);
 
   // Each account's closing balances, oldest first. Today and later are never
   // used: today is live.
@@ -97,31 +103,56 @@ export async function getNetWorthHistory(
   const days: string[] = [];
   for (let day = first; day <= today; day = addDays(day, 1)) days.push(day);
 
-  // Net worth per currency, a value per day, in whole units.
-  const totals = new Map<string | null, number[]>();
-  for (const account of accounts) {
-    const live = toNumber(account.balanceCurrent);
-    if (live === null) continue;
-    const sign = isOwed(account.type) ? -1 : 1;
-    const perDay = totals.get(account.isoCurrencyCode) ?? days.map(() => 0);
-    totals.set(account.isoCurrencyCode, perDay);
+  const foreign = accounts.filter(
+    (account) =>
+      account.isoCurrencyCode !== null &&
+      account.isoCurrencyCode !== BASE_CURRENCY
+  );
+  const converter =
+    foreign.length > 0
+      ? await loadExchangeRateConverter({
+          baseCurrency: BASE_CURRENCY,
+          currencies: foreign.map((account) => account.isoCurrencyCode!),
+          from: first,
+          to: today,
+        })
+      : undefined;
 
-    dailyBalances(live, history.get(account.id) ?? [], days, today).forEach(
-      (units, index) => {
-        perDay[index] = perDay[index]! + sign * units;
-      }
+  // Net worth per day in the base currency, in whole units (before rounding).
+  const totals = days.map(() => 0);
+  let counted = 0;
+  for (const account of accounts) {
+    const currency = account.isoCurrencyCode;
+    const sign = isOwed(account.type) ? -1 : 1;
+    const balances = dailyBalances(
+      toNumber(account.balanceCurrent)!,
+      history.get(account.id) ?? [],
+      days,
+      today
     );
+
+    // An account with no currency is taken as the base currency.
+    const rates = days.map((day) =>
+      currency === null || currency === BASE_CURRENCY
+        ? 1
+        : converter?.rateOn(currency, day)
+    );
+    // One rate missing is every rate missing: the currency has none stored.
+    if (rates.some((rate) => rate === undefined)) continue;
+
+    counted++;
+    balances.forEach((units, index) => {
+      totals[index] = totals[index]! + sign * units * rates[index]!;
+    });
   }
 
-  const series = [...totals.entries()]
-    .map(([currency, perDay]) => ({
-      currency,
-      points: days.map((day, index) => ({
-        date: day,
-        netWorth: perDay[index]! / SCALE,
-      })),
-    }))
-    .sort((a, b) => (a.currency ?? "").localeCompare(b.currency ?? ""));
-
-  return { series };
+  return {
+    points:
+      counted === 0
+        ? []
+        : days.map((day, index) => ({
+            date: day,
+            netWorth: Math.round(totals[index]!) / SCALE,
+          })),
+  };
 }

@@ -22,7 +22,7 @@ params:query {
 docs {
   # Get Net Worth History
 
-  Get the authenticated user's net worth for each day in a range, one series per currency.
+  Get the authenticated user's net worth for each day in a range, in the base currency (CAD).
 
   **Endpoint:** `GET /api/accounts/net-worth`
 
@@ -38,15 +38,17 @@ docs {
     - `3m`: 90 days
     - `1y`: 365 days
     - `all`: from the earliest day we have a balance for
-  - `accountId` (optional): only add up these accounts. Repeat the parameter for several (`?accountId=a&accountId=b`). An id that is not one of the user's accounts is ignored, so it adds nothing; if no account is left, `series` is empty. Omit it to add up every account.
+  - `accountId` (optional): only add up these accounts. Repeat the parameter for several (`?accountId=a&accountId=b`). An id that is not one of the user's accounts is ignored, so it adds nothing; if no account is left, `points` is empty. Omit it to add up every account.
 
   ## Response
 
-  One series per currency (currencies are never added together), sorted by currency code. Each series has a point for every day from the start of the range to today, oldest first. A point's `date` is a UTC day (`YYYY-MM-DD`) and `netWorth` is everything owned minus everything owed (credit and loan balances are what is owed).
+  A point for every day from the start of the range to today, oldest first, all in `baseCurrency`. A point's `date` is a UTC day (`YYYY-MM-DD`) and `netWorth` is everything owned minus everything owed (credit and loan balances are what is owed).
 
   - **Today** is the accounts' live balances, so the last point always equals what the accounts add up to now.
   - **Earlier days** come from the stored daily historic balances, per account. A day with no historic balance takes that account's latest earlier one; a day before its first historic balance takes the first (flat before the history starts). An account with no historic balances is held at its live balance throughout.
-  - Accounts without a balance are left out. A user with no accounts gets an empty `series`.
+  - Each account's balance is converted to `baseCurrency` at the rate of the day it is for, from the `exchange_rate` table (the European Central Bank's daily rates, refreshed daily by opulus-scheduler). A day without a rate (a weekend or holiday) uses the latest rate before it; a day older than the stored history uses the earliest stored rate. An account with no currency is taken as `baseCurrency`. Rates are only read when some account is in another currency.
+  - Accounts without a balance, and accounts in a currency with no stored rate, are left out. A user with nothing left to count gets an empty `points`.
+  - Values are rounded to 4 decimal places.
 
   ## Success Response (200)
 
@@ -54,15 +56,11 @@ docs {
   {
     "data": {
       "range": "1w",
-      "series": [
-        {
-          "currency": "CAD",
-          "points": [
-            { "date": "2026-10-03", "netWorth": 61200.5 },
-            { "date": "2026-10-04", "netWorth": 61200.5 },
-            { "date": "2026-10-10", "netWorth": 62589 }
-          ]
-        }
+      "baseCurrency": "CAD",
+      "points": [
+        { "date": "2026-10-03", "netWorth": 61200.5 },
+        { "date": "2026-10-04", "netWorth": 61200.5 },
+        { "date": "2026-10-10", "netWorth": 62589 }
       ]
     }
   }
