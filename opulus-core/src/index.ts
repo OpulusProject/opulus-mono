@@ -37,6 +37,7 @@ export * from "./services/syncItemTransactions.js";
 export * from "./types/dto/index.js";
 
 // Util exports
+export * from "./utils/accounts.js";
 export * from "./utils/balanceHistory.js";
 export * from "./utils/currency.js";
 export * from "./utils/day.js";
