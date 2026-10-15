@@ -12,6 +12,8 @@ export const SessionUserDTOSchema = z.object({
   name: z.string(),
   emailVerified: z.boolean(),
   image: z.string().nullable(),
+  /** false until the user has confirmed an authenticator app: the API serves nothing else until then. */
+  twoFactorEnabled: z.boolean(),
 });
 
 export type SessionUserDTO = z.infer<typeof SessionUserDTOSchema>;
@@ -43,6 +45,7 @@ export function toSessionDTO(session: {
     name: string;
     emailVerified: boolean;
     image?: string | null;
+    twoFactorEnabled?: boolean | null;
   };
   session: { id: string; expiresAt: Date };
 }): SessionResponse["data"] {
@@ -53,6 +56,7 @@ export function toSessionDTO(session: {
       name: session.user.name,
       emailVerified: session.user.emailVerified,
       image: session.user.image ?? null,
+      twoFactorEnabled: session.user.twoFactorEnabled ?? false,
     },
     session: {
       id: session.session.id,

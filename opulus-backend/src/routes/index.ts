@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { sessionController } from "@/controllers/session/sessionController.js";
-import { requireSession } from "@/middleware/session/requireSession.js";
+import { requireSessionWithoutTwoFactor } from "@/middleware/session/requireSession.js";
 import accountsRouter from "./accounts.js";
 import institutionsRouter from "./institutions.js";
 import itemsRouter from "./items.js";
@@ -18,7 +18,7 @@ router.get("/healthcheck", (req, res) => {
   });
 });
 
-router.get("/session", requireSession, sessionController);
+router.get("/session", requireSessionWithoutTwoFactor, sessionController);
 
 // Account routes
 router.use("/accounts", accountsRouter);

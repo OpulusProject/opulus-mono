@@ -65,3 +65,12 @@ export function withSession(cookie: string): Record<string, string> {
   // An address of its own, so the auth routes' per-address limits stay per call.
   return { cookie, "x-forwarded-for": uniqueIp() };
 }
+
+/** The `name=value` pairs of a response's Set-Cookie headers, as one Cookie header. */
+export function cookiesFrom(res: APIResponse): string {
+  return res
+    .headersArray()
+    .filter((h) => h.name.toLowerCase() === "set-cookie")
+    .map((h) => h.value.split(";")[0]!.trim())
+    .join("; ");
+}

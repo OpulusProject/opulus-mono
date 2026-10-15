@@ -35,6 +35,14 @@ export class NotFoundError extends AppError {
   }
 }
 
+export class TwoFactorRequiredError extends AppError {
+  constructor(
+    message: string = "Two-factor authentication must be set up before using the app"
+  ) {
+    super(message, 403, "TWO_FACTOR_REQUIRED");
+  }
+}
+
 export class UnauthorizedError extends AppError {
   constructor(message: string = "Unauthorized") {
     super(message, 401, "UNAUTHORIZED");

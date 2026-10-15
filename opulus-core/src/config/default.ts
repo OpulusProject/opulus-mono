@@ -22,6 +22,10 @@ export default {
   plaidVersion: getEnv("PLAID_VERSION", "2020-09-14"),
   betterAuthSecret: getEnv("BETTER_AUTH_SECRET"),
   betterAuthBaseURL: getEnv("BETTER_AUTH_BASE_URL"),
+  // Every user must have two-factor authentication set up before the API serves
+  // them anything but their session. On unless REQUIRE_TWO_FACTOR is "false"
+  // (for local development of a frontend that cannot enroll yet).
+  requireTwoFactor: getEnv("REQUIRE_TWO_FACTOR", "true") !== "false",
   // Reject passwords that appear in known breaches (Have I Been Pwned) at
   // sign-up and password change. On unless BREACHED_PASSWORD_CHECK is "off";
   // the service test suite turns it off because it makes no third-party calls.

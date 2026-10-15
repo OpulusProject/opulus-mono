@@ -1,10 +1,14 @@
 import { expect, test } from "@playwright/test";
 import { expectStatus } from "../../../shared/assertions.js";
-import { extractSessionCookie, uniqueIp, withSession } from "../../../shared/client.js";
+import {
+  cookiesFrom,
+  extractSessionCookie,
+  uniqueIp,
+  withSession,
+} from "../../../shared/client.js";
 import { testDb } from "../../../shared/db.js";
 import {
   authenticationResponse,
-  cookiesFrom,
   createVirtualAuthenticator,
   registerPasskey,
   signInWithPasskey,

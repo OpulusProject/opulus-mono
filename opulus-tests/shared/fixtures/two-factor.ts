@@ -1,8 +1,10 @@
 import { type APIRequestContext } from "@playwright/test";
-import { URI, type TOTP } from "otpauth";
-import { extractSessionCookie, withSession } from "../client.js";
-import { expectOk } from "../assertions.js";
-import { signUp, TEST_PASSWORD, type TestUser } from "./auth.js";
+import {
+  currentTotp,
+  enrollTwoFactor,
+  signUp,
+  type EnrolledUser,
+} from "./auth.js";
 
 /**
  * Two-factor (TOTP) fixtures for the better-auth `twoFactor` plugin.
@@ -11,11 +13,6 @@ import { signUp, TEST_PASSWORD, type TestUser } from "./auth.js";
  * otpauth:// URI whose secret we can read to compute the current TOTP with
  * otpauth, letting us drive the real enable → verify → enabled path over HTTP.
  */
-
-/** Compute the current 6-digit TOTP code from an otpauth:// URI (from enable). */
-export function currentTotp(totpUri: string): string {
-  return (URI.parse(totpUri) as TOTP).generate();
-}
 
 /**
  * A guaranteed-wrong TOTP code for the current window. Flips the last digit of
@@ -28,45 +25,12 @@ export function wrongTotp(totpUri: string): string {
 }
 
 /**
- * Enable 2FA for an authenticated user. This only provisions the secret — the
- * account is not actually protected until a verify-totp confirms it. Returns the
- * otpauth URI and backup codes.
- */
-export async function enableTwoFactor(
-  request: APIRequestContext,
-  cookie: string,
-  password: string = TEST_PASSWORD,
-): Promise<{ totpUri: string; backupCodes: string[] }> {
-  const res = await request.post("/api/auth/two-factor/enable", {
-    headers: withSession(cookie),
-    data: { password },
-  });
-  await expectOk(res);
-  const body = await res.json();
-  return { totpUri: body.totpURI, backupCodes: body.backupCodes };
-}
-
-export interface TwoFactorUser extends TestUser {
-  totpUri: string;
-  backupCodes: string[];
-}
-
-/**
- * Create a user and fully enable 2FA (enable → confirm with a computed TOTP).
- * The confirming verify-totp reissues the session, so the refreshed cookie is
- * returned on `cookie`. `totpUri` lets a spec generate fresh codes.
+ * Create a user who has set up 2FA (enable, then confirm with a computed TOTP).
+ * `totpUri` lets a spec generate fresh codes and `backupCodes` sign in without
+ * one.
  */
 export async function createUserWithTwoFactor(
   request: APIRequestContext,
-): Promise<TwoFactorUser> {
-  const user = await signUp(request);
-  const { totpUri, backupCodes } = await enableTwoFactor(request, user.cookie);
-
-  const res = await request.post("/api/auth/two-factor/verify-totp", {
-    headers: withSession(user.cookie),
-    data: { code: currentTotp(totpUri) },
-  });
-  await expectOk(res);
-
-  return { ...user, cookie: extractSessionCookie(res), totpUri, backupCodes };
+): Promise<EnrolledUser> {
+  return enrollTwoFactor(request, await signUp(request));
 }
