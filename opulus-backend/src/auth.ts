@@ -1,3 +1,4 @@
+import { ALLOWED_AUTH_PATHS } from "@/authEndpoints.js";
 import { disconnectUserItems } from "@/services/items/disconnectUserItems.js";
 import { passkey } from "@better-auth/passkey";
 import { AppError, config, prisma } from "@opulus/core";
@@ -84,6 +85,12 @@ export const auth = betterAuth({
     // "fresh", and a session stays fresh for a day. Deleting an account is the
     // end of the data, so it always takes the password.
     before: createAuthMiddleware(async (ctx) => {
+      // Only the routes in authEndpoints.ts exist; the rest of what Better Auth
+      // mounts answers as if it were not there.
+      if (!ALLOWED_AUTH_PATHS.has(ctx.path)) {
+        throw new APIError("NOT_FOUND", { message: "Not found" });
+      }
+
       // Changing the password signs every other device out. Better Auth only
       // does so when the caller asks, and a stolen session should not survive
       // the password being changed, so it is always on.
