@@ -41,6 +41,7 @@ All authentication routes are handled by Better Auth at `/api/auth/*`:
 ### Accounts
 
 - `GET /api/accounts` - Get the user's accounts across all connections, optionally filtered by `type` (`depository`, `investment`, `credit`, `loan`, `other`; repeat the parameter for several, e.g. `?type=credit&type=loan`) (requires authentication)
+- `GET /api/accounts/summary` - What the user's accounts add up to in the base currency (CAD): total, assets, owed and net worth, per type with credit utilization for credit cards; takes the same `type` filter as the list (requires authentication)
 - `GET /api/accounts/net-worth?range=1m` - Get the user's net worth for each day in a range (`1w`, `1m`, `3m`, `1y` or `all`; default `1m`; optionally limited to some accounts by repeating `accountId`), in the base currency, ending with today's live balances (requires authentication)
 
 ### Items
@@ -52,8 +53,10 @@ All authentication routes are handled by Better Auth at `/api/auth/*`:
 
 ### Transactions
 
-- `GET /api/transactions` - Get transactions for current user (requires authentication)
-  - Query params: `startDate`, `endDate`, `accountId` (optional)
+- `GET /api/transactions` - Get transactions for current user, paged (requires authentication)
+  - Query params (all optional): `startDate`, `endDate`, `itemId`, `accountId`, `category`, `search`, `type`, `hideTransfers`, `includePending`, plus `page`, `limit`, `sort` and `order`
+- `GET /api/transactions/daily-totals` - Each day's spending, income and net in the base currency, for the same filters as the list (requires authentication)
+- `GET /api/transactions/spending-by-category` - What was spent in each category in the base currency, with each category's share of the total; the same filters as the list, plus `top` to list only the largest and add up the rest (requires authentication)
 - `POST /api/transactions/refresh` - Ask Plaid to refresh an item's transactions (requires authentication)
 
 ### Health Checks
