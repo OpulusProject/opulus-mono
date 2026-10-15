@@ -25,6 +25,7 @@ export * from './common.js';
 export * from './institutions/index.js';
 export * from './items/index.js';
 export * from './jobs/index.js';
+export * from './linkEvents/index.js';
 export * from './linkTokens/index.js';
 export * from './transactions/index.js';
 
