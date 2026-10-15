@@ -3,10 +3,10 @@ import net from "node:net";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
 
-/** The port the second backend of this file listens on (the suite's own stays up). */
+/** The port the backend of this file listens on. */
 const PORT = 18291;
 
-/** Start a second backend on its own port, and wait until it answers. */
+/** Start a backend on its own port, and wait until it answers. */
 async function startBackend(): Promise<{ child: ChildProcess; output: () => string }> {
   const cwd = path.resolve(process.cwd(), "../opulus-backend");
   const child = spawn(path.join(cwd, "node_modules/.bin/tsx"), ["src/server.ts"], {
@@ -41,8 +41,7 @@ function exited(child: ChildProcess, timeoutMs = 15_000): Promise<number | null>
 
 /**
  * This file: the backend stops cleanly on SIGTERM, as a deploy asks it to. It
- * starts a second backend on its own port (the suite's own must stay up) and
- * stops that one.
+ * starts a backend of its own and stops that one.
  */
 test.describe("graceful shutdown", () => {
   test("exits cleanly on SIGTERM and stops accepting connections", async () => {

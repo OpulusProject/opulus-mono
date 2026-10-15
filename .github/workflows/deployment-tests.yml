@@ -1,0 +1,75 @@
+# Deployment tests: how a service behaves as a PROCESS when a platform starts,
+# signals and stops it (for now: the backend stops cleanly on SIGTERM).
+#
+# Unlike the service-api and integration suites, nothing is booted here first:
+# each spec starts its own backend and stops it again. The job only provisions
+# what the backend needs to boot (a migrated Postgres and its environment).
+
+name: Deployment Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  backend-deployment-tests:
+    name: Backend deployment tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      BETTER_AUTH_SECRET: ci-deployment-tests-secret-not-for-production
+      CLIENT_URL: http://localhost:5173
+      NODE_ENV: test
+      PLAID_CLIENT_ID: ci-test
+      PLAID_SECRET: ci-test
+      PLAID_ENV: sandbox
+
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app_dev
+          POSTGRES_DB: app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @opulus/core prisma:generate
+
+      - name: Build core package
+        run: pnpm --filter @opulus/core build
+
+      - name: Apply database migrations
+        run: pnpm --filter @opulus/core exec prisma migrate deploy --schema=./prisma/schema.prisma
+
+      - name: Run backend deployment tests
+        run: pnpm --filter @opulus/tests test:deployment-backend
