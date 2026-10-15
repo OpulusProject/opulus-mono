@@ -11,8 +11,8 @@ import {
   clearExchangeRates,
   createAuthedUser,
   seedExchangeRates,
-  seedHistoricBalances,
   seedItemWithAccount,
+  seedTransactions,
 } from "../../../shared/fixtures/index.js";
 
 interface Point {
@@ -47,10 +47,32 @@ async function getNetWorth(
 
 const netWorths = (points: Point[]) => points.map((p) => p.netWorth);
 
+/** A posted transaction on a day (Plaid's sign: positive is money out). */
+const txn = (offset: number, amount: number, extra = {}) => ({
+  date: new Date(`${day(offset)}T00:00:00Z`),
+  amount,
+  ...extra,
+});
+
+/** Seed transactions for one of a user's seeded accounts. */
+const seedChanges = (
+  userId: string,
+  seeded: { itemId: string; accountId: string },
+  rows: ReturnType<typeof txn>[],
+) =>
+  seedTransactions({
+    userId,
+    itemId: seeded.itemId,
+    accountId: seeded.accountId,
+    rows,
+  });
+
 /**
- * This file: the net worth history endpoint. Accounts and their daily balance
- * historic balances have no create endpoint, so they are seeded directly into the
- * isolated test DB and verified over HTTP.
+ * This file: the net worth history endpoint. Accounts and transactions have no
+ * create endpoint, so they are seeded directly into the isolated test DB and
+ * verified over HTTP. A past day's balance is worked out from the account's
+ * live balance and the posted transactions since, so the specs seed
+ * transactions and expect the balances they imply.
  */
 test.describe("GET /api/accounts/net-worth", () => {
   test.beforeAll(async () => {
@@ -130,7 +152,7 @@ test.describe("GET /api/accounts/net-worth", () => {
     expect(points).toHaveLength(31);
   });
 
-  test("holds an account with no historic balances at its live balance", async ({
+  test("holds an account with no transactions at its live balance", async ({
     request,
   }) => {
     // Arrange
@@ -144,50 +166,33 @@ test.describe("GET /api/accounts/net-worth", () => {
     expect(netWorths(points)).toEqual(Array(8).fill(1234.56));
   });
 
-  test("uses the historic balances for past days and the live balance for today", async ({
+  test("works past days out from the live balance and the transactions since", async ({
     request,
   }) => {
-    // Arrange: live balance 1000; closing balances for the last two days.
+    // Arrange: live balance 1000, after 100 came in yesterday and 100 today.
     const { cookie, userId } = await createAuthedUser(request);
-    const { accountId } = await seedItemWithAccount(userId, {
+    const account = await seedItemWithAccount(userId, {
       account: { balanceCurrent: 1000 },
     });
-    await seedHistoricBalances({
-      userId,
-      accountId,
-      balances: [
-        { date: day(-2), balanceCurrent: 800 },
-        { date: day(-1), balanceCurrent: 900 },
-      ],
-    });
+    await seedChanges(userId, account, [txn(-1, -100), txn(0, -100)]);
 
     // Act
     const { points } = await getNetWorth(request, cookie, "?range=1w");
 
-    // Assert: flat at the first historic balance before the history starts, then the
-    // historic balances, then today's live balance.
-    // 1w is 8 days: days -7 to -3 (flat), -2, -1, today.
-    expect(netWorths(points)).toEqual([
-      800, 800, 800, 800, 800, 800, 900, 1000,
-    ]);
+    // Assert: 800 before yesterday's deposit (days -7 to -2), 900 at yesterday's
+    // close, then today's live balance. 1w is 8 days.
+    expect(netWorths(points)).toEqual([800, 800, 800, 800, 800, 800, 900, 1000]);
   });
 
-  test("carries the last historic balance across a day with none", async ({
+  test("a day with no transactions has the balance the day before it closed with", async ({
     request,
   }) => {
-    // Arrange: a night was missed (nothing on day -2).
+    // Arrange: 200 came in on day -1 and 100 today, nothing on day -2.
     const { cookie, userId } = await createAuthedUser(request);
-    const { accountId } = await seedItemWithAccount(userId, {
+    const account = await seedItemWithAccount(userId, {
       account: { balanceCurrent: 1000 },
     });
-    await seedHistoricBalances({
-      userId,
-      accountId,
-      balances: [
-        { date: day(-3), balanceCurrent: 700 },
-        { date: day(-1), balanceCurrent: 900 },
-      ],
-    });
+    await seedChanges(userId, account, [txn(-1, -200), txn(0, -100)]);
 
     // Act
     const { points } = await getNetWorth(request, cookie, "?range=1w");
@@ -202,31 +207,105 @@ test.describe("GET /api/accounts/net-worth", () => {
     expect(byDate[day()]).toBe(1000);
   });
 
-  test("ignores a historic balance dated today: today is the live balance", async ({
+  test("counts a transaction dated today in the live balance, not on top of it", async ({
     request,
   }) => {
-    // Arrange
+    // Arrange: 50 spent today.
     const { cookie, userId } = await createAuthedUser(request);
-    const { accountId } = await seedItemWithAccount(userId, {
+    const account = await seedItemWithAccount(userId, {
       account: { balanceCurrent: 1000 },
     });
-    await seedHistoricBalances({
-      userId,
-      accountId,
-      balances: [{ date: day(), balanceCurrent: 5 }],
+    await seedChanges(userId, account, [txn(0, 50)]);
+
+    // Act
+    const { points } = await getNetWorth(request, cookie, "?range=1w");
+
+    // Assert: today is the live balance; yesterday is what it was before the 50.
+    expect(points.slice(-2)).toEqual([
+      { date: day(-1), netWorth: 1050 },
+      { date: day(), netWorth: 1000 },
+    ]);
+  });
+
+  test("leaves pending transactions out, since the balance does not have them yet", async ({
+    request,
+  }) => {
+    // Arrange: a pending 500 yesterday, and a posted 100 today.
+    const { cookie, userId } = await createAuthedUser(request);
+    const account = await seedItemWithAccount(userId, {
+      account: { balanceCurrent: 1000 },
     });
+    await seedChanges(userId, account, [
+      txn(-1, 500, { pending: true }),
+      txn(0, 100),
+    ]);
+
+    // Act
+    const { points } = await getNetWorth(request, cookie, "?range=1w");
+
+    // Assert: only the posted 100 is undone.
+    expect(points.slice(-2)).toEqual([
+      { date: day(-1), netWorth: 1100 },
+      { date: day(), netWorth: 1000 },
+    ]);
+  });
+
+  test("before the first transaction, a balance is what it was before it", async ({
+    request,
+  }) => {
+    // Arrange: 200 came in three days ago.
+    const { cookie, userId } = await createAuthedUser(request);
+    const account = await seedItemWithAccount(userId, {
+      account: { balanceCurrent: 1000 },
+    });
+    await seedChanges(userId, account, [txn(-3, -200)]);
+
+    // Act
+    const { points } = await getNetWorth(request, cookie, "?range=1w");
+
+    // Assert: 800 until the deposit, which is in the balance of its own day.
+    expect(netWorths(points)).toEqual([800, 800, 800, 800, 1000, 1000, 1000, 1000]);
+  });
+
+  test("ignores transactions from before the range, which cannot change the days in it", async ({
+    request,
+  }) => {
+    // Arrange: a deposit twenty days ago, and the range is a week.
+    const { cookie, userId } = await createAuthedUser(request);
+    const account = await seedItemWithAccount(userId, {
+      account: { balanceCurrent: 1000 },
+    });
+    await seedChanges(userId, account, [txn(-20, -300)]);
 
     // Act
     const { points } = await getNetWorth(request, cookie, "?range=1w");
 
     // Assert
-    expect(points.at(-1)).toEqual({ date: day(), netWorth: 1000 });
+    expect(netWorths(points)).toEqual(Array(8).fill(1000));
+  });
+
+  test("holds an account its transactions do not explain (an investment) at its live balance", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const account = await seedItemWithAccount(userId, {
+      account: { type: "investment", balanceCurrent: 1000 },
+    });
+    await seedChanges(userId, account, [txn(-2, -100), txn(0, 40)]);
+
+    // Act
+    const { points } = await getNetWorth(request, cookie, "?range=1w");
+
+    // Assert
+    expect(netWorths(points)).toEqual(Array(8).fill(1000));
   });
 
   test("subtracts credit and loan balances, which are what is owed", async ({
     request,
   }) => {
-    // Arrange: 1000 in checking, 300 owed on a card.
+    // Arrange: 1000 in checking (100 came in today), 300 owed on a card (50
+    // spent on it today).
     const { cookie, userId } = await createAuthedUser(request);
     const checking = await seedItemWithAccount(userId, {
       account: { balanceCurrent: 1000 },
@@ -234,16 +313,8 @@ test.describe("GET /api/accounts/net-worth", () => {
     const card = await seedItemWithAccount(userId, {
       account: { type: "credit", balanceCurrent: 300 },
     });
-    await seedHistoricBalances({
-      userId,
-      accountId: checking.accountId,
-      balances: [{ date: day(-1), balanceCurrent: 900 }],
-    });
-    await seedHistoricBalances({
-      userId,
-      accountId: card.accountId,
-      balances: [{ date: day(-1), balanceCurrent: 250 }],
-    });
+    await seedChanges(userId, checking, [txn(0, -100)]);
+    await seedChanges(userId, card, [txn(0, 50)]);
 
     // Act
     const { points } = await getNetWorth(request, cookie, "?range=1w");
@@ -259,7 +330,8 @@ test.describe("GET /api/accounts/net-worth", () => {
   test("converts other currencies to the base currency at each day's rate", async ({
     request,
   }) => {
-    // Arrange: 400 CAD held flat; 100 USD live, 80 USD at yesterday's close.
+    // Arrange: 400 CAD held flat; 100 USD live, 80 USD at yesterday's close (20
+    // came in today).
     // A USD is 1.25 CAD, except yesterday when it is 1.5 CAD.
     const { cookie, userId } = await createAuthedUser(request);
     await seedItemWithAccount(userId, {
@@ -268,11 +340,7 @@ test.describe("GET /api/accounts/net-worth", () => {
     const usd = await seedItemWithAccount(userId, {
       account: { balanceCurrent: 100, isoCurrencyCode: "USD" },
     });
-    await seedHistoricBalances({
-      userId,
-      accountId: usd.accountId,
-      balances: [{ date: day(-1), balanceCurrent: 80 }],
-    });
+    await seedChanges(userId, usd, [txn(0, -20, { isoCurrencyCode: "USD" })]);
 
     // Act
     const { baseCurrency, points } = await getNetWorth(
@@ -281,7 +349,7 @@ test.describe("GET /api/accounts/net-worth", () => {
       "?range=1w",
     );
 
-    // Assert: flat 80 USD (100 CAD) before yesterday, 80 USD at 1.5 yesterday,
+    // Assert: 80 USD (100 CAD) before yesterday, 80 USD at 1.5 yesterday,
     // 100 USD at 1.25 today, each added to the 400 CAD.
     expect(baseCurrency).toBe("CAD");
     expect(netWorths(points)).toEqual([500, 500, 500, 500, 500, 500, 520, 525]);
@@ -340,19 +408,18 @@ test.describe("GET /api/accounts/net-worth", () => {
     expect(points.at(-1)?.netWorth).toBe(250);
   });
 
-  test("'all' starts at the earliest historic balance, or is just today without any", async ({
+  test("'all' starts at the earliest transaction, or is just today without any", async ({
     request,
   }) => {
-    // Arrange: one user with history, one without.
+    // Arrange: one user with transactions, one without.
     const withHistory = await createAuthedUser(request);
-    const { accountId } = await seedItemWithAccount(withHistory.userId, {
+    const account = await seedItemWithAccount(withHistory.userId, {
       account: { balanceCurrent: 1000 },
     });
-    await seedHistoricBalances({
-      userId: withHistory.userId,
-      accountId,
-      balances: [{ date: day(-10), balanceCurrent: 600 }],
-    });
+    await seedChanges(withHistory.userId, account, [
+      txn(-10, 25),
+      txn(-4, -425),
+    ]);
     const withoutHistory = await createAuthedUser(request);
     await seedItemWithAccount(withoutHistory.userId, {
       account: { balanceCurrent: 1000 },
@@ -370,11 +437,11 @@ test.describe("GET /api/accounts/net-worth", () => {
       "?range=all",
     );
 
-    // Assert
+    // Assert: on the first day the 425 that came in later is not yet in.
     expect(history.points).toHaveLength(11);
     expect(history.points[0]).toEqual({
       date: day(-10),
-      netWorth: 600,
+      netWorth: 575,
     });
     expect(none.points).toEqual([{ date: day(), netWorth: 1000 }]);
   });
@@ -439,20 +506,16 @@ test.describe("GET /api/accounts/net-worth", () => {
     expect(both.points.at(-1)?.netWorth).toBe(50);
   });
 
-  test("applies the same fill rules to the accounts it is limited to", async ({
+  test("applies the same rules to the accounts it is limited to", async ({
     request,
   }) => {
-    // Arrange: two accounts; only one has history.
+    // Arrange: two accounts; only one has transactions.
     const { cookie, userId } = await createAuthedUser(request);
     const withHistory = await seedItemWithAccount(userId, {
       account: { balanceCurrent: 1000 },
     });
     await seedItemWithAccount(userId, { account: { balanceCurrent: 500 } });
-    await seedHistoricBalances({
-      userId,
-      accountId: withHistory.accountId,
-      balances: [{ date: day(-1), balanceCurrent: 900 }],
-    });
+    await seedChanges(userId, withHistory, [txn(0, -100)]);
 
     // Act
     const { points } = await getNetWorth(
@@ -461,26 +524,23 @@ test.describe("GET /api/accounts/net-worth", () => {
       `?range=1w&accountId=${withHistory.accountId}`,
     );
 
-    // Assert: yesterday from its history, today live; the other account is out.
+    // Assert: yesterday worked out from today's 100, today live; the other
+    // account is out.
     expect(points.slice(-2)).toEqual([
       { date: day(-1), netWorth: 900 },
       { date: day(), netWorth: 1000 },
     ]);
   });
 
-  test("never includes another user's accounts or history", async ({
+  test("never includes another user's accounts or transactions", async ({
     request,
   }) => {
-    // Arrange: another user with an account and history.
+    // Arrange: another user with an account and transactions.
     const other = await createAuthedUser(request);
-    const { accountId } = await seedItemWithAccount(other.userId, {
+    const account = await seedItemWithAccount(other.userId, {
       account: { balanceCurrent: 9999 },
     });
-    await seedHistoricBalances({
-      userId: other.userId,
-      accountId,
-      balances: [{ date: day(-1), balanceCurrent: 9000 }],
-    });
+    await seedChanges(other.userId, account, [txn(-1, -9000)]);
     const { cookie } = await createAuthedUser(request);
 
     // Act + Assert

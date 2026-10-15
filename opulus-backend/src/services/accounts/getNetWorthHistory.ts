@@ -2,13 +2,14 @@ import {
   BASE_CURRENCY,
   accountRepository,
   addDays,
+  balanceDirection,
   fromUnits,
-  historicBalanceRepository,
   isOwed,
   loadExchangeRateConverter,
   toDay,
   toUnits,
   toNumber,
+  transactionRepository,
   type NetWorthPointDTO,
   type NetWorthRange,
 } from "@opulus/core";
@@ -33,33 +34,41 @@ export interface GetNetWorthHistoryResult {
 /** Days back from today for each range but "all". */
 const RANGE_DAYS = { "1w": 7, "1m": 30, "3m": 90, "1y": 365 } as const;
 
-type HistoricRow = { date: string; balance: number };
-
 /**
  * One account's balance on each of the days, in whole units. Today is the live
- * balance. Every earlier day comes from the account's stored historic
- * balances: a day with none takes the latest earlier one (a missed night), and
- * a day before its first one takes the first (flat before the history starts).
- * An account with no historic balances at all is held at its live balance
- * throughout.
+ * balance. An earlier day's is worked out from it and the account's posted
+ * transactions since: the live balance with every later transaction undone
+ * (see `balanceDirection` for which way). So a transaction that is added,
+ * changed or removed, or a refund, is in the history the next time it is read.
+ * A day with no transactions after it, or an account whose balance
+ * transactions do not explain (investments), is the live balance.
+ *
+ * @param live - The balance today
+ * @param direction - From `balanceDirection`
+ * @param changes - What the account's posted transactions add up to on each
+ *   day, in whole units, for days after the first of `days`
+ * @param days - Consecutive days, oldest first, ending today
  */
 function dailyBalances(
   live: number,
-  rows: HistoricRow[],
+  direction: 1 | -1 | 0,
+  changes: Map<string, number>,
   days: string[],
   today: string
 ): number[] {
-  let latest = 0; // the last row on or before the day (the first, before any)
-  return days.map((day) => {
-    let balance = live;
-    if (day < today && rows.length > 0) {
-      while (latest + 1 < rows.length && rows[latest + 1]!.date <= day) {
-        latest++;
-      }
-      balance = rows[latest]!.balance;
-    }
-    return toUnits(balance);
-  });
+  // What came after the day being worked out; starts as what is dated after
+  // today (nothing, usually).
+  let after = 0;
+  for (const [date, units] of changes) if (date > today) after += units;
+
+  const balances: number[] = new Array(days.length);
+  for (let i = days.length - 1; i >= 0; i--) {
+    const day = days[i]!;
+    balances[i] = toUnits(live) + (day < today ? direction * after : 0);
+    // The day just worked out comes after the one before it.
+    after += changes.get(day) ?? 0;
+  }
+  return balances;
 }
 
 /**
@@ -74,32 +83,41 @@ export async function getNetWorthHistory(
   const { userId, range, accountIds, now = new Date() } = params;
   const today = toDay(now);
 
-  const [allAccounts, historicBalances] = await Promise.all([
-    accountRepository.getAllByUserId(userId),
-    historicBalanceRepository.getAllByUserId(userId),
-  ]);
+  const allAccounts = await accountRepository.getAllByUserId(userId);
   const accounts = (
     accountIds
       ? allAccounts.filter((account) => accountIds.includes(account.id))
       : allAccounts
   ).filter((account) => toNumber(account.balanceCurrent) !== null);
+  const ids = accounts.map((account) => account.id);
 
-  // Each account's closing balances, oldest first. Today and later are never
-  // used: today is live.
-  const history = new Map<string, HistoricRow[]>();
-  for (const { accountId, date, balanceCurrent } of historicBalances) {
-    if (date >= today) continue;
-    const rows = history.get(accountId) ?? [];
-    rows.push({ date, balance: balanceCurrent });
-    history.set(accountId, rows);
-  }
-
+  // "all" starts at the earliest posted transaction: before it nothing is known.
+  const earliest =
+    range === "all" && ids.length > 0
+      ? await transactionRepository.getEarliestPostedDate(userId, ids)
+      : null;
   const first =
     range === "all"
-      ? (historicBalances.find((row) => row.date < today)?.date ?? today)
+      ? earliest !== null && earliest < today
+        ? earliest
+        : today
       : addDays(today, -RANGE_DAYS[range]);
   const days: string[] = [];
   for (let day = first; day <= today; day = addDays(day, 1)) days.push(day);
+
+  // What each account's transactions add up to on each day after the first.
+  const changes = new Map<string, Map<string, number>>();
+  if (ids.length > 0) {
+    for (const row of await transactionRepository.getDailyChangesByAccount(
+      userId,
+      ids,
+      first
+    )) {
+      const byDay = changes.get(row.accountId) ?? new Map<string, number>();
+      byDay.set(row.date, toUnits(row.total));
+      changes.set(row.accountId, byDay);
+    }
+  }
 
   const converter = await loadExchangeRateConverter({
     baseCurrency: BASE_CURRENCY,
@@ -113,7 +131,8 @@ export async function getNetWorthHistory(
     const sign = isOwed(account.type) ? -1 : 1;
     const balances = dailyBalances(
       toNumber(account.balanceCurrent)!,
-      history.get(account.id) ?? [],
+      balanceDirection(account.type),
+      changes.get(account.id) ?? new Map<string, number>(),
       days,
       today
     );

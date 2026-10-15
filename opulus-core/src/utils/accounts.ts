@@ -24,6 +24,26 @@ export function isOwed(type: string): boolean {
   return normalized === "credit" || normalized === "loan";
 }
 
+/**
+ * How an account's past balances follow from its balance today and the
+ * transactions since. Money out is positive in Plaid's amounts. A deposit
+ * account that has paid money out since a day was higher on that day, so add the
+ * money out back (1). A credit or loan balance is what is owed: spending since
+ * raised it, so take it off (-1). Anything else (investments, whose value also
+ * moves with the market, which transactions cannot tell us) is held flat (0).
+ */
+export function balanceDirection(type: string): 1 | -1 | 0 {
+  switch (normalizeAccountType(type)) {
+    case "depository":
+      return 1;
+    case "credit":
+    case "loan":
+      return -1;
+    default:
+      return 0;
+  }
+}
+
 interface CreditBalances {
   balanceLimit: number | null;
   balanceAvailable: number | null;
