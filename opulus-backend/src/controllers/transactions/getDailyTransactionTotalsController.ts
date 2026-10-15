@@ -1,7 +1,7 @@
 import { getValidatedQuery } from "@/middleware/validation.js";
 import { getRequestSession } from "@/middleware/session/requireSession.js";
-import { getTransactionsSummary } from "@/services/transactions/getTransactionsSummary.js";
-import { TransactionsSummaryResponse } from "@opulus/core";
+import { getDailyTransactionTotals } from "@/services/transactions/getDailyTransactionTotals.js";
+import { DailyTransactionTotalsResponse } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import {
   toTransactionFilters,
@@ -9,27 +9,27 @@ import {
 } from "./transactionFilterQuery.js";
 
 /** Takes the same filters as the list, so the days match what it shows. */
-export const getTransactionsSummaryQuerySchema = transactionFilterQuerySchema;
+export const getDailyTransactionTotalsQuerySchema = transactionFilterQuerySchema;
 
 /**
  * Totals, spending by category and spending by day (in the base currency) for
  * the filtered transactions
- * GET /api/transactions/summary?startDate=2026-09-01&hideTransfers=true
+ * GET /api/transactions/daily-totals?startDate=2026-09-01&hideTransfers=true
  *
  * Query parameters are validated by validateQuery middleware
  */
-export async function getTransactionsSummaryController(
+export async function getDailyTransactionTotalsController(
   req: Request,
-  res: Response<TransactionsSummaryResponse>,
+  res: Response<DailyTransactionTotalsResponse>,
   next: NextFunction
 ) {
   try {
     const session = getRequestSession(res);
 
     const query =
-      getValidatedQuery<typeof getTransactionsSummaryQuerySchema>(req);
+      getValidatedQuery<typeof getDailyTransactionTotalsQuerySchema>(req);
 
-    const data = await getTransactionsSummary({
+    const data = await getDailyTransactionTotals({
       userId: session.user.id,
       filters: toTransactionFilters(query),
     });

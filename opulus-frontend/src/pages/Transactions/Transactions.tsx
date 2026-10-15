@@ -12,8 +12,8 @@ import {
 import { Page } from '@/common/Page';
 import { TransactionRow } from '@/common/TransactionRow';
 import { Button, Spinner } from '@/components/ui';
+import { useDailyTransactionTotals } from '@/hooks/transactions/useDailyTransactionTotals';
 import { useInfiniteTransactions } from '@/hooks/transactions/useInfiniteTransactions';
-import { useTransactionsSummary } from '@/hooks/transactions/useTransactionsSummary';
 import { useOnVisible } from '@/hooks/use-on-visible';
 import { formatDay } from '@/utils/day';
 
@@ -46,7 +46,7 @@ const TransactionsContent: React.FC = () => {
   const list = useInfiniteTransactions(filters);
   // Each day's net comes from the server for the same filters, so it is whole
   // however much of the list has loaded.
-  const summary = useTransactionsSummary(filters);
+  const dailyTotals = useDailyTransactionTotals(filters);
 
   const transactions = useMemo(
     () => list.data?.pages.flatMap((page) => page.transactions) ?? [],
@@ -115,8 +115,12 @@ const TransactionsContent: React.FC = () => {
               key={day}
               title={formatDay(day)}
               trailingTitle={
-                summary.data &&
-                dayNetLabel(summary.data.byDay, summary.data.baseCurrency, day)
+                dailyTotals.data &&
+                dayNetLabel(
+                  dailyTotals.data.byDay,
+                  dailyTotals.data.baseCurrency,
+                  day
+                )
               }
             >
               {rows.map((transaction) => (

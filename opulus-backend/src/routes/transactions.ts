@@ -7,9 +7,9 @@ import {
   getTransactionsQuerySchema,
 } from "@/controllers/transactions/getTransactionsController.js";
 import {
-  getTransactionsSummaryController,
-  getTransactionsSummaryQuerySchema,
-} from "@/controllers/transactions/getTransactionsSummaryController.js";
+  getDailyTransactionTotalsController,
+  getDailyTransactionTotalsQuerySchema,
+} from "@/controllers/transactions/getDailyTransactionTotalsController.js";
 import {
   refreshTransactionsBodySchema,
   refreshTransactionsController,
@@ -32,10 +32,10 @@ router.get(
 );
 
 router.get(
-  "/summary",
+  "/daily-totals",
   requireSession,
-  validateQuery(getTransactionsSummaryQuerySchema),
-  getTransactionsSummaryController
+  validateQuery(getDailyTransactionTotalsQuerySchema),
+  getDailyTransactionTotalsController
 );
 
 router.get(

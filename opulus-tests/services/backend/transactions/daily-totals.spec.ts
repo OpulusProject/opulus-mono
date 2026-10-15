@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
-import { TransactionsSummaryResponseSchema } from "@opulus/core";
+import { DailyTransactionTotalsResponseSchema } from "@opulus/core";
 import { withSession } from "../../../shared/client.js";
 import {
   expectMatchesSchema,
@@ -15,18 +15,18 @@ import {
   type SeedTransactionRow,
 } from "../../../shared/fixtures/index.js";
 
-/** GET /api/transactions/summary with an optional query string; returns `data`. */
-async function getSummary(
+/** GET /api/transactions/daily-totals with an optional query string; returns `data`. */
+async function getDailyTotals(
   request: APIRequestContext,
   cookie: string,
   query = "",
 ) {
-  const res = await request.get(`/api/transactions/summary${query}`, {
+  const res = await request.get(`/api/transactions/daily-totals${query}`, {
     headers: withSession(cookie),
   });
   const body = await expectMatchesSchema(
     res,
-    TransactionsSummaryResponseSchema,
+    DailyTransactionTotalsResponseSchema,
   );
   return body.data;
 }
@@ -71,20 +71,20 @@ function juneRates() {
 }
 
 /**
- * This file: the transactions summary endpoint (each day's spending, income and
+ * This file: the daily transaction totals endpoint (each day's spending, income and
  * net for the filtered transactions). `byDay` is in the base currency,
  * each day at its own rate from exchange_rate, which this file clears and
  * seeds once (see juneRates): the table is shared by every user, and no third
  * party is involved.
  */
-test.describe("GET /api/transactions/summary", () => {
+test.describe("GET /api/transactions/daily-totals", () => {
   test.beforeAll(async () => {
     await clearExchangeRates();
     await seedExchangeRates(juneRates());
   });
 
   test("requires authentication (401)", async ({ request }) => {
-    const res = await request.get("/api/transactions/summary");
+    const res = await request.get("/api/transactions/daily-totals");
     await expectStatus(res, 401);
   });
 
@@ -92,7 +92,7 @@ test.describe("GET /api/transactions/summary", () => {
     request,
   }) => {
     const { cookie } = await createAuthedUser(request);
-    const data = await getSummary(request, cookie);
+    const data = await getDailyTotals(request, cookie);
     expect(data).toEqual({
       baseCurrency: "CAD",
       byDay: [],
@@ -111,7 +111,7 @@ test.describe("GET /api/transactions/summary", () => {
       { amount: -1.25, isoCurrencyCode: "USD", date: day(1) },
     ]);
 
-    const data = await getSummary(request, cookie);
+    const data = await getDailyTotals(request, cookie);
 
     expect(data.baseCurrency).toBe("CAD");
     expect(data.byDay).toEqual([
@@ -127,7 +127,7 @@ test.describe("GET /api/transactions/summary", () => {
       { amount: 100, isoCurrencyCode: "USD", date: day(16) },
     ]);
 
-    const data = await getSummary(request, cookie);
+    const data = await getDailyTotals(request, cookie);
 
     expect(data.byDay).toEqual([
       { date: "2026-06-15", spent: 150, income: 0, net: -150 },
@@ -143,7 +143,7 @@ test.describe("GET /api/transactions/summary", () => {
       { amount: 10, isoCurrencyCode: "USD", date: day(20) },
     ]);
 
-    const data = await getSummary(request, cookie);
+    const data = await getDailyTotals(request, cookie);
 
     expect(data.byDay).toEqual([
       { date: "2026-06-20", spent: 20, income: 0, net: -20 },
@@ -157,8 +157,8 @@ test.describe("GET /api/transactions/summary", () => {
       { amount: 99, date: day(10), name: "Hardware" },
     ]);
 
-    const byDate = await getSummary(request, cookie, "?startDate=2026-06-05");
-    const bySearch = await getSummary(request, cookie, "?search=coffee");
+    const byDate = await getDailyTotals(request, cookie, "?startDate=2026-06-05");
+    const bySearch = await getDailyTotals(request, cookie, "?search=coffee");
 
     expect(byDate.byDay).toEqual([
       { date: "2026-06-10", spent: 119, income: 0, net: -119 },
@@ -188,18 +188,18 @@ test.describe("GET /api/transactions/summary", () => {
       },
     ]);
 
-    const hidden = await getSummary(request, cookie, "?hideTransfers=true");
-    const shown = await getSummary(request, cookie);
+    const hidden = await getDailyTotals(request, cookie, "?hideTransfers=true");
+    const shown = await getDailyTotals(request, cookie);
 
     expect(hidden.byDay).toMatchObject([{ spent: 25 }]);
     expect(shown.byDay).toMatchObject([{ spent: 1325 }]);
   });
 
-  test("scopes the summary to the requesting user", async ({ request }) => {
+  test("scopes the totals to the requesting user", async ({ request }) => {
     const mine = await setup(request, [{ amount: 10, date: day(1) }]);
     await setup(request, [{ amount: 9999, date: day(1) }]);
 
-    const data = await getSummary(request, mine.cookie);
+    const data = await getDailyTotals(request, mine.cookie);
 
     expect(data.byDay).toEqual([
       { date: "2026-06-01", spent: 10, income: 0, net: -10 },
@@ -214,7 +214,7 @@ test.describe("GET /api/transactions/summary", () => {
       "?hideTransfers=maybe",
       "?type=sideways",
     ]) {
-      const res = await request.get(`/api/transactions/summary${query}`, {
+      const res = await request.get(`/api/transactions/daily-totals${query}`, {
         headers: withSession(cookie),
       });
       await expectValidationError(res);

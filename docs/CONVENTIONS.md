@@ -128,7 +128,7 @@ file the conventions above already describe.
   table (`/api/transactions`, `/api/items`), and a parent narrows it with a
   query parameter (`?accountId=`), not by nesting it under the parent.
 - A computed aggregate lives under the resource whose rows it adds up, and takes
-  the same filters as that resource: `GET /api/transactions/summary`,
+  the same filters as that resource: `GET /api/transactions/daily-totals`,
   `GET /api/transactions/spending-by-category`, `GET /api/accounts/net-worth`
   (what the accounts add up to, over time).
 - The server computes aggregates. The client does not sum rows it fetched, so
@@ -164,7 +164,7 @@ headline would not always agree.
 
 **Costs, and how to keep them small.** More endpoints, and a request for each
 change of filter. Keep an endpoint about a resource and its filters, not about
-one screen (`/transactions/summary`, not `/dashboard`), so the next screen can
+one screen (`/transactions/daily-totals`, not `/dashboard`), so the next screen can
 use it too; use `placeholderData` so a filter change dims the old rows instead
 of blanking them. Prefer a parameter (`top=5`) to a second endpoint.
 
