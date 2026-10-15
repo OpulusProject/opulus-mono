@@ -42,18 +42,17 @@ docs {
       "byType": [
         { "type": "depository", "count": 2, "balance": 1500.25, "credit": null },
         { "type": "credit", "count": 1, "balance": 300, "credit": { "limit": 1000, "utilization": 0.3 } }
-      ],
-      "excluded": []
+      ]
     }
   }
   ```
 
-  - `count` is every matching account, including any left out of the amounts (see `excluded`)
+  - `count` is every matching account, including any left out of the amounts
   - `total.balance` adds the balances as the accounts report them (what is owed counts as positive); `assets` is the balances of everything but credit and loans, `owed` the balances of credit and loans, and `netWorth` is `assets - owed`
   - `byType` has one entry per type that has accounts, using the normalized type (Plaid's deprecated `brokerage` is `investment`, and an unknown type is `other`), in the order depository, investment, credit, loan, other. Its `count` and `balance` are for that type
   - `credit` is only set on the credit entry when at least one card has a known limit. A card that reports only its available credit has its limit worked out as owed plus available; a card with neither is left out of both `limit` and `utilization`. `utilization` is owed divided by `limit` as a fraction (0.3 is 30%), after each card is converted to the base currency
   - Conversion uses the `exchange_rate` table (the European Central Bank's daily rates, refreshed daily by opulus-scheduler): the latest rate on or before today. An account with no currency is taken as the base currency. Rates are only read when some account is in another currency
-  - `excluded` lists accounts in a currency with no stored rate: they are left out of `total`, every `balance` and `credit`, but still counted in `count`. For example `{ "currency": "XXX", "count": 2 }`. A client can use it to say the totals do not include them
+  - Accounts in a currency with no stored rate are left out of `total`, every `balance` and `credit`, but still counted in `count`
   - An account with no balance is counted but adds nothing
 
   ## Error Responses

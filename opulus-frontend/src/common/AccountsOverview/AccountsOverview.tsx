@@ -10,12 +10,7 @@ import { useAccounts } from '@/hooks/accounts/useAccounts';
 import { useAccountsSummary } from '@/hooks/accounts/useAccountsSummary';
 
 import { AccountRow } from './AccountRow';
-import {
-  type AccountsSummary,
-  excludedNote,
-  formatBalance,
-  typeSummary,
-} from './summary';
+import { type AccountsSummary, formatBalance, typeSummary } from './summary';
 import { type SummaryStat, SummaryStats } from './SummaryStats';
 
 const byName = (a: AccountWithConnectionDTO, b: AccountWithConnectionDTO) =>
@@ -115,11 +110,6 @@ const AccountGroups: React.FC<Omit<AccountsOverviewProps, 'description'>> = ({
   return (
     <>
       {summary && <SummaryStats stats={getSummary(summary)} />}
-      {summary && excludedNote(summary) && (
-        <p className="text-muted-foreground -mt-3 text-xs">
-          {excludedNote(summary)}
-        </p>
-      )}
 
       <List aria-label={heading}>
         {visibleGroups.map((group) => (

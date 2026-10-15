@@ -110,7 +110,6 @@ test.describe("GET /api/accounts/summary", () => {
       count: 0,
       total: { balance: 0, assets: 0, owed: 0, netWorth: 0 },
       byType: [],
-      excluded: [],
     });
   });
 
@@ -163,7 +162,6 @@ test.describe("GET /api/accounts/summary", () => {
         credit: { limit: 125, utilization: 0.1 },
       },
     ]);
-    expect(data.excluded).toEqual([]);
   });
 
   test("uses the latest rate on or before today when a currency has none for today", async ({
@@ -190,7 +188,6 @@ test.describe("GET /api/accounts/summary", () => {
     const data = await getSummary(request, cookie);
 
     expect(data.total.balance).toBe(50);
-    expect(data.excluded).toEqual([]);
   });
 
   test("totals each type, in a fixed order, with brokerage as investment and unknown types as other", async ({
@@ -269,7 +266,7 @@ test.describe("GET /api/accounts/summary", () => {
     expect(data.total).toMatchObject({ balance: 25, assets: 25 });
   });
 
-  test("leaves accounts in a currency with no stored rate out of every amount, and says so", async ({
+  test("leaves accounts in a currency with no stored rate out of every amount", async ({
     request,
   }) => {
     const { cookie } = await setup(request, [
@@ -292,7 +289,6 @@ test.describe("GET /api/accounts/summary", () => {
       { type: "depository", count: 2, balance: 100, credit: null },
       { type: "credit", count: 1, balance: 0, credit: null },
     ]);
-    expect(data.excluded).toEqual([{ currency: "XXX", count: 2 }]);
   });
 
   test("applies the type filter, as the list does", async ({ request }) => {

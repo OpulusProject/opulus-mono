@@ -37,8 +37,8 @@ interface TypeEntry {
  * worth) and per type (with credit utilization for credit cards). Each account
  * is converted at the latest stored rate, then added up. Credit and loan
  * balances are what is owed, so net worth subtracts them. An account in a
- * currency with no stored rate is left out of every amount and reported in
- * `excluded`. Rates are only read when some account is in another currency.
+ * currency with no stored rate is left out of every amount (it is still
+ * counted). Rates are only read when some account is in another currency.
  */
 export async function getAccountsSummary(
   params: GetAccountsSummaryParams
@@ -67,7 +67,6 @@ export async function getAccountsSummary(
   let assets = 0;
   let owed = 0;
   const byType = new Map<AccountType, TypeEntry>();
-  const excluded = new Map<string, number>();
 
   for (const row of rows) {
     const type = normalizeAccountType(row.type);
@@ -87,10 +86,7 @@ export async function getAccountsSummary(
       currency === null || currency === BASE_CURRENCY
         ? 1
         : converter?.rateOn(currency, today);
-    if (rate === undefined) {
-      excluded.set(currency!, (excluded.get(currency!) ?? 0) + 1);
-      continue;
-    }
+    if (rate === undefined) continue;
 
     const toUnits = (amount: number) => Math.round(amount * rate * SCALE);
     const balance = toNumber(row.balanceCurrent);
@@ -138,8 +134,5 @@ export async function getAccountsSummary(
             : null,
       };
     }),
-    excluded: [...excluded]
-      .map(([currency, count]) => ({ currency, count }))
-      .sort((a, b) => a.currency.localeCompare(b.currency)),
   };
 }
