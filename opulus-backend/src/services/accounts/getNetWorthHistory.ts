@@ -2,10 +2,12 @@ import {
   BASE_CURRENCY,
   accountRepository,
   addDays,
+  fromUnits,
   historicBalanceRepository,
   isOwed,
   loadExchangeRateConverter,
   toDay,
+  toUnits,
   toNumber,
   type NetWorthPointDTO,
   type NetWorthRange,
@@ -30,9 +32,6 @@ export interface GetNetWorthHistoryResult {
 
 /** Days back from today for each range but "all". */
 const RANGE_DAYS = { "1w": 7, "1m": 30, "3m": 90, "1y": 365 } as const;
-
-/** Plaid's amounts have at most 4 decimals; whole units avoid float drift. */
-const SCALE = 10_000;
 
 type HistoricRow = { date: string; balance: number };
 
@@ -59,7 +58,7 @@ function dailyBalances(
       }
       balance = rows[latest]!.balance;
     }
-    return Math.round(balance * SCALE);
+    return toUnits(balance);
   });
 }
 
@@ -134,7 +133,7 @@ export async function getNetWorthHistory(
         ? []
         : days.map((day, index) => ({
             date: day,
-            netWorth: Math.round(totals[index]!) / SCALE,
+            netWorth: fromUnits(Math.round(totals[index]!)),
           })),
   };
 }

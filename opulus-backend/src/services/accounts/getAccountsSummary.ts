@@ -3,11 +3,13 @@ import {
   BASE_CURRENCY,
   accountRepository,
   creditLimitOf,
+  fromUnits,
   isOwed,
   loadExchangeRateConverter,
   normalizeAccountType,
   toDay,
   toNumber,
+  toUnits,
   type AccountsSummaryResponse,
   type AccountType,
 } from "@opulus/core";
@@ -19,9 +21,6 @@ export interface GetAccountsSummaryParams {
   /** The current moment; only tests pass it. */
   now?: Date;
 }
-
-/** Plaid's amounts have at most 4 decimals; whole units avoid float drift. */
-const SCALE = 10_000;
 
 /** One type's accounts while adding up, in whole units of the base currency. */
 interface TypeEntry {
@@ -71,12 +70,12 @@ export async function getAccountsSummary(
 
     const rate = converter.rateOn(row.isoCurrencyCode, today);
 
-    const toUnits = (amount: number) => Math.round(amount * rate * SCALE);
+    const toBaseUnits = (amount: number) => toUnits(amount * rate);
     const balance = toNumber(row.balanceCurrent);
     if (balance !== null) {
-      entry.balance += toUnits(balance);
-      if (isOwed(type)) owed += toUnits(balance);
-      else assets += toUnits(balance);
+      entry.balance += toBaseUnits(balance);
+      if (isOwed(type)) owed += toBaseUnits(balance);
+      else assets += toBaseUnits(balance);
     }
     if (type === "credit") {
       const limit = creditLimitOf({
@@ -86,8 +85,8 @@ export async function getAccountsSummary(
       });
       if (limit !== null) {
         entry.hasLimit = true;
-        entry.limit += toUnits(limit);
-        entry.limitedOwed += toUnits(balance ?? 0);
+        entry.limit += toBaseUnits(limit);
+        entry.limitedOwed += toBaseUnits(balance ?? 0);
       }
     }
   }
@@ -96,10 +95,10 @@ export async function getAccountsSummary(
     baseCurrency: BASE_CURRENCY,
     count: rows.length,
     total: {
-      balance: (assets + owed) / SCALE,
-      assets: assets / SCALE,
-      owed: owed / SCALE,
-      netWorth: (assets - owed) / SCALE,
+      balance: fromUnits(assets + owed),
+      assets: fromUnits(assets),
+      owed: fromUnits(owed),
+      netWorth: fromUnits(assets - owed),
     },
     byType: ACCOUNT_TYPES.flatMap((type) => {
       const entry = byType.get(type);
@@ -107,11 +106,11 @@ export async function getAccountsSummary(
       return {
         type,
         count: entry.count,
-        balance: entry.balance / SCALE,
+        balance: fromUnits(entry.balance),
         credit:
           entry.hasLimit && entry.limit > 0
             ? {
-                limit: entry.limit / SCALE,
+                limit: fromUnits(entry.limit),
                 utilization: entry.limitedOwed / entry.limit,
               }
             : null,

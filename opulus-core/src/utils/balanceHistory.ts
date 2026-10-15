@@ -4,6 +4,7 @@
  */
 
 import { addDays } from "./day.js";
+import { fromUnits, toUnits } from "./money.js";
 
 /**
  * Whether Plaid has loaded all of an item's transaction history, from the
@@ -42,10 +43,6 @@ export interface BalanceHistoryRow {
   balanceCurrent: number;
   isoCurrencyCode: string | null;
 }
-
-/** Plaid's amounts have at most 4 decimals; whole units avoid float drift. */
-const SCALE = 10_000;
-const toUnits = (amount: number) => Math.round(amount * SCALE);
 
 /**
  * How a past balance follows from today's and the transactions in between.
@@ -117,7 +114,7 @@ export function reconstructBalanceHistory(input: {
       rows.push({
         accountId: account.id,
         date: day,
-        balanceCurrent: (current + direction * after) / SCALE,
+        balanceCurrent: fromUnits(current + direction * after),
         isoCurrencyCode: account.isoCurrencyCode,
       });
       after += totals?.get(day) ?? 0;
