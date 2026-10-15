@@ -1,7 +1,11 @@
 import { getRequestSession } from "@/middleware/session/requireSession.js";
 import { getValidatedQuery } from "@/middleware/validation.js";
 import { getNetWorthHistory } from "@/services/accounts/getNetWorthHistory.js";
-import { NetWorthHistoryResponse, NetWorthRangeSchema } from "@opulus/core";
+import {
+  BASE_CURRENCY,
+  NetWorthHistoryResponse,
+  NetWorthRangeSchema,
+} from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import { z } from "zod";
 
@@ -35,13 +39,15 @@ export async function getNetWorthHistoryController(
     const { range, accountId } =
       getValidatedQuery<typeof getNetWorthHistoryQuerySchema>(req);
 
-    const { series } = await getNetWorthHistory({
+    const { points } = await getNetWorthHistory({
       userId: session.user.id,
       range,
       accountIds: accountId,
     });
 
-    res.status(200).json({ data: { range, series } });
+    res
+      .status(200)
+      .json({ data: { range, baseCurrency: BASE_CURRENCY, points } });
   } catch (error) {
     next(error);
   }

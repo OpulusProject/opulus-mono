@@ -8,7 +8,9 @@ import {
 } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import {
+  clearExchangeRates,
   createAuthedUser,
+  seedExchangeRates,
   seedHistoricBalances,
   seedItemWithAccount,
 } from "../../../shared/fixtures/index.js";
@@ -17,8 +19,9 @@ interface Point {
   date: string;
   netWorth: number;
 }
-interface Series {
-  currency: string | null;
+interface NetWorthData {
+  range: string;
+  baseCurrency: string;
   points: Point[];
 }
 
@@ -32,7 +35,7 @@ async function getNetWorth(
   request: APIRequestContext,
   cookie: string,
   query = "",
-): Promise<{ range: string; series: Series[] }> {
+): Promise<NetWorthData> {
   const res = await request.get(`/api/accounts/net-worth${query}`, {
     headers: withSession(cookie),
   });
@@ -42,7 +45,7 @@ async function getNetWorth(
   return (await res.json()).data;
 }
 
-const netWorths = (series: Series) => series.points.map((p) => p.netWorth);
+const netWorths = (points: Point[]) => points.map((p) => p.netWorth);
 
 /**
  * This file: the net worth history endpoint. Accounts and their daily balance
@@ -50,6 +53,19 @@ const netWorths = (series: Series) => series.points.map((p) => p.netWorth);
  * isolated test DB and verified over HTTP.
  */
 test.describe("GET /api/accounts/net-worth", () => {
+  test.beforeAll(async () => {
+    // A USD is 1.25 CAD (1.2 USD and 1.5 CAD per euro), except yesterday when
+    // it is 1.5 CAD (1.0 USD per euro). Every recent day has a rate.
+    await clearExchangeRates();
+    await seedExchangeRates(
+      Array.from({ length: 40 }, (_, i) => day(-i)).flatMap((date, i) => [
+        { date, currency: "EUR", perEur: 1 },
+        { date, currency: "CAD", perEur: 1.5 },
+        { date, currency: "USD", perEur: i === 1 ? 1.0 : 1.2 },
+      ]),
+    );
+  });
+
   test("requires authentication (401)", async ({ request }) => {
     const res = await request.get("/api/accounts/net-worth");
     await expectStatus(res, 401);
@@ -68,14 +84,15 @@ test.describe("GET /api/accounts/net-worth", () => {
     await expectValidationError(res);
   });
 
-  test("returns no series for a user with no accounts", async ({ request }) => {
+  test("returns no points for a user with no accounts", async ({ request }) => {
     // Arrange
     const { cookie } = await createAuthedUser(request);
 
     // Act + Assert
     expect(await getNetWorth(request, cookie)).toEqual({
       range: "1m",
-      series: [],
+      baseCurrency: "CAD",
+      points: [],
     });
   });
 
@@ -93,11 +110,10 @@ test.describe("GET /api/accounts/net-worth", () => {
       ["3m", 90],
       ["1y", 365],
     ] as const) {
-      const { series } = await getNetWorth(request, cookie, `?range=${range}`);
-      expect(series).toHaveLength(1);
-      expect(series[0].points).toHaveLength(days + 1);
-      expect(series[0].points[0].date).toBe(day(-days));
-      expect(series[0].points.at(-1)?.date).toBe(day());
+      const { points } = await getNetWorth(request, cookie, `?range=${range}`);
+      expect(points).toHaveLength(days + 1);
+      expect(points[0].date).toBe(day(-days));
+      expect(points.at(-1)?.date).toBe(day());
     }
   });
 
@@ -107,11 +123,11 @@ test.describe("GET /api/accounts/net-worth", () => {
     await seedItemWithAccount(userId);
 
     // Act
-    const { range, series } = await getNetWorth(request, cookie);
+    const { range, points } = await getNetWorth(request, cookie);
 
     // Assert
     expect(range).toBe("1m");
-    expect(series[0].points).toHaveLength(31);
+    expect(points).toHaveLength(31);
   });
 
   test("holds an account with no historic balances at its live balance", async ({
@@ -122,10 +138,10 @@ test.describe("GET /api/accounts/net-worth", () => {
     await seedItemWithAccount(userId, { account: { balanceCurrent: 1234.56 } });
 
     // Act
-    const { series } = await getNetWorth(request, cookie, "?range=1w");
+    const { points } = await getNetWorth(request, cookie, "?range=1w");
 
     // Assert
-    expect(netWorths(series[0])).toEqual(Array(8).fill(1234.56));
+    expect(netWorths(points)).toEqual(Array(8).fill(1234.56));
   });
 
   test("uses the historic balances for past days and the live balance for today", async ({
@@ -146,12 +162,12 @@ test.describe("GET /api/accounts/net-worth", () => {
     });
 
     // Act
-    const { series } = await getNetWorth(request, cookie, "?range=1w");
+    const { points } = await getNetWorth(request, cookie, "?range=1w");
 
     // Assert: flat at the first historic balance before the history starts, then the
     // historic balances, then today's live balance.
     // 1w is 8 days: days -7 to -3 (flat), -2, -1, today.
-    expect(netWorths(series[0])).toEqual([
+    expect(netWorths(points)).toEqual([
       800, 800, 800, 800, 800, 800, 900, 1000,
     ]);
   });
@@ -174,9 +190,9 @@ test.describe("GET /api/accounts/net-worth", () => {
     });
 
     // Act
-    const { series } = await getNetWorth(request, cookie, "?range=1w");
+    const { points } = await getNetWorth(request, cookie, "?range=1w");
     const byDate = Object.fromEntries(
-      series[0].points.map((p) => [p.date, p.netWorth]),
+      points.map((p) => [p.date, p.netWorth]),
     );
 
     // Assert
@@ -201,10 +217,10 @@ test.describe("GET /api/accounts/net-worth", () => {
     });
 
     // Act
-    const { series } = await getNetWorth(request, cookie, "?range=1w");
+    const { points } = await getNetWorth(request, cookie, "?range=1w");
 
     // Assert
-    expect(series[0].points.at(-1)).toEqual({ date: day(), netWorth: 1000 });
+    expect(points.at(-1)).toEqual({ date: day(), netWorth: 1000 });
   });
 
   test("subtracts credit and loan balances, which are what is owed", async ({
@@ -230,8 +246,8 @@ test.describe("GET /api/accounts/net-worth", () => {
     });
 
     // Act
-    const { series } = await getNetWorth(request, cookie, "?range=1w");
-    const last = series[0].points.slice(-2);
+    const { points } = await getNetWorth(request, cookie, "?range=1w");
+    const last = points.slice(-2);
 
     // Assert: yesterday 900 - 250, today 1000 - 300.
     expect(last).toEqual([
@@ -240,25 +256,100 @@ test.describe("GET /api/accounts/net-worth", () => {
     ]);
   });
 
-  test("keeps currencies apart, one series each, sorted by code", async ({
+  test("converts other currencies to the base currency at each day's rate", async ({
+    request,
+  }) => {
+    // Arrange: 400 CAD held flat; 100 USD live, 80 USD at yesterday's close.
+    // A USD is 1.25 CAD, except yesterday when it is 1.5 CAD.
+    const { cookie, userId } = await createAuthedUser(request);
+    await seedItemWithAccount(userId, {
+      account: { balanceCurrent: 400, isoCurrencyCode: "CAD" },
+    });
+    const usd = await seedItemWithAccount(userId, {
+      account: { balanceCurrent: 100, isoCurrencyCode: "USD" },
+    });
+    await seedHistoricBalances({
+      userId,
+      accountId: usd.accountId,
+      balances: [{ date: day(-1), balanceCurrent: 80 }],
+    });
+
+    // Act
+    const { baseCurrency, points } = await getNetWorth(
+      request,
+      cookie,
+      "?range=1w",
+    );
+
+    // Assert: flat 80 USD (100 CAD) before yesterday, 80 USD at 1.5 yesterday,
+    // 100 USD at 1.25 today, each added to the 400 CAD.
+    expect(baseCurrency).toBe("CAD");
+    expect(netWorths(points)).toEqual([500, 500, 500, 500, 500, 500, 520, 525]);
+  });
+
+  test("subtracts what is owed in another currency, converted", async ({
+    request,
+  }) => {
+    // Arrange: 1000 CAD in checking, 80 USD owed (100 CAD at 1.25).
+    const { cookie, userId } = await createAuthedUser(request);
+    await seedItemWithAccount(userId, {
+      account: { balanceCurrent: 1000, isoCurrencyCode: "CAD" },
+    });
+    await seedItemWithAccount(userId, {
+      account: { type: "credit", balanceCurrent: 80, isoCurrencyCode: "USD" },
+    });
+
+    // Act
+    const { points } = await getNetWorth(request, cookie, "?range=1w");
+
+    // Assert: the card is held at its live balance, so every day but yesterday
+    // (rate 1.5) is 1000 - 100.
+    expect(points.at(-1)?.netWorth).toBe(900);
+    expect(points.at(-2)?.netWorth).toBe(880);
+  });
+
+  test("takes an account with no currency as the base currency", async ({
     request,
   }) => {
     // Arrange
     const { cookie, userId } = await createAuthedUser(request);
     await seedItemWithAccount(userId, {
-      account: { balanceCurrent: 100, isoCurrencyCode: "USD" },
+      account: { balanceCurrent: 70, isoCurrencyCode: null },
     });
     await seedItemWithAccount(userId, {
-      account: { balanceCurrent: 400, isoCurrencyCode: "CAD" },
+      account: { balanceCurrent: 30, isoCurrencyCode: "CAD" },
     });
 
     // Act
-    const { series } = await getNetWorth(request, cookie, "?range=1w");
+    const { points } = await getNetWorth(request, cookie, "?range=1w");
 
     // Assert
-    expect(series.map((s) => s.currency)).toEqual(["CAD", "USD"]);
-    expect(series[0].points.at(-1)?.netWorth).toBe(400);
-    expect(series[1].points.at(-1)?.netWorth).toBe(100);
+    expect(points.at(-1)?.netWorth).toBe(100);
+  });
+
+  test("leaves out an account in a currency with no stored rate", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    await seedItemWithAccount(userId, {
+      account: { balanceCurrent: 100, isoCurrencyCode: "CAD" },
+    });
+    await seedItemWithAccount(userId, {
+      account: { balanceCurrent: 999, isoCurrencyCode: "XXX" },
+    });
+    const onlyUnrated = await createAuthedUser(request);
+    await seedItemWithAccount(onlyUnrated.userId, {
+      account: { balanceCurrent: 999, isoCurrencyCode: "XXX" },
+    });
+
+    // Act
+    const { points } = await getNetWorth(request, cookie, "?range=1w");
+    const none = await getNetWorth(request, onlyUnrated.cookie, "?range=1w");
+
+    // Assert: nothing to count at all gives no points, not a line of zeros.
+    expect(netWorths(points)).toEqual(Array(8).fill(100));
+    expect(none.points).toEqual([]);
   });
 
   test("skips an account that has no balance", async ({ request }) => {
@@ -268,10 +359,10 @@ test.describe("GET /api/accounts/net-worth", () => {
     await seedItemWithAccount(userId, { account: { balanceCurrent: null } });
 
     // Act
-    const { series } = await getNetWorth(request, cookie, "?range=1w");
+    const { points } = await getNetWorth(request, cookie, "?range=1w");
 
     // Assert
-    expect(series[0].points.at(-1)?.netWorth).toBe(250);
+    expect(points.at(-1)?.netWorth).toBe(250);
   });
 
   test("'all' starts at the earliest historic balance, or is just today without any", async ({
@@ -305,12 +396,12 @@ test.describe("GET /api/accounts/net-worth", () => {
     );
 
     // Assert
-    expect(history.series[0].points).toHaveLength(11);
-    expect(history.series[0].points[0]).toEqual({
+    expect(history.points).toHaveLength(11);
+    expect(history.points[0]).toEqual({
       date: day(-10),
       netWorth: 600,
     });
-    expect(none.series[0].points).toEqual([{ date: day(), netWorth: 1000 }]);
+    expect(none.points).toEqual([{ date: day(), netWorth: 1000 }]);
   });
 
   test("limits to the accounts given with accountId, which may be repeated", async ({
@@ -339,8 +430,8 @@ test.describe("GET /api/accounts/net-worth", () => {
     );
 
     // Assert
-    expect(one.series[0].points.at(-1)?.netWorth).toBe(20);
-    expect(two.series[0].points.at(-1)?.netWorth).toBe(23);
+    expect(one.points.at(-1)?.netWorth).toBe(20);
+    expect(two.points.at(-1)?.netWorth).toBe(23);
   });
 
   test("ignores an accountId that is not the user's, leaving nothing to add up", async ({
@@ -369,8 +460,8 @@ test.describe("GET /api/accounts/net-worth", () => {
     );
 
     // Assert
-    expect(onlyTheirs.series).toEqual([]);
-    expect(both.series[0].points.at(-1)?.netWorth).toBe(50);
+    expect(onlyTheirs.points).toEqual([]);
+    expect(both.points.at(-1)?.netWorth).toBe(50);
   });
 
   test("applies the same fill rules to the accounts it is limited to", async ({
@@ -389,14 +480,14 @@ test.describe("GET /api/accounts/net-worth", () => {
     });
 
     // Act
-    const { series } = await getNetWorth(
+    const { points } = await getNetWorth(
       request,
       cookie,
       `?range=1w&accountId=${withHistory.accountId}`,
     );
 
     // Assert: yesterday from its history, today live; the other account is out.
-    expect(series[0].points.slice(-2)).toEqual([
+    expect(points.slice(-2)).toEqual([
       { date: day(-1), netWorth: 900 },
       { date: day(), netWorth: 1000 },
     ]);
@@ -420,7 +511,8 @@ test.describe("GET /api/accounts/net-worth", () => {
     // Act + Assert
     expect(await getNetWorth(request, cookie, "?range=all")).toEqual({
       range: "all",
-      series: [],
+      baseCurrency: "CAD",
+      points: [],
     });
   });
 });

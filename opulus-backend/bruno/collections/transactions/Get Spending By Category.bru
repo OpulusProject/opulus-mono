@@ -52,34 +52,27 @@ docs {
           "category": "FOOD_AND_DRINK",
           "spent": 125,
           "count": 1,
-          "share": 0.5556,
-          "amounts": [{ "currency": "USD", "spent": 100 }]
+          "share": 0.5556
         },
         {
           "category": "TRAVEL",
           "spent": 100,
           "count": 2,
-          "share": 0.4444,
-          "amounts": [
-            { "currency": "CAD", "spent": 60 },
-            { "currency": "USD", "spent": 32 }
-          ]
+          "share": 0.4444
         }
       ],
-      "other": null,
-      "unconverted": []
+      "other": null
     }
   }
   ```
 
   - `spent` (top level and per category) is in `baseCurrency`; `share` is a category's `spent` as a fraction (0 to 1) of the top-level `spent`
-  - `amounts` is what was actually spent in the category, one entry per currency, largest first (ties by code, no currency last)
   - Only money out counts. Categories are largest first by converted `spent` (ties by name, uncategorized, `category: null`, last)
   - Spending with no currency is taken as `baseCurrency`
   - Each day's spending is converted at that day's rate from the `exchange_rate` table (the European Central Bank's daily rates, refreshed daily by opulus-scheduler). A day without a rate (a weekend or holiday) uses the latest rate before it; spending older than the stored history (about two years) uses the earliest stored rate. Rates are only read when some spending is not in the base currency
-  - `unconverted` is spending in a currency with no stored rate. It is left out of `spent`, `categories` and every share, so shares are of what could be converted
+  - Spending in a currency with no stored rate is left out of `spent`, `categories` and every share, so shares are of what could be converted
   - Converted amounts are rounded to 4 decimal places
-  - `other` is null unless `top` left categories out; `other.categories` is how many it adds up, and its `amounts` are merged per currency
+  - `other` is null unless `top` left categories out; `other.categories` is how many it adds up
   - Unlike `byCategory` in the summary, the `category` filter applies here, so the shares add up to what the filters select
 
   ## Error Responses

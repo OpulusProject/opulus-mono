@@ -1,7 +1,4 @@
-import type {
-  SpendingAmountDTO,
-  SpendingByCategoryResponse,
-} from '@opulus/core/dto';
+import type { SpendingByCategoryResponse } from '@opulus/core/dto';
 import { Link } from '@tanstack/react-router';
 import { Ellipsis, PiggyBank } from 'lucide-react';
 import * as React from 'react';
@@ -67,19 +64,19 @@ export const SpendingByCategory: React.FC = () => {
 
 /**
  * A row per category, then one for the categories the server added up. Each
- * shows what was paid in each currency and its share of all spending, which the
- * server works out in the base currency. A list's rows must be its direct
+ * shows what was spent and its share of all spending, both in the base
+ * currency as the server works them out. A list's rows must be its direct
  * children, so this returns them rather than being a component.
  */
 function categoryRows({
+  baseCurrency,
   categories,
   other,
 }: SpendingByCategoryResponse['data']) {
   const subtitle = (count: number) =>
     `${count} ${count === 1 ? 'transaction' : 'transactions'}`;
   const share = (value: number) => `${Math.round(value * 100)}%`;
-  const amounts = (paid: SpendingAmountDTO[]) =>
-    paid.map(({ currency, spent }) => formatMoney(spent, currency)).join(' + ');
+  const amount = (spent: number) => formatMoney(spent, baseCurrency);
 
   return [
     ...categories.map((row) => (
@@ -88,7 +85,7 @@ function categoryRows({
         icon={getCategoryIcon(row.category)}
         title={getCategoryLabel(row.category)}
         subtitle={subtitle(row.count)}
-        trailingTitle={amounts(row.amounts)}
+        trailingTitle={amount(row.spent)}
         trailingSubtitle={share(row.share)}
       />
     )),
@@ -98,7 +95,7 @@ function categoryRows({
         icon={Ellipsis}
         title={`${other.categories} other categories`}
         subtitle={subtitle(other.count)}
-        trailingTitle={amounts(other.amounts)}
+        trailingTitle={amount(other.spent)}
         trailingSubtitle={share(other.share)}
       />
     ),

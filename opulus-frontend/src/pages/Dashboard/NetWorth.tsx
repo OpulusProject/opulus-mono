@@ -1,29 +1,16 @@
-import type { NetWorthRange, NetWorthSeriesDTO } from '@opulus/core/dto';
+import type { NetWorthPointDTO, NetWorthRange } from '@opulus/core/dto';
 import { Landmark } from 'lucide-react';
 import * as React from 'react';
 
 import { List, ListEmpty, ListError } from '@/common/List';
-import {
-  Button,
-  Skeleton,
-  ToggleGroup,
-  ToggleGroupItem,
-} from '@/components/ui';
-import { useAccounts } from '@/hooks/accounts/useAccounts';
+import { Skeleton, ToggleGroup, ToggleGroupItem } from '@/components/ui';
 import { useNetWorthHistory } from '@/hooks/accounts/useNetWorthHistory';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/utils/accountDisplay';
 import { formatDay } from '@/utils/day';
-import { type NetWorth as NetWorthTotals, getNetWorth } from '@/utils/netWorth';
 
 import { NetWorthChart } from './NetWorthChart';
 import { TONE_CLASS, toneOf } from './netWorthTone';
-
-/** "$1,000.00", or "$1,000.00 + US$50.00" when the accounts span currencies. */
-const format = (
-  totals: NetWorthTotals[],
-  pick: (total: NetWorthTotals) => number
-) => totals.map((t) => formatMoney(pick(t), t.currency)).join(' + ');
 
 const RANGES: { value: NetWorthRange; label: string; period: string }[] = [
   { value: '1w', label: '1W', period: 'past week' },
@@ -39,30 +26,26 @@ const RANGES: { value: NetWorthRange; label: string; period: string }[] = [
  * see any day.
  */
 export const NetWorth: React.FC = () => {
-  const accounts = useAccounts();
   const [range, setRange] = React.useState<NetWorthRange>('1m');
   const history = useNetWorthHistory(range);
   const period = RANGES.find((r) => r.value === range)?.period ?? '';
 
-  const totals = React.useMemo(
-    () => getNetWorth(accounts.data?.accounts ?? []),
-    [accounts.data]
-  );
+  if (history.isLoading) return <NetWorthSkeleton />;
 
-  if (accounts.isLoading) return <NetWorthSkeleton />;
-
-  if (accounts.isError) {
+  if (!history.data) {
     return (
       <List>
         <ListError
-          subject="your balances"
-          onRetry={() => void accounts.refetch()}
+          subject="your net worth"
+          onRetry={() => void history.refetch()}
         />
       </List>
     );
   }
 
-  if (totals.length === 0) {
+  const { baseCurrency, points } = history.data;
+
+  if (points.length === 0) {
     return (
       <List>
         <ListEmpty
@@ -99,42 +82,19 @@ export const NetWorth: React.FC = () => {
         </ToggleGroup>
       </div>
 
-      {history.data ? (
-        <div
-          className={cn(
-            'flex flex-col gap-6 transition-opacity',
-            history.isPlaceholderData && 'opacity-60'
-          )}
-        >
-          {history.data.series.map((series) => (
-            <NetWorthSeries
-              key={series.currency ?? 'none'}
-              series={series}
-              period={period}
-              showCurrency={history.data.series.length > 1}
-            />
-          ))}
-        </div>
-      ) : (
-        <>
-          {/* The figure is known before the history is: the accounts add up to it. */}
-          <Figure value={format(totals, (t) => t.netWorth)} />
-          {history.isError ? (
-            <div className="text-muted-foreground mt-3 flex items-center gap-3 text-sm">
-              Couldn&apos;t load the history.
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => void history.refetch()}
-              >
-                Try again
-              </Button>
-            </div>
-          ) : (
-            <Skeleton className="mt-3 h-40 w-full" />
-          )}
-        </>
-      )}
+      {/* The previous range stays up, dimmed, while the next one loads. */}
+      <div
+        className={cn(
+          'transition-opacity',
+          history.isPlaceholderData && 'opacity-60'
+        )}
+      >
+        <NetWorthSummary
+          points={points}
+          currency={baseCurrency}
+          period={period}
+        />
+      </div>
     </section>
   );
 };
@@ -150,14 +110,12 @@ const percent = new Intl.NumberFormat('en-CA', {
   maximumFractionDigits: 1,
 });
 
-/** One currency's figure, its change, and its line. */
-const NetWorthSeries: React.FC<{
-  series: NetWorthSeriesDTO;
+/** The figure, its change over the range, and the line. */
+const NetWorthSummary: React.FC<{
+  points: NetWorthPointDTO[];
+  currency: string;
   period: string;
-  /** Name the currency, when there is more than one line. */
-  showCurrency: boolean;
-}> = ({ series, period, showCurrency }) => {
-  const { currency, points } = series;
+}> = ({ points, currency, period }) => {
   const [activeIndex, setActiveIndex] = React.useState<number | null>(null);
 
   const last = points.length - 1;
@@ -178,9 +136,6 @@ const NetWorthSeries: React.FC<{
 
   return (
     <div>
-      {showCurrency && (
-        <div className="text-muted-foreground mt-2 text-xs">{currency}</div>
-      )}
       <Figure value={formatMoney(shown.netWorth, currency)} />
       <div
         className="mt-0.5 flex flex-wrap gap-x-2 text-xs"

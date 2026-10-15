@@ -23,23 +23,18 @@ export const NetWorthPointDTOSchema = z.object({
 export type NetWorthPointDTO = z.infer<typeof NetWorthPointDTOSchema>;
 
 /**
- * One currency's net worth, a point per day from the start of the range to
- * today, oldest first. Currencies are never added together.
- */
-export const NetWorthSeriesDTOSchema = z.object({
-  currency: z.string().nullable(),
-  points: z.array(NetWorthPointDTOSchema),
-});
-
-export type NetWorthSeriesDTO = z.infer<typeof NetWorthSeriesDTOSchema>;
-
-/**
- * Net worth history API response
+ * Net worth history API response: a point per day from the start of the range
+ * to today, oldest first, in `baseCurrency`. Each account's balance is
+ * converted to `baseCurrency` at the rate of the day it is for (see
+ * `loadExchangeRateConverter`), and an account in a currency with no stored
+ * rate is left out. Empty when the user has no accounts with a balance.
  */
 export const NetWorthHistoryResponseSchema = z.object({
   data: z.object({
     range: NetWorthRangeSchema,
-    series: z.array(NetWorthSeriesDTOSchema),
+    /** The currency every point is in. */
+    baseCurrency: z.string(),
+    points: z.array(NetWorthPointDTOSchema),
   }),
 });
 
