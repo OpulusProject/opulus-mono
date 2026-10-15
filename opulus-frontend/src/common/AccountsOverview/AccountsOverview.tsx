@@ -7,10 +7,16 @@ import { List, ListEmpty, ListGroup } from '@/common/List';
 import { Page } from '@/common/Page';
 import { Button } from '@/components/ui';
 import { useAccounts } from '@/hooks/accounts/useAccounts';
-import { formatTotals } from '@/utils/accountDisplay';
+import { useAccountsSummary } from '@/hooks/accounts/useAccountsSummary';
 import { getAccountType } from '@/utils/accountType';
 
 import { AccountRow } from './AccountRow';
+import {
+  type AccountsSummary,
+  excludedNote,
+  formatBalance,
+  typeSummary,
+} from './summary';
 import { type SummaryStat, SummaryStats } from './SummaryStats';
 
 const byName = (a: AccountWithConnectionDTO, b: AccountWithConnectionDTO) =>
@@ -26,8 +32,8 @@ interface AccountsOverviewProps {
   description: string;
   /** Groups to show, in order. Their types define which accounts belong here. */
   groups: AccountGroupConfig[];
-  /** Headline numbers for every account on this page. */
-  getSummary: (accounts: AccountWithConnectionDTO[]) => SummaryStat[];
+  /** Headline numbers for every account on this page, from the server's summary. */
+  getSummary: (summary: AccountsSummary) => SummaryStat[];
   emptyTitle: string;
   emptyDescription: string;
 }
@@ -72,6 +78,7 @@ const AccountGroups: React.FC<Omit<AccountsOverviewProps, 'description'>> = ({
 }) => {
   const types = useMemo(() => groups.map((group) => group.type), [groups]);
   const { data, isLoading } = useAccounts(types);
+  const summary = useAccountsSummary(types).data;
   const accounts = useMemo(() => data?.accounts ?? [], [data]);
 
   const visibleGroups = useMemo(
@@ -108,14 +115,25 @@ const AccountGroups: React.FC<Omit<AccountsOverviewProps, 'description'>> = ({
   }
   return (
     <>
-      <SummaryStats stats={getSummary(accounts)} />
+      {summary && <SummaryStats stats={getSummary(summary)} />}
+      {summary && excludedNote(summary) && (
+        <p className="text-muted-foreground -mt-3 text-xs">
+          {excludedNote(summary)}
+        </p>
+      )}
 
       <List aria-label={heading}>
         {visibleGroups.map((group) => (
           <ListGroup
             key={group.type}
             title={group.title}
-            trailingTitle={formatTotals(group.accounts)}
+            trailingTitle={
+              summary &&
+              formatBalance(
+                summary,
+                typeSummary(summary, group.type)?.balance ?? 0
+              )
+            }
           >
             {group.accounts.map((account) => (
               <AccountRow key={account.id} account={account} />

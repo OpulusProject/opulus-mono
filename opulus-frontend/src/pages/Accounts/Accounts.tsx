@@ -1,12 +1,14 @@
-import type { AccountWithConnectionDTO } from '@opulus/core/dto';
-
 import {
   type AccountGroupConfig,
   AccountsOverview,
   type SummaryStat,
 } from '@/common/AccountsOverview';
-import { formatTotals } from '@/utils/accountDisplay';
-import { getAccountType } from '@/utils/accountType';
+import {
+  type AccountsSummary,
+  countLabel,
+  formatBalance,
+  typeSummary,
+} from '@/common/AccountsOverview/summary';
 
 const GROUPS: AccountGroupConfig[] = [
   { type: 'depository', title: 'Cash' },
@@ -14,31 +16,25 @@ const GROUPS: AccountGroupConfig[] = [
   { type: 'other', title: 'Other' },
 ];
 
-function countLabel(count: number) {
-  return `${count} account${count === 1 ? '' : 's'}`;
-}
-
-function getSummary(accounts: AccountWithConnectionDTO[]): SummaryStat[] {
-  const cash = accounts.filter((a) => getAccountType(a) === 'depository');
-  const investments = accounts.filter(
-    (a) => getAccountType(a) === 'investment'
-  );
+function getSummary(summary: AccountsSummary): SummaryStat[] {
+  const cash = typeSummary(summary, 'depository');
+  const investments = typeSummary(summary, 'investment');
 
   return [
     {
       label: 'Total balance',
-      value: formatTotals(accounts),
-      detail: countLabel(accounts.length),
+      value: formatBalance(summary, summary.total.balance),
+      detail: countLabel(summary.count),
     },
     {
       label: 'Cash',
-      value: formatTotals(cash),
-      detail: countLabel(cash.length),
+      value: formatBalance(summary, cash?.balance ?? 0),
+      detail: countLabel(cash?.count ?? 0),
     },
     {
       label: 'Investments',
-      value: formatTotals(investments),
-      detail: countLabel(investments.length),
+      value: formatBalance(summary, investments?.balance ?? 0),
+      detail: countLabel(investments?.count ?? 0),
     },
   ];
 }
