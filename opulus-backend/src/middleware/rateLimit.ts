@@ -18,9 +18,10 @@ function redisClient(): Redis {
     port: parseInt(process.env.REDIS_PORT || "6379", 10),
     password: process.env.REDIS_PASSWORD,
     ...(process.env.REDIS_TLS === "true" ? { tls: {} } : {}),
-    // A limiter must not hold a request up when Redis is slow or down.
+    // A limiter must not hold a request up when Redis is slow or down: a command
+    // gives up after one retry. The offline queue stays on, because the store
+    // loads its scripts as soon as it is made, before the connection is up.
     maxRetriesPerRequest: 1,
-    enableOfflineQueue: false,
   });
   redis.on("error", (error: Error) =>
     logger.error({ error_message: error.message }, "Rate limit Redis error")
