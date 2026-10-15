@@ -43,6 +43,16 @@ export class TwoFactorRequiredError extends AppError {
   }
 }
 
+export class TooManyRequestsError extends AppError {
+  constructor(
+    message: string = "Too many requests, try again later",
+    /** Seconds until the caller may try again. */
+    public retryAfterSeconds?: number
+  ) {
+    super(message, 429, "RATE_LIMITED");
+  }
+}
+
 export class UnauthorizedError extends AppError {
   constructor(message: string = "Unauthorized") {
     super(message, 401, "UNAUTHORIZED");

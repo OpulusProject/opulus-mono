@@ -53,6 +53,9 @@ jobs:
       # The service suite makes no third-party calls, so it does not ask Have I
       # Been Pwned about the (common) password its test users sign up with.
       BREACHED_PASSWORD_CHECK: "off"
+      # One address makes every request in the suite: raise the per-IP limit so
+      # only the per-user limits (and their own spec) are ever reached.
+      RATE_LIMIT_PER_IP: "100000"
       # Dummy Plaid creds — the service suite never round-trips Plaid.
       # Specs that touch Plaid's real API live in the integration suite
       # (.github/workflows/integration-tests.yml), which injects real

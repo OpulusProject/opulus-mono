@@ -5,6 +5,7 @@ import {
 import { deleteItemController } from "@/controllers/items/deleteItemController.js";
 import { getItemsController } from "@/controllers/items/getItemsController.js";
 import { updateItemAccountsController } from "@/controllers/items/updateItemAccountsController.js";
+import { plaidRateLimit } from "@/middleware/rateLimit.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
 import { validate } from "@/middleware/validation.js";
 import { Router } from "express";
@@ -20,6 +21,7 @@ router.get("/", requireSession, getItemsController);
 router.post(
   "/",
   requireSession,
+  plaidRateLimit,
   validate(createItemBodySchema),
   createItemController
 );
@@ -27,6 +29,7 @@ router.post(
 router.post(
   "/:id/update-accounts",
   requireSession,
+  plaidRateLimit,
   updateItemAccountsController
 );
 

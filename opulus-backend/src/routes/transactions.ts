@@ -14,6 +14,7 @@ import {
   refreshTransactionsBodySchema,
   refreshTransactionsController,
 } from "@/controllers/transactions/refreshTransactionsController.js";
+import { plaidRateLimit } from "@/middleware/rateLimit.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
 import { validate, validateQuery } from "@/middleware/validation.js";
 import { Router } from "express";
@@ -48,6 +49,7 @@ router.get(
 router.post(
   "/refresh",
   requireSession,
+  plaidRateLimit,
   validate(refreshTransactionsBodySchema),
   refreshTransactionsController
 );

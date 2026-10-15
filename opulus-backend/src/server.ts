@@ -3,6 +3,7 @@ import "dotenv/config";
 import "./checkConfig.js";
 
 import { auth } from "@/auth.js";
+import { apiRateLimit } from "@/middleware/rateLimit.js";
 import router from "@/routes/index.js";
 import {
   config,
@@ -77,6 +78,9 @@ app.use("/api/auth", (req, _res, next) => {
   if (req.ip) req.headers["x-forwarded-for"] = req.ip;
   next();
 });
+
+// Rate limit everything under /api (Better Auth counts its own routes too)
+app.use("/api", apiRateLimit);
 
 // Better Auth handler (mounted BEFORE body parsers)
 // Better Auth docs: express.json() should be used AFTER mounting Better Auth handler

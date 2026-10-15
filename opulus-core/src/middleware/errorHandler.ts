@@ -3,6 +3,7 @@ import {
   AppError,
   ConflictError,
   NotFoundError,
+  TooManyRequestsError,
   UnauthorizedError,
   ValidationError,
 } from "../utils/errors.js";
@@ -61,6 +62,15 @@ export function errorHandler(
     res.status(error.statusCode).json({
       error: "Not found",
       message: error.message,
+    });
+    return;
+  }
+
+  if (error instanceof TooManyRequestsError) {
+    res.status(error.statusCode).json({
+      error: "Too many requests",
+      message: error.message,
+      code: error.code,
     });
     return;
   }
