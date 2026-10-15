@@ -9,18 +9,18 @@ export interface TransactionDay {
 }
 
 /**
- * A day's net change for its heading, from the server's per-day totals: "−$87.39"
- * when more went out than came in, "+$2,100.00" when more came in, "$0.00" when
- * they cancel out. Currencies come in code order (the server's), separated by
- * "·": "+$26.04 · −US$29.00". Undefined when the totals have no entry for the day.
+ * A day's net change for its heading, from the server's per-day totals, which
+ * are in one currency (the summary's base currency): "−$87.39" when more went
+ * out than came in, "+$2,100.00" when more came in, "$0.00" when they cancel
+ * out. Undefined when the totals have no entry for the day.
  */
 export function dayNetLabel(
   byDay: TransactionsDayDTO[],
+  baseCurrency: string,
   day: string
 ): string | undefined {
-  const rows = byDay.filter((row) => row.date === day);
-  if (rows.length === 0) return undefined;
-  return rows.map(({ currency, net }) => formatNet(net, currency)).join(' · ');
+  const net = byDay.find((row) => row.date === day)?.net;
+  return net === undefined ? undefined : formatNet(net, baseCurrency);
 }
 
 /**
@@ -38,7 +38,7 @@ export function groupByDay(transactions: TransactionDTO[]): TransactionDay[] {
   return days;
 }
 
-function formatNet(net: number, currency: string | null): string {
+function formatNet(net: number, currency: string): string {
   if (net > 0) return `+${formatMoney(net, currency)}`;
   if (net < 0) return `\u2212${formatMoney(-net, currency)}`;
   return formatMoney(0, currency);

@@ -114,7 +114,10 @@ const TransactionsContent: React.FC = () => {
             <ListGroup
               key={day}
               title={formatDay(day)}
-              trailingTitle={dayNetLabel(summary.data?.byDay ?? [], day)}
+              trailingTitle={
+                summary.data &&
+                dayNetLabel(summary.data.byDay, summary.data.baseCurrency, day)
+              }
             >
               {rows.map((transaction) => (
                 <TransactionRow
