@@ -16,6 +16,7 @@ export * from "./repositories/exchangeRateRepository.js";
 export * from "./repositories/historicBalanceRepository.js";
 export * from "./repositories/itemRepository.js";
 export * from "./repositories/liabilityRepository.js";
+export * from "./repositories/linkEventRepository.js";
 export * from "./repositories/linkSessionRepository.js";
 export * from "./repositories/transactionRepository.js";
 export * from "./repositories/userRepository.js";

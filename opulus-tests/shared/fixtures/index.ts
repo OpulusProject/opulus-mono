@@ -14,5 +14,6 @@ export * from "./exchange-rates.js";
 export * from "./historic-balances.js";
 export * from "./two-factor.js";
 export * from "./items.js";
+export * from "./link-events.js";
 export * from "./liabilities.js";
 export * from "./transactions.js";
