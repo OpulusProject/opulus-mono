@@ -1,5 +1,11 @@
-import { config, prisma } from "@opulus/core";
+import { disconnectUserItems } from "@/services/items/disconnectUserItems.js";
+import { AppError, config, prisma } from "@opulus/core";
 import { betterAuth } from "better-auth";
+import {
+  APIError,
+  createAuthMiddleware,
+  getSessionFromCtx,
+} from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { haveIBeenPwned, twoFactor } from "better-auth/plugins";
 
@@ -47,6 +53,42 @@ export const auth = betterAuth({
   baseURL: config.betterAuthBaseURL || `http://localhost:${config.port}`,
   basePath: "/api/auth",
   appName: "Opulus",
+  // Account deletion (POST /api/auth/delete-user). The user's rows go with the
+  // user (every relation cascades); beforeDelete first removes their items from
+  // Plaid, which would otherwise keep the connections. If Plaid refuses any, the
+  // delete is refused (502) and nothing is deleted, so it can be tried again.
+  user: {
+    deleteUser: {
+      enabled: true,
+      beforeDelete: async (user) => {
+        try {
+          await disconnectUserItems({ userId: user.id });
+        } catch (error) {
+          if (error instanceof AppError) {
+            throw APIError.from("BAD_GATEWAY", {
+              message: error.message,
+              code: error.code ?? "PLAID_DISCONNECT_FAILED",
+            });
+          }
+          throw error;
+        }
+      },
+    },
+  },
+  hooks: {
+    // Better Auth deletes an account without a password when the session is
+    // "fresh", and a session stays fresh for a day. Deleting an account is the
+    // end of the data, so it always takes the password.
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/delete-user" || ctx.body?.password) return;
+      // Let the endpoint answer 401 for callers who are not signed in.
+      if (!(await getSessionFromCtx(ctx))) return;
+      throw new APIError("BAD_REQUEST", {
+        message: "Password is required to delete your account",
+        code: "PASSWORD_REQUIRED",
+      });
+    }),
+  },
   // Throttle guessing: sign-in, sign-up and the two-factor codes get tight
   // limits per client address, everything else the default. Counted in our
   // database (the rate_limit table), so every backend instance shares them.
