@@ -4,6 +4,7 @@
 
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { toAmount } from "../../../utils/money.js";
 
 export const SpendingCategoryDTOSchema = z.object({
   /** null for transactions Plaid did not categorize. */
@@ -73,9 +74,6 @@ export interface SpendingByCategoryOptions {
   top?: number;
 }
 
-/** A converted amount, to Plaid's 4 decimal places (a rate is a quotient, so the product can run on). */
-const money = (amount: Prisma.Decimal) => amount.toDecimalPlaces(4).toNumber();
-
 /** The spending added up, or null for none. */
 const sum = (values: Prisma.Decimal[]) =>
   values.reduce<Prisma.Decimal | null>(
@@ -129,17 +127,17 @@ export function toSpendingByCategoryDTO(
 
   return {
     baseCurrency,
-    spent: total ? money(total) : 0,
+    spent: total ? toAmount(total) : 0,
     categories: shown.map((entry) => ({
       category: entry.category,
-      spent: money(entry.spent),
+      spent: toAmount(entry.spent),
       count: entry.count,
       share: share(entry.spent),
     })),
     other: restSpent
       ? {
           categories: rest.length,
-          spent: money(restSpent),
+          spent: toAmount(restSpent),
           count: rest.reduce((count, entry) => count + entry.count, 0),
           share: share(restSpent),
         }

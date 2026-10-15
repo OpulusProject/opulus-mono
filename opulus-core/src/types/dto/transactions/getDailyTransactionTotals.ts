@@ -4,6 +4,7 @@
 
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { toAmount } from "../../../utils/money.js";
 
 /**
  * One day, in the base currency: each transaction converted at the rate of that
@@ -88,10 +89,9 @@ export function toDailyTransactionTotalsDTO(
     byDay: [...days]
       .map(([date, { spent, income }]) => ({
         date,
-        // A rate is a quotient, so the product can run on: Plaid's 4 places.
-        spent: spent.toDecimalPlaces(4).toNumber(),
-        income: income.toDecimalPlaces(4).toNumber(),
-        net: income.minus(spent).toDecimalPlaces(4).toNumber(),
+        spent: toAmount(spent),
+        income: toAmount(income),
+        net: toAmount(income.minus(spent)),
       }))
       .sort((a, b) => a.date.localeCompare(b.date)),
   };
