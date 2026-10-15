@@ -53,7 +53,7 @@ export interface TransactionsSummaryOptions {
    * Base-currency units for one unit of `currency` on `day` (see
    * `loadExchangeRateConverter`).
    */
-  rateOn: (currency: string, day: string) => number;
+  rateOn: (currency: string | null, day: string) => number;
 }
 
 /**
@@ -73,10 +73,7 @@ export function toTransactionsSummaryDTO(
   >();
   for (const row of summary.byDay) {
     const day = row.date.toISOString().slice(0, 10);
-    const rate =
-      row.currency === null || row.currency === baseCurrency
-        ? 1
-        : rateOn(row.currency, day);
+    const rate = rateOn(row.currency, day);
     const entry = days.get(day);
     const spent = row.spent.times(rate);
     const income = row.income.times(rate);

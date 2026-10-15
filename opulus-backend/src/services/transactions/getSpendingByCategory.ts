@@ -29,23 +29,15 @@ export async function getSpendingByCategory(
     params.filters
   );
 
-  const foreign = rows.filter(
-    (row) => row.currency !== null && row.currency !== BASE_CURRENCY
-  );
-  const days = foreign.map((row) => row.date).sort();
-  const converter =
-    foreign.length > 0
-      ? await loadExchangeRateConverter({
-          baseCurrency: BASE_CURRENCY,
-          currencies: foreign.map((row) => row.currency!),
-          from: days[0]!,
-          to: days.at(-1)!,
-        })
-      : undefined;
+  const converter = await loadExchangeRateConverter({
+    baseCurrency: BASE_CURRENCY,
+    currencies: rows.map((row) => row.currency),
+    days: rows.map((row) => row.date),
+  });
 
   return toSpendingByCategoryDTO(rows, {
     baseCurrency: BASE_CURRENCY,
-    rateOn: (currency, day) => converter!.rateOn(currency, day),
+    rateOn: converter.rateOn,
     top: params.top,
   });
 }

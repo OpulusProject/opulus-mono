@@ -68,7 +68,7 @@ export interface SpendingByCategoryOptions {
    * Base-currency units for one unit of `currency` on `day` (see
    * `loadExchangeRateConverter`).
    */
-  rateOn: (currency: string, day: string) => number;
+  rateOn: (currency: string | null, day: string) => number;
   /** List only this many categories and add the rest up in `other`. */
   top?: number;
 }
@@ -93,10 +93,7 @@ export function toSpendingByCategoryDTO(
   rows: CategorySpend[],
   { baseCurrency, rateOn, top }: SpendingByCategoryOptions
 ): SpendingByCategoryResponse["data"] {
-  const rateOf = (row: CategorySpend) =>
-    row.currency === null || row.currency === baseCurrency
-      ? 1
-      : rateOn(row.currency, row.date);
+  const rateOf = (row: CategorySpend) => rateOn(row.currency, row.date);
 
   const positive = rows.filter((row) => row.spent.gt(0));
   const converted = (row: CategorySpend) => row.spent.times(rateOf(row));

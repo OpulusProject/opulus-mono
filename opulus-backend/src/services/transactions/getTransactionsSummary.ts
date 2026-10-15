@@ -25,22 +25,14 @@ export async function getTransactionsSummary(
     params.filters
   );
 
-  const foreign = summary.byDay.filter(
-    (row) => row.currency !== null && row.currency !== BASE_CURRENCY
-  );
-  const days = foreign.map((row) => row.date.toISOString().slice(0, 10)).sort();
-  const converter =
-    foreign.length > 0
-      ? await loadExchangeRateConverter({
-          baseCurrency: BASE_CURRENCY,
-          currencies: foreign.map((row) => row.currency!),
-          from: days[0]!,
-          to: days.at(-1)!,
-        })
-      : undefined;
+  const converter = await loadExchangeRateConverter({
+    baseCurrency: BASE_CURRENCY,
+    currencies: summary.byDay.map((row) => row.currency),
+    days: summary.byDay.map((row) => row.date.toISOString().slice(0, 10)),
+  });
 
   return toTransactionsSummaryDTO(summary, {
     baseCurrency: BASE_CURRENCY,
-    rateOn: (currency, day) => converter!.rateOn(currency, day),
+    rateOn: converter.rateOn,
   });
 }
