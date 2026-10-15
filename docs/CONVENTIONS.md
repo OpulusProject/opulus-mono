@@ -257,13 +257,15 @@ with the schemas, so a field that isn't in the schema fails a test.
 
 ## Tests
 
-`opulus-tests` has three suites; put a test in the one that matches what it needs.
+`opulus-tests` has two kinds of suite, one directory each: `services/<service>` for what a service does itself (no third party) and `integration/<service>` for what needs a real third party. Put a test in the one that matches what it needs.
 
 | Suite | What it covers | Needs |
 | --- | --- | --- |
 | `services/backend`, `services/webhooks` | The service's own behaviour over HTTP: auth, validation, response shape. No third party. | A running service and `TEST_DATABASE_URL` |
+| `services/scheduler` | The scheduler's jobs API, and what each job stores, with the job's provider replaced by a stub (`services/scheduler/stub`) | A running scheduler pointed at the stub, Redis, `TEST_DATABASE_URL` |
 | `integration/backend` | Real round-trips through Plaid's sandbox | Sandbox credentials |
 | `integration/webhooks` | Plaid's sandbox delivering real webhooks to the real receiver | A public tunnel to the receiver, plus the above |
+| `integration/scheduler` | A job run against the real provider (Frankfurter), asserting evidence rather than exact rates | A running scheduler with the default provider URL, Redis, `TEST_DATABASE_URL`, network access (no credentials) |
 
 Rules that apply to all of them:
 - Verify over HTTP. Read the database only to set up a test (for example an
@@ -279,19 +281,28 @@ Rules that apply to all of them:
   `delete`, `refresh`), with the 401 test first.
 - A required check must not silently skip: integration specs fail when sandbox
   credentials are missing.
+- A job has no response beyond its result, so the scheduler specs check what a
+  job stored by reading the test database (`shared/fixtures/exchange-rates.ts`),
+  and start each run, and follow it, over the scheduler's HTTP API
+  (`shared/scheduler.ts`). Stub a third party in the service suite to control
+  its answers (exact values, failures); prove the real one in the integration
+  suite with thin evidence checks, never exact values that change. A table shared
+  by every user (like `exchange_rate`) can't be namespaced with `uniqueId`: a
+  spec that uses it clears or seeds it, and the suite runs serially.
 
 ## CI
 
 | Workflow | Runs | Required to merge |
 | --- | --- | --- |
-| Service API Tests | Backend and webhooks service suites | "Backend service-api tests", "Webhooks service-api tests" |
+| Service API Tests | Backend, webhooks and scheduler service suites | "Backend service-api tests", "Webhooks service-api tests" ("Scheduler service-api tests" can be added) |
 | Integration Tests | Plaid sandbox suite, plus nightly | "Backend integration tests" |
 | Type Check | `tsc --noEmit` in every package | No |
 | Lint | `pnpm -r lint` | No |
 | Webhook E2E | The webhook end-to-end suite, nightly and on changes to it or `opulus-webhooks` | No |
+| Scheduler Integration | The scheduler against the real Frankfurter API, nightly and on changes to the scheduler or the rate code | No |
 
-The first four run on every pull request, whatever its base branch, and again on
-`main` after each merge. A PR is checked against the base it was opened on, so
+All but Webhook E2E run on every pull request, whatever its base branch, and
+again on `main` after each merge. A PR is checked against the base it was opened on, so
 two PRs that pass alone can fail together (a lint rule and a file that breaks it
 once did); the run on `main` catches that. Webhook E2E is left out of the push
 runs because it needs a public tunnel.

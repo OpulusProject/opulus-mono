@@ -23,7 +23,7 @@ const SCHEDULER_PORT = parseInt(process.env.SCHEDULER_PORT || "8082", 10);
 const worker = createSchedulerWorker();
 await registerSchedules();
 // On by default so a fresh deploy fills the tables without waiting for the
-// schedule; SCHEDULER_RUN_ON_START=false turns it off (the jobs suite does, so
+// schedule; SCHEDULER_RUN_ON_START=false turns it off (the scheduler tests do, so
 // a start-up run does not race its own runs).
 if (process.env.SCHEDULER_RUN_ON_START !== "false") {
   await runJobsOnStart();

@@ -1,0 +1,118 @@
+# The scheduler INTEGRATION suite: the refresh-exchange-rates job run against
+# the REAL Frankfurter API (the ECB's daily rates), to prove the live provider
+# still answers the way our gateway expects. The service suite covers the job
+# against a stub; this is the one thing it cannot prove.
+#
+# Not a PR gate. It depends on a public third-party API, so it runs nightly, on
+# demand, and on PRs that touch the scheduler, the rate code or this suite: a
+# Frankfurter outage then shows up as one failed run instead of blocking merges.
+# No secrets are needed, only network access.
+
+name: Scheduler Integration
+
+on:
+  schedule:
+    - cron: "45 7 * * *" # 07:45 UTC nightly
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/scheduler-integration-tests.yml"
+      - "opulus-tests/integration/scheduler/**"
+      - "opulus-tests/shared/scheduler.ts"
+      - "opulus-scheduler/**"
+      - "opulus-core/src/gateways/frankfurterGateway.ts"
+      - "opulus-core/src/gateways/exchangeRateProvider.ts"
+      - "opulus-core/src/services/refreshExchangeRates.ts"
+      - "opulus-core/src/repositories/exchangeRateRepository.ts"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scheduler-integration-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scheduler-integration-tests:
+    name: Scheduler integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      TEST_DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      NODE_ENV: test
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
+      SCHEDULER_PORT: "8082"
+      # A fixed, test-only token for the scheduler's jobs API.
+      SCHEDULER_ADMIN_TOKEN: ci-scheduler-tests-token-not-a-secret
+      # The specs run every job themselves; a start-up run would race them.
+      SCHEDULER_RUN_ON_START: "false"
+      # FRANKFURTER_BASE_URL is deliberately NOT set: the scheduler uses the
+      # public Frankfurter API.
+      TEST_BASE_URL: http://localhost:8082
+
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app_dev
+          POSTGRES_DB: app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @opulus/core prisma:generate
+
+      - name: Build core package
+        run: pnpm --filter @opulus/core build
+
+      - name: Apply database migrations
+        run: pnpm --filter @opulus/core exec prisma migrate deploy --schema=./prisma/schema.prisma
+
+      - name: Boot the scheduler
+        run: |
+          pnpm --filter @opulus/scheduler exec tsx src/server.ts &
+          for i in $(seq 1 60); do
+            if curl -sf "$TEST_BASE_URL/health" >/dev/null; then
+              echo "Scheduler is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Scheduler did not become healthy in time" >&2
+          exit 1
+
+      - name: Run the scheduler integration tests
+        run: pnpm --filter @opulus/tests test:integration-scheduler
