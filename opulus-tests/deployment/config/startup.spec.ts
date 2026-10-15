@@ -1,10 +1,6 @@
-import { execFile } from "node:child_process";
-import path from "node:path";
-import { promisify } from "node:util";
 import { expect, test } from "@playwright/test";
 import { findConfigProblems } from "@opulus/core";
-
-const run = promisify(execFile);
+import { exited, startService, stopService } from "../helpers/service.js";
 
 /** An environment that is complete for every service. */
 const GOOD_ENV = {
@@ -18,28 +14,35 @@ const GOOD_ENV = {
   REDIS_HOST: "redis.internal",
 };
 
-/** Start a service the way `pnpm dev` does, in production, with only the given environment. */
-async function startService(service: "backend" | "webhooks" | "scheduler", env: Record<string, string>) {
-  const repoRoot = path.resolve(process.cwd(), "..");
-  try {
-    await run("pnpm", ["--filter", `@opulus/${service}`, "exec", "tsx", "src/server.ts"], {
-      cwd: repoRoot,
-      // No .env: a developer's own file must not fill in what the test leaves out.
-      env: { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", NODE_ENV: "production", DOTENV_CONFIG_PATH: "/nonexistent/.env", ...env },
-      timeout: 60_000,
-    });
-    return { code: 0, output: "" };
-  } catch (error) {
-    const e = error as { code?: number; stdout?: string; stderr?: string };
-    return { code: e.code ?? 1, output: `${e.stdout ?? ""}${e.stderr ?? ""}` };
-  }
+const PORTS = { backend: 18297, webhooks: 18298, scheduler: 18299 };
+const PORT_VARIABLES = { backend: "PORT", webhooks: "WEBHOOK_PORT", scheduler: "SCHEDULER_PORT" };
+
+/**
+ * Start a service the way `pnpm dev` does, in production, with only the given
+ * environment. No .env either: a developer's own file must not fill in what the
+ * spec leaves out.
+ */
+async function startInProduction(service: "backend" | "webhooks" | "scheduler", env: Record<string, string>) {
+  const running = await startService({
+    workspace: `opulus-${service}`,
+    port: PORTS[service],
+    portVariable: PORT_VARIABLES[service],
+    cleanEnv: true,
+    env: { NODE_ENV: "production", DOTENV_CONFIG_PATH: "/nonexistent/.env", ...env },
+    waitMs: 20_000,
+  });
+  const code = await exited(running.child, 20_000).catch(() => null);
+  const output = running.output();
+  await stopService(running);
+  return { code, output };
 }
 
 /**
  * This file: a service refuses to start in production with a missing or
  * placeholder setting (and says which), instead of starting and failing later
- * and elsewhere. The rules are checked directly; the refusal is checked by
- * starting each real service with an empty environment.
+ * and elsewhere. The rules (`findConfigProblems`, a pure function of core, so
+ * these first specs start nothing) are checked directly; the refusal is checked
+ * by starting each real service with an empty environment.
  */
 test.describe("configuration is checked at startup", () => {
   test("a complete environment has no problems, for every service", () => {
@@ -102,7 +105,7 @@ test.describe("configuration is checked at startup", () => {
 
   for (const service of ["backend", "webhooks", "scheduler"] as const) {
     test(`the ${service} refuses to start in production with nothing configured, and says what is missing`, async () => {
-      const result = await startService(service, {});
+      const result = await startInProduction(service, {});
 
       expect(result.code).toBe(1);
       expect(result.output).toContain(`The ${service} service cannot start`);
