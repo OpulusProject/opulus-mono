@@ -31,7 +31,8 @@ export type BackfillBalanceHistoryResult =
  * transactions we hold. Meant to run after every transactions sync, given that
  * sync's `transactions_update_status`: it does nothing until Plaid reports the
  * item's full history loaded (HISTORICAL_UPDATE_COMPLETE), and then builds the
- * history once; an item that already has history is left alone. Before it
+ * history once, even when several syncs of the item run at the same time; an
+ * item that already has history is left alone. Before it
  * reconstructs it reads the item's balances fresh from Plaid, since the history
  * works back from them. Today's balance is not stored: it is read live.
  *
@@ -83,8 +84,18 @@ export async function backfillBalanceHistory(
     today: toDay(now),
   });
 
-  const rows = await runInTransaction((tx) =>
-    historicBalanceRepository.replaceForAccounts(
+  // Several syncs of one item can run at once (the webhook worker takes up to
+  // five jobs at a time, and Plaid sends its own notifications as well). Each
+  // got here because no history existed when it checked, so check again once
+  // the item is locked: the one that gets the lock first writes, the others
+  // wait, find the history and leave it alone. Without this the later ones
+  // delete the rows the first wrote and write them again.
+  const rows = await runInTransaction(async (tx) => {
+    await itemRepository.lockForUpdate(item.id, tx);
+    if (await historicBalanceRepository.existsForItem(item.id, tx)) {
+      return null;
+    }
+    return historicBalanceRepository.replaceForAccounts(
       accounts.map((account) => account.id),
       history.map((row) => ({
         accountId: row.accountId,
@@ -94,8 +105,11 @@ export async function backfillBalanceHistory(
         isoCurrencyCode: row.isoCurrencyCode,
       })),
       tx
-    )
-  );
+    );
+  });
+  if (rows === null) {
+    return { skipped: true };
+  }
 
   logger.info(
     {

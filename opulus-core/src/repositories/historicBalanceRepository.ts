@@ -17,11 +17,15 @@ class HistoricBalanceRepository {
   /**
    * Whether any of an item's accounts already has balance history
    * @param itemId - The item
+   * @param client - Optional transaction client to run inside a transaction
    * @throws AppError if database error occurs
    */
-  async existsForItem(itemId: string): Promise<boolean> {
+  async existsForItem(
+    itemId: string,
+    client: Prisma.TransactionClient = this.prisma
+  ): Promise<boolean> {
     try {
-      const count = await this.prisma.accountHistoricBalance.count({
+      const count = await client.accountHistoricBalance.count({
         where: { account: { itemId } },
         take: 1,
       });

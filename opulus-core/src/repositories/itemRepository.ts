@@ -208,6 +208,30 @@ class ItemRepository {
   }
 
   /**
+   * Lock an item's row until the transaction ends. A second transaction that
+   * locks the same item waits here, so work that must happen once per item
+   * (check, then write) cannot be done by two at the same time.
+   * @param itemId - The item
+   * @param client - The transaction client the lock belongs to
+   * @throws AppError if database error occurs
+   */
+  async lockForUpdate(itemId: string, client: Prisma.TransactionClient) {
+    try {
+      await client.$queryRaw`SELECT id FROM "item" WHERE id = ${itemId} FOR UPDATE`;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to lock item: ${error.message}`
+          : "An unexpected error occurred while locking item";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
    * Update an item by ID
    * Only updates fields that are provided (undefined fields are ignored)
    * @param itemId - The item ID
