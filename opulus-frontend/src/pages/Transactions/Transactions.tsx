@@ -13,10 +13,11 @@ import { Page } from '@/common/Page';
 import { TransactionRow } from '@/common/TransactionRow';
 import { Button, Spinner } from '@/components/ui';
 import { useInfiniteTransactions } from '@/hooks/transactions/useInfiniteTransactions';
+import { useTransactionsSummary } from '@/hooks/transactions/useTransactionsSummary';
 import { useOnVisible } from '@/hooks/use-on-visible';
 import { formatDay } from '@/utils/day';
 
-import { groupByDay, netLabel } from './transactionDays';
+import { dayNetLabel, groupByDay } from './transactionDays';
 import { TransactionFilters } from './TransactionFilters';
 import { TransactionSearch } from './TransactionSearch';
 import { useTransactionFilters } from './useTransactionFilters';
@@ -43,6 +44,9 @@ const TransactionsContent: React.FC = () => {
   const setQuery = (q: string) => update({ q });
 
   const list = useInfiniteTransactions(filters);
+  // Each day's net comes from the server for the same filters, so it is whole
+  // however much of the list has loaded.
+  const summary = useTransactionsSummary(filters);
 
   const transactions = useMemo(
     () => list.data?.pages.flatMap((page) => page.transactions) ?? [],
@@ -106,17 +110,13 @@ const TransactionsContent: React.FC = () => {
         ) : transactions.length === 0 ? (
           <TransactionsEmpty isFiltered={isFiltered} />
         ) : (
-          // The pages are an unbroken run from the newest transaction, so every
-          // day is complete except possibly the last one while there are more
-          // pages. That day's net waits until the rest of its transactions are in.
-          days.map(({ day, transactions: rows }, index) => (
+          days.map(({ day, transactions: rows }) => (
             <ListGroup
               key={day}
               title={formatDay(day)}
               trailingTitle={
-                index === days.length - 1 && list.hasNextPage
-                  ? undefined
-                  : netLabel(rows)
+                summary.data &&
+                dayNetLabel(summary.data.byDay, summary.data.baseCurrency, day)
               }
             >
               {rows.map((transaction) => (
