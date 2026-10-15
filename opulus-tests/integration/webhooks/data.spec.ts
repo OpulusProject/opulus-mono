@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { withSession } from "../../shared/client.js";
 import { createAuthedUser } from "../../shared/fixtures/auth.js";
+import { seedExchangeRates } from "../../shared/fixtures/exchange-rates.js";
 import { requireSandboxCredentials } from "../helpers/plaidSandbox.js";
 import {
   fireSandboxWebhook,
@@ -83,7 +84,13 @@ test.describe("data webhooks (sandbox to receiver)", () => {
   test("syncing a new item's transactions also fills in its balance history", async ({
     request,
   }) => {
-    // Arrange
+    // Arrange: the sandbox's accounts are in US dollars and net worth is in the
+    // base currency (Canadian dollars), so it needs a rate for each. The scheduler
+    // is not running here, so store them; one old day covers every day after it.
+    await seedExchangeRates([
+      { date: "2020-01-01", currency: "CAD", perEur: 1.5 },
+      { date: "2020-01-01", currency: "USD", perEur: 1.1 },
+    ]);
     const creds = requireSandboxCredentials();
     const { cookie } = await createAuthedUser(request);
     const { accessToken } = await linkItemWithWebhook(request, cookie, creds);
