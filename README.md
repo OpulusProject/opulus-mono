@@ -179,6 +179,8 @@ means every process ends up reading the root file. Production (Railway)
 containers have no `.env` and env comes from the platform — no symlinks there.
 
 
+In production (`NODE_ENV=production`) each service checks its environment at startup and refuses to start, naming what is wrong: the backend needs `DATABASE_URL`, a real `BETTER_AUTH_SECRET` (32+ characters), an `https://` `BETTER_AUTH_BASE_URL`, `CLIENT_URL` and Plaid credentials with `PLAID_ENV` set to `sandbox` or `production`; the webhook receiver needs the database, Plaid and `REDIS_HOST`; the scheduler needs the database and `REDIS_HOST`.
+
 | Var                    | Default / Example                                                    | Notes                                     |
 | ---------------------- | -------------------------------------------------------------------- | ----------------------------------------- |
 | `DATABASE_URL`         | `postgresql://postgres:password@localhost:5432/opulus?schema=public` | Local Postgres URL                        |

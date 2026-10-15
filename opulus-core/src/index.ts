@@ -43,6 +43,7 @@ export * from "./utils/money.js";
 export * from "./utils/plaidErrors.js";
 
 // Config export
+export * from "./config/validate.js";
 export { default as config } from "./config/default.js";
 
 // Middleware exports

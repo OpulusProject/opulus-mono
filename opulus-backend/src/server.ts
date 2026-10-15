@@ -1,5 +1,6 @@
 // Load .env FIRST, before any other imports that depend on environment variables
 import "dotenv/config";
+import "./checkConfig.js";
 
 import { auth } from "@/auth.js";
 import router from "@/routes/index.js";
