@@ -77,22 +77,12 @@ export function getAccountTypeLabel(
   return TYPE_LABELS[account.type] ?? titleCase(account.type);
 }
 
-/** Credit still available on a credit account, derived when not provided. */
-export function getAvailableCredit(account: AccountDTO): number | null {
-  if (account.balanceAvailable !== null) return account.balanceAvailable;
-  if (account.balanceLimit !== null && account.balanceCurrent !== null) {
-    return account.balanceLimit - account.balanceCurrent;
-  }
-  return null;
-}
-
 /** Secondary balance line shown under an account's main balance. */
 export function getBalanceCaption(account: AccountDTO): string | null {
   const currency = account.isoCurrencyCode;
 
   if (account.type === 'credit') {
-    const available = getAvailableCredit(account);
-    const limit = getCreditLimit(account);
+    const { availableCredit: available, creditLimit: limit } = account;
     if (available !== null && limit !== null) {
       return `${formatMoney(available, currency)} available of ${formatMoney(limit, currency)}`;
     }
@@ -113,17 +103,5 @@ export function getBalanceCaption(account: AccountDTO): string | null {
     return `${formatMoney(account.balanceAvailable, currency)} available`;
   }
 
-  return null;
-}
-
-/**
- * Credit limit for a credit account. Plaid sometimes returns only the limit or
- * only the available credit, so derive whichever one is missing.
- */
-export function getCreditLimit(account: AccountDTO): number | null {
-  if (account.balanceLimit !== null) return account.balanceLimit;
-  if (account.balanceAvailable !== null && account.balanceCurrent !== null) {
-    return account.balanceCurrent + account.balanceAvailable;
-  }
   return null;
 }

@@ -35,8 +35,9 @@ docs {
   - Sync and error state (`syncedAt`, `errorType`, `errorCode`, `errorMessage`, `displayMessage`)
   - `newAccountsAvailable`: `true` when Plaid found accounts the user hasn't shared yet; the user adds them through Link's update mode
   - `accounts`: the item's bank accounts, each with:
-    - `name`, `officialName`, `type`, `subtype`, `mask` (last digits)
+    - `name`, `officialName`, `type` (normalized: `depository`, `investment`, `credit`, `loan` or `other`), `subtype`, `mask` (last digits)
     - `balanceCurrent`, `balanceAvailable`, `balanceLimit` (credit limit), `isoCurrencyCode`
+    - `creditLimit`, `availableCredit`: for credit accounts, the limit and the available credit with the missing one worked out when Plaid sent only one (`null` for other types); see **Get Accounts**
     - `liabilityDetails`: Plaid liabilities data for credit cards, mortgages, and student loans (APRs, payment due dates, loan terms), or `null` when none is available
 
   ## Success Response (200)
@@ -66,6 +67,8 @@ docs {
               "balanceCurrent": 1523.45,
               "balanceAvailable": 1498.45,
               "balanceLimit": null,
+              "creditLimit": null,
+              "availableCredit": null,
               "isoCurrencyCode": "CAD"
             },
             {
@@ -78,6 +81,8 @@ docs {
               "balanceCurrent": 250.5,
               "balanceAvailable": 4749.5,
               "balanceLimit": 5000,
+              "creditLimit": 5000,
+              "availableCredit": 4749.5,
               "isoCurrencyCode": "CAD",
               "liabilityDetails": {
                 "kind": "credit",

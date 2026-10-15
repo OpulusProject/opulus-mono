@@ -7,22 +7,6 @@ import { z } from "zod";
 import { AccountDTOSchema, toAccountDTO } from "./account.js";
 
 /**
- * Account types, matching Plaid's account `type`. `other` also covers any type
- * we do not recognize.
- */
-export const ACCOUNT_TYPES = [
-  "depository",
-  "investment",
-  "credit",
-  "loan",
-  "other",
-] as const;
-
-export const AccountTypeSchema = z.enum(ACCOUNT_TYPES);
-
-export type AccountType = z.infer<typeof AccountTypeSchema>;
-
-/**
  * The connection (item) an account belongs to, just enough to say where it is
  * and whether that connection has a problem.
  */

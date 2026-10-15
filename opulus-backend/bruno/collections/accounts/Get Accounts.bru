@@ -43,6 +43,9 @@ docs {
 
   Accounts sorted by name. Each account has the same fields as the accounts nested in **Get Items**, plus the `connection` it belongs to (the item's `id`, `institutionName`, and `errorCode`).
 
+  - `type` is the normalized type, one of `depository`, `investment`, `credit`, `loan` or `other`: Plaid's legacy `brokerage` comes back as `investment`, and a type we do not recognize as `other`
+  - `creditLimit` and `availableCredit` are for credit accounts (`null` for every other type). Plaid sometimes sends only one of the two, so the missing one is worked out: the limit is what is owed plus the available credit, and the available credit is the limit less what is owed. They are `null` when neither can be known. `balanceLimit` and `balanceAvailable` stay as Plaid reported them
+
   ## Success Response (200)
 
   ```json
@@ -59,6 +62,8 @@ docs {
           "balanceCurrent": 250.5,
           "balanceAvailable": 4749.5,
           "balanceLimit": 5000,
+          "creditLimit": 5000,
+          "availableCredit": 4749.5,
           "isoCurrencyCode": "CAD",
           "liabilityDetails": null,
           "connection": {
