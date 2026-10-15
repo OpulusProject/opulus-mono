@@ -1,0 +1,89 @@
+meta {
+  name: Get Spending By Category
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{base_url}}/api/transactions/spending-by-category
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+params:query {
+  top: 5
+  startDate: 
+  endDate: 
+  hideTransfers: true
+  itemId: 
+  accountId: 
+  category: 
+  search: 
+  type: 
+  includePending: 
+}
+
+docs {
+  # Get Spending By Category
+
+  What the authenticated user spent in each category, with each category's share of the total, computed on the server so the client only displays it. Spending in other currencies is converted to a base currency (CAD for now) so categories can be ranked and compared in one list, and each category also says what was paid in each currency.
+
+  **Endpoint:** `GET /api/transactions/spending-by-category`
+
+  ## Query Parameters
+
+  The same filters as `GET /api/transactions` (`itemId`, `accountId`, `category`, `search`, `type`, `hideTransfers`, `includePending`, `startDate`, `endDate`), so the numbers describe the same transactions as the list. `page`, `limit`, `sort` and `order` do not apply.
+
+  - `top` (optional, 1-50): list only this many categories, and add the rest up in `other`. Without it every category is listed and `other` is null.
+
+  ## Success Response (200)
+
+  ```json
+  {
+    "data": {
+      "baseCurrency": "CAD",
+      "spent": 225,
+      "categories": [
+        {
+          "category": "FOOD_AND_DRINK",
+          "spent": 125,
+          "count": 1,
+          "share": 0.5556,
+          "amounts": [{ "currency": "USD", "spent": 100 }]
+        },
+        {
+          "category": "TRAVEL",
+          "spent": 100,
+          "count": 2,
+          "share": 0.4444,
+          "amounts": [
+            { "currency": "CAD", "spent": 60 },
+            { "currency": "USD", "spent": 32 }
+          ]
+        }
+      ],
+      "other": null,
+      "rates": [{ "currency": "USD", "rate": 1.25 }],
+      "unconverted": []
+    }
+  }
+  ```
+
+  - `spent` (top level and per category) is in `baseCurrency`; `share` is a category's `spent` as a fraction (0 to 1) of the top-level `spent`
+  - `amounts` is what was actually spent in the category, one entry per currency, largest first (ties by code, no currency last)
+  - Only money out counts. Categories are largest first by converted `spent` (ties by name, uncategorized, `category: null`, last)
+  - Spending with no currency is taken as `baseCurrency`
+  - `rates` lists the rate used for each other currency (units of the base for one unit of it), from the European Central Bank's daily rates; rates are cached for 6 hours and are only looked up when some spending is not in the base currency
+  - `unconverted` is spending in a currency with no known rate (or when rates could not be fetched). It is left out of `spent`, `categories` and every share, so shares are of what could be converted
+  - `other` is null unless `top` left categories out; `other.categories` is how many it adds up, and its `amounts` are merged per currency
+  - Unlike `byCategory` in the summary, the `category` filter applies here, so the shares add up to what the filters select
+
+  ## Error Responses
+
+  - `400 Bad Request`: Invalid query parameters
+  - `401 Unauthorized`: No active session found
+}

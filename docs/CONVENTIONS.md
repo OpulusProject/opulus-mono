@@ -129,7 +129,8 @@ file the conventions above already describe.
   query parameter (`?accountId=`), not by nesting it under the parent.
 - A computed aggregate lives under the resource whose rows it adds up, and takes
   the same filters as that resource: `GET /api/transactions/summary`,
-  `GET /api/accounts/net-worth` (what the accounts add up to, over time).
+  `GET /api/transactions/spending-by-category`, `GET /api/accounts/net-worth`
+  (what the accounts add up to, over time).
 - The server computes aggregates. The client does not sum rows it fetched, so
   the rules for them (signs, currencies, filling gaps) live where they are
   tested, and a filter is a new query, not client work.

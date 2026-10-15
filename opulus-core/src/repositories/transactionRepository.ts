@@ -3,6 +3,7 @@ import type { Transaction as PlaidTransaction } from "plaid";
 import prisma from "../client/prisma.js";
 import {
   UNCATEGORIZED,
+  type CategorySpend,
   type TransactionsSummary,
 } from "../types/dto/transactions/index.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
@@ -625,6 +626,46 @@ class TransactionRepository {
         error instanceof Error
           ? `Failed to summarize transactions: ${error.message}`
           : "An unexpected error occurred while summarizing transactions";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * Money out added up by currency and category, for the filtered transactions.
+   * Unlike the summary's categories this applies the category filter too, so it
+   * adds up to exactly what the filters select.
+   *
+   * @param userId - Owner of the transactions
+   * @param filters - Which transactions to include
+   * @throws AppError if database error occurs
+   */
+  async getCategorySpendByUserId(
+    userId: string,
+    filters: TransactionFilters = {}
+  ): Promise<CategorySpend[]> {
+    try {
+      const rows = await this.prisma.transaction.groupBy({
+        by: ["isoCurrencyCode", "categoryPrimary"],
+        where: { AND: [buildWhere(userId, filters), { amount: { gt: 0 } }] },
+        _sum: { amount: true },
+        _count: { _all: true },
+      });
+
+      return rows.map((row) => ({
+        currency: row.isoCurrencyCode,
+        category: row.categoryPrimary,
+        spent: row._sum.amount ?? new Prisma.Decimal(0),
+        count: row._count._all,
+      }));
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to total spending by category: ${error.message}`
+          : "An unexpected error occurred while totaling spending by category";
       throw new AppError(message, 500);
     }
   }
