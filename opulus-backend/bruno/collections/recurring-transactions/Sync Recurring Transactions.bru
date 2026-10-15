@@ -1,0 +1,60 @@
+meta {
+  name: Sync Recurring Transactions
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/api/recurring-transactions/sync
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "itemId": "cuid_of_one_of_your_items"
+  }
+}
+
+docs {
+  # Sync Recurring Transactions
+
+  Pull the recurring payments and income Plaid found for one of the authenticated user's items (subscriptions, bills, a salary; Plaid calls them streams) and store them, replacing what was stored.
+
+  **Endpoint:** `POST /api/recurring-transactions/sync`
+
+  ## Authentication
+
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+
+  ## Request Body
+
+  - `itemId` (string, required): our item id (not Plaid's)
+
+  ## Success Response (200)
+
+  ```json
+  { "data": { "status": "synced", "streams": 2 } }
+  ```
+
+  ```json
+  { "data": { "status": "unavailable", "reason": "PRODUCT_NOT_READY" } }
+  ```
+
+  - `synced`: the item's streams were stored; `streams` is how many it has now. A stream in an account that is not the item's is left out. A sync replaces what was stored: a stream Plaid no longer reports is removed and one it still reports is updated in place
+  - `unavailable`: Plaid has nothing to give this item yet (its transactions are still loading, or the institution is not supported). Nothing changed and nothing is wrong
+  - Amounts are stored positive whichever way the money goes; each stream's `direction` (`inflow` or `outflow`) says which
+
+  Streams are also synced when Plaid sends a `TRANSACTIONS: RECURRING_TRANSACTIONS_UPDATE` webhook, which it does once an item's transactions have loaded and whenever its streams change.
+
+  ## Error Responses
+
+  - `400 Bad Request`: `itemId` is missing
+  - `401 Unauthorized`: No active session, or the item belongs to another user
+  - `404 Not Found`: There is no such item
+}

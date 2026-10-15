@@ -16,6 +16,8 @@ export interface SeededItem {
   itemId: string;
   plaidItemId: string;
   accountId: string;
+  /** Plaid's id for the account, which streams and holdings refer to. */
+  providerAccountId: string;
   accountName: string;
   institutionName: string;
 }
@@ -104,6 +106,7 @@ export async function seedItemWithAccount(
     itemId: item.id,
     plaidItemId: item.plaidItemId,
     accountId: account.id,
+    providerAccountId: account.providerAccountId,
     accountName,
     institutionName,
   };

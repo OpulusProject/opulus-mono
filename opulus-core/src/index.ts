@@ -18,6 +18,7 @@ export * from "./repositories/itemRepository.js";
 export * from "./repositories/liabilityRepository.js";
 export * from "./repositories/linkSessionRepository.js";
 export * from "./repositories/transactionRepository.js";
+export * from "./repositories/recurringStreamRepository.js";
 export * from "./repositories/userRepository.js";
 
 // Gateway exports (external APIs)
@@ -30,6 +31,7 @@ export * from "./services/exchangeRateConverter.js";
 export * from "./services/refreshExchangeRates.js";
 export * from "./services/syncItemHoldings.js";
 export * from "./services/syncItemLiabilities.js";
+export * from "./services/syncItemRecurring.js";
 export * from "./services/syncItemTransactions.js";
 
 // Type exports (DTOs)
