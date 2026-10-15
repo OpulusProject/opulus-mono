@@ -207,3 +207,35 @@ jobs:
 
       - name: Run scheduler deployment tests
         run: pnpm --filter @opulus/tests test:deployment-scheduler
+
+  # No database or Redis: a service with a bad configuration stops before it
+  # connects to anything.
+  config-deployment-tests:
+    name: Config deployment tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @opulus/core prisma:generate
+
+      - name: Build core package
+        run: pnpm --filter @opulus/core build
+
+      - name: Run config deployment tests
+        run: pnpm --filter @opulus/tests test:deployment-config

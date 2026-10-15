@@ -21,6 +21,11 @@ export async function startService(options: {
   port: number;
   portVariable: string;
   env?: Record<string, string>;
+  /**
+   * Start from an empty environment (only PATH and HOME) instead of this
+   * process's, for a spec about what the service does when a setting is missing.
+   */
+  cleanEnv?: boolean;
   /** How long to wait for `/health`. */
   waitMs?: number;
 }): Promise<RunningService> {
@@ -28,7 +33,9 @@ export async function startService(options: {
   const child = spawn(path.join(cwd, "node_modules/.bin/tsx"), ["src/server.ts"], {
     cwd,
     env: {
-      ...process.env,
+      ...(options.cleanEnv
+        ? { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "" }
+        : process.env),
       [options.portVariable]: String(options.port),
       ...options.env,
     },
