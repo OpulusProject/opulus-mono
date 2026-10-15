@@ -1,5 +1,8 @@
 import { plaidGateway } from "../gateways/plaidGateway.js";
-import { accountRepository } from "../repositories/accountRepository.js";
+import {
+  accountRepository,
+  normalizePlaidBalances,
+} from "../repositories/accountRepository.js";
 
 export interface RefreshItemBalancesParams {
   /** Our id for the item. */
@@ -28,13 +31,7 @@ export async function refreshItemBalances(
   for (const account of accounts) {
     const id = ids.get(account.account_id);
     if (!id) continue; // an account that was not shared with us
-    await accountRepository.update(id, {
-      balanceAvailable: account.balances.available ?? null,
-      balanceCurrent: account.balances.current ?? null,
-      balanceLimit: account.balances.limit ?? null,
-      isoCurrencyCode: account.balances.iso_currency_code ?? null,
-      unofficialCurrencyCode: account.balances.unofficial_currency_code ?? null,
-    });
+    await accountRepository.update(id, normalizePlaidBalances(account));
     updated += 1;
   }
   return updated;
