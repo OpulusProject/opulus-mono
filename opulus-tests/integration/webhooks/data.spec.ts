@@ -81,7 +81,7 @@ test.describe("data webhooks (sandbox to receiver)", () => {
     expect(transactions.some((t) => t.category?.primary)).toBe(true);
   });
 
-  test("syncing a new item's transactions also fills in its balance history", async ({
+  test("syncing a new item's transactions gives its net worth a history", async ({
     request,
   }) => {
     // Arrange: the sandbox's accounts are in US dollars and net worth is in the
@@ -95,9 +95,10 @@ test.describe("data webhooks (sandbox to receiver)", () => {
     const { cookie } = await createAuthedUser(request);
     const { accessToken } = await linkItemWithWebhook(request, cookie, creds);
 
-    // Act + Assert: the handler backfills the history after each sync. A new
-    // item has no transactions for its first few seconds, so keep asking Plaid
-    // to sync until the history is there.
+    // Act + Assert: net worth for a past day is worked out from the item's
+    // transactions, so it has history once they are synced. A new item has no
+    // transactions for its first few seconds, so keep asking Plaid to sync until
+    // some arrive.
     let reads = 0;
     const points = await waitFor(
       async () => {
@@ -116,7 +117,7 @@ test.describe("data webhooks (sandbox to receiver)", () => {
         return ((await res.json()).data?.points ?? []) as unknown[];
       },
       (list) => list.length > 1,
-      "the balance history to be filled in",
+      "the net worth to have a history",
     );
     expect(points.length).toBeGreaterThan(1);
   });

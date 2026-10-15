@@ -22,7 +22,6 @@ model User {
   authAccounts       AuthAccount[]
   linkSessions       LinkSession[]
   accountLiabilities AccountLiability[]
-  historicBalances   AccountHistoricBalance[]
   items              Item[]
   accounts           Account[]
   transactions       Transaction[]
@@ -144,7 +143,6 @@ model Account {
   item                   Item                     @relation(fields: [itemId], references: [id], onDelete: Cascade)
   transactions           Transaction[]
   liabilityDetails       AccountLiability?
-  historicBalances       AccountHistoricBalance[]
 
   // Same account_id can exist in different items
   // Index for stable account lookups
@@ -193,30 +191,6 @@ model Transaction {
   @@index([date])
   @@index([userId, date])
   @@map("transaction")
-}
-
-/// An account's balance on one completed day (its closing balance), for the net
-/// worth history. Today's balance is not here: it is read live from
-/// Account.balanceCurrent. A row is written once its day is over, never for
-/// today; the history before an item was linked is filled in from its
-/// transactions when it is first synced.
-model AccountHistoricBalance {
-  id              String   @id @default(cuid())
-  accountId       String // Reference to Account
-  userId          String // Reference to User
-  date            DateTime @db.Date // The day it closed (UTC); always before today
-  balanceCurrent  Decimal  @db.Decimal(19, 4) // Credit and loan balances stay positive, as in Account
-  isoCurrencyCode String? // ISO 4217 currency code, copied from the account
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  account         Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-
-  // One row per account per day
-  @@unique([accountId, date])
-  // One user's rows over a date range (the net worth query)
-  @@index([userId, date])
-  @@map("account_historic_balance")
 }
 
 /// Liabilities data (Plaid /liabilities/get) for a credit or loan account.
