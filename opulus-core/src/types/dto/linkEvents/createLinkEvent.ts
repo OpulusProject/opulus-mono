@@ -17,15 +17,15 @@ export const LinkSessionModeSchema = z.enum([
 export type LinkSessionMode = z.infer<typeof LinkSessionModeSchema>;
 
 /**
- * A Plaid Link event reported by the frontend, so it can be logged where we
- * can see it. The ids are what Plaid support asks for when a connection fails.
+ * A Plaid Link event reported by the frontend, so it is kept where we can see
+ * it. The ids are what Plaid support asks for when a connection fails.
  */
 export const CreateLinkEventRequestSchema = z.object({
   eventName: z.string().min(1, "eventName is required").max(64),
   mode: LinkSessionModeSchema,
   itemId: z.string().max(64).optional(), // our item id, for update mode
-  linkSessionId: z.string().max(128).optional(),
-  requestId: z.string().max(128).optional(), // Plaid's request id
+  plaidLinkSessionId: z.string().max(128).optional(), // groups one Link flow's events
+  plaidRequestId: z.string().max(128).optional(),
   institutionId: z.string().max(64).optional(),
   institutionName: z.string().max(200).optional(),
   viewName: z.string().max(64).optional(),

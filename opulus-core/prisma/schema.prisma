@@ -21,6 +21,7 @@ model User {
   sessions           Session[]
   authAccounts       AuthAccount[]
   linkSessions       LinkSession[]
+  linkEvents         LinkEvent[]
   accountLiabilities AccountLiability[]
   holdings           Holding[]
   recurringStreams   RecurringStream[]
@@ -35,15 +36,16 @@ model User {
 }
 
 model Session {
-  id        String   @id
-  expiresAt DateTime
-  token     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  ipAddress String?
-  userAgent String?
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String      @id
+  expiresAt  DateTime
+  token      String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  ipAddress  String?
+  userAgent  String?
+  userId     String
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  linkEvents LinkEvent[]
 
   @@unique([token])
   @@map("session")
@@ -90,6 +92,37 @@ model LinkSession {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("link_session")
+}
+
+/// An event from Plaid's Link flow, reported by the browser (Link runs there).
+/// Kept so a failed connection can be traced: `sessionId` ties it to the login
+/// session it happened in, and `plaidLinkSessionId` and `plaidRequestId` are
+/// what Plaid support asks for.
+model LinkEvent {
+  id                 String   @id @default(cuid())
+  userId             String
+  /// The login session the event was reported in; null once that session is deleted.
+  sessionId          String?
+  eventName          String
+  mode               String // new, reconnect or add-accounts
+  itemId             String? // our item id, for update mode
+  plaidLinkSessionId String? // groups the events of one Link flow
+  plaidRequestId     String?
+  institutionId      String?
+  institutionName    String?
+  viewName           String?
+  exitStatus         String?
+  errorType          String?
+  errorCode          String?
+  errorMessage       String?
+  createdAt          DateTime @default(now())
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  session            Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([sessionId])
+  @@index([plaidLinkSessionId])
+  @@map("link_event")
 }
 
 model Item {
