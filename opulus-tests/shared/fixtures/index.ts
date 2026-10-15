@@ -14,4 +14,5 @@ export * from "./exchange-rates.js";
 export * from "./two-factor.js";
 export * from "./items.js";
 export * from "./liabilities.js";
+export * from "./passkey.js";
 export * from "./transactions.js";

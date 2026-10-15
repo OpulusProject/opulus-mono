@@ -26,6 +26,7 @@ model User {
   accounts           Account[]
   transactions       Transaction[]
   twoFactor          TwoFactor?
+  passkeys           Passkey[]
 
   @@unique([email])
   @@map("user")
@@ -273,4 +274,24 @@ model RateLimit {
   lastRequest BigInt
 
   @@map("rate_limit")
+}
+
+/// A WebAuthn credential a user signed up with (better-auth passkey plugin).
+model Passkey {
+  id           String    @id @default(cuid())
+  name         String?
+  publicKey    String
+  userId       String
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime? @default(now())
+  aaguid       String?
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([credentialID])
+  @@map("passkey")
 }

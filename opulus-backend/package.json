@@ -17,6 +17,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@better-auth/passkey": "^1.7.9",
     "@opulus/core": "workspace:*",
     "better-auth": "^1.4.22",
     "config": "^3.3.12",
