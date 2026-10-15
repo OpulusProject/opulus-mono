@@ -11,6 +11,7 @@ import {
   requestLogger,
 } from "@opulus/core";
 import express, { Router, raw } from "express";
+import { webhookRateLimit } from "./middleware/rateLimit.js";
 import { verifyPlaidWebhook } from "./middleware/verifyPlaidWebhook.js";
 import { handlePlaidWebhook } from "./plaid/handlePlaidWebhook.js";
 import { handleItemWebhook } from "./plaid/handlers/item/index.js";
@@ -25,6 +26,10 @@ import {
 const WEBHOOK_PORT = parseInt(process.env.WEBHOOK_PORT || "8081", 10);
 
 const app = express();
+
+// Trust proxy (Railway uses a reverse proxy), so the rate limit counts the
+// caller's address and not the proxy's
+app.set("trust proxy", 1);
 
 // Request ID middleware (must be first)
 app.use(requestIdMiddleware);
@@ -104,6 +109,7 @@ router.get("/ready", async (req, res) => {
 // The verification middleware needs the raw body string for hash comparison
 router.post(
   "/webhook/plaid",
+  webhookRateLimit,
   raw({ type: "application/json" }),
   verifyPlaidWebhook,
   handlePlaidWebhook

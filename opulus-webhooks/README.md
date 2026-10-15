@@ -42,6 +42,7 @@ Plaid Webhook → Express Handler → Redis Queue → BullMQ Worker → Process 
 - **Concurrency**: 5 jobs processed simultaneously
 - **Retries**: 3 attempts with exponential backoff (2s → 4s → 8s)
 - **Rate Limit**: 10 jobs per second
+- **Request rate limit**: 120 requests per minute per IP address on `/webhook/plaid` (`WEBHOOK_RATE_LIMIT_PER_IP`), counted in Redis and **before** the signature is checked, because checking it fetches Plaid's key; over it the receiver answers `429`
 - **Job Retention**:
   - Completed: 24 hours, max 1000 jobs
   - Failed: 7 days (Dead Letter Queue)
