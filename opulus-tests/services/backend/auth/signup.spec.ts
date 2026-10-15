@@ -35,13 +35,13 @@ test.describe("POST /api/auth/sign-up/email", () => {
     expect((await session.json()).data.user.email).toBe(email);
   });
 
-  test("rejects a malformed email (400, INVALID_EMAIL)", async ({ request }) => {
+  test("rejects a malformed email (400, VALIDATION_ERROR)", async ({ request }) => {
     const res = await request.post("/api/auth/sign-up/email", {
       data: { email: "not-an-email", password: TEST_PASSWORD, name: "Nope" },
     });
 
     await expectStatus(res, 400);
-    await expectErrorCode(res, "INVALID_EMAIL");
+    await expectErrorCode(res, "VALIDATION_ERROR");
   });
 
   test("rejects a password below the minimum length (400, PASSWORD_TOO_SHORT)", async ({
