@@ -17,12 +17,8 @@ const itemError = object({
  */
 export const WebhookSchema = object({
   body: object({
-    webhook_type: string({
-      required_error: "Webhook type is required",
-    }),
-    webhook_code: string({
-      required_error: "Webhook code is required",
-    }),
+    webhook_type: string({ error: "Webhook type is required" }),
+    webhook_code: string({ error: "Webhook code is required" }),
     item_id: string().optional(),
     environment: string().optional(),
     new_transactions: number().optional(),

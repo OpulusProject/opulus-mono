@@ -19,7 +19,7 @@ const optionalDate = z.preprocess(
     const v = orUndefined(val);
     return typeof v === "string" ? new Date(v) : v;
   },
-  z.date({ invalid_type_error: "Must be a valid date" }).optional()
+  z.date({ error: "Must be a valid date" }).optional()
 );
 
 export const optionalInt = (max?: number) => {
@@ -39,19 +39,16 @@ const optionalBoolean = z.preprocess(
     const v = orUndefined(val);
     return v === "true" ? true : v === "false" ? false : v;
   },
-  z.boolean({ invalid_type_error: "Must be true or false" }).optional()
+  z.boolean({ error: "Must be true or false" }).optional()
 );
 
 /** A value given once or repeated (?itemId=a&itemId=b); empty values are dropped. */
-const optionalList = <T extends z.ZodTypeAny>(item: T) =>
-  z.preprocess(
-    (val) => {
-      if (val === undefined) return undefined;
-      const list = (Array.isArray(val) ? val : [val]).filter((v) => v !== "");
-      return list.length > 0 ? list : undefined;
-    },
-    z.array(item).optional()
-  );
+const optionalList = <T extends z.ZodType>(item: T) =>
+  z.preprocess((val) => {
+    if (val === undefined) return undefined;
+    const list = (Array.isArray(val) ? val : [val]).filter((v) => v !== "");
+    return list.length > 0 ? list : undefined;
+  }, z.array(item).optional());
 
 /**
  * The filters shared by the transaction list and the daily totals, so the totals
