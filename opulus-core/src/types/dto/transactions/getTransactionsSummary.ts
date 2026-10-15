@@ -36,9 +36,12 @@ export type TransactionsCategorySpendDTO = z.infer<
   typeof TransactionsCategorySpendDTOSchema
 >;
 
-/** One day in one currency. Only days with a matching transaction appear. */
+/**
+ * One day, in the base currency: each transaction converted at the rate of that
+ * day, so a day with spending in several currencies is one entry with one
+ * figure. Only days with a matching transaction that moved money appear.
+ */
 export const TransactionsDayDTOSchema = z.object({
-  currency: z.string().nullable(),
   /** YYYY-MM-DD. */
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   spent: z.number(),
@@ -53,10 +56,13 @@ export type TransactionsDayDTO = z.infer<typeof TransactionsDayDTOSchema>;
  * Transactions summary API response, for the same filters as the list.
  *
  * `byCategory` ignores the `category` filter, so choosing a category narrows
- * `totals` and `byDay` but still shows every category to choose from.
+ * `totals` and `byDay` but still shows every category to choose from. `totals`
+ * and `byCategory` stay per currency; `byDay` is in `baseCurrency`.
  */
 export const TransactionsSummaryResponseSchema = z.object({
   data: z.object({
+    /** The currency `byDay` is in: other currencies are converted to it. */
+    baseCurrency: z.string(),
     totals: z.array(TransactionsTotalDTOSchema),
     byCategory: z.array(TransactionsCategorySpendDTOSchema),
     byDay: z.array(TransactionsDayDTOSchema),
@@ -89,17 +95,53 @@ export interface TransactionsSummary {
   }>;
 }
 
+export interface TransactionsSummaryOptions {
+  baseCurrency: string;
+  /**
+   * Base-currency units for one unit of `currency` on `day`, or undefined when
+   * there is no rate (see `loadExchangeRateConverter`). Amounts in such a
+   * currency are left out of `byDay`.
+   */
+  rateOn: (currency: string, day: string) => number | undefined;
+}
+
 /**
  * Transform the repository's summary to the public DTO. Decimals become numbers,
- * dates become YYYY-MM-DD, and the lists are put in a stable order.
+ * dates become YYYY-MM-DD, and the lists are put in a stable order. `byDay` is
+ * converted to the base currency, each day at its own rate (an amount with no
+ * currency, or already in the base currency, is taken as is), and amounts in a
+ * currency with no rate are left out.
  */
 export function toTransactionsSummaryDTO(
-  summary: TransactionsSummary
+  summary: TransactionsSummary,
+  { baseCurrency, rateOn }: TransactionsSummaryOptions
 ): TransactionsSummaryResponse["data"] {
   const byCurrency = (a: { currency: string | null }, b: typeof a) =>
     (a.currency ?? "").localeCompare(b.currency ?? "");
 
+  // One entry per day: each currency's spending and income at that day's rate.
+  const days = new Map<
+    string,
+    { spent: Prisma.Decimal; income: Prisma.Decimal }
+  >();
+  for (const row of summary.byDay) {
+    const day = row.date.toISOString().slice(0, 10);
+    const rate =
+      row.currency === null || row.currency === baseCurrency
+        ? 1
+        : rateOn(row.currency, day);
+    if (rate === undefined) continue;
+    const entry = days.get(day);
+    const spent = row.spent.times(rate);
+    const income = row.income.times(rate);
+    days.set(day, {
+      spent: entry ? entry.spent.plus(spent) : spent,
+      income: entry ? entry.income.plus(income) : income,
+    });
+  }
+
   return {
+    baseCurrency,
     totals: summary.totals
       .map((total) => ({
         currency: total.currency,
@@ -117,14 +159,14 @@ export function toTransactionsSummaryDTO(
         count: row.count,
       }))
       .sort((a, b) => byCurrency(a, b) || b.spent - a.spent),
-    byDay: summary.byDay
-      .map((row) => ({
-        currency: row.currency,
-        date: row.date.toISOString().slice(0, 10),
-        spent: row.spent.toNumber(),
-        income: row.income.toNumber(),
-        net: row.income.minus(row.spent).toNumber(),
+    byDay: [...days]
+      .map(([date, { spent, income }]) => ({
+        date,
+        // A rate is a quotient, so the product can run on: Plaid's 4 places.
+        spent: spent.toDecimalPlaces(4).toNumber(),
+        income: income.toDecimalPlaces(4).toNumber(),
+        net: income.minus(spent).toDecimalPlaces(4).toNumber(),
       }))
-      .sort((a, b) => byCurrency(a, b) || a.date.localeCompare(b.date)),
+      .sort((a, b) => a.date.localeCompare(b.date)),
   };
 }
