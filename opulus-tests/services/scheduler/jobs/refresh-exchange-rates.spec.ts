@@ -134,20 +134,44 @@ test.describe("refresh-exchange-rates (job)", () => {
     expect(await readExchangeRates()).toEqual(full);
   });
 
-  test("fails after its retries when the provider is down, and stores nothing", async ({
+  test("keeps the rates it already stored when the provider is down", async ({
     request,
   }) => {
-    // Arrange
+    // Arrange: a full table, then the provider goes down.
+    await runToEnd(request, JOB);
+    const before = await readExchangeRates();
     await failStub(request);
 
     // Act
     const run = await runToEnd(request, JOB);
 
-    // Assert: three attempts, each one asking the provider, and an empty table.
+    // Assert: the run fails visibly (so it can be noticed and retried), and the
+    // table is exactly as it was: nothing lost, nothing half-written. Whatever
+    // reads rates (the spending endpoint) keeps working from these.
     expect(run.state).toBe("failed");
-    expect(run.attempts).toBe(3);
-    expect(run.error).toBe("Frankfurter answered 503");
-    expect(await stubRequests(request)).toHaveLength(3);
-    expect(await readExchangeRates()).toEqual([]);
+    expect(await readExchangeRates()).toEqual(before);
+  });
+
+  test("catches up the days it missed once the provider is back", async ({
+    request,
+  }) => {
+    // Arrange: a full table missing its last week, and the provider down.
+    await runToEnd(request, JOB);
+    const full = await readExchangeRates();
+    await deleteExchangeRatesFrom(addDays(today(), -7));
+    const withGap = await readExchangeRates();
+    await failStub(request);
+
+    // The run during the outage fails and the gap stays.
+    expect((await runToEnd(request, JOB)).state).toBe("failed");
+    expect(await readExchangeRates()).toEqual(withGap);
+
+    // Act: the provider comes back, and the next run.
+    await resetStub(request);
+    const run = await runToEnd(request, JOB);
+
+    // Assert: the gap is filled and the table is whole again.
+    expect(run.state).toBe("completed");
+    expect(await readExchangeRates()).toEqual(full);
   });
 });
