@@ -10,7 +10,7 @@ export interface TransactionDay {
 
 /**
  * A day's net change for its heading, from the server's per-day totals, which
- * are in one currency (the summary's base currency): "−$87.39" when more went
+ * are in one currency (the totals' base currency): "−$87.39" when more went
  * out than came in, "+$2,100.00" when more came in, "$0.00" when they cancel
  * out. Undefined when the totals have no entry for the day.
  */

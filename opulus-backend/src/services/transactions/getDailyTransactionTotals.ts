@@ -1,13 +1,13 @@
 import {
   BASE_CURRENCY,
   loadExchangeRateConverter,
-  toTransactionsSummaryDTO,
+  toDailyTransactionTotalsDTO,
   transactionRepository,
   type TransactionFilters,
-  type TransactionsSummaryResponse,
+  type DailyTransactionTotalsResponse,
 } from "@opulus/core";
 
-export interface GetTransactionsSummaryParams {
+export interface GetDailyTransactionTotalsParams {
   userId: string;
   filters: TransactionFilters;
 }
@@ -17,21 +17,21 @@ export interface GetTransactionsSummaryParams {
  * converted to the base currency, each at that day's rate from `exchange_rate`;
  * rates are only read when some of them are in another currency.
  */
-export async function getTransactionsSummary(
-  params: GetTransactionsSummaryParams
-): Promise<TransactionsSummaryResponse["data"]> {
-  const summary = await transactionRepository.getSummaryByUserId(
+export async function getDailyTransactionTotals(
+  params: GetDailyTransactionTotalsParams
+): Promise<DailyTransactionTotalsResponse["data"]> {
+  const totals = await transactionRepository.getDailyTotalsByUserId(
     params.userId,
     params.filters
   );
 
   const converter = await loadExchangeRateConverter({
     baseCurrency: BASE_CURRENCY,
-    currencies: summary.byDay.map((row) => row.currency),
-    days: summary.byDay.map((row) => row.date.toISOString().slice(0, 10)),
+    currencies: totals.byDay.map((row) => row.currency),
+    days: totals.byDay.map((row) => row.date.toISOString().slice(0, 10)),
   });
 
-  return toTransactionsSummaryDTO(summary, {
+  return toDailyTransactionTotalsDTO(totals, {
     baseCurrency: BASE_CURRENCY,
     rateOn: converter.rateOn,
   });

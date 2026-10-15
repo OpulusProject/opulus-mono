@@ -54,7 +54,7 @@ const optionalList = <T extends z.ZodTypeAny>(item: T) =>
   );
 
 /**
- * The filters shared by the transaction list and the summary, so the totals
+ * The filters shared by the transaction list and the daily totals, so the totals
  * always describe the same set of transactions as the list.
  */
 export const transactionFilterQuerySchema = z.object({

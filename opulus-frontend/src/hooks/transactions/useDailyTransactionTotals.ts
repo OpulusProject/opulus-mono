@@ -1,4 +1,4 @@
-import { TransactionsSummaryResponse } from '@opulus/core/dto';
+import { DailyTransactionTotalsResponse } from '@opulus/core/dto';
 import { useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
@@ -10,11 +10,11 @@ import {
   toQueryParams,
 } from './transactionParams';
 
-const getTransactionsSummaryApi = async (
+const getDailyTransactionTotalsApi = async (
   params?: TransactionFilterParams
-): Promise<TransactionsSummaryResponse['data']> => {
-  const response = await apiClient.get<TransactionsSummaryResponse>(
-    '/api/transactions/summary',
+): Promise<DailyTransactionTotalsResponse['data']> => {
+  const response = await apiClient.get<DailyTransactionTotalsResponse>(
+    '/api/transactions/daily-totals',
     { params: toQueryParams(params), paramsSerializer: QUERY_SERIALIZER }
   );
   return response.data.data;
@@ -28,10 +28,10 @@ const getTransactionsSummaryApi = async (
  * @param params - Optional filters (the same ones as the list)
  * @returns TanStack Query result with `baseCurrency` and `byDay`
  */
-export function useTransactionsSummary(params?: TransactionFilterParams) {
-  return useQuery<TransactionsSummaryResponse['data'], Error>({
-    queryKey: transactionKeys.summary(params),
-    queryFn: () => getTransactionsSummaryApi(params),
+export function useDailyTransactionTotals(params?: TransactionFilterParams) {
+  return useQuery<DailyTransactionTotalsResponse['data'], Error>({
+    queryKey: transactionKeys.dailyTotals(params),
+    queryFn: () => getDailyTransactionTotalsApi(params),
     retry: 1,
     staleTime: 2 * 60 * 1000,
   });

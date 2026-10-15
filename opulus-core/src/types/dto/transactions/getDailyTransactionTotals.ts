@@ -1,5 +1,5 @@
 /**
- * Get Transactions Summary endpoint DTOs
+ * Get Daily Transaction Totals endpoint DTOs
  */
 
 import type { Prisma } from "@prisma/client";
@@ -22,10 +22,10 @@ export const TransactionsDayDTOSchema = z.object({
 export type TransactionsDayDTO = z.infer<typeof TransactionsDayDTOSchema>;
 
 /**
- * Transactions summary API response, for the same filters as the list: each
+ * Daily transaction totals API response, for the same filters as the list: each
  * day's spending, income and net, in `baseCurrency`.
  */
-export const TransactionsSummaryResponseSchema = z.object({
+export const DailyTransactionTotalsResponseSchema = z.object({
   data: z.object({
     /** The currency `byDay` is in: other currencies are converted to it. */
     baseCurrency: z.string(),
@@ -33,12 +33,12 @@ export const TransactionsSummaryResponseSchema = z.object({
   }),
 });
 
-export type TransactionsSummaryResponse = z.infer<
-  typeof TransactionsSummaryResponseSchema
+export type DailyTransactionTotalsResponse = z.infer<
+  typeof DailyTransactionTotalsResponseSchema
 >;
 
-/** The summary as the repository computes it, before it becomes a DTO. */
-export interface TransactionsSummary {
+/** The totals as the repository computes them, before it becomes a DTO. */
+export interface DailyTransactionTotals {
   byDay: Array<{
     currency: string | null;
     date: Date;
@@ -47,7 +47,7 @@ export interface TransactionsSummary {
   }>;
 }
 
-export interface TransactionsSummaryOptions {
+export interface DailyTransactionTotalsOptions {
   baseCurrency: string;
   /**
    * Base-currency units for one unit of `currency` on `day` (see
@@ -57,21 +57,21 @@ export interface TransactionsSummaryOptions {
 }
 
 /**
- * Transform the repository's summary to the public DTO. Decimals become numbers
+ * Transform the repository's totals to the public DTO. Decimals become numbers
  * and dates become YYYY-MM-DD, oldest first. The days are converted to the base
  * currency, each day at its own rate (an amount with no currency, or already in
  * the base currency, is taken as is).
  */
-export function toTransactionsSummaryDTO(
-  summary: TransactionsSummary,
-  { baseCurrency, rateOn }: TransactionsSummaryOptions
-): TransactionsSummaryResponse["data"] {
+export function toDailyTransactionTotalsDTO(
+  totals: DailyTransactionTotals,
+  { baseCurrency, rateOn }: DailyTransactionTotalsOptions
+): DailyTransactionTotalsResponse["data"] {
   // One entry per day: each currency's spending and income at that day's rate.
   const days = new Map<
     string,
     { spent: Prisma.Decimal; income: Prisma.Decimal }
   >();
-  for (const row of summary.byDay) {
+  for (const row of totals.byDay) {
     const day = row.date.toISOString().slice(0, 10);
     const rate = rateOn(row.currency, day);
     const entry = days.get(day);

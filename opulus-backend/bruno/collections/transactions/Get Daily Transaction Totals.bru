@@ -1,11 +1,11 @@
 meta {
-  name: Get Transactions Summary
+  name: Get Daily Transaction Totals
   type: http
   seq: 3
 }
 
 get {
-  url: {{base_url}}/api/transactions/summary
+  url: {{base_url}}/api/transactions/daily-totals
   body: none
   auth: none
 }
@@ -27,11 +27,11 @@ params:query {
 }
 
 docs {
-  # Get Transactions Summary
+  # Get Daily Transaction Totals
 
   Each day's spending, income and net for the authenticated user's transactions, computed in the database so the client does not have to download every transaction.
 
-  **Endpoint:** `GET /api/transactions/summary`
+  **Endpoint:** `GET /api/transactions/daily-totals`
 
   ## Query Parameters
 

@@ -4,7 +4,7 @@ import prisma from "../client/prisma.js";
 import {
   UNCATEGORIZED,
   type CategorySpend,
-  type TransactionsSummary,
+  type DailyTransactionTotals,
 } from "../types/dto/transactions/index.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
 
@@ -82,7 +82,7 @@ const TRANSFER_DETAILED_CATEGORIES = ["LOAN_PAYMENTS_CREDIT_CARD_PAYMENT"];
 
 /**
  * The where clause for a user's transactions and a set of filters. The list and
- * the summary both use it, so they always agree on what is "filtered".
+ * the daily totals both use it, so they always agree on what is "filtered".
  */
 function buildWhere(
   userId: string,
@@ -535,16 +535,16 @@ class TransactionRepository {
   }
 
   /**
-   * Summarize a user's transactions for the same filters as the list: money out
+   * Add up a user's transactions by day for the same filters as the list: money out
    * and money in for each currency and day.
    * @param userId - The user ID
    * @param filters - Which transactions to include
    * @throws AppError if database error occurs
    */
-  async getSummaryByUserId(
+  async getDailyTotalsByUserId(
     userId: string,
     filters: TransactionFilters = {}
-  ): Promise<TransactionsSummary> {
+  ): Promise<DailyTransactionTotals> {
     try {
       const where = buildWhere(userId, filters);
       const moneyOut = (base: Prisma.TransactionWhereInput) => ({
@@ -610,8 +610,8 @@ class TransactionRepository {
 
       const message =
         error instanceof Error
-          ? `Failed to summarize transactions: ${error.message}`
-          : "An unexpected error occurred while summarizing transactions";
+          ? `Failed to get daily transaction totals: ${error.message}`
+          : "An unexpected error occurred while getting daily transaction totals";
       throw new AppError(message, 500);
     }
   }
