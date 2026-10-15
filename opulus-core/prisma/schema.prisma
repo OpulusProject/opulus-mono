@@ -255,11 +255,16 @@ model AccountLiability {
 }
 
 model TwoFactor {
-  id          String  @id @default(cuid())
-  userId      String  @unique
-  secret      String? // Encrypted secret for TOTP
-  backupCodes String? // Encrypted backup codes (JSON array)
-  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                      String    @id @default(cuid())
+  userId                  String    @unique
+  secret                  String? // Encrypted secret for TOTP
+  backupCodes             String? // Encrypted backup codes (JSON array)
+  /// false until the user confirms enrollment with a code
+  verified                Boolean   @default(true)
+  /// wrong codes in a row; locks the second factor for a while at the limit
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("two_factor")
 }
