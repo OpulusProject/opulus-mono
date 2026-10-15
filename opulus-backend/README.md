@@ -59,6 +59,10 @@ All authentication routes are handled by Better Auth at `/api/auth/*`:
 - `GET /api/transactions/spending-by-category` - What was spent in each category in the base currency, with each category's share of the total; the same filters as the list, plus `top` to list only the largest and add up the rest (requires authentication)
 - `POST /api/transactions/refresh` - Ask Plaid to refresh an item's transactions (requires authentication)
 
+### User
+
+- `GET /api/user/export` - Download everything held about the user (profile, connections and accounts, balance history, every transaction) as one JSON file; no secrets in it; 3 a hour (requires authentication)
+
 ### Health Checks
 
 - `GET /health` - Simple health check (no database connection)

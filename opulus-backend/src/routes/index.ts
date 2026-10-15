@@ -6,6 +6,7 @@ import institutionsRouter from "./institutions.js";
 import itemsRouter from "./items.js";
 import linkTokensRouter from "./linkTokens.js";
 import transactionsRouter from "./transactions.js";
+import userRouter from "./user.js";
 
 const router: ReturnType<typeof Router> = Router();
 
@@ -34,6 +35,9 @@ router.use("/link-tokens", linkTokensRouter);
 
 // Transactions routes
 router.use("/transactions", transactionsRouter);
+
+// User routes (data export)
+router.use("/user", userRouter);
 
 // Note: Better Auth routes are handled by Better Auth handler in server.ts at /api/auth
 // All /api/auth/* routes are handled by Better Auth (sign-in, sign-up, sign-out, TOTP, etc.)

@@ -27,4 +27,5 @@ export * from './items/index.js';
 export * from './jobs/index.js';
 export * from './linkTokens/index.js';
 export * from './transactions/index.js';
+export * from './user/index.js';
 
