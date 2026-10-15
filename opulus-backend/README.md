@@ -59,7 +59,7 @@ All authentication routes are handled by Better Auth at `/api/auth/*`:
 ### Health Checks
 
 - `GET /health` - Simple health check (no database connection)
-- `GET /ready` - Readiness check (includes database connection)
+- `GET /ready` - Readiness check (includes database connection, and whether the exchange rates are `fresh`, `stale` or `empty`; the latter two are reported but do not fail readiness)
 
 ## Authentication
 

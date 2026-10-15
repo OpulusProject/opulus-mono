@@ -3,6 +3,7 @@ import "dotenv/config";
 
 import { auth } from "@/auth.js";
 import router from "@/routes/index.js";
+import { getExchangeRateStatus } from "@/services/health/exchangeRateStatus.js";
 import {
   config,
   errorHandler,
@@ -43,10 +44,14 @@ app.get("/ready", async (req, res) => {
   try {
     // Check database connection
     await prisma.$queryRaw`SELECT 1`;
+    // Informational: stale rates do not make the backend unfit to serve (most
+    // requests need none), so they are reported but never fail readiness.
+    const exchangeRates = await getExchangeRateStatus();
     res.status(200).json({
       status: "ready",
       timestamp: new Date().toISOString(),
       database: "connected",
+      exchangeRates,
     });
   } catch (error) {
     res.status(503).json({
@@ -88,6 +93,24 @@ app.use(errorHandler);
 
 const PORT = config.port;
 const baseURL = config.betterAuthBaseURL || `http://localhost:${PORT}`;
+
+// Say so at startup when the exchange rates are missing or old: amounts in
+// another currency cannot be converted without them (see opulus-scheduler).
+void getExchangeRateStatus()
+  .then(({ status, latestDate }) => {
+    if (status !== "fresh") {
+      logger.warn(
+        { exchange_rates: status, latest_date: latestDate },
+        "Exchange rates are not up to date: is opulus-scheduler running?"
+      );
+    }
+  })
+  .catch((error: unknown) =>
+    logger.warn(
+      { error_message: error instanceof Error ? error.message : String(error) },
+      "Could not check the exchange rates at startup"
+    )
+  );
 
 app.listen(PORT, "0.0.0.0", () => {
   logger.info(`Server running on port ${PORT}`);
