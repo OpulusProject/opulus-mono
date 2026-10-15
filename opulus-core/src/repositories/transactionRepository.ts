@@ -535,10 +535,8 @@ class TransactionRepository {
   }
 
   /**
-   * Summarize a user's transactions for the same filters as the list: totals
-   * per currency, spending by category, and spending by day. Only money out
-   * counts as spending. The category breakdown ignores the `category` filter,
-   * so a category can be chosen from the full picture.
+   * Summarize a user's transactions for the same filters as the list: money out
+   * and money in for each currency and day.
    * @param userId - The user ID
    * @param filters - Which transactions to include
    * @throws AppError if database error occurs
@@ -549,40 +547,12 @@ class TransactionRepository {
   ): Promise<TransactionsSummary> {
     try {
       const where = buildWhere(userId, filters);
-      const whereAnyCategory = buildWhere(userId, {
-        ...filters,
-        categories: undefined,
-      });
       const moneyOut = (base: Prisma.TransactionWhereInput) => ({
         AND: [base, { amount: { gt: 0 } }],
       });
       const moneyIn = (base: Prisma.TransactionWhereInput) => ({
         AND: [base, { amount: { lt: 0 } }],
       });
-
-      const [spent, income, counts, byCategory] = await Promise.all([
-        this.prisma.transaction.groupBy({
-          by: ["isoCurrencyCode"],
-          where: moneyOut(where),
-          _sum: { amount: true },
-        }),
-        this.prisma.transaction.groupBy({
-          by: ["isoCurrencyCode"],
-          where: moneyIn(where),
-          _sum: { amount: true },
-        }),
-        this.prisma.transaction.groupBy({
-          by: ["isoCurrencyCode"],
-          where,
-          _count: { _all: true },
-        }),
-        this.prisma.transaction.groupBy({
-          by: ["isoCurrencyCode", "categoryPrimary"],
-          where: moneyOut(whereAnyCategory),
-          _sum: { amount: true },
-          _count: { _all: true },
-        }),
-      ]);
 
       const [spentByDay, incomeByDay] = await Promise.all([
         this.prisma.transaction.groupBy({
@@ -598,12 +568,6 @@ class TransactionRepository {
       ]);
 
       const zero = new Prisma.Decimal(0);
-      const spentBy = new Map(
-        spent.map((row) => [row.isoCurrencyCode, row._sum.amount ?? zero])
-      );
-      const incomeBy = new Map(
-        income.map((row) => [row.isoCurrencyCode, row._sum.amount ?? zero])
-      );
 
       // A day with money out, money in or both is one entry.
       const days = new Map<
@@ -637,19 +601,6 @@ class TransactionRepository {
       }
 
       return {
-        totals: counts.map((row) => ({
-          currency: row.isoCurrencyCode,
-          spent: spentBy.get(row.isoCurrencyCode) ?? zero,
-          // Money in is negative; report it as a positive amount.
-          income: (incomeBy.get(row.isoCurrencyCode) ?? zero).negated(),
-          count: row._count._all,
-        })),
-        byCategory: byCategory.map((row) => ({
-          currency: row.isoCurrencyCode,
-          category: row.categoryPrimary,
-          spent: row._sum.amount ?? zero,
-          count: row._count._all,
-        })),
         byDay: [...days.values()],
       };
     } catch (error) {
@@ -668,8 +619,8 @@ class TransactionRepository {
   /**
    * Money out added up by currency, category and day, for the filtered
    * transactions.
-   * Unlike the summary's categories this applies the category filter too, so it
-   * adds up to exactly what the filters select.
+   * Every filter applies, the category filter too, so it adds up to exactly what
+   * the filters select.
    *
    * @param userId - Owner of the transactions
    * @param filters - Which transactions to include

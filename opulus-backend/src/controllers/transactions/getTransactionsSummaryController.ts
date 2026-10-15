@@ -8,7 +8,7 @@ import {
   transactionFilterQuerySchema,
 } from "./transactionFilterQuery.js";
 
-/** Takes the same filters as the list, so the totals match what it shows. */
+/** Takes the same filters as the list, so the days match what it shows. */
 export const getTransactionsSummaryQuerySchema = transactionFilterQuerySchema;
 
 /**
