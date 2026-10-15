@@ -80,6 +80,15 @@ export const auth = betterAuth({
     // "fresh", and a session stays fresh for a day. Deleting an account is the
     // end of the data, so it always takes the password.
     before: createAuthMiddleware(async (ctx) => {
+      // Changing the password signs every other device out. Better Auth only
+      // does so when the caller asks, and a stolen session should not survive
+      // the password being changed, so it is always on.
+      if (ctx.path === "/change-password") {
+        return {
+          context: { ...ctx, body: { ...ctx.body, revokeOtherSessions: true } },
+        };
+      }
+
       if (ctx.path !== "/delete-user" || ctx.body?.password) return;
       // Let the endpoint answer 401 for callers who are not signed in.
       if (!(await getSessionFromCtx(ctx))) return;
