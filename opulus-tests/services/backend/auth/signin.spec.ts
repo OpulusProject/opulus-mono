@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { uniqueEmail } from "../../../shared/client.js";
-import { expectErrorCode, expectStatus } from "../../../shared/assertions.js";
+import { uniqueEmail, uniqueIp } from "../../../shared/client.js";
+import {
+  expectErrorCode,
+  expectOk,
+  expectStatus,
+} from "../../../shared/assertions.js";
 import {
   TEST_PASSWORD,
   createUserWithTwoFactor,
@@ -67,5 +71,40 @@ test.describe("POST /api/auth/sign-in/email", () => {
     await expectStatus(res, 200);
     const body = await res.json();
     expect(body.twoFactorRedirect).toBe(true);
+  });
+
+  test("rejects a request with no password (400)", async ({ request }) => {
+    const res = await request.post("/api/auth/sign-in/email", {
+      headers: { "x-forwarded-for": uniqueIp() },
+      data: { email: uniqueEmail() },
+    });
+
+    await expectStatus(res, 400);
+    await expectErrorCode(res, "VALIDATION_ERROR");
+  });
+
+  test("rejects a malformed email (400, INVALID_EMAIL)", async ({ request }) => {
+    const res = await request.post("/api/auth/sign-in/email", {
+      headers: { "x-forwarded-for": uniqueIp() },
+      data: { email: "not-an-email", password: TEST_PASSWORD },
+    });
+
+    await expectStatus(res, 400);
+    await expectErrorCode(res, "INVALID_EMAIL");
+  });
+
+  test("matches the email without regard to case", async ({ request }) => {
+    // Arrange
+    const user = await signUp(request);
+
+    // Act
+    const res = await request.post("/api/auth/sign-in/email", {
+      headers: { "x-forwarded-for": uniqueIp() },
+      data: { email: user.email.toUpperCase(), password: user.password },
+    });
+
+    // Assert
+    await expectOk(res);
+    expect((await res.json()).user.id).toBe(user.user.id);
   });
 });
