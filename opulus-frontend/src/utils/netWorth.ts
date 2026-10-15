@@ -1,7 +1,5 @@
 import type { AccountDTO } from '@opulus/core/dto';
 
-import { getAccountType } from './accountType';
-
 type BalanceAccount = Pick<
   AccountDTO,
   'type' | 'balanceCurrent' | 'isoCurrencyCode'
@@ -24,8 +22,8 @@ export function getNetWorth(accounts: BalanceAccount[]): NetWorth[] {
   const byCurrency = new Map<string | null, number>();
   for (const account of accounts) {
     const balance = account.balanceCurrent ?? 0;
-    const type = getAccountType(account);
-    const signed = type === 'credit' || type === 'loan' ? -balance : balance;
+    const signed =
+      account.type === 'credit' || account.type === 'loan' ? -balance : balance;
     byCurrency.set(
       account.isoCurrencyCode,
       (byCurrency.get(account.isoCurrencyCode) ?? 0) + signed
