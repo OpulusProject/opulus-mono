@@ -17,15 +17,11 @@ class HistoricBalanceRepository {
   /**
    * Whether any of an item's accounts already has balance history
    * @param itemId - The item
-   * @param client - Optional transaction client to run inside a transaction
    * @throws AppError if database error occurs
    */
-  async existsForItem(
-    itemId: string,
-    client: Prisma.TransactionClient = this.prisma
-  ): Promise<boolean> {
+  async existsForItem(itemId: string): Promise<boolean> {
     try {
-      const count = await client.accountHistoricBalance.count({
+      const count = await this.prisma.accountHistoricBalance.count({
         where: { account: { itemId } },
         take: 1,
       });
@@ -75,25 +71,22 @@ class HistoricBalanceRepository {
   }
 
   /**
-   * Replace some accounts' balance history with these rows
-   * @param accountIds - The accounts whose existing history is cleared first
+   * Store balance history rows, leaving alone any that are already stored for
+   * the same account and day. Rows are never deleted or rewritten, so two syncs
+   * that build the same history at the same moment end with one set of rows
+   * (the second insert waits for the first and then skips them).
    * @param rows - The history to store
    * @param client - Optional transaction client to run inside a transaction
-   * @returns How many rows were stored
+   * @returns How many rows were newly stored
    * @throws AppError if database error occurs
    */
-  async replaceForAccounts(
-    accountIds: string[],
+  async createMissing(
     rows: CreateHistoricBalanceData[],
     client: Prisma.TransactionClient = this.prisma
   ) {
     try {
-      await client.accountHistoricBalance.deleteMany({
-        where: { accountId: { in: accountIds } },
-      });
       const result = await client.accountHistoricBalance.createMany({
         data: rows,
-        // Two syncs finishing together may both write the same history.
         skipDuplicates: true,
       });
       return result.count;

@@ -1,4 +1,3 @@
-import { runInTransaction } from "../client/transaction.js";
 import { accountRepository } from "../repositories/accountRepository.js";
 import { historicBalanceRepository } from "../repositories/historicBalanceRepository.js";
 import { itemRepository } from "../repositories/itemRepository.js";
@@ -84,32 +83,19 @@ export async function backfillBalanceHistory(
     today: toDay(now),
   });
 
-  // Several syncs of one item can run at once (the webhook worker takes up to
-  // five jobs at a time, and Plaid sends its own notifications as well). Each
-  // got here because no history existed when it checked, so check again once
-  // the item is locked: the one that gets the lock first writes, the others
-  // wait, find the history and leave it alone. Without this the later ones
-  // delete the rows the first wrote and write them again.
-  const rows = await runInTransaction(async (tx) => {
-    await itemRepository.lockForUpdate(item.id, tx);
-    if (await historicBalanceRepository.existsForItem(item.id, tx)) {
-      return null;
-    }
-    return historicBalanceRepository.replaceForAccounts(
-      accounts.map((account) => account.id),
-      history.map((row) => ({
-        accountId: row.accountId,
-        userId: item.userId,
-        date: new Date(`${row.date}T00:00:00Z`),
-        balanceCurrent: row.balanceCurrent,
-        isoCurrencyCode: row.isoCurrencyCode,
-      })),
-      tx
-    );
-  });
-  if (rows === null) {
-    return { skipped: true };
-  }
+  // Several syncs of one item can get here at once (the webhook worker takes
+  // up to five jobs at a time, and Plaid sends its own notifications as well),
+  // each having found no history. Rows already stored are never deleted or
+  // rewritten, so the first to write wins and the others add nothing.
+  const rows = await historicBalanceRepository.createMissing(
+    history.map((row) => ({
+      accountId: row.accountId,
+      userId: item.userId,
+      date: new Date(`${row.date}T00:00:00Z`),
+      balanceCurrent: row.balanceCurrent,
+      isoCurrencyCode: row.isoCurrencyCode,
+    }))
+  );
 
   logger.info(
     {
