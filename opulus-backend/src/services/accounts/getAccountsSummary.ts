@@ -36,9 +36,7 @@ interface TypeEntry {
  * What a user's accounts add up to, in the base currency: overall (with net
  * worth) and per type (with credit utilization for credit cards). Each account
  * is converted at the latest stored rate, then added up. Credit and loan
- * balances are what is owed, so net worth subtracts them. An account in a
- * currency with no stored rate is left out of every amount (it is still
- * counted). Rates are only read when some account is in another currency.
+ * balances are what is owed, so net worth subtracts them. Rates are only read when some account is in another currency.
  */
 export async function getAccountsSummary(
   params: GetAccountsSummaryParams
@@ -85,8 +83,7 @@ export async function getAccountsSummary(
     const rate =
       currency === null || currency === BASE_CURRENCY
         ? 1
-        : converter?.rateOn(currency, today);
-    if (rate === undefined) continue;
+        : converter!.rateOn(currency, today);
 
     const toUnits = (amount: number) => Math.round(amount * rate * SCALE);
     const balance = toNumber(row.balanceCurrent);

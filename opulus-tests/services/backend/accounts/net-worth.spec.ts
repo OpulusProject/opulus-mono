@@ -327,31 +327,6 @@ test.describe("GET /api/accounts/net-worth", () => {
     expect(points.at(-1)?.netWorth).toBe(100);
   });
 
-  test("leaves out an account in a currency with no stored rate", async ({
-    request,
-  }) => {
-    // Arrange
-    const { cookie, userId } = await createAuthedUser(request);
-    await seedItemWithAccount(userId, {
-      account: { balanceCurrent: 100, isoCurrencyCode: "CAD" },
-    });
-    await seedItemWithAccount(userId, {
-      account: { balanceCurrent: 999, isoCurrencyCode: "XXX" },
-    });
-    const onlyUnrated = await createAuthedUser(request);
-    await seedItemWithAccount(onlyUnrated.userId, {
-      account: { balanceCurrent: 999, isoCurrencyCode: "XXX" },
-    });
-
-    // Act
-    const { points } = await getNetWorth(request, cookie, "?range=1w");
-    const none = await getNetWorth(request, onlyUnrated.cookie, "?range=1w");
-
-    // Assert: nothing to count at all gives no points, not a line of zeros.
-    expect(netWorths(points)).toEqual(Array(8).fill(100));
-    expect(none.points).toEqual([]);
-  });
-
   test("skips an account that has no balance", async ({ request }) => {
     // Arrange
     const { cookie, userId } = await createAuthedUser(request);

@@ -24,7 +24,7 @@ export interface GetNetWorthHistoryParams {
 }
 
 export interface GetNetWorthHistoryResult {
-  /** In the base currency; empty when no account has a balance to count. */
+  /** In the base currency; empty when no account has a balance. */
   points: NetWorthPointDTO[];
 }
 
@@ -68,7 +68,6 @@ function dailyBalances(
  * account's daily balances (see `dailyBalances`) converted at that day's rate
  * and added up, with what is owed subtracted. Today is the accounts' live
  * balances, so the last point always equals what the accounts add up to now.
- * An account in a currency with no stored rate is left out.
  */
 export async function getNetWorthHistory(
   params: GetNetWorthHistoryParams
@@ -120,7 +119,6 @@ export async function getNetWorthHistory(
 
   // Net worth per day in the base currency, in whole units (before rounding).
   const totals = days.map(() => 0);
-  let counted = 0;
   for (const account of accounts) {
     const currency = account.isoCurrencyCode;
     const sign = isOwed(account.type) ? -1 : 1;
@@ -135,12 +133,9 @@ export async function getNetWorthHistory(
     const rates = days.map((day) =>
       currency === null || currency === BASE_CURRENCY
         ? 1
-        : converter?.rateOn(currency, day)
+        : converter!.rateOn(currency, day)
     );
-    // One rate missing is every rate missing: the currency has none stored.
-    if (rates.some((rate) => rate === undefined)) continue;
 
-    counted++;
     balances.forEach((units, index) => {
       totals[index] = totals[index]! + sign * units * rates[index]!;
     });
@@ -148,7 +143,7 @@ export async function getNetWorthHistory(
 
   return {
     points:
-      counted === 0
+      accounts.length === 0
         ? []
         : days.map((day, index) => ({
             date: day,

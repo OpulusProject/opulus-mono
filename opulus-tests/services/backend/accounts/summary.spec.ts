@@ -266,31 +266,6 @@ test.describe("GET /api/accounts/summary", () => {
     expect(data.total).toMatchObject({ balance: 25, assets: 25 });
   });
 
-  test("leaves accounts in a currency with no stored rate out of every amount", async ({
-    request,
-  }) => {
-    const { cookie } = await setup(request, [
-      checking(100),
-      { ...checking(80), isoCurrencyCode: "XXX" },
-      { ...card(20), isoCurrencyCode: "XXX" },
-    ]);
-
-    const data = await getSummary(request, cookie);
-
-    // They are counted (3 accounts), but only the CAD one is in the amounts.
-    expect(data.count).toBe(3);
-    expect(data.total).toEqual({
-      balance: 100,
-      assets: 100,
-      owed: 0,
-      netWorth: 100,
-    });
-    expect(data.byType).toEqual([
-      { type: "depository", count: 2, balance: 100, credit: null },
-      { type: "credit", count: 1, balance: 0, credit: null },
-    ]);
-  });
-
   test("applies the type filter, as the list does", async ({ request }) => {
     const { cookie } = await setup(request, [
       checking(100),

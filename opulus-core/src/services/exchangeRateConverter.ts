@@ -1,3 +1,4 @@
+import { AppError } from "../utils/errors.js";
 import {
   exchangeRateRepository,
   type StoredExchangeRate,
@@ -6,10 +7,11 @@ import {
 export interface ExchangeRateConverter {
   /**
    * Units of the base currency for one unit of `currency` on `day`
-   * ("YYYY-MM-DD"), or undefined when no rate is stored for it (or for the
-   * base). The base currency is always 1.
+   * ("YYYY-MM-DD"). The base currency is always 1.
+   * @throws AppError if no rate is stored for `currency`: every currency we
+   * support has one, so that means the table is incomplete
    */
-  rateOn(currency: string, day: string): number | undefined;
+  rateOn(currency: string, day: string): number;
 }
 
 export interface LoadExchangeRateConverterParams {
@@ -83,7 +85,10 @@ export async function loadExchangeRateConverter(
       if (currency === baseCurrency) return 1;
       const base = perEurOn(baseCurrency, day);
       const other = perEurOn(currency, day);
-      return base && other ? base.div(other).toNumber() : undefined;
+      if (!base || !other) {
+        throw new AppError(`No exchange rate stored for ${currency}`, 500);
+      }
+      return base.div(other).toNumber();
     },
   };
 }

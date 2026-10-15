@@ -303,37 +303,6 @@ test.describe("GET /api/transactions/spending-by-category", () => {
     expect(data.spent).toBe(50);
   });
 
-  test("leaves out currencies with no stored rate", async ({
-    request,
-  }) => {
-    const { cookie } = await setup(request, [
-      {
-        amount: 40,
-        isoCurrencyCode: "CAD",
-        categoryPrimary: "TRAVEL",
-        date: day(1),
-      },
-      {
-        amount: 80,
-        isoCurrencyCode: "XXX",
-        categoryPrimary: "TRAVEL",
-        date: day(1),
-      },
-    ]);
-
-    const data = await getSpending(request, cookie);
-
-    // Shares are of what could be converted.
-    expect(data.spent).toBe(40);
-    expect(data.categories).toMatchObject([
-      {
-        category: "TRAVEL",
-        spent: 40,
-        share: 1,
-      },
-    ]);
-  });
-
   test("top lists only that many categories and adds up the rest", async ({
     request,
   }) => {

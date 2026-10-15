@@ -26,8 +26,8 @@ export type NetWorthPointDTO = z.infer<typeof NetWorthPointDTOSchema>;
  * Net worth history API response: a point per day from the start of the range
  * to today, oldest first, in `baseCurrency`. Each account's balance is
  * converted to `baseCurrency` at the rate of the day it is for (see
- * `loadExchangeRateConverter`), and an account in a currency with no stored
- * rate is left out. Empty when the user has no accounts with a balance.
+ * `loadExchangeRateConverter`). Empty when the user has no accounts with a
+ * balance.
  */
 export const NetWorthHistoryResponseSchema = z.object({
   data: z.object({

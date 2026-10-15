@@ -32,9 +32,8 @@ export type SpendingOtherDTO = z.infer<typeof SpendingOtherDTOSchema>;
  * Spending by category API response, for the same filters as the transaction
  * list. Amounts in other currencies are converted to `baseCurrency`, each at
  * the rate of the day it was spent, so categories can be ranked and compared
- * in one list. Spending in a currency with no stored rate is left out, so
- * shares are of the spending that could be converted. The `category` filter
- * applies, so the shares add up to what the filters select.
+ * in one list. The `category` filter applies, so the shares add up to what
+ * the filters select.
  */
 export const SpendingByCategoryResponseSchema = z.object({
   data: z.object({
@@ -66,10 +65,10 @@ export interface CategorySpend {
 export interface SpendingByCategoryOptions {
   baseCurrency: string;
   /**
-   * Base-currency units for one unit of `currency` on `day`, or undefined when
-   * there is no rate (see `loadExchangeRateConverter`).
+   * Base-currency units for one unit of `currency` on `day` (see
+   * `loadExchangeRateConverter`).
    */
-  rateOn: (currency: string, day: string) => number | undefined;
+  rateOn: (currency: string, day: string) => number;
   /** List only this many categories and add the rest up in `other`. */
   top?: number;
 }
@@ -88,8 +87,7 @@ const sum = (values: Prisma.Decimal[]) =>
  * Transform the repository's rows to the public DTO. Each row (one currency,
  * category and day) is converted to the base currency at that day's rate (a
  * row with no currency, or already in the base currency, is taken as is) so
- * categories can be ranked and given a share of the total. Rows in a currency
- * with no rate are left out.
+ * categories can be ranked and given a share of the total.
  */
 export function toSpendingByCategoryDTO(
   rows: CategorySpend[],
@@ -101,11 +99,10 @@ export function toSpendingByCategoryDTO(
       : rateOn(row.currency, row.date);
 
   const positive = rows.filter((row) => row.spent.gt(0));
-  const convertible = positive.filter((row) => rateOf(row));
-  const converted = (row: CategorySpend) => row.spent.times(rateOf(row)!);
+  const converted = (row: CategorySpend) => row.spent.times(rateOf(row));
 
   const byCategory = new Map<string | null, CategorySpend[]>();
-  for (const row of convertible) {
+  for (const row of positive) {
     byCategory.set(row.category, [
       ...(byCategory.get(row.category) ?? []),
       row,

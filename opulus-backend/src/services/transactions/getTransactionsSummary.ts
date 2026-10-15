@@ -41,6 +41,6 @@ export async function getTransactionsSummary(
 
   return toTransactionsSummaryDTO(summary, {
     baseCurrency: BASE_CURRENCY,
-    rateOn: (currency, day) => converter?.rateOn(currency, day),
+    rateOn: (currency, day) => converter!.rateOn(currency, day),
   });
 }

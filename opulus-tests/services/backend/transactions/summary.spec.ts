@@ -150,21 +150,6 @@ test.describe("GET /api/transactions/summary", () => {
     ]);
   });
 
-  test("leaves currencies with no stored rate out of the days", async ({
-    request,
-  }) => {
-    const { cookie } = await setup(request, [
-      { amount: 10, date: day(1) },
-      { amount: 80, isoCurrencyCode: "XXX", date: day(1) },
-    ]);
-
-    const data = await getSummary(request, cookie);
-
-    expect(data.byDay).toEqual([
-      { date: "2026-06-01", spent: 10, income: 0, net: -10 },
-    ]);
-  });
-
   test("applies the same filters as the list", async ({ request }) => {
     const { cookie } = await setup(request, [
       { amount: 30, date: day(1), name: "Coffee Shop" },

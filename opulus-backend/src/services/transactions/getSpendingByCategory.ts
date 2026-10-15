@@ -45,7 +45,7 @@ export async function getSpendingByCategory(
 
   return toSpendingByCategoryDTO(rows, {
     baseCurrency: BASE_CURRENCY,
-    rateOn: (currency, day) => converter?.rateOn(currency, day),
+    rateOn: (currency, day) => converter!.rateOn(currency, day),
     top: params.top,
   });
 }
