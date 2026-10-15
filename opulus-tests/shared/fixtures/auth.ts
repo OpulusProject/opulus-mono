@@ -1,5 +1,10 @@
 import { type APIRequestContext } from "@playwright/test";
-import { extractSessionCookie, uniqueEmail, uniqueId } from "../client.js";
+import {
+  extractSessionCookie,
+  uniqueEmail,
+  uniqueId,
+  uniqueIp,
+} from "../client.js";
 import { expectOk } from "../assertions.js";
 
 /**
@@ -29,6 +34,7 @@ export async function signUp(
   const name = overrides.name ?? uniqueId("Test User");
 
   const res = await request.post("/api/auth/sign-up/email", {
+    headers: { "x-forwarded-for": uniqueIp() },
     data: { email, password, name },
   });
   await expectOk(res);
@@ -44,6 +50,7 @@ export async function signIn(
   password: string = TEST_PASSWORD,
 ): Promise<{ cookie: string; user: { id: string; email: string } }> {
   const res = await request.post("/api/auth/sign-in/email", {
+    headers: { "x-forwarded-for": uniqueIp() },
     data: { email, password },
   });
   await expectOk(res);
