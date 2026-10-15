@@ -1,10 +1,7 @@
 import { getValidatedQuery } from "@/middleware/validation.js";
 import { getRequestSession } from "@/middleware/session/requireSession.js";
-import {
-  toTransactionsSummaryDTO,
-  transactionRepository,
-  TransactionsSummaryResponse,
-} from "@opulus/core";
+import { getTransactionsSummary } from "@/services/transactions/getTransactionsSummary.js";
+import { TransactionsSummaryResponse } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
 import {
   toTransactionFilters,
@@ -15,8 +12,8 @@ import {
 export const getTransactionsSummaryQuerySchema = transactionFilterQuerySchema;
 
 /**
- * Totals, spending by category and spending by day for the filtered
- * transactions
+ * Totals, spending by category and spending by day (in the base currency) for
+ * the filtered transactions
  * GET /api/transactions/summary?startDate=2026-09-01&hideTransfers=true
  *
  * Query parameters are validated by validateQuery middleware
@@ -32,12 +29,12 @@ export async function getTransactionsSummaryController(
     const query =
       getValidatedQuery<typeof getTransactionsSummaryQuerySchema>(req);
 
-    const summary = await transactionRepository.getSummaryByUserId(
-      session.user.id,
-      toTransactionFilters(query)
-    );
+    const data = await getTransactionsSummary({
+      userId: session.user.id,
+      filters: toTransactionFilters(query),
+    });
 
-    res.status(200).json({ data: toTransactionsSummaryDTO(summary) });
+    res.status(200).json({ data });
   } catch (error) {
     next(error);
   }

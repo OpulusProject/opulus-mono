@@ -560,7 +560,7 @@ class TransactionRepository {
         AND: [base, { amount: { lt: 0 } }],
       });
 
-      const [spent, income, counts, byCategory, byDay] = await Promise.all([
+      const [spent, income, counts, byCategory] = await Promise.all([
         this.prisma.transaction.groupBy({
           by: ["isoCurrencyCode"],
           where: moneyOut(where),
@@ -582,9 +582,17 @@ class TransactionRepository {
           _sum: { amount: true },
           _count: { _all: true },
         }),
+      ]);
+
+      const [spentByDay, incomeByDay] = await Promise.all([
         this.prisma.transaction.groupBy({
           by: ["isoCurrencyCode", "date"],
           where: moneyOut(where),
+          _sum: { amount: true },
+        }),
+        this.prisma.transaction.groupBy({
+          by: ["isoCurrencyCode", "date"],
+          where: moneyIn(where),
           _sum: { amount: true },
         }),
       ]);
@@ -596,6 +604,37 @@ class TransactionRepository {
       const incomeBy = new Map(
         income.map((row) => [row.isoCurrencyCode, row._sum.amount ?? zero])
       );
+
+      // A day with money out, money in or both is one entry.
+      const days = new Map<
+        string,
+        {
+          currency: string | null;
+          date: Date;
+          spent: Prisma.Decimal;
+          income: Prisma.Decimal;
+        }
+      >();
+      const dayEntry = (currency: string | null, date: Date) => {
+        const key = `${currency ?? ""}|${date.toISOString()}`;
+        const entry = days.get(key) ?? {
+          currency,
+          date,
+          spent: zero,
+          income: zero,
+        };
+        days.set(key, entry);
+        return entry;
+      };
+      for (const row of spentByDay) {
+        dayEntry(row.isoCurrencyCode, row.date).spent = row._sum.amount ?? zero;
+      }
+      for (const row of incomeByDay) {
+        // Money in is negative; report it as a positive amount.
+        dayEntry(row.isoCurrencyCode, row.date).income = (
+          row._sum.amount ?? zero
+        ).negated();
+      }
 
       return {
         totals: counts.map((row) => ({
@@ -611,11 +650,7 @@ class TransactionRepository {
           spent: row._sum.amount ?? zero,
           count: row._count._all,
         })),
-        byDay: byDay.map((row) => ({
-          currency: row.isoCurrencyCode,
-          date: row.date,
-          spent: row._sum.amount ?? zero,
-        })),
+        byDay: [...days.values()],
       };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {

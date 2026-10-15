@@ -29,7 +29,7 @@ params:query {
 docs {
   # Get Transactions Summary
 
-  Totals, spending by category and spending by day for the authenticated user's transactions, computed in the database so the client does not have to download every transaction.
+  Totals, spending by category and each day's spending, income and net for the authenticated user's transactions, computed in the database so the client does not have to download every transaction.
 
   **Endpoint:** `GET /api/transactions/summary`
 
@@ -39,11 +39,12 @@ docs {
 
   ## Success Response (200)
 
-  Money is never added across currencies: every row carries its `currency`.
+  `totals` and `byCategory` are never added across currencies: every row carries its `currency`. `byDay` is the exception: it is in `baseCurrency` (CAD for now), each transaction converted at the rate of the day it was made, so a day is one figure.
 
   ```json
   {
     "data": {
+      "baseCurrency": "CAD",
       "totals": [
         { "currency": "CAD", "spent": 50.5, "income": 2000, "net": 1949.5, "count": 3 }
       ],
@@ -52,7 +53,8 @@ docs {
         { "currency": "CAD", "category": null, "spent": 7, "count": 1 }
       ],
       "byDay": [
-        { "currency": "CAD", "date": "2026-06-01", "spent": 30 }
+        { "date": "2026-06-01", "spent": 18.75, "income": 1.5625, "net": -17.1875 },
+        { "date": "2026-06-02", "spent": 0, "income": 2000, "net": 2000 }
       ]
     }
   }
@@ -62,7 +64,8 @@ docs {
   - `count` in `totals` is every matching transaction
   - `byCategory` is ordered by currency, then largest spending first; `category` is null for uncategorized spending
   - `byCategory` ignores the `category` filter, so choosing a category does not make the other bars disappear
-  - `byDay` is ordered by currency, then date ascending
+  - `byDay` has one entry for each day with at least one matching transaction that moved money, with that day's `spent`, `income` and `net` in `baseCurrency`, so a client can show a day's net without adding up the rows it has loaded. It follows every filter, including `category`. Ordered by date ascending
+  - Each day is converted at that day's rate from the `exchange_rate` table (the European Central Bank's daily rates, refreshed daily by opulus-scheduler). A day without a rate (a weekend or holiday) uses the latest rate before it, and a day older than the stored history uses the earliest. A transaction with no currency is taken as `baseCurrency`. Amounts in a currency with no stored rate are left out of `byDay` (they are still in `totals`). Converted amounts are rounded to 4 decimal places. Rates are only read when some transaction is in another currency
 
   ## Error Responses
 
