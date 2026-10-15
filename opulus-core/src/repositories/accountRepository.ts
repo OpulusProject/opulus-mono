@@ -73,6 +73,20 @@ export type UpdateAccountData = Partial<
   Omit<CreateAccountData, "itemId" | "userId" | "providerAccountId">
 >;
 
+/** An account's balances, from Plaid, as the columns that hold them. */
+export function normalizePlaidBalances(
+  plaidAccount: PlaidAccount
+): UpdateAccountData {
+  return {
+    balanceAvailable: plaidAccount.balances.available ?? null,
+    balanceCurrent: plaidAccount.balances.current ?? null,
+    balanceLimit: plaidAccount.balances.limit ?? null,
+    isoCurrencyCode: plaidAccount.balances.iso_currency_code ?? null,
+    unofficialCurrencyCode:
+      plaidAccount.balances.unofficial_currency_code ?? null,
+  };
+}
+
 /**
  * Normalize Plaid Account to CreateAccountData format
  * Handles field name mapping and type conversions

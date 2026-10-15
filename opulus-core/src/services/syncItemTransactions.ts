@@ -1,7 +1,10 @@
 import type { RemovedTransaction } from "../client/plaid.js";
 import { runInTransaction } from "../client/transaction.js";
 import { plaidGateway } from "../gateways/plaidGateway.js";
-import { accountRepository } from "../repositories/accountRepository.js";
+import {
+  accountRepository,
+  normalizePlaidBalances,
+} from "../repositories/accountRepository.js";
 import { itemRepository } from "../repositories/itemRepository.js";
 import {
   normalizePlaidTransaction,
@@ -36,16 +39,28 @@ export async function syncItemTransactions(
 ): Promise<SyncItemTransactionsResult> {
   const item = await itemRepository.getByPlaidItemId(params.plaidItemId);
 
-  const { added, modified, removed, nextCursor, transactionsUpdateStatus } =
-    await plaidGateway.transactionsSync(
-      item.accessToken,
-      item.transactionCursor
-    );
+  const {
+    added,
+    modified,
+    removed,
+    accounts,
+    nextCursor,
+    transactionsUpdateStatus,
+  } = await plaidGateway.transactionsSync(
+    item.accessToken,
+    item.transactionCursor
+  );
 
-  // Only the accounts these transactions belong to need looking up.
+  // Only the accounts these transactions belong to, and the ones Plaid listed
+  // balances for, need looking up.
   const accountIds = await accountRepository.getIdsByProviderAccountIds(
     item.id,
-    [...new Set([...added, ...modified].map((t) => t.account_id))]
+    [
+      ...new Set([
+        ...[...added, ...modified].map((t) => t.account_id),
+        ...accounts.map((account) => account.account_id),
+      ]),
+    ]
   );
 
   // Transactions for accounts we don't have (not shared with us) are skipped.
@@ -68,8 +83,17 @@ export async function syncItemTransactions(
     (removedTransaction) => removedTransaction.transaction_id
   );
 
-  // All of it, and moving the cursor forward, or none of it.
+  // All of it, and moving the cursor forward, or none of it. The balances Plaid
+  // lists with the transactions are at least as recent as the transactions, so
+  // they are stored with them: an account's balance never lags the transactions
+  // it is worked out from. An account Plaid lists no balance for is left alone.
   await runInTransaction(async (tx) => {
+    for (const account of accounts) {
+      const id = accountIds.get(account.account_id);
+      if (id && account.balances) {
+        await accountRepository.update(id, normalizePlaidBalances(account), tx);
+      }
+    }
     if (toCreate.length > 0) {
       await transactionRepository.createMany(toCreate, tx);
     }

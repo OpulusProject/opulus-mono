@@ -121,6 +121,61 @@ test.describe("data webhooks (sandbox to receiver)", () => {
     expect(points.length).toBeGreaterThan(1);
   });
 
+  test("a transactions sync leaves each account with the balance Plaid reported", async ({
+    request,
+  }) => {
+    // Arrange
+    const creds = requireSandboxCredentials();
+    const { cookie } = await createAuthedUser(request);
+    const { itemId, accessToken } = await linkItemWithWebhook(
+      request,
+      cookie,
+      creds,
+    );
+    type Listed = Array<{
+      type: string;
+      balanceCurrent: number | null;
+      connection: { id: string };
+    }>;
+    const accounts = async () =>
+      (
+        (await (
+          await request.get("/api/accounts", { headers: withSession(cookie) })
+        ).json()) as { data: { accounts: Listed } }
+      ).data.accounts.filter((account) => account.connection.id === itemId);
+    const before = await accounts();
+
+    // Act: a sync that brings the item's transactions (the balances Plaid
+    // lists with them are stored in the same step).
+    let reads = 0;
+    await waitFor(
+      async () => {
+        if (reads++ % 8 === 0) {
+          await fireSandboxWebhook(
+            creds,
+            accessToken,
+            "TRANSACTIONS",
+            "SYNC_UPDATES_AVAILABLE",
+          );
+        }
+        const res = await request.get(
+          `/api/transactions?itemId=${itemId}&limit=1`,
+          { headers: withSession(cookie) },
+        );
+        return (await res.json()).data.transactions as unknown[];
+      },
+      (list) => list.length > 0,
+      "the sandbox transactions to be synced",
+    );
+
+    // Assert: every account has the balance it had, none blanked. The sandbox's
+    // balances do not move, so that a sync stores a changed balance is not
+    // visible here.
+    const balances = (list: Listed) =>
+      list.map((account) => account.balanceCurrent).sort();
+    expect(balances(await accounts())).toEqual(balances(before));
+  });
+
   test("LIABILITIES DEFAULT_UPDATE makes the receiver refresh the item's liabilities", async ({
     request,
   }) => {

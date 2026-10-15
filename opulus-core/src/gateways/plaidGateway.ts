@@ -1,4 +1,5 @@
 import {
+  AccountBase,
   AccountsBalanceGetRequest,
   AccountsGetRequest,
   CountryCode,
@@ -330,6 +331,10 @@ class PlaidGateway {
     const allAdded: any[] = [];
     const allModified: any[] = [];
     const allRemoved: any[] = [];
+    // The accounts Plaid listed with these transactions, by id (each page
+    // repeats them; only accounts that have transactions in the response are
+    // listed). Their balances are at least as recent as the transactions.
+    const accountsById = new Map<string, AccountBase>();
     let nextCursor: string | null = cursor;
     let originalCursor: string | null = cursor; // Track original cursor for pagination restarts
     let transactionsUpdateStatus: TransactionsUpdateStatus | undefined;
@@ -350,12 +355,16 @@ class PlaidGateway {
           has_more,
           next_cursor,
           transactions_update_status,
+          accounts,
         } = response.data;
 
         // Accumulate transactions
         allAdded.push(...(added || []));
         allModified.push(...(modified || []));
         allRemoved.push(...(removed || []));
+        for (const account of accounts ?? []) {
+          accountsById.set(account.account_id, account);
+        }
 
         // If this is the first page and has_more is true, track the original cursor
         if (originalCursor === null && has_more && next_cursor) {
@@ -376,6 +385,7 @@ class PlaidGateway {
         added: allAdded,
         modified: allModified,
         removed: allRemoved,
+        accounts: [...accountsById.values()],
         nextCursor,
         /**
          * How far Plaid's pull for the item has got, as of the last page:
