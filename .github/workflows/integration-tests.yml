@@ -50,6 +50,9 @@ jobs:
       CLIENT_URL: http://localhost:5173
       NODE_ENV: test
       PORT: "8080"
+      # Sign-ups are checked against Have I Been Pwned here, so the test users get
+      # a password that is in no breach list.
+      TEST_PASSWORD: ci-Integration-7f3a91c2-Not-A-Real-Password
       # Real Plaid Sandbox creds — required. Backend-under-test and the test
       # helper must point at the same sandbox account for the exchange to
       # succeed, so we source both pairs from the same secrets.

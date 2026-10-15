@@ -13,7 +13,13 @@ import { expectOk } from "../assertions.js";
  * authenticated caller goes through one of these builders.
  */
 
-export const TEST_PASSWORD = "testpass123";
+/**
+ * The password test users sign up with. It is a common one, which is fine for
+ * the service suite (breached-password checking is off there), but the
+ * integration suite checks passwords against Have I Been Pwned, so CI gives it a
+ * strong one through TEST_PASSWORD.
+ */
+export const TEST_PASSWORD = process.env.TEST_PASSWORD ?? "testpass123";
 
 export interface TestUser {
   email: string;
