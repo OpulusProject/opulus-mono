@@ -7,6 +7,7 @@ import {
   GemIcon,
   Landmark,
   LayoutDashboard,
+  PieChart,
   Settings,
 } from 'lucide-react';
 import * as React from 'react';
@@ -35,6 +36,11 @@ const navMain: NavItem[] = [
     title: 'Transactions',
     url: '/transactions',
     icon: ArrowLeftRight,
+  },
+  {
+    title: 'Spending',
+    url: '/spending',
+    icon: PieChart,
   },
   {
     title: 'Accounts',
