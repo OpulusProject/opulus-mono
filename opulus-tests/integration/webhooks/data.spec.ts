@@ -99,7 +99,7 @@ test.describe("data webhooks (sandbox to receiver)", () => {
     // item has no transactions for its first few seconds, so keep asking Plaid
     // to sync until the history is there.
     let reads = 0;
-    const series = await waitFor(
+    const points = await waitFor(
       async () => {
         if (reads++ % 8 === 0) {
           await fireSandboxWebhook(
@@ -112,12 +112,13 @@ test.describe("data webhooks (sandbox to receiver)", () => {
         const res = await request.get("/api/accounts/net-worth?range=all", {
           headers: withSession(cookie),
         });
-        return (await res.json()).data.series as Array<{ points: unknown[] }>;
+        // One series, in the base currency: { data: { range, baseCurrency, points } }.
+        return ((await res.json()).data?.points ?? []) as unknown[];
       },
-      (list) => list.length > 0 && list[0].points.length > 1,
+      (list) => list.length > 1,
       "the balance history to be filled in",
     );
-    expect(series[0].points.length).toBeGreaterThan(1);
+    expect(points.length).toBeGreaterThan(1);
   });
 
   test("LIABILITIES DEFAULT_UPDATE makes the receiver refresh the item's liabilities", async ({
