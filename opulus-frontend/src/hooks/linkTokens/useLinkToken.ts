@@ -16,8 +16,14 @@ export type UpdateMode = 'reconnect' | 'add-accounts';
  * Hook to fetch a Plaid Link token.
  * - No `itemId` => new-item flow.
  * - `itemId` + `mode` => update-mode flow for that item.
+ * - `enabled: false` => do not ask for one (when Link is resuming with a token
+ *   it already has, after an OAuth bank sent the user back).
  */
-export function useLinkToken(itemId?: string, mode: UpdateMode = 'reconnect') {
+export function useLinkToken(
+  itemId?: string,
+  mode: UpdateMode = 'reconnect',
+  options: { enabled?: boolean } = {}
+) {
   return useQuery<LinkTokenResponse['data'], Error>({
     queryKey: linkTokenKeys.forItem(itemId, mode),
     queryFn: async () => {
@@ -27,6 +33,7 @@ export function useLinkToken(itemId?: string, mode: UpdateMode = 'reconnect') {
       );
       return response.data.data;
     },
+    enabled: options.enabled ?? true,
     retry: 2,
     staleTime: 0, // Link tokens are single-use, don't cache
     gcTime: 0, // Don't keep in cache after unmount

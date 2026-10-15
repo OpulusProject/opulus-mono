@@ -85,6 +85,9 @@ class PlaidGateway {
       ...(config.plaidWebhookUrl && {
         webhook: config.plaidWebhookUrl,
       }),
+      ...(config.plaidRedirectUri && {
+        redirect_uri: config.plaidRedirectUri,
+      }),
     };
 
     try {
@@ -121,6 +124,9 @@ class PlaidGateway {
       }),
       ...(config.plaidWebhookUrl && {
         webhook: config.plaidWebhookUrl,
+      }),
+      ...(config.plaidRedirectUri && {
+        redirect_uri: config.plaidRedirectUri,
       }),
     };
 
