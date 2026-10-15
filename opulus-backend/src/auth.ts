@@ -1,7 +1,11 @@
 import { disconnectUserItems } from "@/services/items/disconnectUserItems.js";
 import { AppError, config, prisma } from "@opulus/core";
 import { betterAuth } from "better-auth";
-import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api";
+import {
+  APIError,
+  createAuthMiddleware,
+  getSessionFromCtx,
+} from "better-auth/api";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { haveIBeenPwned, twoFactor } from "better-auth/plugins";
 
