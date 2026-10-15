@@ -120,26 +120,14 @@ A **temporary share** is perfect for local development and testing. The URL chan
    [WEBHOOK QUEUE] Successfully processed TRANSACTIONS:SYNC_UPDATES_AVAILABLE
    ```
 
-### Balance history
+### Balances and the balance history
 
-After every transactions sync the handler runs core's `backfillBalanceHistory`,
-passing the sync's `transactions_update_status`. It does nothing until that is
-`HISTORICAL_UPDATE_COMPLETE` (Plaid has loaded all of the item's history; the
-webhook for the historical pull finishing triggers one more sync, which sees
-it). Then it fills in the item's `account_historic_balance` rows for the days
-before it was linked, by undoing its transactions from today's balances
-(investments stay flat), once: an item that already has history is left alone.
-Just before it does, it reads the item's balances fresh from Plaid
-(`/accounts/balance/get`, billed per call, once per item) and stores them on the
-accounts, so the balance the history works back from is as current as the
-transactions; if that call fails it logs a warning and uses the stored
-balances.
-Relinking an item creates new accounts, and so new history.
-
-A failure fails the job, and the queue retries it (3 attempts, with backoff);
-syncing again is harmless, so the retry is effectively just the backfill. If it
-still fails, the item gets its history the next time it syncs, or from
-`reconcile`, which runs the backfill too.
+Every transactions sync also stores the balances Plaid lists with the
+transactions, in the same database transaction (they are at least as recent as
+the transactions). The balance history is not stored: the backend works a past
+day's balance out from an account's live balance and its posted transactions
+after that day, so a transaction that is added, changed or removed shows in the
+history the next time it is read.
 
 ## Troubleshooting
 

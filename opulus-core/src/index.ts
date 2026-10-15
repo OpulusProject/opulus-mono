@@ -13,7 +13,6 @@ export { Prisma, PrismaClient } from "@prisma/client";
 // Repository exports (data access)
 export * from "./repositories/accountRepository.js";
 export * from "./repositories/exchangeRateRepository.js";
-export * from "./repositories/historicBalanceRepository.js";
 export * from "./repositories/itemRepository.js";
 export * from "./repositories/liabilityRepository.js";
 export * from "./repositories/linkSessionRepository.js";
@@ -26,10 +25,8 @@ export * from "./gateways/frankfurterGateway.js";
 export * from "./gateways/plaidGateway.js";
 
 // Service exports (business logic shared by the backend and webhooks)
-export * from "./services/backfillBalanceHistory.js";
 export * from "./services/exchangeRateConverter.js";
 export * from "./services/refreshExchangeRates.js";
-export * from "./services/refreshItemBalances.js";
 export * from "./services/syncItemLiabilities.js";
 export * from "./services/syncItemTransactions.js";
 
@@ -38,7 +35,6 @@ export * from "./types/dto/index.js";
 
 // Util exports
 export * from "./utils/accounts.js";
-export * from "./utils/balanceHistory.js";
 export * from "./utils/currency.js";
 export * from "./utils/day.js";
 export * from "./utils/errors.js";

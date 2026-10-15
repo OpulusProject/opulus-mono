@@ -414,37 +414,6 @@ class TransactionRepository {
   }
 
   /**
-   * An item's posted transactions, as much as the balance history needs: which
-   * account, which day, how much. Pending ones are left out, since they are not
-   * in the balance yet.
-   * @param itemId - The item
-   * @throws AppError if database error occurs
-   */
-  async getForBalanceHistory(itemId: string) {
-    try {
-      const rows = await this.prisma.transaction.findMany({
-        where: { itemId, pending: false },
-        select: { accountId: true, date: true, amount: true },
-      });
-      return rows.map((row) => ({
-        accountId: row.accountId,
-        date: row.date.toISOString().slice(0, 10),
-        amount: row.amount.toNumber(),
-      }));
-    } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        throw new AppError(`Database error: ${error.message}`, 500, error.code);
-      }
-
-      const message =
-        error instanceof Error
-          ? `Failed to get transactions: ${error.message}`
-          : "An unexpected error occurred while fetching transactions";
-      throw new AppError(message, 500);
-    }
-  }
-
-  /**
    * What some accounts' posted transactions add up to on each day after a day:
    * the changes their balances are worked out from. Pending ones are left out,
    * since they are not in the balance yet. One row per account per day with
