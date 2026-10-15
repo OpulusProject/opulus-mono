@@ -47,20 +47,10 @@ export const AccountsTypeDTOSchema = z.object({
 
 export type AccountsTypeDTO = z.infer<typeof AccountsTypeDTOSchema>;
 
-/** Accounts in a currency with no stored rate: they cannot be converted. */
-export const AccountsExcludedDTOSchema = z.object({
-  /** ISO 4217 code. */
-  currency: z.string(),
-  count: z.number().int(),
-});
-
-export type AccountsExcludedDTO = z.infer<typeof AccountsExcludedDTOSchema>;
-
 /**
  * Accounts summary API response, for the same `type` filter as the list. Every
  * amount is in `baseCurrency`. An account in a currency with no stored rate is
- * left out of every amount (it is still counted in `count`) and listed in
- * `excluded`, so a client can say the total does not include it.
+ * left out of every amount (it is still counted in `count`).
  */
 export const AccountsSummaryResponseSchema = z.object({
   data: z.object({
@@ -71,7 +61,6 @@ export const AccountsSummaryResponseSchema = z.object({
     total: AccountsTotalDTOSchema,
     /** Only the types that have accounts, in the order of `ACCOUNT_TYPES`. */
     byType: z.array(AccountsTypeDTOSchema),
-    excluded: z.array(AccountsExcludedDTOSchema),
   }),
 });
 
