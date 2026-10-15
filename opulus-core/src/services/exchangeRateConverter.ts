@@ -7,20 +7,19 @@ import {
 export interface ExchangeRateConverter {
   /**
    * Units of the base currency for one unit of `currency` on `day`
-   * ("YYYY-MM-DD"). The base currency is always 1.
+   * ("YYYY-MM-DD"). The base currency, and an amount with no currency, is 1.
    * @throws AppError if no rate is stored for `currency`: every currency we
    * support has one, so that means the table is incomplete
    */
-  rateOn(currency: string, day: string): number;
+  rateOn(currency: string | null, day: string): number;
 }
 
 export interface LoadExchangeRateConverterParams {
   baseCurrency: string;
-  /** The currencies that will be converted (the base is added). */
-  currencies: string[];
-  /** The days amounts will be converted on, "YYYY-MM-DD", both included. */
-  from: string;
-  to: string;
+  /** The currencies that will be converted (null for none, like the base). */
+  currencies: Array<string | null>;
+  /** The days amounts will be converted on, "YYYY-MM-DD", in any order. */
+  days: string[];
 }
 
 /**
@@ -30,21 +29,32 @@ export interface LoadExchangeRateConverterParams {
  * stored history uses the earliest rate. Rates are stored per euro, so the
  * rate of X in the base is perEur(base) / perEur(X) on that day.
  *
- * Two queries, whatever the number of days.
+ * Two queries, whatever the number of days, and none when nothing is in another
+ * currency.
  */
 export async function loadExchangeRateConverter(
   params: LoadExchangeRateConverterParams
 ): Promise<ExchangeRateConverter> {
   const { baseCurrency } = params;
-  const currencies = [...new Set([baseCurrency, ...params.currencies])].filter(
-    Boolean
-  );
+  const foreign = [
+    ...new Set(
+      params.currencies.filter(
+        (currency): currency is string =>
+          currency !== null && currency !== baseCurrency
+      )
+    ),
+  ];
+  if (foreign.length === 0 || params.days.length === 0) {
+    return { rateOn: () => 1 };
+  }
+  const currencies = [baseCurrency, ...foreign];
+  const days = [...params.days].sort();
 
   const [inRange, earliest] = await Promise.all([
     exchangeRateRepository.getForCurrencies({
       currencies,
-      from: params.from,
-      to: params.to,
+      from: days[0]!,
+      to: days.at(-1)!,
     }),
     exchangeRateRepository.getEarliestForCurrencies(currencies),
   ]);
@@ -82,7 +92,7 @@ export async function loadExchangeRateConverter(
 
   return {
     rateOn(currency, day) {
-      if (currency === baseCurrency) return 1;
+      if (currency === null || currency === baseCurrency) return 1;
       const base = perEurOn(baseCurrency, day);
       const other = perEurOn(currency, day);
       if (!base || !other) {

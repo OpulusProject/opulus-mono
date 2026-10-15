@@ -102,25 +102,15 @@ export async function getNetWorthHistory(
   const days: string[] = [];
   for (let day = first; day <= today; day = addDays(day, 1)) days.push(day);
 
-  const foreign = accounts.filter(
-    (account) =>
-      account.isoCurrencyCode !== null &&
-      account.isoCurrencyCode !== BASE_CURRENCY
-  );
-  const converter =
-    foreign.length > 0
-      ? await loadExchangeRateConverter({
-          baseCurrency: BASE_CURRENCY,
-          currencies: foreign.map((account) => account.isoCurrencyCode!),
-          from: first,
-          to: today,
-        })
-      : undefined;
+  const converter = await loadExchangeRateConverter({
+    baseCurrency: BASE_CURRENCY,
+    currencies: accounts.map((account) => account.isoCurrencyCode),
+    days: [first, today],
+  });
 
   // Net worth per day in the base currency, in whole units (before rounding).
   const totals = days.map(() => 0);
   for (const account of accounts) {
-    const currency = account.isoCurrencyCode;
     const sign = isOwed(account.type) ? -1 : 1;
     const balances = dailyBalances(
       toNumber(account.balanceCurrent)!,
@@ -129,11 +119,8 @@ export async function getNetWorthHistory(
       today
     );
 
-    // An account with no currency is taken as the base currency.
     const rates = days.map((day) =>
-      currency === null || currency === BASE_CURRENCY
-        ? 1
-        : converter!.rateOn(currency, day)
+      converter.rateOn(account.isoCurrencyCode, day)
     );
 
     balances.forEach((units, index) => {

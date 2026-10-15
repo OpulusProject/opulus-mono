@@ -47,20 +47,11 @@ export async function getAccountsSummary(
   );
 
   const today = toDay(params.now ?? new Date());
-  const foreign = rows.flatMap((row) =>
-    row.isoCurrencyCode && row.isoCurrencyCode !== BASE_CURRENCY
-      ? [row.isoCurrencyCode]
-      : []
-  );
-  const converter =
-    foreign.length > 0
-      ? await loadExchangeRateConverter({
-          baseCurrency: BASE_CURRENCY,
-          currencies: foreign,
-          from: today,
-          to: today,
-        })
-      : undefined;
+  const converter = await loadExchangeRateConverter({
+    baseCurrency: BASE_CURRENCY,
+    currencies: rows.map((row) => row.isoCurrencyCode),
+    days: [today],
+  });
 
   let assets = 0;
   let owed = 0;
@@ -78,12 +69,7 @@ export async function getAccountsSummary(
     entry.count += 1;
     byType.set(type, entry);
 
-    // An account with no currency is taken as the base currency.
-    const currency = row.isoCurrencyCode;
-    const rate =
-      currency === null || currency === BASE_CURRENCY
-        ? 1
-        : converter!.rateOn(currency, today);
+    const rate = converter.rateOn(row.isoCurrencyCode, today);
 
     const toUnits = (amount: number) => Math.round(amount * rate * SCALE);
     const balance = toNumber(row.balanceCurrent);
