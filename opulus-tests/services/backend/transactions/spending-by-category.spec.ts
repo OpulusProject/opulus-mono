@@ -401,7 +401,7 @@ test.describe("GET /api/transactions/spending-by-category", () => {
 
     const byDate = await getSpending(request, cookie, "?startDate=2026-06-05");
     const bySearch = await getSpending(request, cookie, "?search=coffee");
-    // Unlike the summary's categories, the category filter applies here.
+    // The category filter applies.
     const byCategory = await getSpending(request, cookie, "?category=TRAVEL");
 
     expect(byDate.spent).toBe(120);

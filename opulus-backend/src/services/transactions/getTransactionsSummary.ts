@@ -13,10 +13,9 @@ export interface GetTransactionsSummaryParams {
 }
 
 /**
- * Totals, spending by category, and each day's spending, income and net for a
- * user's filtered transactions. The days are converted to the base currency, each
- * at that day's rate from `exchange_rate`; rates are only read when some of
- * them are in another currency.
+ * Each day's spending, income and net for a user's filtered transactions,
+ * converted to the base currency, each at that day's rate from `exchange_rate`;
+ * rates are only read when some of them are in another currency.
  */
 export async function getTransactionsSummary(
   params: GetTransactionsSummaryParams

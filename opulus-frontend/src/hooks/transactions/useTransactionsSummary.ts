@@ -21,12 +21,12 @@ const getTransactionsSummaryApi = async (
 };
 
 /**
- * Hook to fetch totals, spending by category, and each day's spending, income
- * and net for the transactions matching the filters. The server adds them up,
+ * Hook to fetch each day's spending, income and net, in the base currency, for
+ * the transactions matching the filters. The server adds them up,
  * so no page of transactions has to be loaded for it.
  *
  * @param params - Optional filters (the same ones as the list)
- * @returns TanStack Query result with `totals`, `byCategory` and `byDay`
+ * @returns TanStack Query result with `baseCurrency` and `byDay`
  */
 export function useTransactionsSummary(params?: TransactionFilterParams) {
   return useQuery<TransactionsSummaryResponse['data'], Error>({

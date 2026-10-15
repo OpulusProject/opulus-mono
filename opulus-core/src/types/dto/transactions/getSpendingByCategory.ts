@@ -33,9 +33,8 @@ export type SpendingOtherDTO = z.infer<typeof SpendingOtherDTOSchema>;
  * list. Amounts in other currencies are converted to `baseCurrency`, each at
  * the rate of the day it was spent, so categories can be ranked and compared
  * in one list. Spending in a currency with no stored rate is left out, so
- * shares are of the spending that could be converted. Unlike the summary's
- * `byCategory`, the `category` filter applies, so the shares add up to what the
- * filters select.
+ * shares are of the spending that could be converted. The `category` filter
+ * applies, so the shares add up to what the filters select.
  */
 export const SpendingByCategoryResponseSchema = z.object({
   data: z.object({
