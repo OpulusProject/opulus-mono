@@ -5,14 +5,6 @@
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-/** Money spent in one currency (null when the institution did not say). */
-export const SpendingAmountDTOSchema = z.object({
-  currency: z.string().nullable(),
-  spent: z.number(),
-});
-
-export type SpendingAmountDTO = z.infer<typeof SpendingAmountDTOSchema>;
-
 export const SpendingCategoryDTOSchema = z.object({
   /** null for transactions Plaid did not categorize. */
   category: z.string().nullable(),
@@ -21,8 +13,6 @@ export const SpendingCategoryDTOSchema = z.object({
   count: z.number().int(),
   /** `spent` as a fraction (0 to 1) of all spending, both in `baseCurrency`. */
   share: z.number(),
-  /** The same spending as it was paid, one entry per currency, largest first (ties by code, no currency last). */
-  amounts: z.array(SpendingAmountDTOSchema),
 });
 
 export type SpendingCategoryDTO = z.infer<typeof SpendingCategoryDTOSchema>;
@@ -34,7 +24,6 @@ export const SpendingOtherDTOSchema = z.object({
   spent: z.number(),
   count: z.number().int(),
   share: z.number(),
-  amounts: z.array(SpendingAmountDTOSchema),
 });
 
 export type SpendingOtherDTO = z.infer<typeof SpendingOtherDTOSchema>;
@@ -43,7 +32,8 @@ export type SpendingOtherDTO = z.infer<typeof SpendingOtherDTOSchema>;
  * Spending by category API response, for the same filters as the transaction
  * list. Amounts in other currencies are converted to `baseCurrency`, each at
  * the rate of the day it was spent, so categories can be ranked and compared
- * in one list. Unlike the summary's
+ * in one list. Spending in a currency with no stored rate is left out, so
+ * shares are of the spending that could be converted. Unlike the summary's
  * `byCategory`, the `category` filter applies, so the shares add up to what the
  * filters select.
  */
@@ -57,11 +47,6 @@ export const SpendingByCategoryResponseSchema = z.object({
     categories: z.array(SpendingCategoryDTOSchema),
     /** The rest, when `top` left some out; otherwise null. */
     other: SpendingOtherDTOSchema.nullable(),
-    /**
-     * Spending in currencies with no known rate. It is left out of everything
-     * above, so shares are of the spending that could be converted.
-     */
-    unconverted: z.array(SpendingAmountDTOSchema),
   }),
 });
 
@@ -100,31 +85,12 @@ const sum = (values: Prisma.Decimal[]) =>
     null
   );
 
-/** Spending per currency, added up across the rows and largest first. */
-function toAmounts(rows: CategorySpend[]): SpendingAmountDTO[] {
-  const byCurrency = new Map<string | null, Prisma.Decimal>();
-  for (const row of rows) {
-    const total = byCurrency.get(row.currency);
-    byCurrency.set(row.currency, total ? total.plus(row.spent) : row.spent);
-  }
-  return [...byCurrency]
-    .map(([currency, spent]) => ({ currency, spent: spent.toNumber() }))
-    .sort(
-      (a, b) =>
-        b.spent - a.spent ||
-        // Equal amounts: by currency code, no currency last.
-        Number(a.currency === null) - Number(b.currency === null) ||
-        (a.currency ?? "").localeCompare(b.currency ?? "")
-    );
-}
-
 /**
  * Transform the repository's rows to the public DTO. Each row (one currency,
  * category and day) is converted to the base currency at that day's rate (a
  * row with no currency, or already in the base currency, is taken as is) so
  * categories can be ranked and given a share of the total. Rows in a currency
- * with no rate are reported in `unconverted` instead. A category's `amounts`
- * keep what was actually spent, per currency.
+ * with no rate are left out.
  */
 export function toSpendingByCategoryDTO(
   rows: CategorySpend[],
@@ -149,7 +115,6 @@ export function toSpendingByCategoryDTO(
 
   const categories = [...byCategory].map(([category, categoryRows]) => ({
     category,
-    rows: categoryRows,
     spent: sum(categoryRows.map(converted))!,
     count: categoryRows.reduce((count, row) => count + row.count, 0),
   }));
@@ -177,7 +142,6 @@ export function toSpendingByCategoryDTO(
       spent: money(entry.spent),
       count: entry.count,
       share: share(entry.spent),
-      amounts: toAmounts(entry.rows),
     })),
     other: restSpent
       ? {
@@ -185,9 +149,7 @@ export function toSpendingByCategoryDTO(
           spent: money(restSpent),
           count: rest.reduce((count, entry) => count + entry.count, 0),
           share: share(restSpent),
-          amounts: toAmounts(rest.flatMap((entry) => entry.rows)),
         }
       : null,
-    unconverted: toAmounts(positive.filter((row) => !rateOf(row))),
   };
 }

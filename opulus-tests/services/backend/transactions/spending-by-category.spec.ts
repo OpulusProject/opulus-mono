@@ -98,7 +98,6 @@ test.describe("GET /api/transactions/spending-by-category", () => {
       spent: 0,
       categories: [],
       other: null,
-      unconverted: [],
     });
   });
 
@@ -130,29 +129,25 @@ test.describe("GET /api/transactions/spending-by-category", () => {
           spent: 100,
           count: 1,
           share: 0.5,
-          amounts: [{ currency: "CAD", spent: 100 }],
         },
         {
           category: "FOOD_AND_DRINK",
           spent: 50,
           count: 2,
           share: 0.25,
-          amounts: [{ currency: "CAD", spent: 50 }],
         },
         {
           category: null,
           spent: 50,
           count: 1,
           share: 0.25,
-          amounts: [{ currency: "CAD", spent: 50 }],
         },
       ],
       other: null,
-      unconverted: [],
     });
   });
 
-  test("converts other currencies to the base to rank and share, keeping what was paid", async ({
+  test("converts other currencies to the base to rank and share", async ({
     request,
   }) => {
     // 100 USD is 125 CAD, so food outranks the 100 CAD of travel.
@@ -180,9 +175,6 @@ test.describe("GET /api/transactions/spending-by-category", () => {
     ]);
     expect(data.categories[0].share).toBeCloseTo(125 / 225, 10);
     expect(data.categories[1].share).toBeCloseTo(100 / 225, 10);
-    expect(data.categories[0].amounts).toEqual([
-      { currency: "USD", spent: 100 },
-    ]);
   });
 
   test("converts each day's spending at that day's rate", async ({
@@ -211,7 +203,6 @@ test.describe("GET /api/transactions/spending-by-category", () => {
         category: "TRAVEL",
         spent: 275,
         count: 2,
-        amounts: [{ currency: "USD", spent: 200 }],
       },
     ]);
   });
@@ -252,7 +243,7 @@ test.describe("GET /api/transactions/spending-by-category", () => {
     expect(data.spent).toBe(125);
   });
 
-  test("lists a category once, with what was spent in each currency", async ({
+  test("lists a category once, adding up what was spent in each currency", async ({
     request,
   }) => {
     const { cookie } = await setup(request, [
@@ -278,16 +269,12 @@ test.describe("GET /api/transactions/spending-by-category", () => {
 
     const data = await getSpending(request, cookie);
 
-    // Travel is 50 + 40 USD (50 CAD) = 100 CAD, once, with both amounts.
+    // Travel is 50 + 40 USD (50 CAD) = 100 CAD, once.
     expect(data.categories).toMatchObject([
       {
         category: "TRAVEL",
         spent: 100,
         count: 2,
-        amounts: [
-          { currency: "CAD", spent: 50 },
-          { currency: "USD", spent: 40 },
-        ],
       },
       { category: "FOOD_AND_DRINK", spent: 45, count: 1 },
     ]);
@@ -314,13 +301,9 @@ test.describe("GET /api/transactions/spending-by-category", () => {
     const data = await getSpending(request, cookie);
 
     expect(data.spent).toBe(50);
-    expect(data.categories[0].amounts).toEqual([
-      { currency: "CAD", spent: 25 },
-      { currency: null, spent: 25 },
-    ]);
   });
 
-  test("leaves out currencies with no stored rate, and reports them", async ({
+  test("leaves out currencies with no stored rate", async ({
     request,
   }) => {
     const { cookie } = await setup(request, [
@@ -347,10 +330,8 @@ test.describe("GET /api/transactions/spending-by-category", () => {
         category: "TRAVEL",
         spent: 40,
         share: 1,
-        amounts: [{ currency: "CAD", spent: 40 }],
       },
     ]);
-    expect(data.unconverted).toEqual([{ currency: "XXX", spent: 80 }]);
   });
 
   test("top lists only that many categories and adds up the rest", async ({
@@ -382,10 +363,6 @@ test.describe("GET /api/transactions/spending-by-category", () => {
       spent: 20,
       count: 3,
       share: 0.2,
-      amounts: [
-        { currency: "CAD", spent: 10 },
-        { currency: "USD", spent: 8 },
-      ],
     });
   });
 
