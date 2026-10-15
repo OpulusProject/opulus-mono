@@ -89,8 +89,48 @@ app.use(errorHandler);
 const PORT = config.port;
 const baseURL = config.betterAuthBaseURL || `http://localhost:${PORT}`;
 
-app.listen(PORT, "0.0.0.0", () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   logger.info(`Server running on port ${PORT}`);
   logger.info(`Environment: ${config.nodeEnv}`);
   logger.info(`API available at ${baseURL}/api`);
 });
+
+/** How long in-flight requests get to finish before the process gives up. */
+const SHUTDOWN_TIMEOUT_MS = 10_000;
+
+let shuttingDown = false;
+
+/**
+ * Stop cleanly when the platform asks (a deploy sends SIGTERM): stop accepting
+ * connections, let requests that are already running finish, close the database
+ * connection, then exit. Without this a deploy cuts off whatever was in
+ * flight. If it has not finished in SHUTDOWN_TIMEOUT_MS the process exits
+ * anyway, with a failure status.
+ */
+function shutdown(signal: string): void {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info({ signal }, "Shutting down gracefully");
+
+  const giveUp = setTimeout(() => {
+    logger.error("Shutdown did not finish in time; exiting");
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS);
+  giveUp.unref();
+
+  server.close(async (error) => {
+    if (error)
+      logger.error(
+        { error_message: error.message },
+        "Error closing the server"
+      );
+    await prisma.$disconnect();
+    logger.info("Shut down gracefully");
+    process.exit(error ? 1 : 0);
+  });
+  // Keep-alive connections with no request running would hold the server open.
+  server.closeIdleConnections();
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
