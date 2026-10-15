@@ -37,7 +37,7 @@ export type AccountsCreditDTO = z.infer<typeof AccountsCreditDTOSchema>;
 export const AccountsTypeDTOSchema = z.object({
   /** The normalized type (see `AccountType`). */
   type: AccountTypeSchema,
-  /** How many accounts of this type, including any left out of `balance`. */
+  /** How many accounts of this type, including any without a balance. */
   count: z.number().int(),
   /** Their balances as reported (owed ones positive), in the base currency. */
   balance: z.number(),
@@ -49,8 +49,7 @@ export type AccountsTypeDTO = z.infer<typeof AccountsTypeDTOSchema>;
 
 /**
  * Accounts summary API response, for the same `type` filter as the list. Every
- * amount is in `baseCurrency`. An account in a currency with no stored rate is
- * left out of every amount (it is still counted in `count`).
+ * amount is in `baseCurrency`.
  */
 export const AccountsSummaryResponseSchema = z.object({
   data: z.object({

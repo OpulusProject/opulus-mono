@@ -50,18 +50,17 @@ export interface TransactionsSummary {
 export interface TransactionsSummaryOptions {
   baseCurrency: string;
   /**
-   * Base-currency units for one unit of `currency` on `day`, or undefined when
-   * there is no rate (see `loadExchangeRateConverter`). Amounts in such a
-   * currency are left out of `byDay`.
+   * Base-currency units for one unit of `currency` on `day` (see
+   * `loadExchangeRateConverter`).
    */
-  rateOn: (currency: string, day: string) => number | undefined;
+  rateOn: (currency: string, day: string) => number;
 }
 
 /**
  * Transform the repository's summary to the public DTO. Decimals become numbers
- * and dates become YYYY-MM-DD, oldest first. The days are converted to the base currency, each day at its own rate (an amount with no
- * currency, or already in the base currency, is taken as is), and amounts in a
- * currency with no rate are left out.
+ * and dates become YYYY-MM-DD, oldest first. The days are converted to the base
+ * currency, each day at its own rate (an amount with no currency, or already in
+ * the base currency, is taken as is).
  */
 export function toTransactionsSummaryDTO(
   summary: TransactionsSummary,
@@ -78,7 +77,6 @@ export function toTransactionsSummaryDTO(
       row.currency === null || row.currency === baseCurrency
         ? 1
         : rateOn(row.currency, day);
-    if (rate === undefined) continue;
     const entry = days.get(day);
     const spent = row.spent.times(rate);
     const income = row.income.times(rate);

@@ -47,7 +47,7 @@ docs {
   - **Today** is the accounts' live balances, so the last point always equals what the accounts add up to now.
   - **Earlier days** come from the stored daily historic balances, per account. A day with no historic balance takes that account's latest earlier one; a day before its first historic balance takes the first (flat before the history starts). An account with no historic balances is held at its live balance throughout.
   - Each account's balance is converted to `baseCurrency` at the rate of the day it is for, from the `exchange_rate` table (the European Central Bank's daily rates, refreshed daily by opulus-scheduler). A day without a rate (a weekend or holiday) uses the latest rate before it; a day older than the stored history uses the earliest stored rate. An account with no currency is taken as `baseCurrency`. Rates are only read when some account is in another currency.
-  - Accounts without a balance, and accounts in a currency with no stored rate, are left out. A user with nothing left to count gets an empty `points`.
+  - Accounts without a balance are left out. A user with no accounts gets an empty `points`.
   - Values are rounded to 4 decimal places.
 
   ## Success Response (200)
