@@ -1,6 +1,6 @@
 import { ValidationError } from "@opulus/core";
 import { NextFunction, Request, Response } from "express";
-import { z, ZodSchema } from "zod";
+import { z, ZodType } from "zod";
 
 /**
  * Validation middleware factory
@@ -12,7 +12,7 @@ import { z, ZodSchema } from "zod";
  * @example
  * router.post("/register", validate(registerSchema), authController.register);
  */
-export function validate<T extends ZodSchema>(schema: T) {
+export function validate<T extends ZodType>(schema: T) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Validate request body against schema
@@ -21,7 +21,7 @@ export function validate<T extends ZodSchema>(schema: T) {
       if (!validationResult.success) {
         throw new ValidationError(
           "Validation failed",
-          validationResult.error.errors.map((err) => ({
+          validationResult.error.issues.map((err) => ({
             field: err.path.join("."),
             message: err.message,
           }))
@@ -54,9 +54,7 @@ export function validate<T extends ZodSchema>(schema: T) {
  * @example
  * const { itemId } = getValidatedBody<typeof refreshTransactionsBodySchema>(req);
  */
-export function getValidatedBody<T extends ZodSchema>(
-  req: Request
-): z.infer<T> {
+export function getValidatedBody<T extends ZodType>(req: Request): z.infer<T> {
   if (req.validatedBody === undefined) {
     throw new Error(
       "validate middleware must run before reading the validated request body"
@@ -75,7 +73,7 @@ export function getValidatedBody<T extends ZodSchema>(
  * @example
  * router.get("/transactions", validateQuery(transactionsQuerySchema), getTransactionsController);
  */
-export function validateQuery<T extends ZodSchema>(schema: T) {
+export function validateQuery<T extends ZodType>(schema: T) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       // Validate request query parameters against schema
@@ -84,7 +82,7 @@ export function validateQuery<T extends ZodSchema>(schema: T) {
       if (!validationResult.success) {
         throw new ValidationError(
           "Invalid query parameters",
-          validationResult.error.errors.map((err) => ({
+          validationResult.error.issues.map((err) => ({
             field: err.path.join("."),
             message: err.message,
           }))
@@ -116,9 +114,7 @@ export function validateQuery<T extends ZodSchema>(schema: T) {
  * @example
  * const { type } = getValidatedQuery<typeof getAccountsQuerySchema>(req);
  */
-export function getValidatedQuery<T extends ZodSchema>(
-  req: Request
-): z.infer<T> {
+export function getValidatedQuery<T extends ZodType>(req: Request): z.infer<T> {
   if (req.validatedQuery === undefined) {
     throw new Error(
       "validateQuery middleware must run before reading validated query parameters"

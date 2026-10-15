@@ -37,7 +37,10 @@ export const LiabilityDetailsDTOSchema = z.object({
   maturityDate: IsoTimestampSchema.nullable(), // Mortgage maturity or student loan expected payoff
   aprs: z.array(LiabilityAprDTOSchema).nullable(),
   details: z
-    .record(z.union([z.string(), z.number(), z.boolean(), z.null()]))
+    .record(
+      z.string(),
+      z.union([z.string(), z.number(), z.boolean(), z.null()])
+    )
     .nullable(),
   syncedAt: IsoTimestampSchema, // ISO timestamp
 });
