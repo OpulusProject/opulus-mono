@@ -2,6 +2,7 @@ import {
   accountRepository,
   addDays,
   historicBalanceRepository,
+  isOwed,
   toDay,
   toNumber,
   type NetWorthRange,
@@ -29,9 +30,6 @@ const RANGE_DAYS = { "1w": 7, "1m": 30, "3m": 90, "1y": 365 } as const;
 
 /** Plaid's amounts have at most 4 decimals; whole units avoid float drift. */
 const SCALE = 10_000;
-
-/** Credit and loan balances are what is owed (Plaid reports them positive). */
-const isOwed = (type: string) => type === "credit" || type === "loan";
 
 type HistoricRow = { date: string; balance: number };
 

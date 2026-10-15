@@ -3,6 +3,10 @@ import {
   getAccountsQuerySchema,
 } from "@/controllers/accounts/getAccountsController.js";
 import {
+  getAccountsSummaryController,
+  getAccountsSummaryQuerySchema,
+} from "@/controllers/accounts/getAccountsSummaryController.js";
+import {
   getNetWorthHistoryController,
   getNetWorthHistoryQuerySchema,
 } from "@/controllers/accounts/getNetWorthHistoryController.js";
@@ -21,6 +25,13 @@ router.get(
   requireSession,
   validateQuery(getAccountsQuerySchema),
   getAccountsController
+);
+
+router.get(
+  "/summary",
+  requireSession,
+  validateQuery(getAccountsSummaryQuerySchema),
+  getAccountsSummaryController
 );
 
 router.get(

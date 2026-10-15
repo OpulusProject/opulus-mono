@@ -1,0 +1,63 @@
+meta {
+  name: Get Accounts Summary
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{base_url}}/api/accounts/summary
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+params:query {
+  type: 
+}
+
+docs {
+  # Get Accounts Summary
+
+  What the authenticated user's accounts add up to, overall and per type, in one currency (CAD for now), computed on the server so the client only displays it.
+
+  **Endpoint:** `GET /api/accounts/summary`
+
+  ## Query Parameters
+
+  - `type` (optional, repeatable): only accounts of these types (`depository`, `investment`, `credit`, `loan`, `other`), the same filter as `GET /api/accounts`, so the numbers describe the same accounts as the list.
+
+  ## Success Response (200)
+
+  Every amount is in `baseCurrency`: an account in another currency is converted at the latest stored rate, then added up.
+
+  ```json
+  {
+    "data": {
+      "baseCurrency": "CAD",
+      "count": 5,
+      "total": { "balance": 8800.25, "assets": 6500.25, "owed": 2300, "netWorth": 4200.25 },
+      "byType": [
+        { "type": "depository", "count": 2, "balance": 1500.25, "credit": null },
+        { "type": "credit", "count": 1, "balance": 300, "credit": { "limit": 1000, "utilization": 0.3 } }
+      ],
+      "excluded": []
+    }
+  }
+  ```
+
+  - `count` is every matching account, including any left out of the amounts (see `excluded`)
+  - `total.balance` adds the balances as the accounts report them (what is owed counts as positive); `assets` is the balances of everything but credit and loans, `owed` the balances of credit and loans, and `netWorth` is `assets - owed`
+  - `byType` has one entry per type that has accounts, using the normalized type (Plaid's deprecated `brokerage` is `investment`, and an unknown type is `other`), in the order depository, investment, credit, loan, other. Its `count` and `balance` are for that type
+  - `credit` is only set on the credit entry when at least one card has a known limit. A card that reports only its available credit has its limit worked out as owed plus available; a card with neither is left out of both `limit` and `utilization`. `utilization` is owed divided by `limit` as a fraction (0.3 is 30%), after each card is converted to the base currency
+  - Conversion uses the `exchange_rate` table (the European Central Bank's daily rates, refreshed daily by opulus-scheduler): the latest rate on or before today. An account with no currency is taken as the base currency. Rates are only read when some account is in another currency
+  - `excluded` lists accounts in a currency with no stored rate: they are left out of `total`, every `balance` and `credit`, but still counted in `count`. For example `{ "currency": "XXX", "count": 2 }`. A client can use it to say the totals do not include them
+  - An account with no balance is counted but adds nothing
+
+  ## Error Responses
+
+  - `400 Bad Request`: Invalid query parameters
+  - `401 Unauthorized`: No active session found
+}
