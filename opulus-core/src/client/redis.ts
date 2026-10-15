@@ -23,16 +23,31 @@ export const redisConnection = {
   },
 };
 
+/** How long a readiness check waits for Redis before it counts as down. */
+const REDIS_CHECK_TIMEOUT_MS = 2000;
+
 /**
  * Check Redis connection health
- * Used by the services' readiness endpoints
+ * Used by the services' readiness endpoints. It gives up after
+ * REDIS_CHECK_TIMEOUT_MS: the queue settings above retry forever, so without a
+ * limit a check against a Redis that is down would never answer.
  */
 export async function checkRedisConnection(): Promise<boolean> {
+  const Redis = (await import("ioredis")).default;
+  const testClient = new Redis(redisConnection);
+  // A client that cannot connect emits "error" on every retry.
+  testClient.on("error", () => undefined);
+  let timer: NodeJS.Timeout | undefined;
   try {
-    const Redis = (await import("ioredis")).default;
-    const testClient = new Redis(redisConnection);
-    await testClient.ping();
-    await testClient.quit();
+    await Promise.race([
+      testClient.ping(),
+      new Promise((_resolve, reject) => {
+        timer = setTimeout(
+          () => reject(new Error(`no answer within ${REDIS_CHECK_TIMEOUT_MS}ms`)),
+          REDIS_CHECK_TIMEOUT_MS
+        );
+      }),
+    ]);
     return true;
   } catch (error) {
     logger.error(
@@ -44,5 +59,8 @@ export async function checkRedisConnection(): Promise<boolean> {
       "Redis connection check failed"
     );
     return false;
+  } finally {
+    clearTimeout(timer);
+    testClient.disconnect();
   }
 }

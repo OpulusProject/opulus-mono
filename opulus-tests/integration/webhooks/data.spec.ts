@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { withSession } from "../../shared/client.js";
 import { createAuthedUser } from "../../shared/fixtures/auth.js";
+import { seedExchangeRates } from "../../shared/fixtures/exchange-rates.js";
 import { requireSandboxCredentials } from "../helpers/plaidSandbox.js";
 import {
   fireSandboxWebhook,
@@ -83,7 +84,13 @@ test.describe("data webhooks (sandbox to receiver)", () => {
   test("syncing a new item's transactions also fills in its balance history", async ({
     request,
   }) => {
-    // Arrange
+    // Arrange: the sandbox's accounts are in US dollars and net worth is in the
+    // base currency (Canadian dollars), so it needs a rate for each. The scheduler
+    // is not running here, so store them; one old day covers every day after it.
+    await seedExchangeRates([
+      { date: "2020-01-01", currency: "CAD", perEur: 1.5 },
+      { date: "2020-01-01", currency: "USD", perEur: 1.1 },
+    ]);
     const creds = requireSandboxCredentials();
     const { cookie } = await createAuthedUser(request);
     const { accessToken } = await linkItemWithWebhook(request, cookie, creds);
@@ -92,7 +99,7 @@ test.describe("data webhooks (sandbox to receiver)", () => {
     // item has no transactions for its first few seconds, so keep asking Plaid
     // to sync until the history is there.
     let reads = 0;
-    const series = await waitFor(
+    const points = await waitFor(
       async () => {
         if (reads++ % 8 === 0) {
           await fireSandboxWebhook(
@@ -105,12 +112,13 @@ test.describe("data webhooks (sandbox to receiver)", () => {
         const res = await request.get("/api/accounts/net-worth?range=all", {
           headers: withSession(cookie),
         });
-        return (await res.json()).data.series as Array<{ points: unknown[] }>;
+        // One series, in the base currency: { data: { range, baseCurrency, points } }.
+        return ((await res.json()).data?.points ?? []) as unknown[];
       },
-      (list) => list.length > 0 && list[0].points.length > 1,
+      (list) => list.length > 1,
       "the balance history to be filled in",
     );
-    expect(series[0].points.length).toBeGreaterThan(1);
+    expect(points.length).toBeGreaterThan(1);
   });
 
   test("LIABILITIES DEFAULT_UPDATE makes the receiver refresh the item's liabilities", async ({
