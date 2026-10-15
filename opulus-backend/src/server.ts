@@ -69,6 +69,15 @@ app.use(
   })
 );
 
+// Better Auth counts its rate limits per client address, and reads that from the
+// X-Forwarded-For header, whose first entry the caller can write. Express works
+// out the real address from the proxy's own entry (`trust proxy`), so hand that
+// one to Better Auth instead.
+app.use("/api/auth", (req, _res, next) => {
+  if (req.ip) req.headers["x-forwarded-for"] = req.ip;
+  next();
+});
+
 // Better Auth handler (mounted BEFORE body parsers)
 // Better Auth docs: express.json() should be used AFTER mounting Better Auth handler
 // Mounting it before prevents the client API from getting stuck on "pending"

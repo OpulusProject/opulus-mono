@@ -17,6 +17,18 @@ export function uniqueId(prefix = "t"): string {
 }
 
 /** A unique, syntactically-valid email for a throwaway account. */
+/**
+ * An IP address of its own, for the X-Forwarded-For header. The auth routes
+ * rate limit per client address, and every spec comes from one address, so each
+ * user a spec creates gets its own to keep the limits to the test that is
+ * testing them. (Addresses from 198.51.0.0/16, which the specs never use for anything else.)
+ */
+let nextIp = Math.floor(Math.random() * 60_000);
+export function uniqueIp(): string {
+  nextIp += 1;
+  return `198.51.${(nextIp >> 8) % 256}.${nextIp % 256}`;
+}
+
 export function uniqueEmail(prefix = "user"): string {
   return `${uniqueId(prefix)}@regression.test`;
 }
@@ -49,6 +61,7 @@ export function extractSessionCookie(res: APIResponse): string {
 }
 
 /** Convenience header object for authenticating a request with a session cookie. */
-export function withSession(cookie: string): { cookie: string } {
-  return { cookie };
+export function withSession(cookie: string): Record<string, string> {
+  // An address of its own, so the auth routes' per-address limits stay per call.
+  return { cookie, "x-forwarded-for": uniqueIp() };
 }

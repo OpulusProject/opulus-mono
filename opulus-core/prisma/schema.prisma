@@ -264,3 +264,13 @@ model ExchangeRate {
   @@index([currency, date])
   @@map("exchange_rate")
 }
+
+/// better-auth's rate limit counters, one row per client address and route.
+model RateLimit {
+  id          String @id @default(cuid())
+  key         String @unique
+  count       Int
+  lastRequest BigInt
+
+  @@map("rate_limit")
+}

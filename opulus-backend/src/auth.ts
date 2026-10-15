@@ -47,6 +47,23 @@ export const auth = betterAuth({
   baseURL: config.betterAuthBaseURL || `http://localhost:${config.port}`,
   basePath: "/api/auth",
   appName: "Opulus",
+  // Throttle guessing: sign-in, sign-up and the two-factor codes get tight
+  // limits per client address, everything else the default. Counted in our
+  // database (the rate_limit table), so every backend instance shares them.
+  // Windows are in seconds.
+  rateLimit: {
+    enabled: true,
+    storage: "database",
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-up/email": { window: 3600, max: 10 },
+      "/two-factor/verify-totp": { window: 60, max: 5 },
+      "/two-factor/verify-backup-code": { window: 60, max: 5 },
+      "/change-password": { window: 60, max: 5 },
+    },
+  },
   plugins: [
     twoFactor({
       issuer: "Opulus",
