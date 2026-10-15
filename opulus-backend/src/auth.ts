@@ -1,4 +1,5 @@
 import { disconnectUserItems } from "@/services/items/disconnectUserItems.js";
+import { passkey } from "@better-auth/passkey";
 import { AppError, config, prisma } from "@opulus/core";
 import { betterAuth } from "better-auth";
 import {
@@ -48,6 +49,9 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24, // 1 day
+    // How recently a sign-in counts as "fresh". Adding a passkey needs a fresh
+    // session, so that a stolen cookie cannot enroll the thief's device.
+    freshAge: 60 * 5, // 5 minutes
   },
   secret: config.betterAuthSecret,
   baseURL: config.betterAuthBaseURL || `http://localhost:${config.port}`,
@@ -113,11 +117,39 @@ export const auth = betterAuth({
       "/two-factor/verify-totp": { window: 60, max: 5 },
       "/two-factor/verify-backup-code": { window: 60, max: 5 },
       "/change-password": { window: 60, max: 5 },
+      "/passkey/generate-authenticate-options": { window: 60, max: 20 },
+      "/passkey/verify-authentication": { window: 60, max: 10 },
+      "/passkey/verify-registration": { window: 60, max: 10 },
     },
   },
   plugins: [
     twoFactor({
       issuer: "Opulus",
+    }),
+    // Passkeys (WebAuthn): sign in with a device's own unlock instead of a
+    // password. The relying party is the site's registrable domain, so a passkey
+    // made on www.opulus.app also works on api.opulus.app and the other
+    // subdomains, and the origin is the frontend. A passkey must be used with
+    // user verification (PIN, fingerprint, face): that is what makes it a
+    // second factor and not just something that is possessed.
+    passkey({
+      rpID: getRootDomain(config.clientUrl).replace(/^\./, ""),
+      rpName: "Opulus",
+      origin: config.clientUrl,
+      authenticatorSelection: {
+        residentKey: "preferred",
+        userVerification: "required",
+      },
+      authentication: {
+        afterVerification: async ({ verification }) => {
+          if (!verification.authenticationInfo.userVerified) {
+            throw new APIError("UNAUTHORIZED", {
+              message: "The passkey was used without user verification",
+              code: "USER_VERIFICATION_REQUIRED",
+            });
+          }
+        },
+      },
     }),
     // Refuse a password found in a known breach, at sign-up and on a password
     // change. Only the first five characters of the password's SHA-1 hash leave
