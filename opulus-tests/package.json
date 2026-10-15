@@ -11,6 +11,8 @@
     "test:integration-webhooks": "playwright test --config integration/webhooks/playwright.config.ts",
     "test:services-scheduler": "playwright test --config services/scheduler/playwright.config.ts",
     "test:deployment-backend": "playwright test --config deployment/backend/playwright.config.ts",
+    "test:deployment-webhooks": "playwright test --config deployment/webhooks/playwright.config.ts",
+    "test:deployment-scheduler": "playwright test --config deployment/scheduler/playwright.config.ts",
     "test:integration-scheduler": "playwright test --config integration/scheduler/playwright.config.ts",
     "test:report": "playwright show-report"
   },

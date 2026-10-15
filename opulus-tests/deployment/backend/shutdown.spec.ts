@@ -1,43 +1,11 @@
-import { spawn, type ChildProcess } from "node:child_process";
 import net from "node:net";
-import path from "node:path";
 import { expect, test } from "@playwright/test";
+import { exited, startService } from "../helpers/service.js";
 
 /** The port the backend of this file listens on. */
 const PORT = 18291;
 
-/** Start a backend on its own port, and wait until it answers. */
-async function startBackend(): Promise<{ child: ChildProcess; output: () => string }> {
-  const cwd = path.resolve(process.cwd(), "../opulus-backend");
-  const child = spawn(path.join(cwd, "node_modules/.bin/tsx"), ["src/server.ts"], {
-    cwd,
-    env: { ...process.env, PORT: String(PORT) },
-  });
-  let text = "";
-  child.stdout?.on("data", (chunk) => (text += chunk));
-  child.stderr?.on("data", (chunk) => (text += chunk));
-
-  for (let i = 0; i < 100; i++) {
-    try {
-      if ((await fetch(`http://localhost:${PORT}/health`)).ok) break;
-    } catch {
-      // not up yet
-    }
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  }
-  return { child, output: () => text };
-}
-
-/** Wait for a process to exit; its exit code. */
-function exited(child: ChildProcess, timeoutMs = 15_000): Promise<number | null> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error("did not exit in time")), timeoutMs);
-    child.once("exit", (code) => {
-      clearTimeout(timer);
-      resolve(code);
-    });
-  });
-}
+const startBackend = () => startService({ workspace: "opulus-backend", port: PORT, portVariable: "PORT" });
 
 /**
  * This file: the backend stops cleanly on SIGTERM, as a deploy asks it to. It
