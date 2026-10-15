@@ -3,6 +3,7 @@
  * before it was linked. Pure: no database, no clock (the caller passes today).
  */
 
+import { balanceDirection } from "./accounts.js";
 import { addDays } from "./day.js";
 import { fromUnits, toUnits } from "./money.js";
 
@@ -45,25 +46,6 @@ export interface BalanceHistoryRow {
 }
 
 /**
- * How a past balance follows from today's and the transactions in between.
- * Depository: money out since then lowers today's balance, so add it back.
- * Credit and loan balances are what is owed: spending since then raised it, so
- * take it off. Anything else (investments, whose value also moves with the
- * market, which transactions cannot tell us) is held flat.
- */
-function sign(type: string): 1 | -1 | 0 {
-  switch (type) {
-    case "depository":
-      return 1;
-    case "credit":
-    case "loan":
-      return -1;
-    default:
-      return 0;
-  }
-}
-
-/**
  * The closing balance of each account on each day from the item's earliest
  * transaction up to yesterday. Today is left out: the live balance is that.
  *
@@ -101,7 +83,7 @@ export function reconstructBalanceHistory(input: {
   for (const account of accounts) {
     if (account.balanceCurrent === null) continue;
     const current = toUnits(account.balanceCurrent);
-    const direction = sign(account.type);
+    const direction = balanceDirection(account.type);
     const totals = byAccount.get(account.id);
 
     // Walking back from yesterday: what happened after the day being closed.

@@ -7,6 +7,7 @@ import {
   type DailyTransactionTotals,
 } from "../types/dto/transactions/index.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
+import { toAmount } from "../utils/money.js";
 
 export interface CreateTransactionData {
   providerTransactionId: string;
@@ -439,6 +440,77 @@ class TransactionRepository {
         error instanceof Error
           ? `Failed to get transactions: ${error.message}`
           : "An unexpected error occurred while fetching transactions";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * What some accounts' posted transactions add up to on each day after a day:
+   * the changes their balances are worked out from. Pending ones are left out,
+   * since they are not in the balance yet. One row per account per day with
+   * transactions.
+   * @param userId - The user the accounts belong to
+   * @param accountIds - The accounts
+   * @param after - "YYYY-MM-DD"; only later days are added up
+   * @throws AppError if database error occurs
+   */
+  async getDailyChangesByAccount(
+    userId: string,
+    accountIds: string[],
+    after: string
+  ) {
+    try {
+      const rows = await this.prisma.transaction.groupBy({
+        by: ["accountId", "date"],
+        where: {
+          userId,
+          accountId: { in: accountIds },
+          pending: false,
+          date: { gt: new Date(`${after}T00:00:00Z`) },
+        },
+        _sum: { amount: true },
+      });
+      return rows.map((row) => ({
+        accountId: row.accountId,
+        date: row.date.toISOString().slice(0, 10),
+        total: toAmount(row._sum.amount ?? new Prisma.Decimal(0)),
+      }));
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get transaction totals: ${error.message}`
+          : "An unexpected error occurred while adding up transactions";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * The day of the earliest posted transaction of some accounts
+   * @param userId - The user the accounts belong to
+   * @param accountIds - The accounts
+   * @returns "YYYY-MM-DD", or null when they have none
+   * @throws AppError if database error occurs
+   */
+  async getEarliestPostedDate(userId: string, accountIds: string[]) {
+    try {
+      const { _min } = await this.prisma.transaction.aggregate({
+        where: { userId, accountId: { in: accountIds }, pending: false },
+        _min: { date: true },
+      });
+      return _min.date ? _min.date.toISOString().slice(0, 10) : null;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get earliest transaction: ${error.message}`
+          : "An unexpected error occurred while finding the earliest transaction";
       throw new AppError(message, 500);
     }
   }
