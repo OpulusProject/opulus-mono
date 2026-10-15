@@ -49,6 +49,7 @@ jobs:
       CLIENT_URL: http://localhost:5173
       NODE_ENV: test
       PORT: "8080"
+      BREACHED_PASSWORD_CHECK: "off"
       WEBHOOK_PORT: "8081"
       REDIS_HOST: localhost
       REDIS_PORT: "6379"

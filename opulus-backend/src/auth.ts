@@ -1,7 +1,7 @@
 import { config, prisma } from "@opulus/core";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
-import { twoFactor } from "better-auth/plugins";
+import { haveIBeenPwned, twoFactor } from "better-auth/plugins";
 
 /**
  * Cookie Configuration for Cross-Subdomain Setup
@@ -68,6 +68,12 @@ export const auth = betterAuth({
     twoFactor({
       issuer: "Opulus",
     }),
+    // Refuse a password found in a known breach, at sign-up and on a password
+    // change. Only the first five characters of the password's SHA-1 hash leave
+    // the server (Have I Been Pwned's k-anonymity range API). If that service
+    // cannot be reached the request fails (500) rather than letting the
+    // password through unchecked.
+    haveIBeenPwned({ enabled: config.breachedPasswordCheck }),
   ],
   // Only allow requests from our frontend
   trustedOrigins: (() => {

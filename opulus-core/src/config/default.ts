@@ -22,6 +22,10 @@ export default {
   plaidVersion: getEnv("PLAID_VERSION", "2020-09-14"),
   betterAuthSecret: getEnv("BETTER_AUTH_SECRET"),
   betterAuthBaseURL: getEnv("BETTER_AUTH_BASE_URL"),
+  // Reject passwords that appear in known breaches (Have I Been Pwned) at
+  // sign-up and password change. On unless BREACHED_PASSWORD_CHECK is "off";
+  // the service test suite turns it off because it makes no third-party calls.
+  breachedPasswordCheck: getEnv("BREACHED_PASSWORD_CHECK", "on") !== "off",
   plaidWebhookUrl: getEnv("PLAID_WEBHOOK_URL"),
   // Frankfurter (the European Central Bank's daily rates). Point it elsewhere
   // to use another deployment of Frankfurter, or a stub in tests.

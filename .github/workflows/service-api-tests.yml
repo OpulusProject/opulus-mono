@@ -50,6 +50,9 @@ jobs:
       CLIENT_URL: http://localhost:5173
       NODE_ENV: test
       PORT: "8080"
+      # The service suite makes no third-party calls, so it does not ask Have I
+      # Been Pwned about the (common) password its test users sign up with.
+      BREACHED_PASSWORD_CHECK: "off"
       # Dummy Plaid creds — the service suite never round-trips Plaid.
       # Specs that touch Plaid's real API live in the integration suite
       # (.github/workflows/integration-tests.yml), which injects real
