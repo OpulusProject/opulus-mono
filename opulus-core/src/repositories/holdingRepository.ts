@@ -157,6 +157,36 @@ class HoldingRepository {
       throw new AppError(message, 500);
     }
   }
+
+  /**
+   * A user's current holdings, with their security, account name and the
+   * institution's name. Only the user's own, whatever the filter.
+   * @param userId - The user
+   * @param filters - Only this account's holdings (our account id), if given
+   * @throws AppError if database error occurs
+   */
+  async getAllByUserId(userId: string, filters: { accountId?: string } = {}) {
+    try {
+      return await this.prisma.holding.findMany({
+        where: { userId, accountId: filters.accountId },
+        include: {
+          security: true,
+          account: { select: { name: true } },
+          item: { select: { institutionName: true } },
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get holdings: ${error.message}`
+          : "An unexpected error occurred while fetching holdings";
+      throw new AppError(message, 500);
+    }
+  }
 }
 
 // Export singleton instance

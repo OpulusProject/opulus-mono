@@ -1,0 +1,66 @@
+meta {
+  name: Get Holdings
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/api/investments/holdings
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+params:query {
+  ~accountId: 
+}
+
+docs {
+  # Get Holdings
+
+  The authenticated user's investment holdings, each with its current value, cost basis and gain or loss (as an amount and as a percentage), plus what they add up to in the base currency.
+
+  **Endpoint:** `GET /api/investments/holdings`
+
+  ## Authentication
+
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+
+  ## Query Parameters
+
+  - `accountId` (optional): only this account's holdings (our account id)
+
+  ## Success Response (200)
+
+  ```json
+  {
+    "data": {
+      "baseCurrency": "CAD",
+      "summary": { "value": 2500, "costBasis": 1750, "gain": 450, "gainPercent": 0.2571, "holdingsWithoutCostBasis": 1 },
+      "holdings": [
+        {
+          "id": "...", "accountId": "...", "accountName": "TFSA", "institutionName": "Maple Brokerage",
+          "security": { "id": "...", "name": "iShares Core Equity ETF", "tickerSymbol": "XEQT", "type": "etf", "isCashEquivalent": false },
+          "quantity": 50, "price": 38.05, "priceAsOf": "2026-10-14T00:00:00.000Z",
+          "value": 1902.5, "currency": "CAD", "valueInBase": 1902.5,
+          "costBasis": 1500, "gain": 402.5, "gainPercent": 0.2683
+        }
+      ]
+    }
+  }
+  ```
+
+  - `value`, `price`, `costBasis` and `gain` are in the holding's own `currency`; `valueInBase` and the whole `summary` are in `baseCurrency` (CAD for now), converted at today's stored rate
+  - `gain` is `value - costBasis` (negative for a loss) and `gainPercent` is `gain / costBasis` as a fraction (0.25 is +25%). Both are `null` when the institution sent no cost basis, which many do not. The cost basis is the institution's own figure for the total paid for everything held, so it does not depend on how long ago it was bought
+  - `summary.costBasis` and `summary.gain` count only holdings that have a cost basis, and `summary.holdingsWithoutCostBasis` says how many were left out; `summary.gainPercent` is `null` when none has one
+  - Holdings are largest first by `valueInBase`
+  - **Freshness**: prices are as of Plaid's last pull from the institution (usually about daily), shown by `priceAsOf`; an intraday move is not reflected until the next pull. Holdings are stored by `POST /api/investments/sync`, at linking, and on Plaid's `HOLDINGS` webhook
+
+  ## Error Responses
+
+  - `400 Bad Request`: `accountId` is empty
+  - `401 Unauthorized`: No active session found
+}
