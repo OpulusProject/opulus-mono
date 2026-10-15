@@ -3,6 +3,7 @@ import {
   accountRepository,
   addDays,
   balanceDirection,
+  type BalanceDirection,
   fromUnits,
   isOwed,
   loadExchangeRateConverter,
@@ -51,7 +52,7 @@ const RANGE_DAYS = { "1w": 7, "1m": 30, "3m": 90, "1y": 365 } as const;
  */
 function dailyBalances(
   live: number,
-  direction: 1 | -1 | 0,
+  direction: BalanceDirection,
   changes: Map<string, number>,
   days: string[],
   today: string
