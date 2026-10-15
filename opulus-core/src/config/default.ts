@@ -22,6 +22,9 @@ export default {
   plaidVersion: getEnv("PLAID_VERSION", "2020-09-14"),
   betterAuthSecret: getEnv("BETTER_AUTH_SECRET"),
   betterAuthBaseURL: getEnv("BETTER_AUTH_BASE_URL"),
+  // Key for Better Auth's infrastructure (audit logs of sign-ins and other
+  // auth events). Optional: without it the plugin is not added.
+  betterAuthApiKey: getEnv("BETTER_AUTH_API_KEY"),
   plaidWebhookUrl: getEnv("PLAID_WEBHOOK_URL"),
   // Frankfurter (the European Central Bank's daily rates). Point it elsewhere
   // to use another deployment of Frankfurter, or a stub in tests.

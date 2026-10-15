@@ -1,4 +1,5 @@
-import { config, prisma } from "@opulus/core";
+import { dash } from "@better-auth/infra";
+import { config, logger, prisma } from "@opulus/core";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { twoFactor } from "better-auth/plugins";
@@ -28,6 +29,19 @@ const getRootDomain = (url: string): string => {
   }
 };
 
+/**
+ * Audit logs: Better Auth's infrastructure plugin records auth events (sign-up,
+ * sign-in and out, session revocation, password changes, two-factor and so on)
+ * to the project the API key belongs to, with no code at each event. Optional:
+ * without BETTER_AUTH_API_KEY (local development, CI) nothing is sent.
+ */
+const auditLogs = config.betterAuthApiKey
+  ? [dash({ apiKey: config.betterAuthApiKey })]
+  : [];
+if (auditLogs.length === 0) {
+  logger.info("BETTER_AUTH_API_KEY is not set, so auth audit logs are off");
+}
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
@@ -51,6 +65,7 @@ export const auth = betterAuth({
     twoFactor({
       issuer: "Opulus",
     }),
+    ...auditLogs,
   ],
   // Only allow requests from our frontend
   trustedOrigins: (() => {
