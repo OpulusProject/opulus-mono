@@ -6,6 +6,7 @@ import {
   normalizePlaidItem,
   plaidGateway,
   runInTransaction,
+  trySyncItemHoldings,
   trySyncItemLiabilities,
 } from "@opulus/core";
 
@@ -107,6 +108,10 @@ export async function createItem(
   // Liabilities (APRs, due dates, loan terms) are a bonus: fetch them now, but
   // never fail linking over them. A LIABILITIES webhook refreshes them later.
   await trySyncItemLiabilities({
+    item: { id: createdItem.id, userId, accessToken },
+  });
+  // Likewise what an investment account holds. Plaid's webhook refreshes it.
+  await trySyncItemHoldings({
     item: { id: createdItem.id, userId, accessToken },
   });
 

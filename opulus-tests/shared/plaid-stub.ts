@@ -34,3 +34,20 @@ export async function setPlaidHoldings(
     body: JSON.stringify(answer),
   });
 }
+
+/**
+ * The institution and accounts the stub describes to the item, institution and
+ * accounts calls that linking an institution and updating its accounts make.
+ * Account ids are Plaid's; holdings (see `setPlaidHoldings`) refer to them.
+ */
+export async function setPlaidItem(item: {
+  institution_id?: string;
+  institution_name?: string;
+  accounts: Record<string, unknown>[];
+}): Promise<void> {
+  await fetch(`${STUB_URL}/__control/item`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(item),
+  });
+}

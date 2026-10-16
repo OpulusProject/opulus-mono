@@ -3,7 +3,6 @@ import { sessionController } from "@/controllers/session/sessionController.js";
 import { requireSessionWithoutTwoFactor } from "@/middleware/session/requireSession.js";
 import accountsRouter from "./accounts.js";
 import institutionsRouter from "./institutions.js";
-import investmentsRouter from "./investments.js";
 import itemsRouter from "./items.js";
 import linkTokensRouter from "./linkTokens.js";
 import transactionsRouter from "./transactions.js";
@@ -27,9 +26,6 @@ router.use("/accounts", accountsRouter);
 
 // Institutions routes
 router.use("/institutions", institutionsRouter);
-
-// Investments routes
-router.use("/investments", investmentsRouter);
 
 // Items routes
 router.use("/items", itemsRouter);
