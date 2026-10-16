@@ -61,7 +61,7 @@ All authentication routes are handled by Better Auth at `/api/auth/*`:
 
 ### User
 
-- `GET /api/user/export` - Download everything held about the user (profile, connections and accounts, balance history, every transaction) as one JSON file; no secrets in it; 3 a hour (requires authentication)
+- `GET /api/user/export` - Download everything held about the user (profile, connections and accounts, every transaction) as one JSON file; no secrets in it; 3 a hour (requires authentication)
 
 ### Health Checks
 

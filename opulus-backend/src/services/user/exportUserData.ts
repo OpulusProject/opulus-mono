@@ -1,5 +1,4 @@
 import {
-  historicBalanceRepository,
   itemRepository,
   toExportUserDTO,
   toIsoString,
@@ -23,13 +22,12 @@ export interface UserExport {
 
 /**
  * Prepare an export of everything a user owns: who they are, their connections
- * and accounts, their balance history, and every transaction. The parts that
+ * and accounts, and every transaction. The parts that
  * are small are read here, before anything is sent, so that if one fails the
  * caller can still answer with an error; the transactions are read as the
  * chunks are consumed.
  *
- * The document is `{ exportedAt, user, connections, balanceHistory,
- * transactions }` (see `UserDataExportSchema`). The access tokens, password,
+ * The document is `{ exportedAt, user, connections, transactions }` (see `UserDataExportSchema`). The access tokens, password,
  * sessions and two-factor secrets are not in it.
  */
 export async function exportUserData(params: {
@@ -37,17 +35,15 @@ export async function exportUserData(params: {
 }): Promise<UserExport> {
   const { userId } = params;
 
-  const [user, items, balanceHistory] = await Promise.all([
+  const [user, items] = await Promise.all([
     userRepository.getById(userId),
     itemRepository.getAllByUserId(userId),
-    historicBalanceRepository.getAllByUserId(userId),
   ]);
 
   const head = JSON.stringify({
     exportedAt: toIsoString(new Date()),
     user: toExportUserDTO(user),
     connections: items.map(toItemDTO),
-    balanceHistory,
   });
 
   return {

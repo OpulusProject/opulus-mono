@@ -19,20 +19,11 @@ export const ExportUserDTOSchema = z.object({
 
 export type ExportUserDTO = z.infer<typeof ExportUserDTOSchema>;
 
-/** One account's closing balance on one day. */
-export const ExportBalanceDTOSchema = z.object({
-  accountId: z.string(),
-  /** "YYYY-MM-DD". */
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  balanceCurrent: z.number(),
-});
-
-export type ExportBalanceDTO = z.infer<typeof ExportBalanceDTOSchema>;
-
 /**
  * Everything we hold about a user that is theirs: who they are, their
- * connections with the accounts in them, every transaction, and their balance
- * history. Nothing secret is in it: not the password, sessions, two-factor
+ * connections with the accounts in them (with their balances), and every
+ * transaction. The balance history is not in it: it is not stored, it is worked
+ * out from the transactions and the balances. Nothing secret is in it: not the password, sessions, two-factor
  * secrets, passkeys or the Plaid access tokens. It is sent as one JSON document
  * (a download), not wrapped in `data`.
  */
@@ -40,7 +31,6 @@ export const UserDataExportSchema = z.object({
   exportedAt: IsoTimestampSchema,
   user: ExportUserDTOSchema,
   connections: z.array(ItemDTOSchema),
-  balanceHistory: z.array(ExportBalanceDTOSchema),
   /** Oldest first, pending ones included. */
   transactions: z.array(TransactionDTOSchema),
 });

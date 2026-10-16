@@ -4,7 +4,6 @@ import { expectStatus } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import {
   createAuthedUser,
-  seedHistoricBalances,
   seedItemWithAccount,
   seedTransactions,
 } from "../../../shared/fixtures/index.js";
@@ -34,7 +33,6 @@ test.describe("GET /api/user/export", () => {
     const data = UserDataExportSchema.parse(await res.json());
     expect(data.user).toMatchObject({ id: userId, email });
     expect(data.connections).toEqual([]);
-    expect(data.balanceHistory).toEqual([]);
     expect(data.transactions).toEqual([]);
   });
 
@@ -52,11 +50,11 @@ test.describe("GET /api/user/export", () => {
     expect(res.headers()["cache-control"]).toBe("no-store");
   });
 
-  test("includes the connections, accounts, balance history and every transaction, oldest first", async ({
+  test("includes the connections, accounts and every transaction, oldest first", async ({
     request,
   }) => {
     // Arrange: one connection with an account, a pending transaction among
-    // the transactions, and two days of balance history.
+    // the transactions.
     const { cookie, userId } = await createAuthedUser(request);
     const item = await seedItemWithAccount(userId, {
       institutionName: "Export Bank",
@@ -72,14 +70,6 @@ test.describe("GET /api/user/export", () => {
         { name: "February", date: new Date("2026-02-01T00:00:00Z"), pending: true },
       ],
     });
-    await seedHistoricBalances({
-      userId,
-      accountId: item.accountId,
-      balances: [
-        { date: "2026-03-01", balanceCurrent: 450 },
-        { date: "2026-03-02", balanceCurrent: 500 },
-      ],
-    });
 
     // Act
     const res = await request.get("/api/user/export", {
@@ -91,10 +81,6 @@ test.describe("GET /api/user/export", () => {
     expect(data.connections).toHaveLength(1);
     expect(data.connections[0]).toMatchObject({ institutionName: "Export Bank" });
     expect(data.connections[0]!.accounts).toHaveLength(1);
-    expect(data.balanceHistory).toEqual([
-      { accountId: item.accountId, date: "2026-03-01", balanceCurrent: 450 },
-      { accountId: item.accountId, date: "2026-03-02", balanceCurrent: 500 },
-    ]);
     expect(data.transactions.map((t) => t.name)).toEqual([
       "January",
       "February",
