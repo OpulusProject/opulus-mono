@@ -22,6 +22,7 @@ model User {
   authAccounts       AuthAccount[]
   linkSessions       LinkSession[]
   accountLiabilities AccountLiability[]
+  holdings           Holding[]
   items              Item[]
   accounts           Account[]
   transactions       Transaction[]
@@ -118,6 +119,7 @@ model Item {
   accounts              Account[]
   transactions          Transaction[]
   accountLiabilities    AccountLiability[]
+  holdings              Holding[]
 
   @@map("item")
 }
@@ -144,6 +146,7 @@ model Account {
   item                   Item                     @relation(fields: [itemId], references: [id], onDelete: Cascade)
   transactions           Transaction[]
   liabilityDetails       AccountLiability?
+  holdings               Holding[]
 
   // Same account_id can exist in different items
   // Index for stable account lookups
@@ -294,4 +297,52 @@ model Passkey {
   @@index([userId])
   @@index([credentialID])
   @@map("passkey")
+}
+
+/// A security (a stock, ETF, fund, bond, cash) Plaid describes. Shared by every
+/// user: it is public information about the instrument, not about anyone's
+/// holding of it.
+model Security {
+  id               String    @id @default(cuid())
+  plaidSecurityId  String    @unique
+  name             String?
+  tickerSymbol     String?
+  type             String? // equity, etf, mutual fund, fixed income, cash, ...
+  isCashEquivalent Boolean   @default(false)
+  isoCurrencyCode  String?
+  closePrice       Decimal? // the previous trading session's close, when Plaid has one
+  closePriceAsOf   DateTime?
+  updatedAt        DateTime  @updatedAt
+  holdings         Holding[]
+
+  @@map("security")
+}
+
+/// How much of a security an investment account holds right now, as of Plaid's
+/// last pull from the institution. A snapshot: it is replaced on each sync, not
+/// kept as history.
+model Holding {
+  id                   String    @id @default(cuid())
+  accountId            String
+  securityId           String
+  itemId               String
+  userId               String
+  quantity             Decimal
+  institutionPrice     Decimal // per unit, as the institution last quoted it
+  institutionPriceAsOf DateTime?
+  institutionValue     Decimal // the whole holding's value, as the institution reports it
+  costBasis            Decimal? // the total paid for everything held; many institutions send none
+  isoCurrencyCode      String?
+  syncedAt             DateTime
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  account              Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  security             Security  @relation(fields: [securityId], references: [id])
+  item                 Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, securityId])
+  @@index([itemId])
+  @@index([userId])
+  @@map("holding")
 }
