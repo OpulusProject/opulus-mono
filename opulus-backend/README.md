@@ -44,6 +44,10 @@ All authentication routes are handled by Better Auth at `/api/auth/*`:
 - `GET /api/accounts/summary` - What the user's accounts add up to in the base currency (CAD): total, assets, owed and net worth, per type with credit utilization for credit cards; takes the same `type` filter as the list (requires authentication)
 - `GET /api/accounts/net-worth?range=1m` - Get the user's net worth for each day in a range (`1w`, `1m`, `3m`, `1y` or `all`; default `1m`; optionally limited to some accounts by repeating `accountId`), in the base currency, ending with today's live balances (requires authentication)
 
+### Investments
+
+- `POST /api/investments/sync` - Pull an item's current investment holdings from Plaid and store them (requires authentication)
+
 ### Items
 
 - `GET /api/items` - Get all connected items for current user (requires authentication)

@@ -15,6 +15,8 @@ export interface SeededItem {
   itemId: string;
   plaidItemId: string;
   accountId: string;
+  /** Plaid's id for the account, which a Plaid stub answers with. */
+  providerAccountId: string;
   accountName: string;
   institutionName: string;
 }
@@ -36,6 +38,7 @@ export async function seedItemWithAccount(
     syncedAt: Date | null;
     /** Overrides for the seeded account (defaults to a CAD checking account). */
     account: Partial<{
+      providerAccountId: string;
       officialName: string | null;
       type: string;
       subtype: string | null;
@@ -103,6 +106,7 @@ export async function seedItemWithAccount(
     itemId: item.id,
     plaidItemId: item.plaidItemId,
     accountId: account.id,
+    providerAccountId: account.providerAccountId,
     accountName,
     institutionName,
   };

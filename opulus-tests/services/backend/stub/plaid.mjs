@@ -5,9 +5,14 @@
  *
  *   POST /user/create          a user token
  *   POST /link/token/create    a link token (and the request is remembered)
+ *   POST /investments/holdings/get   the holdings a test set with /__control/holdings
+ *                              (none by default), or the Plaid error it set
  *   GET  /health
  *   GET  /__control/requests   the link token requests received so far
- *   POST /__control/reset      forget them
+ *   POST /__control/holdings   set what /investments/holdings/get answers:
+ *                              { response } (accounts, holdings, securities) or
+ *                              { error_code } for a Plaid error
+ *   POST /__control/reset      forget the requests and the holdings
  *
  * Everything else answers 404 in Plaid's error shape, as an unsupported call.
  */
@@ -17,6 +22,9 @@ const PORT = Number(process.env.PLAID_STUB_PORT ?? 4546);
 
 let linkTokenRequests = [];
 let counter = 0;
+/** What /investments/holdings/get answers: a response, or a Plaid error. */
+const NO_HOLDINGS = { response: { accounts: [], holdings: [], securities: [] } };
+let holdings = NO_HOLDINGS;
 
 function send(res, status, body) {
   res.writeHead(status, { "content-type": "application/json" });
@@ -48,6 +56,11 @@ const server = createServer(async (req, res) => {
   }
   if (req.method === "POST" && url.pathname === "/__control/reset") {
     linkTokenRequests = [];
+    holdings = NO_HOLDINGS;
+    return send(res, 200, {});
+  }
+  if (req.method === "POST" && url.pathname === "/__control/holdings") {
+    holdings = await readJson(req);
     return send(res, 200, {});
   }
 
@@ -71,6 +84,23 @@ const server = createServer(async (req, res) => {
     return send(res, 200, {
       link_token: `link-stub-${counter}`,
       expiration: new Date(Date.now() + 4 * 3600_000).toISOString(),
+      request_id: `stub-request-${counter}`,
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/investments/holdings/get") {
+    counter += 1;
+    if (holdings.error_code) {
+      return send(res, 400, {
+        error_type: "ITEM_ERROR",
+        error_code: holdings.error_code,
+        error_message: `the stub answers ${holdings.error_code} on purpose`,
+        request_id: `stub-request-${counter}`,
+      });
+    }
+    return send(res, 200, {
+      ...holdings.response,
+      item: {},
       request_id: `stub-request-${counter}`,
     });
   }

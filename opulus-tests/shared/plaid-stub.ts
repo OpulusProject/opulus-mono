@@ -15,3 +15,22 @@ export async function linkTokenRequests(): Promise<Record<string, unknown>[]> {
 export async function resetPlaidStub(): Promise<void> {
   await fetch(`${STUB_URL}/__control/reset`, { method: "POST" });
 }
+
+/** What the stub answers to `/investments/holdings/get`: a response, or a Plaid error code. */
+export async function setPlaidHoldings(
+  answer:
+    | {
+        response: {
+          accounts: Record<string, unknown>[];
+          holdings: Record<string, unknown>[];
+          securities: Record<string, unknown>[];
+        };
+      }
+    | { error_code: string },
+): Promise<void> {
+  await fetch(`${STUB_URL}/__control/holdings`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(answer),
+  });
+}

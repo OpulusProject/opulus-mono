@@ -1,0 +1,65 @@
+meta {
+  name: Sync Holdings
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{base_url}}/api/investments/sync
+  body: json
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "itemId": "cuid_of_one_of_your_items"
+  }
+}
+
+docs {
+  # Sync Holdings
+
+  Pull one of the authenticated user's items' current investment holdings from Plaid and store them, replacing what each of its investment accounts held before.
+
+  **Endpoint:** `POST /api/investments/sync`
+
+  ## Authentication
+
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+
+  ## Request Body
+
+  - `itemId` (string, required): our item id (not Plaid's)
+
+  ## Success Response (200)
+
+  ```json
+  { "data": { "status": "synced", "holdings": 2, "securities": 2 } }
+  ```
+
+  ```json
+  { "data": { "status": "unavailable", "reason": "PRODUCTS_NOT_SUPPORTED" } }
+  ```
+
+  - `synced`: the item's holdings were stored; `holdings` is what the item holds now (a holding in an account that is not ours, or in a security Plaid did not describe, is left out)
+  - `unavailable`: the institution has no investment data for this item (not supported, not consented, no investment accounts, not ready). Nothing changed and nothing is wrong
+  - A sync replaces what the account held: holdings that are no longer reported (sold, moved) are removed, and a security shared with other users is stored once
+
+  Holdings are also synced when an institution is linked or its accounts updated, and when Plaid sends a `HOLDINGS: DEFAULT_UPDATE` webhook.
+
+  ## Notes
+
+  - The data is as fresh as Plaid's last pull from the institution (usually about daily); this does not make the institution update
+  - `cost_basis` is what was paid in total for everything held, and many institutions send none
+
+  ## Error Responses
+
+  - `400 Bad Request`: `itemId` is missing
+  - `401 Unauthorized`: No active session, or the item belongs to another user
+  - `404 Not Found`: There is no such item
+}
