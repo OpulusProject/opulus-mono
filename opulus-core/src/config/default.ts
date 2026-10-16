@@ -49,7 +49,7 @@ export default {
   // instance counts for itself.
   rateLimitUsesRedis: getEnv("RATE_LIMIT_STORE") === "redis",
   // Where Plaid sends the user back after logging in at an OAuth bank: a page
-  // on our frontend (for example https://www.opulus.app/oauth-redirect) that
+  // on our frontend (for example https://www.opulus.app/settings/connections) that
   // must be registered under Allowed redirect URIs in the Plaid dashboard.
   // Without it OAuth institutions cannot complete Link; leave it unset and no
   // redirect is offered.

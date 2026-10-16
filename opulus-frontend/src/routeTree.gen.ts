@@ -16,7 +16,6 @@ import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTransactionsRouteImport } from './routes/_authenticated/transactions'
 import { Route as AuthenticatedSpendingRouteImport } from './routes/_authenticated/spending'
-import { Route as AuthenticatedOauthRedirectRouteImport } from './routes/_authenticated/oauth-redirect'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCreditAndLoansRouteImport } from './routes/_authenticated/credit-and-loans'
 import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
@@ -58,12 +57,6 @@ const AuthenticatedSpendingRoute = AuthenticatedSpendingRouteImport.update({
   path: '/spending',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
-const AuthenticatedOauthRedirectRoute =
-  AuthenticatedOauthRedirectRouteImport.update({
-    id: '/oauth-redirect',
-    path: '/oauth-redirect',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -101,7 +94,6 @@ export interface FileRoutesByFullPath {
   '/accounts': typeof AuthenticatedAccountsRoute
   '/credit-and-loans': typeof AuthenticatedCreditAndLoansRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/oauth-redirect': typeof AuthenticatedOauthRedirectRoute
   '/spending': typeof AuthenticatedSpendingRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
@@ -115,7 +107,6 @@ export interface FileRoutesByTo {
   '/accounts': typeof AuthenticatedAccountsRoute
   '/credit-and-loans': typeof AuthenticatedCreditAndLoansRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/oauth-redirect': typeof AuthenticatedOauthRedirectRoute
   '/spending': typeof AuthenticatedSpendingRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
@@ -131,7 +122,6 @@ export interface FileRoutesById {
   '/_authenticated/accounts': typeof AuthenticatedAccountsRoute
   '/_authenticated/credit-and-loans': typeof AuthenticatedCreditAndLoansRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/oauth-redirect': typeof AuthenticatedOauthRedirectRoute
   '/_authenticated/spending': typeof AuthenticatedSpendingRoute
   '/_authenticated/transactions': typeof AuthenticatedTransactionsRoute
   '/_authenticated/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
@@ -147,7 +137,6 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/credit-and-loans'
     | '/dashboard'
-    | '/oauth-redirect'
     | '/spending'
     | '/transactions'
     | '/settings/connections'
@@ -161,7 +150,6 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/credit-and-loans'
     | '/dashboard'
-    | '/oauth-redirect'
     | '/spending'
     | '/transactions'
     | '/settings/connections'
@@ -176,7 +164,6 @@ export interface FileRouteTypes {
     | '/_authenticated/accounts'
     | '/_authenticated/credit-and-loans'
     | '/_authenticated/dashboard'
-    | '/_authenticated/oauth-redirect'
     | '/_authenticated/spending'
     | '/_authenticated/transactions'
     | '/_authenticated/settings/connections'
@@ -242,13 +229,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSpendingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/oauth-redirect': {
-      id: '/_authenticated/oauth-redirect'
-      path: '/oauth-redirect'
-      fullPath: '/oauth-redirect'
-      preLoaderRoute: typeof AuthenticatedOauthRedirectRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -291,7 +271,6 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAccountsRoute: typeof AuthenticatedAccountsRoute
   AuthenticatedCreditAndLoansRoute: typeof AuthenticatedCreditAndLoansRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedOauthRedirectRoute: typeof AuthenticatedOauthRedirectRoute
   AuthenticatedSpendingRoute: typeof AuthenticatedSpendingRoute
   AuthenticatedTransactionsRoute: typeof AuthenticatedTransactionsRoute
   AuthenticatedSettingsConnectionsRoute: typeof AuthenticatedSettingsConnectionsRoute
@@ -302,7 +281,6 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAccountsRoute: AuthenticatedAccountsRoute,
   AuthenticatedCreditAndLoansRoute: AuthenticatedCreditAndLoansRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedOauthRedirectRoute: AuthenticatedOauthRedirectRoute,
   AuthenticatedSpendingRoute: AuthenticatedSpendingRoute,
   AuthenticatedTransactionsRoute: AuthenticatedTransactionsRoute,
   AuthenticatedSettingsConnectionsRoute: AuthenticatedSettingsConnectionsRoute,

@@ -27,7 +27,7 @@ test.describe("POST /api/link-tokens", () => {
  * this (CI and the local runner do), and with PLAID_BASE_URL pointing at the
  * Plaid stub, which remembers what the backend asked for.
  */
-const REDIRECT_URI = "http://localhost:5173/oauth-redirect";
+const REDIRECT_URI = "http://localhost:5173/settings/connections";
 
 /**
  * This file: link tokens, checked through the Plaid stub for what the backend

@@ -66,7 +66,7 @@ jobs:
       # What the backend asks Plaid for is checked against a stub of Plaid's API
       # (opulus-tests/services/backend/stub/plaid.mjs), started below.
       PLAID_BASE_URL: http://localhost:4546
-      PLAID_REDIRECT_URI: http://localhost:5173/oauth-redirect
+      PLAID_REDIRECT_URI: http://localhost:5173/settings/connections
       TEST_BASE_URL: http://localhost:8080
 
     services:

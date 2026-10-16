@@ -2,7 +2,7 @@ import type { UpdateMode } from '@/hooks/linkTokens/useLinkToken';
 
 /**
  * What the page needs to pick Plaid Link up again after an OAuth bank has sent
- * the browser away to log in and back. Link must be reopened with the same link
+ * the browser away to log in and back (to the Connections page). Link must be reopened with the same link
  * token, so it is kept here (in this tab only) while the user is away.
  */
 export interface LinkResume {

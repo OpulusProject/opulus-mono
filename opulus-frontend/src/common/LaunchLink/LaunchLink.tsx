@@ -29,8 +29,8 @@ interface LaunchLinkProps {
    */
   updateMode?: UpdateMode;
   /**
-   * Pick Link up again after an OAuth bank sent the user back to the redirect
-   * page: the link token the session started with, and the address the bank
+   * Pick Link up again after an OAuth bank sent the user back to the
+   * Connections page: the link token the session started with, and the address the bank
    * sent the browser back to. No new token is requested.
    */
   resume?: { linkToken: string; receivedRedirectUri: string };
@@ -97,8 +97,8 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
   const updateItemAccounts = useUpdateItemAccounts();
 
   // An OAuth bank takes the browser away from this page and back to the
-  // redirect page, which reopens Link with the same token: keep it until Link
-  // is done with it.
+  // Connections page, which reopens Link with the same token: keep it until
+  // Link is done with it.
   useEffect(() => {
     if (!resume && tokenData?.linkToken) {
       saveLinkResume({ linkToken: tokenData.linkToken, itemId, updateMode });

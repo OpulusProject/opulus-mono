@@ -1,1 +1,0 @@
-export { OAuthRedirect } from './OAuthRedirect';
