@@ -71,12 +71,12 @@ test.describe("link tokens and the OAuth redirect URI", () => {
     // Act
     await request.post("/api/link-tokens", { headers: withSession(cookie) });
 
-    // Assert: transactions (two years of them), and liabilities where supported;
+    // Assert: transactions (two years of them), and liabilities and investments where supported;
     // no Assets, which nothing reads and which would hide institutions.
     const [requested] = await linkTokenRequests();
     expect(requested).toMatchObject({
       products: ["transactions"],
-      required_if_supported_products: ["liabilities"],
+      required_if_supported_products: ["liabilities", "investments"],
       transactions: { days_requested: 730 },
     });
   });

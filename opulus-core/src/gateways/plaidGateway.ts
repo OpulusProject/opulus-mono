@@ -70,7 +70,12 @@ class PlaidGateway {
     // the institution supports it. Putting it in `products` would hide every
     // institution without support from Link, which matters in Canada where
     // coverage is limited. Plaid bills it per item, only where it applies.
-    const requiredIfSupportedProducts: Products[] = [Products.Liabilities];
+    // Investments (holdings: what is held, its price and what was paid) is the
+    // same: only where the institution supports it.
+    const requiredIfSupportedProducts: Products[] = [
+      Products.Liabilities,
+      Products.Investments,
+    ];
     const countryCodes: CountryCode[] = [CountryCode.Ca];
 
     const request: LinkTokenCreateRequest = {
