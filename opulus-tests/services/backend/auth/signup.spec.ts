@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { extractSessionCookie, uniqueEmail, withSession } from "../../../shared/client.js";
+import {
+  extractSessionCookie,
+  uniqueEmail,
+  uniqueIp,
+  withSession,
+} from "../../../shared/client.js";
 import {
   expectErrorCode,
   expectOk,
@@ -64,6 +69,56 @@ test.describe("POST /api/auth/sign-up/email", () => {
     // Act
     const res = await request.post("/api/auth/sign-up/email", {
       data: { email: existing.email, password: TEST_PASSWORD, name: "Twin" },
+    });
+
+    // Assert
+    await expectStatus(res, 422);
+    await expectErrorCode(res, "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL");
+  });
+
+  test("rejects a request with no name (400)", async ({ request }) => {
+    const res = await request.post("/api/auth/sign-up/email", {
+      headers: { "x-forwarded-for": uniqueIp() },
+      data: { email: uniqueEmail(), password: TEST_PASSWORD },
+    });
+
+    await expectStatus(res, 400);
+    await expectErrorCode(res, "VALIDATION_ERROR");
+  });
+
+  test("rejects a request with no password (400)", async ({ request }) => {
+    const res = await request.post("/api/auth/sign-up/email", {
+      headers: { "x-forwarded-for": uniqueIp() },
+      data: { email: uniqueEmail(), name: "No Password" },
+    });
+
+    await expectStatus(res, 400);
+    await expectErrorCode(res, "VALIDATION_ERROR");
+  });
+
+  test("rejects a password above the maximum length (400, PASSWORD_TOO_LONG)", async ({
+    request,
+  }) => {
+    const res = await request.post("/api/auth/sign-up/email", {
+      headers: { "x-forwarded-for": uniqueIp() },
+      data: { email: uniqueEmail(), password: "a".repeat(200), name: "Too Long" },
+    });
+
+    await expectStatus(res, 400);
+    await expectErrorCode(res, "PASSWORD_TOO_LONG");
+  });
+
+  test("treats an email's case as the same address (422, USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL)", async ({
+    request,
+  }) => {
+    // Arrange
+    const email = uniqueEmail();
+    await signUp(request, { email });
+
+    // Act: the same address in capitals.
+    const res = await request.post("/api/auth/sign-up/email", {
+      headers: { "x-forwarded-for": uniqueIp() },
+      data: { email: email.toUpperCase(), password: TEST_PASSWORD, name: "Shouting" },
     });
 
     // Assert
