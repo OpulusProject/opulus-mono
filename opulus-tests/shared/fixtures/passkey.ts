@@ -5,10 +5,10 @@ import {
   randomBytes,
   type KeyObject,
 } from "node:crypto";
-import { type APIRequestContext, type APIResponse } from "@playwright/test";
+import { type APIRequestContext } from "@playwright/test";
 import { Encoder } from "cbor-x";
 import { expectOk } from "../assertions.js";
-import { uniqueIp } from "../client.js";
+import { cookiesFrom, uniqueIp } from "../client.js";
 
 /**
  * A software passkey authenticator, so the passkey endpoints can be tested
@@ -139,15 +139,6 @@ export function authenticationResponse(
     },
     clientExtensionResults: {},
   };
-}
-
-/** The `name=value` pairs of a response's Set-Cookie headers, as one Cookie header. */
-export function cookiesFrom(res: APIResponse): string {
-  return res
-    .headersArray()
-    .filter((h) => h.name.toLowerCase() === "set-cookie")
-    .map((h) => h.value.split(";")[0]!.trim())
-    .join("; ");
 }
 
 /**

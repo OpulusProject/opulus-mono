@@ -6,7 +6,7 @@ import {
   expectStatus,
 } from "../../../shared/assertions.js";
 import {
-  createAuthedUser,
+  signUp,
   currentTotp,
   enableTwoFactor,
   wrongTotp,
@@ -31,7 +31,7 @@ test.describe("POST /api/auth/two-factor/verify-totp", () => {
 
   test("rejects an invalid TOTP code (401)", async ({ request }) => {
     // Arrange
-    const { cookie } = await createAuthedUser(request);
+    const { cookie } = await signUp(request);
     const { totpUri } = await enableTwoFactor(request, cookie);
 
     // Act
@@ -46,7 +46,7 @@ test.describe("POST /api/auth/two-factor/verify-totp", () => {
 
   test("confirms enrollment with a valid TOTP code", async ({ request }) => {
     // Arrange
-    const { cookie } = await createAuthedUser(request);
+    const { cookie } = await signUp(request);
     const { totpUri } = await enableTwoFactor(request, cookie);
 
     // Act

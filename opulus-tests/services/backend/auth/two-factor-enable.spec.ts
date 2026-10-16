@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { withSession } from "../../../shared/client.js";
 import { expectOk, expectStatus } from "../../../shared/assertions.js";
-import { TEST_PASSWORD, createAuthedUser } from "../../../shared/fixtures/index.js";
+import { TEST_PASSWORD, signUp } from "../../../shared/fixtures/index.js";
 
 /**
  * This file: the better-auth 2FA enable endpoint. Enable provisions a TOTP
@@ -17,7 +17,7 @@ test.describe("POST /api/auth/two-factor/enable", () => {
   });
 
   test("rejects an incorrect password (400)", async ({ request }) => {
-    const { cookie } = await createAuthedUser(request);
+    const { cookie } = await signUp(request);
 
     const res = await request.post("/api/auth/two-factor/enable", {
       headers: withSession(cookie),
@@ -30,7 +30,7 @@ test.describe("POST /api/auth/two-factor/enable", () => {
   test("returns a TOTP URI and backup codes for the authenticated user", async ({
     request,
   }) => {
-    const { cookie } = await createAuthedUser(request);
+    const { cookie } = await signUp(request);
 
     const res = await request.post("/api/auth/two-factor/enable", {
       headers: withSession(cookie),

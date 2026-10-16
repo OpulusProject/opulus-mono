@@ -2,7 +2,12 @@ import { expect, test } from "@playwright/test";
 import { expectOk, expectStatus } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import { testDb } from "../../../shared/db.js";
-import { seedItemWithAccount, signIn, signUp } from "../../../shared/fixtures/index.js";
+import {
+  enrollTwoFactor,
+  seedItemWithAccount,
+  signIn,
+  signUp,
+} from "../../../shared/fixtures/index.js";
 import {
   createSandboxItem,
   plaidStillServesItem,
@@ -25,7 +30,7 @@ test.describe("POST /api/auth/delete-user (sandbox)", () => {
   }) => {
     // Arrange: a user with two real sandbox items (one per institution).
     const creds = requireSandboxCredentials();
-    const user = await signUp(request);
+    const user = await enrollTwoFactor(request, await signUp(request));
     const itemIds = [
       (await createSandboxItem(request, user.cookie, creds)).itemId,
       (
@@ -64,8 +69,8 @@ test.describe("POST /api/auth/delete-user (sandbox)", () => {
   test("does not touch another user's Plaid items", async ({ request }) => {
     // Arrange: two users, each with a real sandbox item.
     const creds = requireSandboxCredentials();
-    const leaving = await signUp(request);
-    const staying = await signUp(request);
+    const leaving = await enrollTwoFactor(request, await signUp(request));
+    const staying = await enrollTwoFactor(request, await signUp(request));
     await createSandboxItem(request, leaving.cookie, creds);
     const { itemId } = await createSandboxItem(request, staying.cookie, creds);
     const { accessToken } = await testDb().item.findUniqueOrThrow({
@@ -89,7 +94,7 @@ test.describe("POST /api/auth/delete-user (sandbox)", () => {
     // Arrange: an item with an access token Plaid does not accept (seeded, not
     // from Plaid), so removing it fails with something other than "not found".
     requireSandboxCredentials();
-    const user = await signUp(request);
+    const user = await enrollTwoFactor(request, await signUp(request));
     await seedItemWithAccount(user.user.id);
 
     // Act
