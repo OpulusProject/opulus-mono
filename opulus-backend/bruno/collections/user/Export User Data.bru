@@ -1,0 +1,57 @@
+meta {
+  name: Export User Data
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{base_url}}/api/user/export
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+docs {
+  # Export User Data
+
+  Download everything we hold about the authenticated user as one JSON document: who they are, their connections and accounts, their balance history and every transaction.
+
+  **Endpoint:** `GET /api/user/export`
+
+  ## Authentication
+
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+
+  ## Success Response (200)
+
+  A file download: `Content-Type: application/json`, `Content-Disposition: attachment; filename="opulus-export-YYYY-MM-DD.json"`, `Cache-Control: no-store`. The body is written in pieces (the transactions a page at a time), so a long history is never held in memory as one string. It is not wrapped in `data`.
+
+  ```json
+  {
+    "exportedAt": "2026-10-15T04:30:00.000Z",
+    "user": { "id": "...", "name": "...", "email": "...", "emailVerified": true, "createdAt": "2026-01-02T00:00:00.000Z" },
+    "connections": [
+      { "id": "...", "institutionName": "First Platypus Bank", "syncedAt": "2026-10-15T01:00:00.000Z", "accounts": [ { "id": "...", "name": "Checking", "type": "depository", "balanceCurrent": 1200.5 } ] }
+    ],
+    "balanceHistory": [ { "accountId": "...", "date": "2026-10-14", "balanceCurrent": 1180.25 } ],
+    "transactions": [ { "id": "...", "date": "2026-01-03T00:00:00.000Z", "name": "Coffee", "amount": 4.5, "pending": false } ]
+  }
+  ```
+
+  - `connections` and `transactions` use the same shapes as `GET /api/items` and `GET /api/transactions`
+  - `transactions` are oldest first, pending ones included
+  - **Not in it**: the password, sessions, two-factor secrets and passkeys, and the Plaid access tokens
+
+  ## Error Responses
+
+  - `401 Unauthorized`: No active session found
+  - `403 Forbidden`: Two-factor is required and not set up (`TWO_FACTOR_REQUIRED`), when that requirement is on
+  - `429 Too Many Requests`: more than 3 exports in an hour (`RATE_LIMITED`)
+
+  ## Notes
+
+  - If reading the transactions fails after the download has started, the connection is closed early and the file is cut short (not valid JSON). Reading everything else happens before anything is sent, so failures there are ordinary error responses.
+}

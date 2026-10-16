@@ -39,8 +39,10 @@ function keyOf(req: Request, res: Response): string {
 interface LimiterOptions {
   /** Names the counters, so two limiters never share one. */
   name: string;
-  /** Requests allowed per minute for one key. */
+  /** Requests allowed per window for one key. */
   limit: number;
+  /** How long a window lasts, in milliseconds (a minute by default). */
+  windowMs?: number;
 }
 
 /**
@@ -49,9 +51,13 @@ interface LimiterOptions {
  * how much is left. If the counter store fails the request goes through: a
  * limiter that breaks the API is worse than one that is briefly off.
  */
-function createLimiter({ name, limit }: LimiterOptions): RequestHandler {
+function createLimiter({
+  name,
+  limit,
+  windowMs = WINDOW_MS,
+}: LimiterOptions): RequestHandler {
   return rateLimit({
-    windowMs: WINDOW_MS,
+    windowMs,
     limit,
     standardHeaders: "draft-7",
     legacyHeaders: false,
@@ -72,7 +78,7 @@ function createLimiter({ name, limit }: LimiterOptions): RequestHandler {
       );
       next(
         new TooManyRequestsError(
-          "Too many requests, try again in a minute",
+          "Too many requests, try again later",
           retryAfter
         )
       );
@@ -94,4 +100,14 @@ export const apiRateLimit: RequestHandler = createLimiter({
 export const plaidRateLimit: RequestHandler = createLimiter({
   name: "plaid",
   limit: config.rateLimitPlaidPerUser,
+});
+
+/**
+ * The data export, which reads everything a user has: three an hour per
+ * signed-in user. Mount it after `requireSession`.
+ */
+export const exportRateLimit: RequestHandler = createLimiter({
+  name: "export",
+  limit: 3,
+  windowMs: 60 * 60_000,
 });
