@@ -50,6 +50,9 @@ jobs:
       NODE_ENV: test
       PORT: "8080"
       BREACHED_PASSWORD_CHECK: "off"
+      # One address makes every request in the suite: raise the per-IP limit so
+      # only the per-user limits (and their own spec) are ever reached.
+      RATE_LIMIT_PER_IP: "100000"
       WEBHOOK_PORT: "8081"
       REDIS_HOST: localhost
       REDIS_PORT: "6379"

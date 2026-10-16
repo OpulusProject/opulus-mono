@@ -31,6 +31,17 @@ export default {
   // the service test suite turns it off because it makes no third-party calls.
   breachedPasswordCheck: getEnv("BREACHED_PASSWORD_CHECK", "on") !== "off",
   plaidWebhookUrl: getEnv("PLAID_WEBHOOK_URL"),
+  // Requests per minute: one IP address across the API, and one user on the
+  // routes that call Plaid (link tokens, connecting, refreshing).
+  rateLimitPerIp: parseInt(getEnv("RATE_LIMIT_PER_IP", "600"), 10),
+  rateLimitPlaidPerUser: parseInt(
+    getEnv("RATE_LIMIT_PLAID_PER_USER", "10"),
+    10
+  ),
+  // Where the counters live: "redis" (REDIS_HOST and friends) so every instance
+  // of the backend counts together, or in memory (the default), where each
+  // instance counts for itself.
+  rateLimitUsesRedis: getEnv("RATE_LIMIT_STORE") === "redis",
   // Frankfurter (the European Central Bank's daily rates). Point it elsewhere
   // to use another deployment of Frankfurter, or a stub in tests.
   frankfurterBaseUrl: getEnv(
