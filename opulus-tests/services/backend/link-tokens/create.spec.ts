@@ -62,6 +62,25 @@ test.describe("link tokens and the OAuth redirect URI", () => {
     });
   });
 
+  test("a new-connection link token asks only for the products we use", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie } = await createAuthedUser(request);
+
+    // Act
+    await request.post("/api/link-tokens", { headers: withSession(cookie) });
+
+    // Assert: transactions (two years of them), and liabilities where supported;
+    // no Assets, which nothing reads and which would hide institutions.
+    const [requested] = await linkTokenRequests();
+    expect(requested).toMatchObject({
+      products: ["transactions"],
+      required_if_supported_products: ["liabilities"],
+      transactions: { days_requested: 730 },
+    });
+  });
+
   test("an update-mode link token asks for it too", async ({ request }) => {
     // Arrange: a connection to repair.
     const { cookie, userId } = await createAuthedUser(request);

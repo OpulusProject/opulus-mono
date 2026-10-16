@@ -61,7 +61,10 @@ class PlaidGateway {
    * @returns Link token response from Plaid
    */
   async createLinkToken(userToken: string, userId: string) {
-    const products: Products[] = [Products.Assets, Products.Transactions];
+    // Only what we use. Every product here must be supported by an institution
+    // for Link to offer it, so an unused one (Assets, which we never read) only
+    // hides institutions. Transaction history comes from `days_requested`.
+    const products: Products[] = [Products.Transactions];
     // Liabilities (APRs, payment due dates, loan terms) is only extracted when
     // the institution supports it. Putting it in `products` would hide every
     // institution without support from Link, which matters in Canada where
