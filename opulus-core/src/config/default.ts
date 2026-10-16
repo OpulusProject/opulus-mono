@@ -38,6 +38,12 @@ export default {
     getEnv("RATE_LIMIT_PLAID_PER_USER", "10"),
     10
   ),
+  // Requests per minute the webhook receiver accepts from one IP address. They
+  // are counted before the signature is checked, which calls Plaid.
+  webhookRateLimitPerIp: parseInt(
+    getEnv("WEBHOOK_RATE_LIMIT_PER_IP", "120"),
+    10
+  ),
   // Where the counters live: "redis" (REDIS_HOST and friends) so every instance
   // of the backend counts together, or in memory (the default), where each
   // instance counts for itself.
