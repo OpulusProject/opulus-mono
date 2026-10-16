@@ -1,4 +1,6 @@
 import { type APIRequestContext } from "@playwright/test";
+import { expectOk } from "../assertions.js";
+import { extractCookie, uniqueIp } from "../client.js";
 import {
   currentTotp,
   enrollTwoFactor,
@@ -33,4 +35,24 @@ export async function createUserWithTwoFactor(
   request: APIRequestContext,
 ): Promise<EnrolledUser> {
   return enrollTwoFactor(request, await signUp(request));
+}
+
+/**
+ * The password step of signing in as a user who has two-factor on. No session
+ * is issued: the response sets a challenge cookie, which the second step
+ * (verify-totp, or verify-backup-code) replays. Returns that cookie.
+ */
+export async function startTwoFactorSignIn(
+  request: APIRequestContext,
+  user: { email: string; password: string },
+): Promise<{ challengeCookie: string }> {
+  const res = await request.post("/api/auth/sign-in/email", {
+    headers: { "x-forwarded-for": uniqueIp() },
+    data: { email: user.email, password: user.password },
+  });
+  await expectOk(res);
+  if (!(await res.json()).twoFactorRedirect) {
+    throw new Error("Expected a two-factor challenge, got a session");
+  }
+  return { challengeCookie: extractCookie(res, "two_factor") };
 }

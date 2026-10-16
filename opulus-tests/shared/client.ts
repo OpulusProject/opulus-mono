@@ -43,6 +43,15 @@ export function uniqueEmail(prefix = "user"): string {
  * Returns the `name=value` session cookie pair (attributes stripped).
  */
 export function extractSessionCookie(res: APIResponse): string {
+  return extractCookie(res, "session_token");
+}
+
+/**
+ * The `name=value` pair of the first cookie a response sets whose name contains
+ * `namePart` (for example "two_factor" for the challenge cookie sign-in sets
+ * when a second factor is needed), ready to replay as a Cookie header.
+ */
+export function extractCookie(res: APIResponse, namePart: string): string {
   const setCookies = res
     .headersArray()
     .filter((h) => h.name.toLowerCase() === "set-cookie")
@@ -50,14 +59,25 @@ export function extractSessionCookie(res: APIResponse): string {
 
   for (const raw of setCookies) {
     const [pair] = raw.split(";");
-    if (pair.includes("session_token")) {
+    if (pair.includes(namePart)) {
       return pair.trim();
     }
   }
 
   throw new Error(
-    `No session cookie found in Set-Cookie headers: ${JSON.stringify(setCookies)}`,
+    `No ${namePart} cookie found in Set-Cookie headers: ${JSON.stringify(setCookies)}`,
   );
+}
+
+/** Whether a response sets a (non-empty) session cookie: a user was signed in. */
+export function setsSessionCookie(res: APIResponse): boolean {
+  return res
+    .headersArray()
+    .some(
+      (h) =>
+        h.name.toLowerCase() === "set-cookie" &&
+        /^[^=;]*session_token[^=;]*=[^;]+/.test(h.value),
+    );
 }
 
 /** Convenience header object for authenticating a request with a session cookie. */
