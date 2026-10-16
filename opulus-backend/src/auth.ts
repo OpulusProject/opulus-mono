@@ -100,15 +100,6 @@ export const auth = betterAuth({
         };
       }
 
-      // Two-factor is required of every user, so it cannot be turned off.
-      if (ctx.path === "/two-factor/disable" && config.requireTwoFactor) {
-        throw new APIError("FORBIDDEN", {
-          message:
-            "Two-factor authentication is required and cannot be turned off",
-          code: "TWO_FACTOR_REQUIRED",
-        });
-      }
-
       if (ctx.path !== "/delete-user" || ctx.body?.password) return;
       // Let the endpoint answer 401 for callers who are not signed in.
       if (!(await getSessionFromCtx(ctx))) return;

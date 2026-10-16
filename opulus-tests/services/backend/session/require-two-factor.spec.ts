@@ -86,7 +86,7 @@ test.describe("two-factor is required", () => {
     await expectStatus(res, 403);
   });
 
-  test("cannot be turned off (403, TWO_FACTOR_REQUIRED)", async ({ request }) => {
+  test("cannot be turned off: the disable route does not exist (404)", async ({ request }) => {
     // Arrange
     const user = await enrollTwoFactor(request, await signUp(request));
 
@@ -96,9 +96,8 @@ test.describe("two-factor is required", () => {
       data: { password: user.password },
     });
 
-    // Assert: refused, and the user is still served.
-    await expectStatus(res, 403);
-    await expectErrorCode(res, "TWO_FACTOR_REQUIRED");
+    // Assert: switched off (see authEndpoints.ts), and the user is still served.
+    await expectStatus(res, 404);
     await expectStatus(
       await request.get("/api/accounts", { headers: withSession(user.cookie) }),
       200,
