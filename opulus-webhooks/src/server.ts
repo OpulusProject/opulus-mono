@@ -14,6 +14,7 @@ import express, { Router, raw } from "express";
 import { webhookRateLimit } from "./middleware/rateLimit.js";
 import { verifyPlaidWebhook } from "./middleware/verifyPlaidWebhook.js";
 import { handlePlaidWebhook } from "./plaid/handlePlaidWebhook.js";
+import { handleHoldingsWebhook } from "./plaid/handlers/holdings/index.js";
 import { handleItemWebhook } from "./plaid/handlers/item/index.js";
 import { handleLiabilitiesWebhook } from "./plaid/handlers/liabilities/index.js";
 import { handleTransactionsWebhook } from "./plaid/handlers/transactions/index.js";
@@ -45,6 +46,7 @@ const router = Router();
 // Initialize webhook worker with handlers
 // Worker is created with handlers directly, ensuring they're set before processing starts
 const webhookWorker = createWebhookWorker({
+  handleHoldingsWebhook,
   handleItemWebhook,
   handleLiabilitiesWebhook,
   handleTransactionsWebhook,

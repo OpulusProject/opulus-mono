@@ -23,6 +23,8 @@ export const WebhookSchema = object({
     environment: string().optional(),
     new_transactions: number().optional(),
     removed_transactions: array(string()).optional(),
+    new_holdings: number().optional(),
+    updated_holdings: number().optional(),
     account_ids: array(string()).optional(),
     account_ids_with_new_liabilities: array(string()).optional(),
     account_ids_with_updated_liabilities: record(
@@ -50,6 +52,8 @@ export const PlaidWebhookEventSchema = object({
   environment: string().optional(),
   new_transactions: number().optional(),
   removed_transactions: array(string()).optional(),
+  new_holdings: number().optional(),
+  updated_holdings: number().optional(),
   account_ids: array(string()).optional(),
   account_ids_with_new_liabilities: array(string()).optional(),
   account_ids_with_updated_liabilities: record(
