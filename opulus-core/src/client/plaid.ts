@@ -9,6 +9,7 @@ import config from "../config/default.js";
 
 const configuration = new Configuration({
   basePath:
+    config.plaidBaseUrl ||
     PlaidEnvironments[config.plaidEnv as keyof typeof PlaidEnvironments],
   baseOptions: {
     headers: {

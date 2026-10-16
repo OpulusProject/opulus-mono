@@ -16,6 +16,8 @@ import { useCreateItem } from '@/hooks/items/useCreateItem';
 import { useUpdateItemAccounts } from '@/hooks/items/useUpdateItemAccounts';
 import { type UpdateMode, useLinkToken } from '@/hooks/linkTokens/useLinkToken';
 
+import { clearLinkResume, saveLinkResume } from './linkResume';
+
 interface LaunchLinkProps {
   /**
    * Existing item id. When set, Link opens in update mode for that item.
@@ -26,6 +28,12 @@ interface LaunchLinkProps {
    * Defaults to `reconnect` (standard repair flow).
    */
   updateMode?: UpdateMode;
+  /**
+   * Pick Link up again after an OAuth bank sent the user back to the
+   * Connections page: the link token the session started with, and the address the bank
+   * sent the browser back to. No new token is requested.
+   */
+  resume?: { linkToken: string; receivedRedirectUri: string };
   /**
    * Callback when Link is closed (successfully or with error)
    */
@@ -73,6 +81,7 @@ interface LaunchLinkProps {
 export const LaunchLink: React.FC<LaunchLinkProps> = ({
   itemId,
   updateMode,
+  resume,
   onClose,
   onSuccess,
   onExit,
@@ -82,14 +91,25 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
     isLoading: isLinkTokenLoading,
     isError: isLinkTokenError,
     error: linkTokenError,
-  } = useLinkToken(itemId, updateMode);
+  } = useLinkToken(itemId, updateMode, { enabled: !resume });
+  const linkToken = resume?.linkToken ?? tokenData?.linkToken;
   const createItem = useCreateItem();
   const updateItemAccounts = useUpdateItemAccounts();
+
+  // An OAuth bank takes the browser away from this page and back to the
+  // Connections page, which reopens Link with the same token: keep it until
+  // Link is done with it.
+  useEffect(() => {
+    if (!resume && tokenData?.linkToken) {
+      saveLinkResume({ linkToken: tokenData.linkToken, itemId, updateMode });
+    }
+  }, [resume, tokenData?.linkToken, itemId, updateMode]);
 
   const handleSuccess: PlaidLinkOnSuccess = (
     publicToken: string,
     metadata: PlaidLinkOnSuccessMetadata
   ) => {
+    clearLinkResume();
     onSuccess?.(publicToken, metadata);
 
     if (itemId) {
@@ -133,6 +153,7 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
     error: PlaidLinkError | null,
     metadata: PlaidLinkOnExitMetadata
   ) => {
+    clearLinkResume();
     // Call custom exit handler if provided
     onExit?.(error, metadata);
 
@@ -152,7 +173,8 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
 
   // Configure Plaid Link
   const config: PlaidLinkOptionsWithLinkToken = {
-    token: tokenData?.linkToken || null,
+    token: linkToken || null,
+    receivedRedirectUri: resume?.receivedRedirectUri,
     onSuccess: handleSuccess,
     onExit: handleExit,
     onEvent: handleEvent,
@@ -163,10 +185,10 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
 
   // Open Link when ready and token is available
   useEffect(() => {
-    if (ready && tokenData?.linkToken) {
+    if (ready && linkToken) {
       open();
     }
-  }, [ready, tokenData?.linkToken, open]);
+  }, [ready, linkToken, open]);
 
   // Handle loading state
   if (isLinkTokenLoading) {

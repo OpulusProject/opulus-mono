@@ -48,6 +48,15 @@ export default {
   // of the backend counts together, or in memory (the default), where each
   // instance counts for itself.
   rateLimitUsesRedis: getEnv("RATE_LIMIT_STORE") === "redis",
+  // Where Plaid sends the user back after logging in at an OAuth bank: a page
+  // on our frontend (for example https://www.opulus.app/settings/connections) that
+  // must be registered under Allowed redirect URIs in the Plaid dashboard.
+  // Without it OAuth institutions cannot complete Link; leave it unset and no
+  // redirect is offered.
+  plaidRedirectUri: getEnv("PLAID_REDIRECT_URI"),
+  // Point the Plaid client at another server (a stub in the service tests).
+  // Unset uses PLAID_ENV's real one.
+  plaidBaseUrl: getEnv("PLAID_BASE_URL"),
   // Frankfurter (the European Central Bank's daily rates). Point it elsewhere
   // to use another deployment of Frankfurter, or a stub in tests.
   frankfurterBaseUrl: getEnv(
