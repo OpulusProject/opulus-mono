@@ -23,6 +23,7 @@ model User {
   linkSessions       LinkSession[]
   accountLiabilities AccountLiability[]
   holdings           Holding[]
+  recurringStreams   RecurringStream[]
   items              Item[]
   accounts           Account[]
   transactions       Transaction[]
@@ -120,6 +121,7 @@ model Item {
   transactions          Transaction[]
   accountLiabilities    AccountLiability[]
   holdings              Holding[]
+  recurringStreams      RecurringStream[]
 
   @@map("item")
 }
@@ -147,6 +149,7 @@ model Account {
   transactions           Transaction[]
   liabilityDetails       AccountLiability?
   holdings               Holding[]
+  recurringStreams       RecurringStream[]
 
   // Same account_id can exist in different items
   // Index for stable account lookups
@@ -345,4 +348,40 @@ model Holding {
   @@index([itemId])
   @@index([userId])
   @@map("holding")
+}
+
+/// A recurring payment or income Plaid found in an account's transactions (a
+/// subscription, a bill, a salary): "stream" is Plaid's word. Replaced on each
+/// sync, so what is stored is Plaid's current view.
+model RecurringStream {
+  id                String    @id @default(cuid())
+  plaidStreamId     String
+  accountId         String
+  itemId            String
+  userId            String
+  direction         String // "inflow" (money in) or "outflow" (money out)
+  description       String
+  merchantName      String?
+  /// WEEKLY, BIWEEKLY, SEMI_MONTHLY, MONTHLY, ANNUALLY or UNKNOWN
+  frequency         String
+  /// MATURE, EARLY_DETECTION, TOMBSTONED (it stopped) or UNKNOWN
+  status            String
+  isActive          Boolean
+  firstDate         DateTime
+  lastDate          DateTime
+  predictedNextDate DateTime?
+  averageAmount     Decimal // always positive: `direction` says which way the money goes
+  lastAmount        Decimal
+  isoCurrencyCode   String?
+  category          String? // Plaid's personal finance category, primary
+  syncedAt          DateTime
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  account           Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  item              Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([itemId, plaidStreamId])
+  @@index([userId])
+  @@map("recurring_stream")
 }
