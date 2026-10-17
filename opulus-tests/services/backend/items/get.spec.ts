@@ -7,6 +7,15 @@ import {
   seedCreditLiability,
   seedItemWithAccount,
 } from "../../../shared/fixtures/index.js";
+import { resetPlaidStub, setPlaidLiabilities } from "../../../shared/plaid-stub.js";
+import {
+  creditCardAccount,
+  linkInstitution,
+  liabilitiesFor,
+  loanAccount,
+  plaidAccount,
+} from "../../../shared/scenarios/plaid.js";
+import { uniqueId } from "../../../shared/client.js";
 
 /**
  * This file: the linked-items list endpoint. Items have no create endpoint —
@@ -258,5 +267,33 @@ test.describe("GET /api/items", () => {
     );
     expect(ids).toContain(aliceItem.itemId);
     expect(ids).not.toContain(bobItem.itemId);
+  });
+
+  test("shows the liabilities Plaid reports for the credit card, mortgage and student loan of a freshly linked item", async ({ request }) => {
+    // Arrange: Plaid describes a chequing account, a card, a mortgage and a student loan, with liabilities for the last three.
+    await resetPlaidStub();
+    const ids = { chequing: uniqueId("chq"), credit: uniqueId("cc"), mortgage: uniqueId("mtg"), student: uniqueId("stu") };
+    await setPlaidLiabilities({ response: { liabilities: liabilitiesFor(ids) } });
+    const { cookie } = await createAuthedUser(request);
+
+    // Act: linking fetches and stores the liabilities.
+    const { itemId } = await linkInstitution(request, cookie, {
+      accounts: [plaidAccount(ids.chequing), creditCardAccount(ids.credit), loanAccount(ids.mortgage, "mortgage"), loanAccount(ids.student, "student")],
+    });
+    const res = await request.get("/api/items", { headers: withSession(cookie) });
+
+    // Assert: each kind comes back with its details, and the chequing account has none.
+    await expectOk(res);
+    await expectMatchesSchema(res, ItemsResponseSchema);
+    const item = ((await res.json()).data.items as Array<{ id: string; accounts: Array<{ type: string; liabilityDetails: Record<string, unknown> | null }> }>).find((i) => i.id === itemId)!;
+    const byType = (type: string) => item.accounts.find((a) => a.type === type)?.liabilityDetails;
+    expect(byType("credit")).toMatchObject({ kind: "credit", aprs: [{ type: "purchase_apr", percentage: 19.99 }], minimumPayment: 25 });
+    expect(byType("depository")).toBeNull();
+    const loans = item.accounts.filter((a) => a.type === "loan").map((a) => a.liabilityDetails);
+    expect(loans).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: "mortgage", interestRate: 3.99, minimumPayment: 1500 }),
+      expect.objectContaining({ kind: "student", interestRate: 5.25, minimumPayment: 138.05 }),
+    ]));
+    for (const loan of loans) expect(Number.isNaN(Date.parse((loan as { syncedAt: string }).syncedAt))).toBe(false);
   });
 });

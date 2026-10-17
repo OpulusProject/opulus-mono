@@ -9,7 +9,9 @@
  *   POST /item/get             the item (no error, background updates)
  *   POST /institutions/get_by_id   the institution a test set with /__control/item
  *   POST /accounts/get         the accounts a test set with /__control/item
- *   POST /liabilities/get      always PRODUCTS_NOT_SUPPORTED (no liabilities here)
+ *   POST /liabilities/get      PRODUCTS_NOT_SUPPORTED unless a test set liabilities with
+ *                              /__control/liabilities: { response } (liabilities.credit /
+ *                              .mortgage / .student) or { error_code }
  *   POST /investments/holdings/get   the holdings a test set with /__control/holdings
  *                              (none by default), or the Plaid error it set
  *   GET  /health
@@ -38,6 +40,9 @@
  *   POST /__control/item-remove  { error_code } makes /item/remove fail; {} makes it work
  *   GET  /__control/exchanges  the public tokens exchanged so far
  *   POST /institutions/get     a page of 25 stub institutions (count and offset honoured)
+ *   POST /__control/liabilities  set what /liabilities/get answers
+ *   POST /__control/accounts-error  { error_code } makes /accounts/get fail as an ITEM_ERROR
+ *                              (for example ITEM_LOGIN_REQUIRED); {} makes it work again
  *   POST /__control/reset      forget the requests, the item and the holdings
  *
  * Everything else answers 404 in Plaid's error shape, as an unsupported call.
@@ -50,6 +55,9 @@ const PORT = Number(process.env.PLAID_STUB_PORT ?? 4546);
 let linkTokenRequests = [];
 let counter = 0;
 let removedItems = [];
+const NO_LIABILITIES = { error_code: "PRODUCTS_NOT_SUPPORTED" };
+let liabilities = NO_LIABILITIES;
+let accountsError = {};
 let itemRemove = {};
 let exchanges = [];
 const STUB_INSTITUTIONS = Array.from({ length: 25 }, (_, i) => ({
@@ -144,6 +152,16 @@ const server = createServer(async (req, res) => {
     removedItems = [];
     itemRemove = {};
     exchanges = [];
+    liabilities = NO_LIABILITIES;
+    accountsError = {};
+    return send(res, 200, {});
+  }
+  if (req.method === "POST" && url.pathname === "/__control/liabilities") {
+    liabilities = await readJson(req);
+    return send(res, 200, {});
+  }
+  if (req.method === "POST" && url.pathname === "/__control/accounts-error") {
+    accountsError = await readJson(req);
     return send(res, 200, {});
   }
   if (req.method === "GET" && url.pathname === "/__control/removed-items") {
@@ -284,6 +302,14 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "POST" && url.pathname === "/accounts/get") {
     counter += 1;
+    if (accountsError.error_code) {
+      return send(res, 400, {
+        error_type: "ITEM_ERROR",
+        error_code: accountsError.error_code,
+        error_message: `the stub answers ${accountsError.error_code} on purpose`,
+        request_id: `stub-request-${counter}`,
+      });
+    }
     return send(res, 200, {
       accounts: itemSetup.accounts,
       item: plaidItem(),
@@ -293,10 +319,18 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "POST" && url.pathname === "/liabilities/get") {
     counter += 1;
-    return send(res, 400, {
-      error_type: "ITEM_ERROR",
-      error_code: "PRODUCTS_NOT_SUPPORTED",
-      error_message: "the stub has no liabilities",
+    if (liabilities.error_code) {
+      return send(res, 400, {
+        error_type: "ITEM_ERROR",
+        error_code: liabilities.error_code,
+        error_message: `the stub answers ${liabilities.error_code} on purpose`,
+        request_id: `stub-request-${counter}`,
+      });
+    }
+    return send(res, 200, {
+      accounts: itemSetup.accounts,
+      item: plaidItem(),
+      liabilities: liabilities.response.liabilities,
       request_id: `stub-request-${counter}`,
     });
   }
