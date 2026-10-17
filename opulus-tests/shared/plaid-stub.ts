@@ -110,3 +110,25 @@ export async function exchangedPublicTokens(): Promise<string[]> {
   const res = await fetch(`${STUB_URL}/__control/exchanges`);
   return (await res.json()).publicTokens;
 }
+
+/** What the stub answers to `/liabilities/get`: Plaid's liabilities by kind, or a Plaid error code. */
+export async function setPlaidLiabilities(
+  answer:
+    | { response: { liabilities: { credit?: unknown[]; mortgage?: unknown[]; student?: unknown[] } } }
+    | { error_code: string },
+): Promise<void> {
+  await fetch(`${STUB_URL}/__control/liabilities`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(answer),
+  });
+}
+
+/** Make Plaid refuse to describe the item's accounts with this ITEM_ERROR code (an empty call makes it work again). */
+export async function failAccounts(errorCode?: string): Promise<void> {
+  await fetch(`${STUB_URL}/__control/accounts-error`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(errorCode ? { error_code: errorCode } : {}),
+  });
+}
