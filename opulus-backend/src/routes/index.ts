@@ -6,6 +6,7 @@ import institutionsRouter from "./institutions.js";
 import investmentsRouter from "./investments.js";
 import itemsRouter from "./items.js";
 import linkTokensRouter from "./linkTokens.js";
+import recurringTransactionsRouter from "./recurringTransactions.js";
 import transactionsRouter from "./transactions.js";
 import userRouter from "./user.js";
 
@@ -36,6 +37,9 @@ router.use("/items", itemsRouter);
 
 // Link token routes
 router.use("/link-tokens", linkTokensRouter);
+
+// Recurring transactions routes
+router.use("/recurring-transactions", recurringTransactionsRouter);
 
 // Transactions routes
 router.use("/transactions", transactionsRouter);
