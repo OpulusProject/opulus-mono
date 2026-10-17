@@ -1,6 +1,6 @@
 /**
- * Catch-up sync for every (or one) Plaid item: its transactions, and the
- * holdings of its investment accounts.
+ * Catch-up sync for every (or one) Plaid item: its transactions, the holdings
+ * of its investment accounts, and its recurring payments and income.
  *
  * Plaid does not replay webhooks after ~24h, so a long outage leaves items
  * stale until the next nudge. This walks stored cursors via /transactions/sync,
@@ -22,6 +22,7 @@ import {
   prisma,
   syncItemTransactions,
   trySyncItemHoldings,
+  trySyncItemRecurring,
 } from "@opulus/core";
 
 function parseItemFlag(argv: string[]): string | undefined {
@@ -64,9 +65,10 @@ async function main(): Promise<void> {
       const result = await syncItemTransactions({ plaidItemId: item.plaidItemId });
       // Holdings are a bonus (an item without investments has none): the sync
       // never throws, and an item that has no investments is just "unavailable".
-      const holdings = await trySyncItemHoldings({
-        item: await itemRepository.getByPlaidItemId(item.plaidItemId),
-      });
+      const syncable = await itemRepository.getByPlaidItemId(item.plaidItemId);
+      const holdings = await trySyncItemHoldings({ item: syncable });
+      // Likewise recurring payments and income, which Plaid may not have ready.
+      const recurring = await trySyncItemRecurring({ item: syncable });
       succeeded += 1;
       logger.info(
         {
@@ -74,6 +76,7 @@ async function main(): Promise<void> {
           institution: item.institutionName,
           ...result,
           holdings_status: holdings.status,
+          recurring_status: recurring.status,
         },
         "Reconciled item"
       );
