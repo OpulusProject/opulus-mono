@@ -1,60 +1,34 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
-import { expectOk, expectStatus } from "../../../shared/assertions.js";
-import { uniqueId, withSession } from "../../../shared/client.js";
+import { expectOk } from "../../../shared/assertions.js";
+import { uniqueId } from "../../../shared/client.js";
 import {
   countSecurities,
   createAuthedUser,
   readHoldings,
 } from "../../../shared/fixtures/index.js";
-import {
-  resetPlaidStub,
-  setPlaidHoldings,
-  setPlaidItem,
-} from "../../../shared/plaid-stub.js";
+import { resetPlaidStub, setPlaidHoldings } from "../../../shared/plaid-stub.js";
+import { linkInstitution, plaidAccount, updateItemAccounts } from "../../../shared/scenarios/plaid.js";
 
-/** An account in Plaid's shape, as the stub describes it to the accounts call. */
-const plaidAccount = (id: string) => ({
-  account_id: id,
-  name: `Brokerage ${id}`,
-  official_name: null,
-  type: "investment",
-  subtype: "brokerage",
-  mask: "1234",
-  balances: {
-    available: null,
-    current: 5000,
-    limit: null,
-    iso_currency_code: "CAD",
-    unofficial_currency_code: null,
-  },
-});
+/** A brokerage account in Plaid's shape, as the stub describes it to the accounts call. */
+const brokerage = (id: string) =>
+  plaidAccount(id, {
+    name: `Brokerage ${id}`,
+    type: "investment",
+    subtype: "brokerage",
+    mask: "1234",
+    balances: { available: null, current: 5000, limit: null, iso_currency_code: "CAD", unofficial_currency_code: null },
+  });
 
-/**
- * Link an institution through the backend (the Plaid stub answers the exchange,
- * item, institution, accounts, liabilities and holdings calls), and return the
- * new item's id. Holdings are synced as part of linking.
- */
+/** Link a brokerage with these accounts; holdings are synced as part of linking. Returns the item's id. */
 async function link(request: APIRequestContext, cookie: string, accountIds: string[]) {
-  const institutionId = uniqueId("ins");
-  await setPlaidItem({
-    institution_id: institutionId,
-    institution_name: "Stub Brokerage",
-    accounts: accountIds.map(plaidAccount),
+  const { itemId } = await linkInstitution(request, cookie, {
+    accounts: accountIds.map(brokerage),
+    institutionName: "Stub Brokerage",
   });
-  const res = await request.post("/api/items", {
-    headers: withSession(cookie),
-    data: { publicToken: "public-stub", institutionId },
-  });
-  await expectStatus(res, 201);
-  return (await res.json()).data.itemId as string;
+  return itemId;
 }
 
-/** Update an item's accounts, which syncs its holdings again. */
-function updateAccounts(request: APIRequestContext, cookie: string, itemId: string) {
-  return request.post(`/api/items/${itemId}/update-accounts`, {
-    headers: withSession(cookie),
-  });
-}
+const updateAccounts = updateItemAccounts;
 
 /** Plaid's holdings answer for some accounts, in Plaid's snake_case. */
 const answer = (

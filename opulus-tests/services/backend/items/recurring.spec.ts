@@ -7,60 +7,20 @@ import {
   createAuthedUser,
   seedExchangeRates,
 } from "../../../shared/fixtures/index.js";
-import {
-  recurringRequests,
-  resetPlaidStub,
-  setPlaidItem,
-  setPlaidRecurring,
-} from "../../../shared/plaid-stub.js";
+import { recurringRequests, resetPlaidStub, setPlaidRecurring } from "../../../shared/plaid-stub.js";
+import { linkInstitution, plaidAccount, updateItemAccounts } from "../../../shared/scenarios/plaid.js";
 
 /** The day this many days from today, "YYYY-MM-DD" (UTC). */
 const day = (offset = 0) =>
   new Date(Date.now() + offset * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-/** A chequing account in Plaid's shape, as the stub describes it to the accounts call. */
-const plaidAccount = (id: string) => ({
-  account_id: id,
-  name: `Chequing ${id}`,
-  official_name: null,
-  type: "depository",
-  subtype: "checking",
-  mask: "0000",
-  balances: {
-    available: 100,
-    current: 100,
-    limit: null,
-    iso_currency_code: "CAD",
-    unofficial_currency_code: null,
-  },
-});
-
-/**
- * Link an institution through the backend (the Plaid stub answers the exchange,
- * item, institution, accounts, liabilities, holdings and recurring calls), and
- * return the new item's id. Recurring transactions are synced as part of linking.
- */
+/** Link a bank with these (chequing) accounts; recurring transactions are synced as part of linking. Returns the item's id. */
 async function link(request: APIRequestContext, cookie: string, accountIds: string[]) {
-  const institutionId = uniqueId("ins");
-  await setPlaidItem({
-    institution_id: institutionId,
-    institution_name: "Stub Bank",
-    accounts: accountIds.map(plaidAccount),
-  });
-  const res = await request.post("/api/items", {
-    headers: withSession(cookie),
-    data: { publicToken: "public-stub", institutionId },
-  });
-  await expectStatus(res, 201);
-  return (await res.json()).data.itemId as string;
+  const { itemId } = await linkInstitution(request, cookie, { accounts: accountIds.map((id) => plaidAccount(id)) });
+  return itemId;
 }
 
-/** Update an item's accounts, which syncs its recurring transactions again. */
-function updateAccounts(request: APIRequestContext, cookie: string, itemId: string) {
-  return request.post(`/api/items/${itemId}/update-accounts`, {
-    headers: withSession(cookie),
-  });
-}
+const updateAccounts = updateItemAccounts;
 
 /** What the user sees: their recurring streams, including the stopped ones. */
 async function shown(request: APIRequestContext, cookie: string) {

@@ -32,6 +32,12 @@
  *                              expired; any other id is Plaid's INVALID_WEBHOOK_VERIFICATION_KEY_ID
  *   GET  /__control/webhook-key   that key's id and its PRIVATE key, so a test can
  *                              sign a webhook the receiver will accept
+ *   POST /item/remove          revokes an access token (remembered); answers the
+ *                              error a test set with /__control/item-remove, if any
+ *   GET  /__control/removed-items   the access tokens removed so far
+ *   POST /__control/item-remove  { error_code } makes /item/remove fail; {} makes it work
+ *   GET  /__control/exchanges  the public tokens exchanged so far
+ *   POST /institutions/get     a page of 25 stub institutions (count and offset honoured)
  *   POST /__control/reset      forget the requests, the item and the holdings
  *
  * Everything else answers 404 in Plaid's error shape, as an unsupported call.
@@ -43,6 +49,20 @@ const PORT = Number(process.env.PLAID_STUB_PORT ?? 4546);
 
 let linkTokenRequests = [];
 let counter = 0;
+let removedItems = [];
+let itemRemove = {};
+let exchanges = [];
+const STUB_INSTITUTIONS = Array.from({ length: 25 }, (_, i) => ({
+  institution_id: `ins_stub_${i}`,
+  name: `Stub Bank ${i}`,
+  country_codes: ["CA"],
+  products: ["transactions"],
+  routing_numbers: [],
+  oauth: false,
+  logo: null,
+  primary_color: null,
+  url: null,
+}));
 
 /** The key this stub signs webhooks with, made fresh each time the stub starts. */
 const WEBHOOK_KEY_ID = "stub-webhook-key";
@@ -121,7 +141,20 @@ const server = createServer(async (req, res) => {
     itemSetup = DEFAULT_ITEM;
     recurring = NO_STREAMS;
     recurringRequests = [];
+    removedItems = [];
+    itemRemove = {};
+    exchanges = [];
     return send(res, 200, {});
+  }
+  if (req.method === "GET" && url.pathname === "/__control/removed-items") {
+    return send(res, 200, { accessTokens: removedItems });
+  }
+  if (req.method === "POST" && url.pathname === "/__control/item-remove") {
+    itemRemove = await readJson(req);
+    return send(res, 200, {});
+  }
+  if (req.method === "GET" && url.pathname === "/__control/exchanges") {
+    return send(res, 200, { publicTokens: exchanges });
   }
   if (req.method === "POST" && url.pathname === "/__control/item") {
     itemSetup = { ...DEFAULT_ITEM, ...(await readJson(req)) };
@@ -193,6 +226,7 @@ const server = createServer(async (req, res) => {
   });
 
   if (req.method === "POST" && url.pathname === "/item/public_token/exchange") {
+    exchanges.push((await readJson(req)).public_token);
     counter += 1;
     return send(res, 200, {
       access_token: `access-stub-${counter}`,
@@ -204,6 +238,31 @@ const server = createServer(async (req, res) => {
   if (req.method === "POST" && url.pathname === "/item/get") {
     counter += 1;
     return send(res, 200, { item: plaidItem(), status: null, request_id: `stub-request-${counter}` });
+  }
+
+  if (req.method === "POST" && url.pathname === "/item/remove") {
+    const { access_token } = await readJson(req);
+    counter += 1;
+    if (itemRemove.error_code) {
+      return send(res, 500, {
+        error_type: "API_ERROR",
+        error_code: itemRemove.error_code,
+        error_message: `the stub answers ${itemRemove.error_code} on purpose`,
+        request_id: `stub-request-${counter}`,
+      });
+    }
+    removedItems.push(access_token);
+    return send(res, 200, { request_id: `stub-request-${counter}` });
+  }
+
+  if (req.method === "POST" && url.pathname === "/institutions/get") {
+    const { count = 500, offset = 0 } = await readJson(req);
+    counter += 1;
+    return send(res, 200, {
+      institutions: STUB_INSTITUTIONS.slice(offset, offset + count),
+      total: STUB_INSTITUTIONS.length,
+      request_id: `stub-request-${counter}`,
+    });
   }
 
   if (req.method === "POST" && url.pathname === "/institutions/get_by_id") {

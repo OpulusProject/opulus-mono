@@ -127,3 +127,8 @@ export async function readItemStatus(itemId: string) {
     },
   });
 }
+
+/** How many of these items are still in the database. */
+export async function countItems(itemIds: string[]): Promise<number> {
+  return testDb().item.count({ where: { id: { in: itemIds } } });
+}
