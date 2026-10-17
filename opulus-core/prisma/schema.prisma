@@ -385,3 +385,29 @@ model RecurringStream {
   @@index([userId])
   @@map("recurring_stream")
 }
+
+/// A webhook event a worker handled or gave up on: the audit trail of what
+/// Plaid told us and what we did with it. One row per queue job, written as the
+/// job runs. A dead event that is replayed gets a row of its own when the new
+/// job runs.
+model WebhookEvent {
+  id          String    @id @default(cuid())
+  source      String    @default("plaid")
+  jobId       String // the queue job's id; unique only with receivedAt, because a flushed Redis starts its ids over
+  webhookType String // ITEM, TRANSACTIONS, ...
+  webhookCode String // SYNC_UPDATES_AVAILABLE, ...
+  plaidItemId String? // Plaid's item id, when the event has one
+  payload     Json // the whole event as received, to read it later and to replay it
+  status      String // "processing", "processed", "retrying" (failed, will run again) or "dead" (gave up)
+  attempts    Int       @default(0)
+  error       String? // why the last attempt failed
+  receivedAt  DateTime // when the event was queued
+  processedAt DateTime? // when it was handled, or given up on
+  replayedAt  DateTime? // when a dead event was put back on the queue
+
+  @@unique([jobId, receivedAt])
+  @@index([plaidItemId, receivedAt])
+  @@index([status, receivedAt])
+  @@index([receivedAt])
+  @@map("webhook_event")
+}
