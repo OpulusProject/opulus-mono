@@ -47,15 +47,9 @@ docs {
 
   ## Error Responses
 
-  - `401 Unauthorized`: No active session, or the item belongs to another user
-    ```json
-    {
-      "error": "Unauthorized",
-      "message": "You do not have access to this item"
-    }
-    ```
+  - `401 Unauthorized`: No active session found
 
-  - `404 Not Found`: No item exists with the given ID
+  - `404 Not Found`: No item exists with the given ID, or it belongs to another user
     ```json
     {
       "error": "Not Found",
