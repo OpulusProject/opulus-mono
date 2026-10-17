@@ -5,6 +5,7 @@ import {
   CountryCode,
   InstitutionsGetByIdRequest,
   InstitutionsGetRequest,
+  InvestmentsHoldingsGetRequest,
   ItemGetRequest,
   ItemPublicTokenExchangeRequest,
   ItemRemoveRequest,
@@ -69,7 +70,12 @@ class PlaidGateway {
     // the institution supports it. Putting it in `products` would hide every
     // institution without support from Link, which matters in Canada where
     // coverage is limited. Plaid bills it per item, only where it applies.
-    const requiredIfSupportedProducts: Products[] = [Products.Liabilities];
+    // Investments (holdings: what is held, its price and what was paid) is the
+    // same: only where the institution supports it.
+    const requiredIfSupportedProducts: Products[] = [
+      Products.Liabilities,
+      Products.Investments,
+    ];
     const countryCodes: CountryCode[] = [CountryCode.Ca];
 
     const request: LinkTokenCreateRequest = {
@@ -228,6 +234,36 @@ class PlaidGateway {
       // The SDK wraps Plaid's error body in an axios error. Unwrap it so the
       // resulting AppError carries Plaid's own error_code, which callers use to
       // tell "not available for this item" apart from real failures.
+      const plaidBody = (error as { response?: { data?: unknown } } | null)
+        ?.response?.data;
+      throw handlePlaidError(plaidBody ?? error);
+    }
+  }
+
+  // ============================================================================
+  // Investments
+  // ============================================================================
+
+  /**
+   * Fetch an item's investment holdings (what each investment account holds,
+   * and what Plaid knows about each security). The data is as fresh as Plaid's
+   * last pull from the institution, usually about daily.
+   * @param accessToken - The access token for the item
+   * @param accountIds - Optional Plaid account IDs to limit the response to
+   * @returns Holdings, securities and the item's investment accounts
+   */
+  async getInvestmentHoldings(accessToken: string, accountIds?: string[]) {
+    const request: InvestmentsHoldingsGetRequest = {
+      access_token: accessToken,
+      ...(accountIds?.length && { options: { account_ids: accountIds } }),
+    };
+
+    try {
+      const response = await this.plaid.investmentsHoldingsGet(request);
+      return response.data;
+    } catch (error) {
+      // Unwrap Plaid's error body so the AppError carries its error_code (as for
+      // liabilities): callers tell "not available for this item" from a failure.
       const plaidBody = (error as { response?: { data?: unknown } } | null)
         ?.response?.data;
       throw handlePlaidError(plaidBody ?? error);

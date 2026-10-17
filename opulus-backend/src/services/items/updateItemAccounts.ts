@@ -6,6 +6,7 @@ import {
   plaidGateway,
   runInTransaction,
   toItemErrorData,
+  trySyncItemHoldings,
   trySyncItemLiabilities,
 } from "@opulus/core";
 
@@ -97,6 +98,7 @@ export async function updateItemAccounts(
 
   // New or re-consented accounts may now have liabilities data.
   await trySyncItemLiabilities({ item });
+  await trySyncItemHoldings({ item });
 
   logger.info(
     {
