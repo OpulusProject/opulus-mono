@@ -1,0 +1,70 @@
+meta {
+  name: Get Recurring Transactions
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{base_url}}/api/recurring-transactions
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+params:query {
+  ~direction: outflow
+  ~includeInactive: true
+}
+
+docs {
+  # Get Recurring Transactions
+
+  The authenticated user's recurring payments (subscriptions, bills) and income (a salary), each with what it comes to a month, plus what the active ones add up to in the base currency.
+
+  **Endpoint:** `GET /api/recurring-transactions`
+
+  ## Authentication
+
+  This endpoint requires an active session. The session cookie must be included in the request (automatically sent by Bruno if you've signed in).
+
+  ## Query Parameters
+
+  - `direction` (optional): `inflow` (money in) or `outflow` (money out)
+  - `includeInactive` (optional): `true` to include streams that have stopped (left out by default)
+
+  ## Success Response (200)
+
+  ```json
+  {
+    "data": {
+      "baseCurrency": "CAD",
+      "summary": { "monthlyOutflow": 120, "monthlyInflow": 2000, "streamsWithoutFrequency": 1 },
+      "streams": [
+        {
+          "id": "...", "accountId": "...", "accountName": "Chequing", "institutionName": "Maple Bank",
+          "direction": "outflow", "description": "Streaming Service", "merchantName": "StreamCo",
+          "frequency": "MONTHLY", "status": "MATURE", "isActive": true,
+          "firstDate": "2026-01-15T00:00:00.000Z", "lastDate": "2026-09-15T00:00:00.000Z",
+          "predictedNextDate": "2026-10-15T00:00:00.000Z",
+          "averageAmount": 15.99, "lastAmount": 16.49, "currency": "CAD", "category": "ENTERTAINMENT",
+          "monthlyAmountInBase": 15.99
+        }
+      ]
+    }
+  }
+  ```
+
+  - Amounts are positive whichever way the money goes; `direction` says which. `averageAmount` and `lastAmount` are in the stream's own `currency`
+  - `monthlyAmountInBase` is the average amount times how often it happens in a year (weekly 52, biweekly 26, semi-monthly 24, monthly 12, annually 1) over twelve, converted to `baseCurrency` (CAD for now) at today's rate, so streams at different paces can be compared. `null` when the frequency is `UNKNOWN`
+  - `summary` adds up only **active** streams with a known frequency, by direction; `streamsWithoutFrequency` says how many active ones were left out
+  - Streams are largest monthly amount first, those with none last
+  - A stream is `isActive: false` when Plaid saw it stop (status `TOMBSTONED`)
+
+  ## Error Responses
+
+  - `400 Bad Request`: `direction` or `includeInactive` is not one of the allowed values
+  - `401 Unauthorized`: No active session found
+}
