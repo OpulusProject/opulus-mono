@@ -1,4 +1,5 @@
 import type { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
+import { syncRecurringHandler } from "./syncRecurringHandler.js";
 import { syncTransactionsHandler } from "./syncTransactionsHandler.js";
 import { logger } from "@opulus/core";
 
@@ -13,6 +14,9 @@ export async function handleTransactionsWebhook(
     case "INITIAL_UPDATE":
     case "SYNC_UPDATES_AVAILABLE":
       await syncTransactionsHandler(event);
+      break;
+    case "RECURRING_TRANSACTIONS_UPDATE":
+      await syncRecurringHandler(event);
       break;
     case "TRANSACTIONS_REMOVED":
       // handled by SYNC_UPDATES_AVAILABLE
