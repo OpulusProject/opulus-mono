@@ -284,7 +284,7 @@ with the schemas, so a field that isn't in the schema fails a test.
 | Suite | What it covers | Needs |
 | --- | --- | --- |
 | `unit/core` | Pure functions in core that no endpoint can observe (the access-token crypto). The one suite that isn't black-box over HTTP. | Nothing |
-| `services/backend`, `services/webhooks` | The service's own behaviour over HTTP: auth, validation, response shape. No third party. | A running service and `TEST_DATABASE_URL` |
+| `services/backend`, `services/webhooks` | The service's own behaviour over HTTP: auth, validation, response shape. No third party: Plaid is the stub (`services/backend/stub/plaid.mjs`). The webhook receiver's specs sign webhooks with the stub's key (`postSignedWebhook`), so a webhook is verified, queued and handled for real. | A running service, the Plaid stub and `TEST_DATABASE_URL` |
 | `services/scheduler` | The scheduler's jobs API, and what each job stores, with the job's provider replaced by a stub (`services/scheduler/stub`) | A running scheduler pointed at the stub, Redis, `TEST_DATABASE_URL` |
 | `integration/backend` | Real round-trips through Plaid's sandbox | Sandbox credentials |
 | `integration/webhooks` | Plaid's sandbox delivering real webhooks to the real receiver | A public tunnel to the receiver, plus the above |
