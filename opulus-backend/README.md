@@ -55,6 +55,10 @@ All authentication routes are handled by Better Auth at `/api/auth/*`:
 - `POST /api/items/:id/update-accounts` - Re-sync an item's accounts with Plaid (requires authentication)
 - `DELETE /api/items/:id` - Disconnect an item and delete its accounts and transactions (requires authentication)
 
+### Recurring Transactions
+
+- `GET /api/recurring-transactions` - Get the user's recurring payments and income with each one's monthly amount, and what the active ones add up to in the base currency; `direction` and `includeInactive` filters (requires authentication)
+
 ### Transactions
 
 - `GET /api/transactions` - Get transactions for current user, paged (requires authentication)

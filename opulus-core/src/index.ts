@@ -18,6 +18,7 @@ export * from "./repositories/itemRepository.js";
 export * from "./repositories/liabilityRepository.js";
 export * from "./repositories/linkSessionRepository.js";
 export * from "./repositories/transactionRepository.js";
+export * from "./repositories/recurringStreamRepository.js";
 export * from "./repositories/userRepository.js";
 
 // Gateway exports (external APIs)
