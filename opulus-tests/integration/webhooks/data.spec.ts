@@ -11,10 +11,11 @@ import {
 } from "./helpers.js";
 
 /**
- * TRANSACTIONS and LIABILITIES webhooks, delivered by Plaid's sandbox to the
- * real receiver. The effect to wait for is the handler re-syncing from Plaid,
- * which moves a sync timestamp forward. Both timestamps are read the way the
- * client reads them, from GET /api/items.
+ * A TRANSACTIONS webhook, delivered by Plaid's sandbox to the real receiver: the
+ * one thing the stubbed suite cannot prove. The effect to wait for is the
+ * handler re-syncing from Plaid, which moves the sync timestamp forward, read
+ * the way the client reads it, from GET /api/items. What each webhook does with
+ * Plaid's data is covered in services/webhooks/data.
  */
 test.describe("data webhooks (sandbox to receiver)", () => {
   test("TRANSACTIONS SYNC_UPDATES_AVAILABLE makes the receiver sync the item", async ({
@@ -78,36 +79,5 @@ test.describe("data webhooks (sandbox to receiver)", () => {
       "the sandbox transactions to be synced",
     );
     expect(transactions.some((t) => t.category?.primary)).toBe(true);
-  });
-
-  test("LIABILITIES DEFAULT_UPDATE makes the receiver refresh the item's liabilities", async ({
-    request,
-  }) => {
-    // Arrange: the liabilities stored when the item was linked.
-    const creds = requireSandboxCredentials();
-    const { cookie } = await createAuthedUser(request);
-    const { itemId, accessToken } = await linkItemWithWebhook(
-      request,
-      cookie,
-      creds,
-    );
-    const liabilitySyncTimes = async () =>
-      (await readItem(request, cookie, itemId)).accounts.flatMap((a) =>
-        a.liabilityDetails ? [new Date(a.liabilityDetails.syncedAt).getTime()] : [],
-      );
-    const before = await liabilitySyncTimes();
-    expect(before.length).toBeGreaterThan(0);
-    const latestBefore = Math.max(...before);
-
-    // Act
-    await fireSandboxWebhook(creds, accessToken, "LIABILITIES", "DEFAULT_UPDATE");
-
-    // Assert: refreshed in place (newer sync time, same number of liabilities).
-    const after = await waitFor(
-      liabilitySyncTimes,
-      (times) => Math.max(...times) > latestBefore,
-      "the liabilities to be refreshed",
-    );
-    expect(after.length).toBe(before.length);
   });
 });
