@@ -93,6 +93,29 @@ class WebhookEventRepository {
   }
 
   /**
+   * Delete old events: handled ones received before `processedBefore`, and
+   * every other one (retrying, dead, stuck in processing) received before
+   * `otherBefore`.
+   * @returns How many of each were deleted
+   * @throws AppError if database error occurs
+   */
+  async deleteOlderThan(cutoffs: { processedBefore: Date; otherBefore: Date }) {
+    try {
+      const [processed, other] = await this.prisma.$transaction([
+        this.prisma.webhookEvent.deleteMany({
+          where: { status: "processed", receivedAt: { lt: cutoffs.processedBefore } },
+        }),
+        this.prisma.webhookEvent.deleteMany({
+          where: { status: { not: "processed" }, receivedAt: { lt: cutoffs.otherBefore } },
+        }),
+      ]);
+      return { processed: processed.count, other: other.count };
+    } catch (error) {
+      throw toAppError(error, "delete old webhook events");
+    }
+  }
+
+  /**
    * Take a dead event to replay it: marks it replayed and returns it, or throws
    * if it is not dead or was already replayed, so two operators cannot replay
    * one event twice.

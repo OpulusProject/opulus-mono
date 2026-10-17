@@ -1,4 +1,4 @@
-import { refreshExchangeRates } from "@opulus/core";
+import { purgeWebhookEvents, refreshExchangeRates } from "@opulus/core";
 
 export interface ScheduledJob {
   /** What it does, for logs and the README. */
@@ -26,6 +26,13 @@ export const jobs = {
     pattern: process.env.EXCHANGE_RATES_CRON || "0 17 * * *",
     runOnStart: true,
     run: () => refreshExchangeRates(),
+  },
+  "purge-webhook-events": {
+    description:
+      "Delete handled webhook events after 90 days and every other one after a year",
+    pattern: process.env.WEBHOOK_EVENTS_PURGE_CRON || "30 3 * * *",
+    runOnStart: false,
+    run: () => purgeWebhookEvents(),
   },
 } satisfies Record<string, ScheduledJob>;
 

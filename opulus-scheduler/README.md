@@ -6,6 +6,7 @@ Runs Opulus's recurring jobs. Each job is a name, a schedule and a call to a cor
 
 | Job | When (UTC) | What |
 | --- | --- | --- |
+| `purge-webhook-events` | `30 3 * * *` (daily, 03:30 UTC) | `purgeWebhookEvents()` from core: deletes `webhook_event` rows for handled webhooks after 90 days and every other one after a year |
 | `refresh-exchange-rates` | `0 17 * * *` (daily, after the European Central Bank publishes), and once on start | `refreshExchangeRates()` from core: fills `exchange_rate` with about two years of daily rates when it is empty, then adds the days since the latest stored one |
 
 ### Adding a job
@@ -66,6 +67,7 @@ The response shape is `JobRunResponse` in `@opulus/core` (`types/dto/jobs`).
 | `SCHEDULER_ADMIN_TOKEN` | *unset* | Turns on the jobs API; generate with `openssl rand -base64 32` |
 | `SCHEDULER_RUN_ON_START` | `true` | `false` to skip the start-up runs |
 | `EXCHANGE_RATES_CRON` | `0 17 * * *` | When `refresh-exchange-rates` runs (UTC) |
+| `WEBHOOK_EVENTS_PURGE_CRON` | `30 3 * * *` | When `purge-webhook-events` runs (UTC) |
 | `FRANKFURTER_BASE_URL` | `https://api.frankfurter.dev/v1` | Where rates come from (read by core) |
 
 ## Local development

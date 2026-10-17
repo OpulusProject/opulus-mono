@@ -28,6 +28,7 @@ export * from "./gateways/plaidGateway.js";
 
 // Service exports (business logic shared by the backend and webhooks)
 export * from "./services/exchangeRateConverter.js";
+export * from "./services/purgeWebhookEvents.js";
 export * from "./services/refreshExchangeRates.js";
 export * from "./services/syncItemHoldings.js";
 export * from "./services/syncItemLiabilities.js";

@@ -9,6 +9,26 @@ import { testDb } from "../db.js";
  * HTTP", as for the scheduler's jobs.
  */
 
+/** Put an event straight into the table, as the worker would have left it. */
+export async function seedWebhookEvent(params: {
+  plaidItemId: string;
+  status: "processing" | "processed" | "retrying" | "dead";
+  receivedAt: Date;
+}) {
+  return testDb().webhookEvent.create({
+    data: {
+      jobId: `seed-${Math.random().toString(36).slice(2)}`,
+      webhookType: "TRANSACTIONS",
+      webhookCode: "SYNC_UPDATES_AVAILABLE",
+      plaidItemId: params.plaidItemId,
+      payload: { webhook_type: "TRANSACTIONS", webhook_code: "SYNC_UPDATES_AVAILABLE", item_id: params.plaidItemId },
+      status: params.status,
+      attempts: 1,
+      receivedAt: params.receivedAt,
+    },
+  });
+}
+
 /** The events recorded for a Plaid item id, oldest first. */
 export async function readWebhookEvents(plaidItemId: string) {
   return testDb().webhookEvent.findMany({
