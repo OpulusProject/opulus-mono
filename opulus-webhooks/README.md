@@ -227,7 +227,8 @@ opulus-webhooks/
 
 Plaid does not redeliver webhooks after ~24 hours. If the receiver was down
 longer than that, run a cursor-based catch-up against every item: it syncs the
-transactions and pulls the current holdings of any investment accounts. This
+transactions, pulls the current holdings of any investment accounts, and its
+recurring payments and income. This
 talks to Plaid and Postgres directly — it does not need the HTTP server or Redis.
 
 ```bash
