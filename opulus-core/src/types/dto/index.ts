@@ -23,6 +23,7 @@ export * from './accounts/index.js';
 export * from './auth/index.js';
 export * from './common.js';
 export * from './institutions/index.js';
+export * from './investments/index.js';
 export * from './items/index.js';
 export * from './jobs/index.js';
 export * from './linkTokens/index.js';
