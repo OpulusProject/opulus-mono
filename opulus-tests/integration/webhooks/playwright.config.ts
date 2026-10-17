@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineSuite } from "../../shared/suite.js";
 
 /**
  * Playwright config for the webhook RECEIVER end-to-end suite.
@@ -22,25 +22,11 @@ import { defineConfig } from "@playwright/test";
  *
  * Webhooks arrive asynchronously, so specs poll rather than assert at once.
  */
-const BASE_URL = process.env.TEST_BASE_URL ?? "http://localhost:8080";
 
-export default defineConfig({
-  testDir: ".",
-  fullyParallel: false,
-  forbidOnly: !!process.env.CI,
+export default defineSuite({
   // Delivery goes over the public internet; one retry absorbs a dropped hop.
-  retries: process.env.CI ? 1 : 0,
-  workers: 1,
-  reporter: [["list"]],
+  project: "webhooks",
   timeout: 180_000,
-  globalTeardown: "./global-teardown.ts",
-
-  use: {
-    baseURL: BASE_URL,
-    extraHTTPHeaders: {
-      accept: "application/json",
-    },
-  },
-
-  projects: [{ name: "webhooks", testMatch: /.*\.spec\.ts$/ }],
+  ciRetries: 1,
+  port: 8080,
 });

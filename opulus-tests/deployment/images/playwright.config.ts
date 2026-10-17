@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineSuite } from "../../shared/suite.js";
 
 /**
  * Playwright config for the DOCKER IMAGE deployment suite.
@@ -15,14 +15,8 @@ import { defineConfig } from "@playwright/test";
  * Slow (a build per service, several minutes cold), so it is a suite of its
  * own. Serial: it builds and runs one image at a time.
  */
-export default defineConfig({
-  testDir: ".",
-  fullyParallel: false,
-  forbidOnly: !!process.env.CI,
-  retries: 0,
-  workers: 1,
-  reporter: [["list"]],
-  timeout: 120_000,
 
-  projects: [{ name: "images", testMatch: /.*\.spec\.ts$/ }],
+export default defineSuite({
+  project: "images",
+  timeout: 120_000,
 });

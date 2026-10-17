@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineSuite } from "../../shared/suite.js";
 
 /**
  * Playwright config for the @opulus/backend INTEGRATION suite.
@@ -25,30 +25,13 @@ import { defineConfig } from "@playwright/test";
  * opulus-tests/shared/ and are imported with relative paths. Sandbox-specific
  * helpers live beside this config in ./helpers/.
  */
-const BASE_URL = process.env.TEST_BASE_URL ?? "http://localhost:8080";
 
-export default defineConfig({
-  testDir: ".",
-  fullyParallel: false,
-  forbidOnly: !!process.env.CI,
+export default defineSuite({
   // Plaid Sandbox occasionally returns transient 5xx; a single retry absorbs
-  // that without masking real backend regressions.
-  retries: process.env.CI ? 2 : 0,
-  workers: 1,
-  reporter: [["list"]],
-  // Sandbox round-trips (public_token → exchange → accounts/get) can take
-  // several seconds; give specs headroom beyond the 30s service default.
+  // that without masking real backend regressions. Sandbox round-trips
+  // (public_token → exchange → accounts/get) can take several seconds.
+  project: "integration",
   timeout: 60_000,
-  globalTeardown: "./global-teardown.ts",
-
-  use: {
-    baseURL: BASE_URL,
-    extraHTTPHeaders: {
-      accept: "application/json",
-    },
-  },
-
-  projects: [{ name: "integration", testMatch: /.*\.spec\.ts$/ }],
+  ciRetries: 2,
+  port: 8080,
 });
-
-export { BASE_URL };

@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineSuite } from "../../shared/suite.js";
 
 /**
  * Playwright config for the @opulus/webhooks black-box API suite.
@@ -9,25 +9,10 @@ import { defineConfig } from "@playwright/test";
  * (`pnpm dev:webhooks`, `node dist/server.js`, a container) with Postgres and
  * Redis available, and point TEST_BASE_URL at it. Verification is over HTTP only.
  */
-const BASE_URL = process.env.TEST_BASE_URL ?? "http://localhost:8081";
 
-export default defineConfig({
-  testDir: ".",
-  fullyParallel: false,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: 1,
-  reporter: [["list"]],
+export default defineSuite({
+  project: "api",
   timeout: 30_000,
-
-  use: {
-    baseURL: BASE_URL,
-    extraHTTPHeaders: {
-      accept: "application/json",
-    },
-  },
-
-  projects: [{ name: "api", testMatch: /.*\.spec\.ts$/ }],
+  ciRetries: 2,
+  port: 8081,
 });
-
-export { BASE_URL };

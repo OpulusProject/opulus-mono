@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineSuite } from "../../shared/suite.js";
 
 /**
  * Playwright config for the @opulus/backend black-box API suite.
@@ -17,26 +17,10 @@ import { defineConfig } from "@playwright/test";
  * service shares one Postgres instance across cases; isolation comes from
  * uniqueId()-namespaced data, not resets.
  */
-const BASE_URL = process.env.TEST_BASE_URL ?? "http://localhost:8080";
 
-export default defineConfig({
-  testDir: ".",
-  fullyParallel: false,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: 1,
-  reporter: [["list"]],
+export default defineSuite({
+  project: "api",
   timeout: 30_000,
-  globalTeardown: "./global-teardown.ts",
-
-  use: {
-    baseURL: BASE_URL,
-    extraHTTPHeaders: {
-      accept: "application/json",
-    },
-  },
-
-  projects: [{ name: "api", testMatch: /.*\.spec\.ts$/ }],
+  ciRetries: 2,
+  port: 8080,
 });
-
-export { BASE_URL };

@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineSuite } from "../../shared/suite.js";
 
 /**
  * Playwright config for the MIGRATIONS deployment suite.
@@ -10,14 +10,8 @@ import { defineConfig } from "@playwright/test";
  * do on start, and drops it again. The database DATABASE_URL names is not
  * touched. The role needs permission to create databases.
  */
-export default defineConfig({
-  testDir: ".",
-  fullyParallel: false,
-  forbidOnly: !!process.env.CI,
-  retries: 0,
-  workers: 1,
-  reporter: [["list"]],
-  timeout: 120_000,
 
-  projects: [{ name: "migrations", testMatch: /.*\.spec\.ts$/ }],
+export default defineSuite({
+  project: "migrations",
+  timeout: 120_000,
 });

@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineSuite } from "../shared/suite.js";
 
 /**
  * Playwright config for the @opulus/core unit specs.
@@ -9,12 +9,9 @@ import { defineConfig } from "@playwright/test";
  * core that no endpoint can observe (today: the access-token crypto), needs no
  * service, database or network, and runs in a second.
  */
-export default defineConfig({
-  testDir: ".",
-  fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: 0,
-  reporter: [["list"]],
+
+export default defineSuite({
+  project: "unit",
   timeout: 10_000,
-  projects: [{ name: "unit", testMatch: /.*\.spec\.ts$/ }],
+  parallel: true,
 });

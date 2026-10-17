@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineSuite } from "../../shared/suite.js";
 
 /**
  * Playwright config for the @opulus/scheduler INTEGRATION suite.
@@ -18,24 +18,12 @@ import { defineConfig } from "@playwright/test";
  *
  * Serial, for the same reason as the service suite: exchange_rate is shared.
  */
-const BASE_URL = process.env.TEST_BASE_URL ?? "http://localhost:8082";
 
-export default defineConfig({
-  testDir: ".",
-  fullyParallel: false,
-  forbidOnly: !!process.env.CI,
+export default defineSuite({
   // A transient provider error is retried by the job itself; one retry here
   // absorbs a slow first connection.
-  retries: process.env.CI ? 1 : 0,
-  workers: 1,
-  reporter: [["list"]],
+  project: "integration",
   timeout: 90_000,
-  globalTeardown: "./global-teardown.ts",
-
-  use: {
-    baseURL: BASE_URL,
-    extraHTTPHeaders: { accept: "application/json" },
-  },
-
-  projects: [{ name: "integration", testMatch: /.*\.spec\.ts$/ }],
+  ciRetries: 1,
+  port: 8082,
 });
