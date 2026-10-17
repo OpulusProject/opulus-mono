@@ -16,6 +16,13 @@
  *   GET  /__control/requests   the link token requests received so far
  *   POST /__control/item       set the institution and accounts the calls above
  *                              describe: { institution_id, institution_name, accounts }
+ *   POST /transactions/recurring/get   the streams a test set with /__control/recurring
+ *                              (none by default), or the Plaid error it set; the
+ *                              request is remembered
+ *   POST /__control/recurring  set what /transactions/recurring/get answers:
+ *                              { response } (inflow_streams, outflow_streams) or
+ *                              { error_code }
+ *   GET  /__control/recurring-requests   the recurring requests received so far
  *   POST /__control/holdings   set what /investments/holdings/get answers:
  *                              { response } (accounts, holdings, securities) or
  *                              { error_code } for a Plaid error
@@ -49,6 +56,9 @@ const DEFAULT_ITEM = {
   ],
 };
 let itemSetup = DEFAULT_ITEM;
+const NO_STREAMS = { response: { inflow_streams: [], outflow_streams: [] } };
+let recurring = NO_STREAMS;
+let recurringRequests = [];
 
 function send(res, status, body) {
   res.writeHead(status, { "content-type": "application/json" });
@@ -82,11 +92,20 @@ const server = createServer(async (req, res) => {
     linkTokenRequests = [];
     holdings = NO_HOLDINGS;
     itemSetup = DEFAULT_ITEM;
+    recurring = NO_STREAMS;
+    recurringRequests = [];
     return send(res, 200, {});
   }
   if (req.method === "POST" && url.pathname === "/__control/item") {
     itemSetup = { ...DEFAULT_ITEM, ...(await readJson(req)) };
     return send(res, 200, {});
+  }
+  if (req.method === "POST" && url.pathname === "/__control/recurring") {
+    recurring = await readJson(req);
+    return send(res, 200, {});
+  }
+  if (req.method === "GET" && url.pathname === "/__control/recurring-requests") {
+    return send(res, 200, { requests: recurringRequests });
   }
   if (req.method === "POST" && url.pathname === "/__control/holdings") {
     holdings = await readJson(req);
@@ -192,6 +211,25 @@ const server = createServer(async (req, res) => {
     return send(res, 200, {
       ...holdings.response,
       item: {},
+      request_id: `stub-request-${counter}`,
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/transactions/recurring/get") {
+    const { client_id, secret, access_token, ...request } = await readJson(req);
+    recurringRequests.push(request);
+    counter += 1;
+    if (recurring.error_code) {
+      return send(res, 400, {
+        error_type: "ITEM_ERROR",
+        error_code: recurring.error_code,
+        error_message: `the stub answers ${recurring.error_code} on purpose`,
+        request_id: `stub-request-${counter}`,
+      });
+    }
+    return send(res, 200, {
+      ...recurring.response,
+      updated_datetime: new Date().toISOString(),
       request_id: `stub-request-${counter}`,
     });
   }

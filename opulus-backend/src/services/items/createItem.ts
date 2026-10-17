@@ -7,6 +7,7 @@ import {
   plaidGateway,
   runInTransaction,
   trySyncItemHoldings,
+  trySyncItemRecurring,
   trySyncItemLiabilities,
 } from "@opulus/core";
 
@@ -112,6 +113,11 @@ export async function createItem(
   });
   // Likewise what an investment account holds. Plaid's webhook refreshes it.
   await trySyncItemHoldings({
+    item: { id: createdItem.id, userId, accessToken },
+  });
+  // And the recurring payments and income Plaid finds in its transactions. They
+  // are often not ready yet; the RECURRING_TRANSACTIONS_UPDATE webhook follows.
+  await trySyncItemRecurring({
     item: { id: createdItem.id, userId, accessToken },
   });
 
