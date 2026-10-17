@@ -19,7 +19,7 @@ Plaid Webhook → Express Handler → Redis Queue → BullMQ Worker → Process 
 - **Handler**: Acknowledges immediately (~5ms), enqueues job
 - **Queue**: Stores jobs temporarily with retry support
 - **Worker**: Processes jobs concurrently (5 at a time) with automatic retries
-- **Handlers**: Process ITEM, LIABILITIES, TRANSACTIONS webhooks
+- **Handlers**: Process HOLDINGS, ITEM, LIABILITIES, TRANSACTIONS webhooks
 
 ## Prerequisites
 
@@ -185,6 +185,7 @@ opulus-webhooks/
 │   ├── plaid/
 │   │   ├── handlers/          # Webhook event handlers
 │   │   │   ├── item/         # ITEM webhook handlers
+│   │   │   ├── holdings/     # HOLDINGS webhook handlers
 │   │   │   ├── liabilities/  # LIABILITIES webhook handlers
 │   │   │   └── transactions/ # TRANSACTIONS webhook handlers
 │   │   ├── handlePlaidWebhook.ts  # Main webhook handler
@@ -207,8 +208,9 @@ opulus-webhooks/
 ## Transaction reconcile
 
 Plaid does not redeliver webhooks after ~24 hours. If the receiver was down
-longer than that, run a cursor-based catch-up against every item. This talks
-to Plaid and Postgres directly — it does not need the HTTP server or Redis.
+longer than that, run a cursor-based catch-up against every item: it syncs the
+transactions and pulls the current holdings of any investment accounts. This
+talks to Plaid and Postgres directly — it does not need the HTTP server or Redis.
 
 ```bash
 # All items

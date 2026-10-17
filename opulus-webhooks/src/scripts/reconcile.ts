@@ -1,9 +1,10 @@
 /**
- * Catch-up transaction sync for every (or one) Plaid item.
+ * Catch-up sync for every (or one) Plaid item: its transactions, and the
+ * holdings of its investment accounts.
  *
  * Plaid does not replay webhooks after ~24h, so a long outage leaves items
- * stale until the next nudge. This walks stored cursors via /transactions/sync
- * and does not depend on the webhook receiver.
+ * stale until the next nudge. This walks stored cursors via /transactions/sync,
+ * pulls the current holdings, and does not depend on the webhook receiver.
  *
  * Local:
  *   pnpm --filter @opulus/webhooks reconcile
@@ -19,6 +20,7 @@ import {
   logger,
   prisma,
   syncItemTransactions,
+  trySyncItemHoldings,
 } from "@opulus/core";
 
 function parseItemFlag(argv: string[]): string | undefined {
@@ -58,12 +60,18 @@ async function main(): Promise<void> {
   for (const item of items) {
     try {
       const result = await syncItemTransactions({ plaidItemId: item.plaidItemId });
+      // Holdings are a bonus (an item without investments has none): the sync
+      // never throws, and an item that has no investments is just "unavailable".
+      const holdings = await trySyncItemHoldings({
+        item: await itemRepository.getByPlaidItemId(item.plaidItemId),
+      });
       succeeded += 1;
       logger.info(
         {
           item_id: item.plaidItemId,
           institution: item.institutionName,
           ...result,
+          holdings_status: holdings.status,
         },
         "Reconciled item"
       );
