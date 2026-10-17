@@ -7,7 +7,7 @@ import {
   createAuthedUser,
   seedExchangeRates,
 } from "../../../shared/fixtures/index.js";
-import { recurringRequests, resetPlaidStub, setPlaidRecurring } from "../../../shared/plaid-stub.js";
+import { recurringRequests, resetPlaidStub, setPlaidRecurring, type Plaid, type TransactionStream } from "../../../shared/plaid-stub.js";
 import { linkInstitution, plaidAccount, updateItemAccounts } from "../../../shared/scenarios/plaid.js";
 
 /** The day this many days from today, "YYYY-MM-DD" (UTC). */
@@ -35,8 +35,8 @@ async function shown(request: APIRequestContext, cookie: string) {
 const stream = (
   accountId: string,
   streamId: string,
-  overrides: Record<string, unknown> = {},
-) => ({
+  overrides: Plaid<TransactionStream> = {},
+): Plaid<TransactionStream> => ({
   account_id: accountId,
   stream_id: streamId,
   description: "Streaming Service",

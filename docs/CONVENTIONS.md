@@ -290,6 +290,8 @@ with the schemas, so a field that isn't in the schema fails a test.
 | `integration/webhooks` | Plaid's sandbox delivering real webhooks to the real receiver | A public tunnel to the receiver, plus the above |
 | `integration/scheduler` | A job run against the real provider (Frankfurter), asserting evidence rather than exact rates | A running scheduler with the default provider URL, Redis, `TEST_DATABASE_URL`, network access (no credentials) |
 
+The tests package is type-checked (`pnpm --filter @opulus/tests type-check`, run by the Type Check workflow). What the Plaid stub answers, and what a test tells it to answer, is typed with the Plaid SDK's own types (`Wire<T>` for the stub's complete answers, `Plaid<T>` for the partial objects a test supplies), so a field the SDK does not have fails the check instead of passing against a stub that agrees with our code.
+
 Rules that apply to all of them:
 - Verify over HTTP. Read the database only to set up a test (for example an
   access token Plaid needs); seed resources that have no create endpoint

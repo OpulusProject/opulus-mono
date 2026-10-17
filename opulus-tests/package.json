@@ -18,16 +18,20 @@
     "test:deployment-config": "playwright test --config deployment/config/playwright.config.ts",
     "test:integration-scheduler": "playwright test --config integration/scheduler/playwright.config.ts",
     "test:deployment-migrations": "playwright test --config deployment/migrations/playwright.config.ts",
-    "test:report": "playwright show-report"
+    "test:report": "playwright show-report",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@opulus/core": "workspace:*"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
+    "@types/node": "^22.2.0",
     "bullmq": "^5.0.0",
     "cbor-x": "^1.6.6",
     "otpauth": "^9.5.2",
+    "plaid": "^29.0.0",
+    "typescript": "^5.7.2",
     "zod": "^4.3.5"
   }
 }

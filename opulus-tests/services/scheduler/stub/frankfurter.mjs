@@ -17,8 +17,10 @@ import { publishingDays, stubRatesFor } from "./rates.mjs";
 const PORT = Number(process.env.STUB_PORT ?? 4545);
 
 let failing = false;
+/** @type {Record<string, unknown>[]} */
 let requests = [];
 
+/** @param {import("node:http").ServerResponse} res @param {number} status @param {unknown} body */
 function send(res, status, body) {
   res.writeHead(status, { "content-type": "application/json" });
   res.end(JSON.stringify(body));

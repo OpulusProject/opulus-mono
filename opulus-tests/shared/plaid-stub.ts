@@ -3,6 +3,53 @@
  * for specs that check what the backend asked Plaid for. The backend runs with
  * PLAID_BASE_URL pointing at the stub, so no real Plaid is involved.
  */
+import type {
+  AccountBase,
+  CreditCardLiability,
+  Holding,
+  MortgageLiability,
+  Security,
+  StudentLoan,
+  TransactionStream,
+  RemovedTransaction,
+  Transaction,
+} from "plaid";
+
+/**
+ * What the stub answers is typed with the SDK's own types, so a field the SDK
+ * does not know (a typo, or one Plaid renamed in a newer SDK) fails the
+ * type-check instead of passing against a stub that quietly agrees with us.
+ */
+export type { AccountBase, Holding, Security, Transaction, TransactionStream };
+
+/**
+ * The SDK's enums are TypeScript enums, which a plain string such as "checking"
+ * does not satisfy, so they are read as the strings they stand for.
+ */
+type AsPlaid<T> = T extends string
+  ? `${T}`
+  : T extends (infer Item)[]
+    ? AsPlaid<Item>[]
+    : T extends object
+      ? { [K in keyof T]?: AsPlaid<T[K]> }
+      : T;
+
+/** A response type as it travels over the wire: enums are the strings they stand for, required fields stay required. */
+export type Wire<T> = T extends string
+  ? `${T}`
+  : T extends (infer Item)[]
+    ? Wire<Item>[]
+    : T extends object
+      ? { [K in keyof T]: Wire<T[K]> }
+      : T;
+
+/**
+ * A response object of Plaid's with only the fields a test cares about. Every
+ * field that is given must exist in the SDK and have its type, but the many
+ * that a test does not use need not be repeated.
+ */
+export type Plaid<T> = AsPlaid<T> & object;
+
 const STUB_URL = process.env.PLAID_STUB_URL ?? "http://localhost:4546";
 
 /** The link token requests the backend has made to the stub since the last reset, oldest first. */
@@ -20,11 +67,7 @@ export async function resetPlaidStub(): Promise<void> {
 export async function setPlaidHoldings(
   answer:
     | {
-        response: {
-          accounts: Record<string, unknown>[];
-          holdings: Record<string, unknown>[];
-          securities: Record<string, unknown>[];
-        };
+        response: { accounts: Plaid<AccountBase>[]; holdings: Plaid<Holding>[]; securities: Plaid<Security>[] };
       }
     | { error_code: string },
 ): Promise<void> {
@@ -43,7 +86,7 @@ export async function setPlaidHoldings(
 export async function setPlaidItem(item: {
   institution_id?: string;
   institution_name?: string;
-  accounts: Record<string, unknown>[];
+  accounts: Plaid<AccountBase>[];
 }): Promise<void> {
   await fetch(`${STUB_URL}/__control/item`, {
     method: "POST",
@@ -56,10 +99,7 @@ export async function setPlaidItem(item: {
 export async function setPlaidRecurring(
   answer:
     | {
-        response: {
-          inflow_streams: Record<string, unknown>[];
-          outflow_streams: Record<string, unknown>[];
-        };
+        response: { inflow_streams: Plaid<TransactionStream>[]; outflow_streams: Plaid<TransactionStream>[] };
       }
     | { error_code: string },
 ): Promise<void> {
@@ -111,10 +151,17 @@ export async function exchangedPublicTokens(): Promise<string[]> {
   return (await res.json()).publicTokens;
 }
 
+/** Plaid's liabilities by kind, each with only the fields a test cares about. */
+export interface PlaidLiabilities {
+  credit?: Plaid<CreditCardLiability>[];
+  mortgage?: Plaid<MortgageLiability>[];
+  student?: Plaid<StudentLoan>[];
+}
+
 /** What the stub answers to `/liabilities/get`: Plaid's liabilities by kind, or a Plaid error code. */
 export async function setPlaidLiabilities(
   answer:
-    | { response: { liabilities: { credit?: unknown[]; mortgage?: unknown[]; student?: unknown[] } } }
+    | { response: { liabilities: PlaidLiabilities } }
     | { error_code: string },
 ): Promise<void> {
   await fetch(`${STUB_URL}/__control/liabilities`, {
@@ -136,10 +183,10 @@ export async function failAccounts(errorCode?: string): Promise<void> {
 /** One page of what `/transactions/sync` answers (Plaid's snake_case), or a Plaid error code. */
 export type PlaidSyncPage =
   | {
-      added?: Record<string, unknown>[];
-      modified?: Record<string, unknown>[];
-      removed?: { transaction_id: string }[];
-      accounts?: Record<string, unknown>[];
+      added?: Plaid<Transaction>[];
+      modified?: Plaid<Transaction>[];
+      removed?: Plaid<RemovedTransaction>[];
+      accounts?: Plaid<AccountBase>[];
       next_cursor?: string;
       has_more?: boolean;
     }

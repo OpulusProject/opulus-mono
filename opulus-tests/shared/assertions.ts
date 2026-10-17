@@ -75,6 +75,6 @@ export async function expectMatchesSchema<T>(
       `Response from ${res.url()} does not match its schema: ${JSON.stringify(parsed.error.issues)}`,
     );
   }
-  expect(parsed.data, "fields outside the schema were returned").toEqual(body);
+  expect(parsed.data as unknown, "fields outside the schema were returned").toEqual(body);
   return parsed.data;
 }
