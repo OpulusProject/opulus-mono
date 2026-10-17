@@ -132,3 +132,34 @@ export async function failAccounts(errorCode?: string): Promise<void> {
     body: JSON.stringify(errorCode ? { error_code: errorCode } : {}),
   });
 }
+
+/** One page of what `/transactions/sync` answers (Plaid's snake_case), or a Plaid error code. */
+export type PlaidSyncPage =
+  | {
+      added?: Record<string, unknown>[];
+      modified?: Record<string, unknown>[];
+      removed?: { transaction_id: string }[];
+      accounts?: Record<string, unknown>[];
+      next_cursor?: string;
+      has_more?: boolean;
+    }
+  | { error_code: string };
+
+/**
+ * The pages `/transactions/sync` answers, in turn, for one access token (an
+ * empty page after that). Per token, so a retried job from another test cannot
+ * take them.
+ */
+export async function setPlaidSyncPages(accessToken: string, pages: PlaidSyncPage[]): Promise<void> {
+  await fetch(`${STUB_URL}/__control/transactions-sync`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ access_token: accessToken, pages }),
+  });
+}
+
+/** The cursors `/transactions/sync` was asked from for an access token, oldest first (null for the first sync). */
+export async function syncCursorsAskedFor(accessToken: string): Promise<(string | null)[]> {
+  const res = await fetch(`${STUB_URL}/__control/transactions-sync-cursors?access_token=${encodeURIComponent(accessToken)}`);
+  return (await res.json()).cursors;
+}

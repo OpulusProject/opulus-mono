@@ -1,5 +1,6 @@
 import { createHash, createPrivateKey, createSign, generateKeyPairSync } from "node:crypto";
 import { type APIRequestContext } from "@playwright/test";
+import { readWebhookEvents, waitForWebhookEvents } from "../../../../shared/fixtures/index.js";
 import { webhookSigningKey } from "../../../../shared/plaid-stub.js";
 
 /**
@@ -108,3 +109,21 @@ export async function postSignedWebhook(
     data: Buffer.from(options.bodyAfterSigning ?? signed),
   });
 }
+
+/**
+ * Deliver a signed webhook for an item and wait until the worker has handled it
+ * (one more handled webhook for the item than before, so an earlier one does not
+ * count). Fails if the receiver does not acknowledge it.
+ */
+export async function deliverWebhook(
+  request: APIRequestContext,
+  event: Record<string, unknown> & { item_id: string },
+): Promise<void> {
+  const handledBefore = (await readWebhookEvents(event.item_id)).filter((e) => e.status === "processed").length;
+  const res = await postSignedWebhook(request, event);
+  if (res.status() !== 200) {
+    throw new Error(`Expected the webhook to be acknowledged (200) but got ${res.status()}: ${await res.text()}`);
+  }
+  await waitForWebhookEvents(event.item_id, "processed", handledBefore + 1);
+}
+
