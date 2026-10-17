@@ -108,3 +108,22 @@ export async function seedItemWithAccount(
     institutionName,
   };
 }
+
+/**
+ * What the worker recorded about an item's connection status, read from the
+ * ISOLATED test DB (the webhook suite does not run the backend that serves it).
+ */
+export async function readItemStatus(itemId: string) {
+  return testDb().item.findUniqueOrThrow({
+    where: { id: itemId },
+    select: {
+      id: true,
+      errorType: true,
+      errorCode: true,
+      errorMessage: true,
+      displayMessage: true,
+      newAccountsAvailable: true,
+      consentExpirationTime: true,
+    },
+  });
+}
