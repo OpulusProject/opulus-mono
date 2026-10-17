@@ -1,3 +1,4 @@
+import { encryptItemToken } from "@opulus/core";
 import { uniqueId } from "../client.js";
 import { testDb } from "../db.js";
 
@@ -55,7 +56,7 @@ export async function seedItemWithAccount(
     data: {
       plaidItemId: uniqueId("plaid_item"),
       userId,
-      accessToken: uniqueId("access"),
+      accessToken: encryptItemToken(uniqueId("access")),
       institutionId: uniqueId("ins"),
       institutionName,
       updateType: "background",

@@ -63,4 +63,6 @@ export default {
     "FRANKFURTER_BASE_URL",
     "https://api.frankfurter.dev/v1"
   ),
+  // 32 bytes, base64. Encrypts Plaid access tokens at rest; see utils/itemTokenCrypto.ts.
+  itemTokenEncryptionKey: getEnv("ITEM_TOKEN_ENCRYPTION_KEY"),
 };

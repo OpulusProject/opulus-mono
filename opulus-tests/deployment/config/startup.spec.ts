@@ -12,6 +12,7 @@ const GOOD_ENV = {
   PLAID_SECRET: "plaid-secret",
   PLAID_ENV: "production",
   REDIS_HOST: "redis.internal",
+  ITEM_TOKEN_ENCRYPTION_KEY: "Y2ktdGVzdC1vbmx5LW5vdC1hLXJlYWwta2V5LTAwMDA=",
 };
 
 const PORTS = { backend: 18297, webhooks: 18298, scheduler: 18299 };
@@ -92,6 +93,24 @@ test.describe("configuration is checked at startup", () => {
     expect(
       findConfigProblems("backend", { ...GOOD_ENV, PLAID_CLIENT_ID: "replace-me" }).join(),
     ).toContain("PLAID_CLIENT_ID");
+  });
+
+  test("the backend and the webhook receiver refuse a missing or malformed token encryption key, without echoing it", () => {
+    for (const service of ["backend", "webhooks"] as const) {
+      expect(
+        findConfigProblems(service, { ...GOOD_ENV, ITEM_TOKEN_ENCRYPTION_KEY: "" }).join(),
+      ).toContain("ITEM_TOKEN_ENCRYPTION_KEY is not set");
+
+      const secretLooking = "not-a-valid-key-just-some-text";
+      const problems = findConfigProblems(service, {
+        ...GOOD_ENV,
+        ITEM_TOKEN_ENCRYPTION_KEY: secretLooking,
+      }).join();
+      expect(problems).toContain("ITEM_TOKEN_ENCRYPTION_KEY must be 32 bytes");
+      expect(problems).not.toContain(secretLooking);
+    }
+    // The scheduler never touches a token.
+    expect(findConfigProblems("scheduler", { ...GOOD_ENV, ITEM_TOKEN_ENCRYPTION_KEY: "" })).toEqual([]);
   });
 
   test("the webhook receiver needs Plaid and Redis, the scheduler only Redis", () => {

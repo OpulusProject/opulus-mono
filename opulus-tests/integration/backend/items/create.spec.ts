@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { CreateItemResponseSchema } from "@opulus/core";
+import { CreateItemResponseSchema, decryptItemToken } from "@opulus/core";
 
 import {
   expectMatchesSchema,
@@ -7,6 +7,7 @@ import {
   expectStatus,
 } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
+import { readStoredItemAccessToken } from "../../../shared/db.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
   DEFAULT_SANDBOX_INSTITUTION_ID,
@@ -61,6 +62,36 @@ test.describe("POST /api/items (sandbox)", () => {
     const created = items.find((i) => i.id === createBody.data.itemId);
     expect(created, "created item should appear in GET /api/items").toBeDefined();
     expect(created!.accounts.length).toBeGreaterThan(0);
+  });
+
+  test("stores the Plaid access token encrypted, never as plaintext", async ({
+    request,
+  }) => {
+    // Arrange: authenticated user + a fresh sandbox public_token.
+    const creds = requireSandboxCredentials();
+    const { cookie } = await createAuthedUser(request);
+    const publicToken = await createSandboxPublicToken(creds);
+
+    // Act
+    const createRes = await request.post("/api/items", {
+      headers: withSession(cookie),
+      data: {
+        publicToken,
+        institutionId: DEFAULT_SANDBOX_INSTITUTION_ID,
+      },
+    });
+    await expectStatus(createRes, 201);
+    const { itemId } = (await createRes.json()).data as { itemId: string };
+
+    // Assert: this is the one check that has to look at the column, because no
+    // endpoint exposes the token. It is versioned ciphertext, and decrypting it
+    // gives a Plaid sandbox token (the round-trip evidence); the column never
+    // holds the token itself. That the backend can decrypt it for real Plaid
+    // calls is covered by update-accounts and refresh, which read it back.
+    const stored = await readStoredItemAccessToken(itemId);
+    expect(stored).toMatch(/^enc:v1:[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+$/);
+    expect(stored).not.toContain("access-sandbox");
+    expect(decryptItemToken(stored)).toMatch(/^access-sandbox-/);
   });
 
   test("short-circuits with 409 when the user already has an item for the same institution (no exchange of the second public_token)", async ({

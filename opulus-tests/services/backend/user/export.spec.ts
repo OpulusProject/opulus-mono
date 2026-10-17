@@ -144,11 +144,15 @@ test.describe("GET /api/user/export", () => {
     // Arrange: a connection, whose Plaid access token must not leave the database.
     const { cookie, userId } = await createAuthedUser(request);
     const item = await seedItemWithAccount(userId);
-    const { testDb } = await import("../../../shared/db.js");
-    const { accessToken, plaidItemId } = await testDb().item.findUniqueOrThrow({
+    const { readItemAccessToken, readStoredItemAccessToken, testDb } =
+      await import("../../../shared/db.js");
+    const { plaidItemId } = await testDb().item.findUniqueOrThrow({
       where: { id: item.itemId },
-      select: { accessToken: true, plaidItemId: true },
+      select: { plaidItemId: true },
     });
+    // Both forms: the token as stored (ciphertext) and the one Plaid accepts.
+    const storedToken = await readStoredItemAccessToken(item.itemId);
+    const accessToken = await readItemAccessToken(item.itemId);
 
     // Act
     const text = await (
@@ -156,7 +160,7 @@ test.describe("GET /api/user/export", () => {
     ).text();
 
     // Assert: no access token, Plaid item id, password hash, secret or session token.
-    for (const secret of [accessToken, plaidItemId, "accessToken", "password", "secret", "backupCodes", "token"]) {
+    for (const secret of [accessToken, storedToken, plaidItemId, "accessToken", "password", "secret", "backupCodes", "token"]) {
       expect(text).not.toContain(secret);
     }
   });

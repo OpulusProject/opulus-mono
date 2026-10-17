@@ -19,7 +19,7 @@ export interface DisconnectUserItemsParams {
 export async function disconnectUserItems(
   params: DisconnectUserItemsParams
 ): Promise<void> {
-  const items = await itemRepository.getAllByUserId(params.userId);
+  const items = await itemRepository.getAccessTokensByUserId(params.userId);
 
   const results = await Promise.allSettled(
     items.map((item) => plaidGateway.removeItem(item.accessToken))

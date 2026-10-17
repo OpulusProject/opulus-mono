@@ -47,6 +47,9 @@ jobs:
       # are never performed; verification stays over HTTP.
       TEST_DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
       BETTER_AUTH_SECRET: ci-integration-tests-secret-not-for-production
+      # Test-only key. The tests decrypt stored tokens with it too, so the
+      # backend and the test process must share it.
+      ITEM_TOKEN_ENCRYPTION_KEY: Y2ktdGVzdC1vbmx5LW5vdC1hLXJlYWwta2V5LTAwMDA=
       CLIENT_URL: http://localhost:5173
       NODE_ENV: test
       PORT: "8080"

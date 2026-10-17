@@ -8,7 +8,10 @@ import {
   expectStatus,
 } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
-import { testDb } from "../../../shared/db.js";
+import {
+  readItemAccessToken,
+  testDb,
+} from "../../../shared/db.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
   createSandboxItem,
@@ -163,10 +166,7 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     const creds = requireSandboxCredentials();
     const { cookie } = await createAuthedUser(request);
     const { itemId } = await createSandboxItem(request, cookie, creds);
-    const { accessToken } = await testDb().item.findUniqueOrThrow({
-      where: { id: itemId },
-      select: { accessToken: true },
-    });
+    const accessToken = await readItemAccessToken(itemId);
     await resetSandboxLogin(creds, accessToken);
 
     // Act
