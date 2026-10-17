@@ -59,7 +59,7 @@ test.describe("POST /api/link-tokens/update (sandbox)", () => {
     expect(body.data.linkToken).toMatch(/^link-sandbox-/);
   });
 
-  test("rejects an item owned by a different user (401)", async ({ request }) => {
+  test("answers 404 for an item owned by a different user", async ({ request }) => {
     // Arrange: one real sandbox item owned by `owner`; `intruder` tries to use it.
     const creds = requireSandboxCredentials();
     const owner = await createAuthedUser(request);
@@ -73,6 +73,6 @@ test.describe("POST /api/link-tokens/update (sandbox)", () => {
     });
 
     // Assert
-    await expectStatus(res, 401);
+    await expectStatus(res, 404);
   });
 });

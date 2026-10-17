@@ -141,7 +141,7 @@ test.describe("DELETE /api/items/:id (sandbox)", () => {
     await expectStatus(res, 404);
   });
 
-  test("rejects an intruder deleting another user's item (401) and keeps it linked", async ({
+  test("answers 404 to an intruder deleting another user's item and keeps it linked", async ({
     request,
   }) => {
     // Arrange: a real sandbox item owned by `owner`; `intruder` tries to delete it.
@@ -155,8 +155,8 @@ test.describe("DELETE /api/items/:id (sandbox)", () => {
       headers: withSession(intruder.cookie),
     });
 
-    // Assert: forbidden, and the item is still linked for its owner.
-    await expectStatus(res, 401);
+    // Assert: not found, and the item is still linked for its owner.
+    await expectStatus(res, 404);
     expect((await listItems(request, owner.cookie)).map((i) => i.id)).toContain(
       itemId,
     );

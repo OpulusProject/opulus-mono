@@ -49,7 +49,7 @@ test.describe("DELETE /api/items/:id", () => {
     expect(ids).toContain(seeded.itemId);
   });
 
-  test("rejects an item owned by a different user (401) and leaves its data intact", async ({
+  test("answers 404 for an item owned by a different user and leaves its data intact", async ({
     request,
   }) => {
     // Arrange: `owner` has an item with an account and transactions; `intruder` is another user.
@@ -68,9 +68,8 @@ test.describe("DELETE /api/items/:id", () => {
       headers: withSession(intruder.cookie),
     });
 
-    // Assert: forbidden, and the owner's item, account and transactions survive.
-    await expectStatus(res, 401);
-    expect((await res.json()).error).toBe("Unauthorized");
+    // Assert: not found, and the owner's item, account and transactions survive.
+    await expectStatus(res, 404);
 
     const items = await request.get("/api/items", {
       headers: withSession(owner.cookie),

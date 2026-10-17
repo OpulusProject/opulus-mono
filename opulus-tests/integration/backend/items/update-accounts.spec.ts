@@ -180,7 +180,7 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     await expectErrorCode(res, "ITEM_LOGIN_REQUIRED");
   });
 
-  test("rejects an item owned by a different user (401)", async ({
+  test("answers 404 for an item owned by a different user", async ({
     request,
   }) => {
     // Arrange: one real sandbox item owned by `owner`; `intruder` tries to use it.
@@ -195,6 +195,6 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     });
 
     // Assert
-    await expectStatus(res, 401);
+    await expectStatus(res, 404);
   });
 });
