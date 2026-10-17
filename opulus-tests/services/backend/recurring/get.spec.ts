@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { RecurringResponseSchema } from "@opulus/core";
-import { expectMatchesSchema, expectStatus, expectValidationError } from "../../../shared/assertions.js";
+import { expectMatchesSchema, expectValidationError } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import {
   clearExchangeRates,
@@ -50,10 +50,6 @@ test.describe("GET /api/recurring-transactions", () => {
         { date, currency: "USD", perEur: 1.2 },
       ]),
     );
-  });
-
-  test("requires authentication (401)", async ({ request }) => {
-    await expectStatus(await request.get("/api/recurring-transactions"), 401);
   });
 
   test("gives nothing for a user with none", async ({ request }) => {

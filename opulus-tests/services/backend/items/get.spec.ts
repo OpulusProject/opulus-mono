@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { ItemsResponseSchema } from "@opulus/core";
 import { withSession } from "../../../shared/client.js";
-import { expectOk, expectStatus, expectMatchesSchema } from "../../../shared/assertions.js";
+import { expectOk, expectMatchesSchema } from "../../../shared/assertions.js";
 import {
   createAuthedUser,
   seedCreditLiability,
@@ -14,11 +14,6 @@ import {
  * verified over HTTP.
  */
 test.describe("GET /api/items", () => {
-  test("requires authentication (401)", async ({ request }) => {
-    const res = await request.get("/api/items");
-    await expectStatus(res, 401);
-  });
-
   test("returns an empty list for a user who has linked nothing", async ({
     request,
   }) => {

@@ -14,16 +14,6 @@ import { createAuthedUser } from "../../../shared/fixtures/auth.js";
  * validation.
  */
 test.describe("POST /api/items", () => {
-  test("requires authentication (401)", async ({ request }) => {
-    const res = await request.post("/api/items", {
-      data: {
-        publicToken: "public-sandbox-does-not-matter",
-        institutionId: "ins_109508",
-      },
-    });
-    await expectStatus(res, 401);
-  });
-
   test("rejects missing publicToken with a validation error (400)", async ({
     request,
   }) => {

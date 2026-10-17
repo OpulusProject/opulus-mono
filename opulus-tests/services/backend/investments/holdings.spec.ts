@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { HoldingsResponseSchema } from "@opulus/core";
-import { expectMatchesSchema, expectStatus, expectValidationError } from "../../../shared/assertions.js";
+import { expectMatchesSchema, expectValidationError } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import {
   clearExchangeRates,
@@ -52,10 +52,6 @@ test.describe("GET /api/investments/holdings", () => {
         { date, currency: "USD", perEur: 1.2 },
       ]),
     );
-  });
-
-  test("requires authentication (401)", async ({ request }) => {
-    await expectStatus(await request.get("/api/investments/holdings"), 401);
   });
 
   test("gives nothing for a user with no holdings", async ({ request }) => {

@@ -119,8 +119,10 @@ file the conventions above already describe.
    forgets `requireSession`. To open a route on purpose, add it to the list in
    `src/middleware/session/requireApiSession.ts` and say why.
 6. **Tests.** A service spec in `opulus-tests/services/backend/<resource>/`
-   (401 first, validation, another user's data never returned, the response
-   schema), and an integration spec if it calls Plaid.
+   (validation, another user's data never returned, the response schema). The
+   session and two-factor checks are not written per endpoint: the guard in front
+   of `/api` is tested once, in `services/backend/routes/protections.spec.ts`.
+   Add an integration spec only if it needs a real Plaid round trip.
 7. **Bruno doc.** `opulus-backend/bruno/collections/<resource>/<Verb> <Noun>.bru`.
 8. **Frontend.** A hook in `src/hooks/<resource>/` using that resource's
    `queryKeys.ts`; a page that needs a signed-in user goes in
@@ -299,7 +301,8 @@ Rules that apply to all of them:
   DTO is what is checked.
 - Each test makes its own data with `uniqueId`; don't assert on global counts.
 - One spec per endpoint, named for the verb the code uses (`create`, `get`, `update`,
-  `delete`, `update-accounts`), with the 401 test first.
+  `delete`, `update-accounts`). Do not repeat the 401 and two-factor checks that
+  `routes/protections.spec.ts` makes for the whole API.
 - A required check must not silently skip: integration specs fail when sandbox
   credentials are missing.
 - A job has no response beyond its result, so the scheduler specs check what a

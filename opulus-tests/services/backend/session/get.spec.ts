@@ -1,27 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { SessionResponseSchema } from "@opulus/core";
 import { withSession } from "../../../shared/client.js";
-import { expectOk, expectStatus, expectMatchesSchema } from "../../../shared/assertions.js";
+import { expectOk, expectMatchesSchema } from "../../../shared/assertions.js";
 import { createAuthedUser } from "../../../shared/fixtures/index.js";
 
 /**
  * This file: the current-session endpoint.
  */
 test.describe("GET /api/session", () => {
-  test("rejects a request with no session (401)", async ({ request }) => {
-    const res = await request.get("/api/session");
-    await expectStatus(res, 401);
-  });
-
-  test("rejects a request with a garbage session cookie (401)", async ({
-    request,
-  }) => {
-    const res = await request.get("/api/session", {
-      headers: withSession("opulus.session_token=not-a-real-token"),
-    });
-    await expectStatus(res, 401);
-  });
-
   test("returns only the documented user and session fields", async ({
     request,
   }) => {

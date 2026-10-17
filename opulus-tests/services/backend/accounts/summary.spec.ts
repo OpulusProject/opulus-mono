@@ -3,7 +3,6 @@ import { AccountsSummaryResponseSchema } from "@opulus/core";
 import { withSession } from "../../../shared/client.js";
 import {
   expectMatchesSchema,
-  expectStatus,
   expectValidationError,
 } from "../../../shared/assertions.js";
 import {
@@ -95,11 +94,6 @@ test.describe("GET /api/accounts/summary", () => {
   test.beforeAll(async () => {
     await clearExchangeRates();
     await seedExchangeRates(rates());
-  });
-
-  test("requires authentication (401)", async ({ request }) => {
-    const res = await request.get("/api/accounts/summary");
-    await expectStatus(res, 401);
   });
 
   test("returns zeros for a user with no accounts", async ({ request }) => {

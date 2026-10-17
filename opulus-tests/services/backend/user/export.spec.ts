@@ -13,10 +13,6 @@ import {
  * the user owns as one JSON document written in pieces.
  */
 test.describe("GET /api/user/export", () => {
-  test("requires authentication (401)", async ({ request }) => {
-    await expectStatus(await request.get("/api/user/export"), 401);
-  });
-
   test("gives a user with nothing connected an empty but valid export", async ({
     request,
   }) => {

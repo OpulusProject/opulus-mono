@@ -15,10 +15,6 @@ import { linkTokenRequests, resetPlaidStub } from "../../../shared/plaid-stub.js
  * gating, which runs before any Plaid call.
  */
 test.describe("POST /api/link-tokens", () => {
-  test("requires authentication (401)", async ({ request }) => {
-    const res = await request.post("/api/link-tokens", { data: {} });
-    await expectStatus(res, 401);
-  });
 });
 
 /**

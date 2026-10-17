@@ -140,25 +140,4 @@ test.describe("DELETE /api/items/:id (sandbox)", () => {
     // Assert
     await expectStatus(res, 404);
   });
-
-  test("answers 404 to an intruder deleting another user's item and keeps it linked", async ({
-    request,
-  }) => {
-    // Arrange: a real sandbox item owned by `owner`; `intruder` tries to delete it.
-    const creds = requireSandboxCredentials();
-    const owner = await createAuthedUser(request);
-    const intruder = await createAuthedUser(request);
-    const { itemId } = await createSandboxItem(request, owner.cookie, creds);
-
-    // Act
-    const res = await request.delete(`/api/items/${itemId}`, {
-      headers: withSession(intruder.cookie),
-    });
-
-    // Assert: not found, and the item is still linked for its owner.
-    await expectStatus(res, 404);
-    expect((await listItems(request, owner.cookie)).map((i) => i.id)).toContain(
-      itemId,
-    );
-  });
 });

@@ -3,7 +3,6 @@ import { TransactionsResponseSchema } from "@opulus/core";
 import { withSession } from "../../../shared/client.js";
 import {
   expectOk,
-  expectStatus,
   expectValidationError,
   expectMatchesSchema,
 } from "../../../shared/assertions.js";
@@ -45,11 +44,6 @@ async function listTransactions(
  * DB (helpers/db.ts) and verified over HTTP.
  */
 test.describe("GET /api/transactions", () => {
-  test("requires authentication (401)", async ({ request }) => {
-    const res = await request.get("/api/transactions");
-    await expectStatus(res, 401);
-  });
-
   test("returns an empty, paginated list for a fresh user", async ({
     request,
   }) => {

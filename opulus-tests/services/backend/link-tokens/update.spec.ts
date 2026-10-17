@@ -1,7 +1,7 @@
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { withSession } from "../../../shared/client.js";
 import { expectStatus, expectValidationError } from "../../../shared/assertions.js";
-import { createAuthedUser } from "../../../shared/fixtures/index.js";
+import { createAuthedUser, seedItemWithAccount } from "../../../shared/fixtures/index.js";
 
 /**
  * This file: the Plaid link-token update-mode endpoint. Its happy path proxies
@@ -9,11 +9,21 @@ import { createAuthedUser } from "../../../shared/fixtures/index.js";
  * Plaid call: authentication gating and request-body validation.
  */
 test.describe("POST /api/link-tokens/update", () => {
-  test("requires authentication (401)", async ({ request }) => {
-    const res = await request.post("/api/link-tokens/update", {
-      data: { itemId: "item_1" },
-    });
-    await expectStatus(res, 401);
+  test("answers 404 for an item owned by a different user, as for one that does not exist", async ({ request }) => {
+    // Arrange: `owner` has an item; `intruder` is someone else.
+    const owner = await createAuthedUser(request);
+    const intruder = await createAuthedUser(request);
+    const { itemId } = await seedItemWithAccount(owner.userId);
+
+    // Act
+    const theirs = await request.post("/api/link-tokens/update", { headers: withSession(intruder.cookie), data: { itemId } });
+    const missing = await request.post("/api/link-tokens/update", { headers: withSession(intruder.cookie), data: { itemId: "no-such-item" } });
+
+    // Assert: the same answer, so the caller cannot tell which ids are in use.
+    await expectStatus(theirs, 404);
+    await expectStatus(missing, 404);
+    expect(await theirs.json()).toMatchObject({ error: "Not found", message: "Item not found" });
+    expect(await missing.json()).toMatchObject({ error: "Not found", message: "Item not found" });
   });
 
   test("rejects a missing itemId before contacting Plaid (validation)", async ({
