@@ -76,3 +76,23 @@ export async function seedTransactions(
   await db.transaction.createMany({ data });
   return { names, count };
 }
+
+/**
+ * The transactions a sync stored for an item, by name, read from the ISOLATED
+ * test DB (the webhook suite does not run the backend that serves them).
+ */
+export async function readSyncedTransactions(itemId: string) {
+  const rows = await testDb().transaction.findMany({ where: { itemId } });
+  return rows
+    .map((row) => ({
+      providerTransactionId: row.providerTransactionId,
+      accountId: row.accountId,
+      name: row.name,
+      amount: Number(row.amount),
+      pending: row.pending,
+      categoryPrimary: row.categoryPrimary,
+      categoryDetailed: row.categoryDetailed,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+

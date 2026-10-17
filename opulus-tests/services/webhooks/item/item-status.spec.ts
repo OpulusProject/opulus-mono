@@ -4,10 +4,8 @@ import {
   readWebhookEvents,
   seedItemWithAccount,
   seedUser,
-  waitForWebhookEvents,
 } from "../../../shared/fixtures/index.js";
-import { expectStatus } from "../helpers/assertions.js";
-import { postSignedWebhook } from "../helpers/fixtures/index.js";
+import { deliverWebhook } from "../helpers/fixtures/index.js";
 import { uniqueId } from "../../../shared/client.js";
 
 /** A user with one linked item, and the id Plaid knows the item by. */
@@ -18,21 +16,8 @@ async function linkedItem() {
 }
 
 /** Send an ITEM webhook for an item, signed as Plaid signs it, and wait for the worker to finish. */
-async function deliver(
-  request: Parameters<typeof postSignedWebhook>[0],
-  plaidItemId: string,
-  event: Record<string, unknown>,
-) {
-  const handledBefore = (await readWebhookEvents(plaidItemId)).filter((e) => e.status === "processed").length;
-  const res = await postSignedWebhook(request, {
-    webhook_type: "ITEM",
-    item_id: plaidItemId,
-    ...event,
-  });
-  await expectStatus(res, 200);
-  // One more handled than before, so an earlier webhook for this item does not count.
-  await waitForWebhookEvents(plaidItemId, "processed", handledBefore + 1);
-}
+const deliver = (request: Parameters<typeof deliverWebhook>[0], plaidItemId: string, event: Record<string, unknown>) =>
+  deliverWebhook(request, { webhook_type: "ITEM", item_id: plaidItemId, ...event });
 
 /**
  * This file: what the worker does with ITEM webhooks, which tell us that an

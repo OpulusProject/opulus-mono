@@ -135,3 +135,22 @@ export async function readItemStatus(itemId: string) {
 export async function countItems(itemIds: string[]): Promise<number> {
   return testDb().item.count({ where: { id: { in: itemIds } } });
 }
+
+/** Where an item's transaction sync stands (the cursor it will ask from next, when it last succeeded). */
+export async function readItemSync(itemId: string) {
+  return testDb().item.findUniqueOrThrow({
+    where: { id: itemId },
+    select: { transactionCursor: true, syncedAt: true },
+  });
+}
+
+/** An account's balances, as the last sync left them. */
+export async function readAccountBalances(accountId: string) {
+  const account = await testDb().account.findUniqueOrThrow({ where: { id: accountId } });
+  return {
+    current: account.balanceCurrent === null ? null : Number(account.balanceCurrent),
+    available: account.balanceAvailable === null ? null : Number(account.balanceAvailable),
+    limit: account.balanceLimit === null ? null : Number(account.balanceLimit),
+  };
+}
+

@@ -43,6 +43,12 @@
  *   POST /__control/liabilities  set what /liabilities/get answers
  *   POST /__control/accounts-error  { error_code } makes /accounts/get fail as an ITEM_ERROR
  *                              (for example ITEM_LOGIN_REQUIRED); {} makes it work again
+ *   POST /transactions/sync    the next page a test queued for that access token
+ *                              (/__control/transactions-sync), or an empty one; the cursor
+ *                              asked from is remembered
+ *   POST /__control/transactions-sync  { access_token, pages }: pages of added, modified,
+ *                              removed, accounts, next_cursor, has_more, or { error_code }
+ *   GET  /__control/transactions-sync-cursors?access_token=  the cursors it was asked from
  *   POST /__control/reset      forget the requests, the item and the holdings
  *
  * Everything else answers 404 in Plaid's error shape, as an unsupported call.
@@ -71,6 +77,9 @@ const STUB_INSTITUTIONS = Array.from({ length: 25 }, (_, i) => ({
   primary_color: null,
   url: null,
 }));
+/** Per access token (so a retry of one test's job cannot take another's page): what /transactions/sync answers in turn, and what it was asked from. */
+let syncPages = new Map();
+let syncCursors = new Map();
 
 /** The key this stub signs webhooks with, made fresh each time the stub starts. */
 const WEBHOOK_KEY_ID = "stub-webhook-key";
@@ -143,9 +152,19 @@ const server = createServer(async (req, res) => {
       privateJwk: webhookKeys.privateKey.export({ format: "jwk" }),
     });
   }
+  if (req.method === "POST" && url.pathname === "/__control/transactions-sync") {
+    const { access_token, pages } = await readJson(req);
+    syncPages.set(access_token, pages ?? []);
+    return send(res, 200, {});
+  }
+  if (req.method === "GET" && url.pathname === "/__control/transactions-sync-cursors") {
+    return send(res, 200, { cursors: syncCursors.get(url.searchParams.get("access_token")) ?? [] });
+  }
   if (req.method === "POST" && url.pathname === "/__control/reset") {
     linkTokenRequests = [];
     holdings = NO_HOLDINGS;
+    syncPages = new Map();
+    syncCursors = new Map();
     itemSetup = DEFAULT_ITEM;
     recurring = NO_STREAMS;
     recurringRequests = [];
@@ -348,6 +367,32 @@ const server = createServer(async (req, res) => {
     return send(res, 200, {
       ...holdings.response,
       item: {},
+      request_id: `stub-request-${counter}`,
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/transactions/sync") {
+    const { access_token, cursor } = await readJson(req);
+    syncCursors.set(access_token, [...(syncCursors.get(access_token) ?? []), cursor ?? null]);
+    const page = (syncPages.get(access_token) ?? []).shift() ?? {};
+    counter += 1;
+    if (page.error_code) {
+      return send(res, 500, {
+        error_type: "API_ERROR",
+        error_code: page.error_code,
+        error_message: `the stub answers ${page.error_code} on purpose`,
+        request_id: `stub-request-${counter}`,
+      });
+    }
+    return send(res, 200, {
+      added: [],
+      modified: [],
+      removed: [],
+      accounts: [],
+      next_cursor: cursor ?? "stub-cursor-0",
+      has_more: false,
+      transactions_update_status: "HISTORICAL_UPDATE_COMPLETE",
+      ...page,
       request_id: `stub-request-${counter}`,
     });
   }
