@@ -19,6 +19,7 @@ export * from "./repositories/liabilityRepository.js";
 export * from "./repositories/linkSessionRepository.js";
 export * from "./repositories/transactionRepository.js";
 export * from "./repositories/userRepository.js";
+export * from "./repositories/webhookEventRepository.js";
 
 // Gateway exports (external APIs)
 export * from "./gateways/exchangeRateProvider.js";

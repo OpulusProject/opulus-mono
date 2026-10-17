@@ -1,5 +1,16 @@
 import { logger, redisConnection } from "@opulus/core";
-import { Queue, QueueEvents, Worker } from "bullmq";
+import {
+  Queue,
+  QueueEvents,
+  UnrecoverableError,
+  Worker,
+  type Job,
+} from "bullmq";
+import {
+  eventFailed,
+  eventProcessed,
+  eventStarted,
+} from "../services/webhookEvents.js";
 import type { PlaidWebhookEvent } from "../types/plaid/webhookSchema.js";
 
 /**
@@ -70,6 +81,8 @@ export function createWebhookWorker(handlers: {
         },
         "Webhook job processing started"
       );
+      // The audit trail: this attempt is recorded before it runs.
+      await eventStarted(job);
 
       try {
         // Route to appropriate handler based on webhook type
@@ -96,6 +109,8 @@ export function createWebhookWorker(handlers: {
               "Unhandled webhook type"
             );
         }
+
+        await eventProcessed(job);
 
         // Log job completed successfully
         logger.info(
@@ -136,7 +151,28 @@ export function createWebhookWorker(handlers: {
     }
   );
 
+  // The worker emits "failed" after every failed attempt. Each is recorded;
+  // only a job that will not run again is final (dead, and replayable).
+  worker.on("failed", (job, error) => {
+    if (!job) return;
+    void eventFailed(job, error, isTerminalFailure(job, error));
+  });
+
   return worker;
+}
+
+/**
+ * Whether a failed job will not run again: its attempts are used up, or it
+ * failed with an UnrecoverableError, which BullMQ never retries.
+ */
+export function isTerminalFailure(
+  job: Pick<Job, "attemptsMade" | "opts">,
+  error: Error
+): boolean {
+  return (
+    error instanceof UnrecoverableError ||
+    job.attemptsMade >= (job.opts.attempts ?? 1)
+  );
 }
 
 /**
