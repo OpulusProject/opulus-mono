@@ -13,6 +13,7 @@ import {
   LinkTokenCreateRequest,
   PlaidApi,
   Products,
+  TransactionsRecurringGetRequest,
   TransactionsSyncRequest,
   TransactionsUpdateStatus,
   UserCreateRequest,
@@ -233,6 +234,37 @@ class PlaidGateway {
       // The SDK wraps Plaid's error body in an axios error. Unwrap it so the
       // resulting AppError carries Plaid's own error_code, which callers use to
       // tell "not available for this item" apart from real failures.
+      const plaidBody = (error as { response?: { data?: unknown } } | null)
+        ?.response?.data;
+      throw handlePlaidError(plaidBody ?? error);
+    }
+  }
+
+  // ============================================================================
+  // Recurring transactions
+  // ============================================================================
+
+  /**
+   * Fetch the recurring payments and income (Plaid's "streams") it found in an
+   * item's transactions. Needs the item's transactions to be loaded first, and
+   * Plaid sends a RECURRING_TRANSACTIONS_UPDATE webhook when they are ready or
+   * change.
+   * @param accessToken - The access token for the item
+   * @param accountIds - Plaid account IDs to look at (all the item's if omitted)
+   * @returns Inflow and outflow streams
+   */
+  async getRecurringTransactions(accessToken: string, accountIds?: string[]) {
+    const request: TransactionsRecurringGetRequest = {
+      access_token: accessToken,
+      options: { include_personal_finance_category: true },
+      ...(accountIds?.length && { account_ids: accountIds }),
+    };
+
+    try {
+      const response = await this.plaid.transactionsRecurringGet(request);
+      return response.data;
+    } catch (error) {
+      // Unwrap Plaid's error body so the AppError carries its error_code.
       const plaidBody = (error as { response?: { data?: unknown } } | null)
         ?.response?.data;
       throw handlePlaidError(plaidBody ?? error);

@@ -32,6 +32,7 @@ export * from "./services/exchangeRateConverter.js";
 export * from "./services/refreshExchangeRates.js";
 export * from "./services/syncItemHoldings.js";
 export * from "./services/syncItemLiabilities.js";
+export * from "./services/syncItemRecurring.js";
 export * from "./services/syncItemTransactions.js";
 
 // Type exports (DTOs)
