@@ -51,3 +51,27 @@ export async function setPlaidItem(item: {
     body: JSON.stringify(item),
   });
 }
+
+/** What the stub answers to `/transactions/recurring/get`: a response, or a Plaid error code. */
+export async function setPlaidRecurring(
+  answer:
+    | {
+        response: {
+          inflow_streams: Record<string, unknown>[];
+          outflow_streams: Record<string, unknown>[];
+        };
+      }
+    | { error_code: string },
+): Promise<void> {
+  await fetch(`${STUB_URL}/__control/recurring`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(answer),
+  });
+}
+
+/** The recurring requests the backend has made to the stub since the last reset. */
+export async function recurringRequests(): Promise<Record<string, unknown>[]> {
+  const res = await fetch(`${STUB_URL}/__control/recurring-requests`);
+  return (await res.json()).requests;
+}

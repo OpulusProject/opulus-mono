@@ -179,6 +179,31 @@ class AccountRepository {
   }
 
   /**
+   * Plaid's ids for all of an item's accounts
+   * @param itemId - The item
+   * @throws AppError if database error occurs
+   */
+  async getProviderAccountIdsByItemId(itemId: string): Promise<string[]> {
+    try {
+      const accounts = await this.prisma.account.findMany({
+        where: { itemId },
+        select: { providerAccountId: true },
+      });
+      return accounts.map((account) => account.providerAccountId);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get accounts: ${error.message}`
+          : "An unexpected error occurred while fetching accounts";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
    * Find one of an item's accounts by Plaid's account id
    * @param itemId - The item the account belongs to
    * @param providerAccountId - Plaid's account id
