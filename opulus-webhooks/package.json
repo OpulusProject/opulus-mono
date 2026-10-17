@@ -8,6 +8,7 @@
     "build": "tsup",
     "start": "node dist/server.js",
     "reconcile": "tsx src/scripts/reconcile.ts",
+    "replay": "tsx src/scripts/replayWebhook.ts",
     "fire-webhook": "tsx src/scripts/fireSandboxWebhook.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "lint": "eslint .",
