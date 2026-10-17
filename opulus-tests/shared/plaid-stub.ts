@@ -75,3 +75,17 @@ export async function recurringRequests(): Promise<Record<string, unknown>[]> {
   const res = await fetch(`${STUB_URL}/__control/recurring-requests`);
   return (await res.json()).requests;
 }
+
+/**
+ * The key the stub signs webhooks with, for a test to sign one the receiver will
+ * accept: its id, the id of a key the stub reports as expired, and the private
+ * key (the stub made it when it started, and it is good for nothing else).
+ */
+export async function webhookSigningKey(): Promise<{
+  kid: string;
+  expiredKid: string;
+  privateJwk: Record<string, string>;
+}> {
+  const res = await fetch(`${STUB_URL}/__control/webhook-key`);
+  return res.json();
+}

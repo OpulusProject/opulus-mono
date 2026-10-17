@@ -26,16 +26,36 @@
  *   POST /__control/holdings   set what /investments/holdings/get answers:
  *                              { response } (accounts, holdings, securities) or
  *                              { error_code } for a Plaid error
+ *   POST /webhook_verification_key/get   the public key that Plaid signs webhooks with:
+ *                              the stub's own (key id "stub-webhook-key"); the key
+ *                              id "stub-expired-key" answers the same key marked
+ *                              expired; any other id is Plaid's INVALID_WEBHOOK_VERIFICATION_KEY_ID
+ *   GET  /__control/webhook-key   that key's id and its PRIVATE key, so a test can
+ *                              sign a webhook the receiver will accept
  *   POST /__control/reset      forget the requests, the item and the holdings
  *
  * Everything else answers 404 in Plaid's error shape, as an unsupported call.
  */
+import { generateKeyPairSync } from "node:crypto";
 import { createServer } from "node:http";
 
 const PORT = Number(process.env.PLAID_STUB_PORT ?? 4546);
 
 let linkTokenRequests = [];
 let counter = 0;
+
+/** The key this stub signs webhooks with, made fresh each time the stub starts. */
+const WEBHOOK_KEY_ID = "stub-webhook-key";
+const EXPIRED_KEY_ID = "stub-expired-key";
+const webhookKeys = generateKeyPairSync("ec", { namedCurve: "P-256" });
+const publicWebhookKey = (kid, expiredAt) => ({
+  alg: "ES256",
+  created_at: 1_700_000_000,
+  expired_at: expiredAt,
+  kid,
+  use: "sig",
+  ...webhookKeys.publicKey.export({ format: "jwk" }),
+});
 /** What /investments/holdings/get answers: a response, or a Plaid error. */
 const NO_HOLDINGS = { response: { accounts: [], holdings: [], securities: [] } };
 let holdings = NO_HOLDINGS;
@@ -88,6 +108,13 @@ const server = createServer(async (req, res) => {
   if (req.method === "GET" && url.pathname === "/__control/requests") {
     return send(res, 200, { requests: linkTokenRequests });
   }
+  if (req.method === "GET" && url.pathname === "/__control/webhook-key") {
+    return send(res, 200, {
+      kid: WEBHOOK_KEY_ID,
+      expiredKid: EXPIRED_KEY_ID,
+      privateJwk: webhookKeys.privateKey.export({ format: "jwk" }),
+    });
+  }
   if (req.method === "POST" && url.pathname === "/__control/reset") {
     linkTokenRequests = [];
     holdings = NO_HOLDINGS;
@@ -110,6 +137,23 @@ const server = createServer(async (req, res) => {
   if (req.method === "POST" && url.pathname === "/__control/holdings") {
     holdings = await readJson(req);
     return send(res, 200, {});
+  }
+
+  if (req.method === "POST" && url.pathname === "/webhook_verification_key/get") {
+    const { key_id } = await readJson(req);
+    counter += 1;
+    if (key_id === WEBHOOK_KEY_ID || key_id === EXPIRED_KEY_ID) {
+      return send(res, 200, {
+        key: publicWebhookKey(key_id, key_id === EXPIRED_KEY_ID ? 1_700_100_000 : null),
+        request_id: `stub-request-${counter}`,
+      });
+    }
+    return send(res, 400, {
+      error_type: "INVALID_REQUEST",
+      error_code: "INVALID_WEBHOOK_VERIFICATION_KEY_ID",
+      error_message: "the stub does not know that key id",
+      request_id: `stub-request-${counter}`,
+    });
   }
 
   if (req.method === "POST" && url.pathname === "/user/create") {

@@ -163,6 +163,10 @@ jobs:
       PLAID_CLIENT_ID: ci-test
       PLAID_SECRET: ci-test
       PLAID_ENV: sandbox
+      # The receiver checks webhook signatures against Plaid's public key; the
+      # stub (opulus-tests/services/backend/stub/plaid.mjs, started below) serves a
+      # key of its own, so the specs can sign webhooks the receiver accepts.
+      PLAID_BASE_URL: http://localhost:4546
       TEST_BASE_URL: http://localhost:8081
 
     services:
@@ -213,6 +217,18 @@ jobs:
 
       - name: Apply database migrations
         run: pnpm --filter @opulus/core exec prisma migrate deploy --schema=./prisma/schema.prisma
+
+      - name: Start the Plaid stub
+        run: |
+          node opulus-tests/services/backend/stub/plaid.mjs &
+          for i in $(seq 1 30); do
+            if curl -sf "http://localhost:4546/health" >/dev/null; then
+              echo "Plaid stub is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Plaid stub did not start in time" >&2
+          exit 1
 
       - name: Boot webhooks service
         run: |
