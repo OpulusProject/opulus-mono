@@ -93,7 +93,7 @@ export const apiRateLimit: RequestHandler = createLimiter({
 });
 
 /**
- * Routes that call Plaid (link tokens, connecting an institution, refreshing),
+ * Routes that call Plaid (link tokens, connecting an institution, updating its accounts),
  * counted per signed-in user. Mount it after `requireSession`: without a
  * session it would count by IP address instead.
  */

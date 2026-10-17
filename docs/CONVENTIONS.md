@@ -295,7 +295,7 @@ Rules that apply to all of them:
   DTO is what is checked.
 - Each test makes its own data with `uniqueId`; don't assert on global counts.
 - One spec per endpoint, named for the verb the code uses (`create`, `get`, `update`,
-  `delete`, `refresh`), with the 401 test first.
+  `delete`, `update-accounts`), with the 401 test first.
 - A required check must not silently skip: integration specs fail when sandbox
   credentials are missing.
 - A job has no response beyond its result, so the scheduler specs check what a

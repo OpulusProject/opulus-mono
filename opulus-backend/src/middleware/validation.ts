@@ -52,7 +52,7 @@ export function validate<T extends ZodType>(schema: T) {
  * @throws Error if `validate` did not run for this request
  *
  * @example
- * const { itemId } = getValidatedBody<typeof refreshTransactionsBodySchema>(req);
+ * const { itemId } = getValidatedBody<typeof createItemBodySchema>(req);
  */
 export function getValidatedBody<T extends ZodType>(req: Request): z.infer<T> {
   if (req.validatedBody === undefined) {
