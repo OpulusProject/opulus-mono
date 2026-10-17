@@ -18,4 +18,5 @@ export * from "./liabilities.js";
 export * from "./passkey.js";
 export * from "./recurring-streams.js";
 export * from "./transactions.js";
+export * from "./users.js";
 export * from "./webhook-events.js";
