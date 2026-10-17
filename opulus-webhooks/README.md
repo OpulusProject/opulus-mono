@@ -45,7 +45,7 @@ Plaid Webhook → Express Handler → Redis Queue → BullMQ Worker → Process 
 - **Request rate limit**: 120 requests per minute per IP address on `/webhook/plaid` (`WEBHOOK_RATE_LIMIT_PER_IP`), counted in Redis and **before** the signature is checked, because checking it fetches Plaid's key; over it the receiver answers `429`
 - **Job Retention**:
   - Completed: 24 hours, max 1000 jobs
-  - Failed: 7 days (Dead Letter Queue)
+  - Failed: 7 days in Redis; every job is also recorded in Postgres, and one that failed for good stays replayable (see Webhook events)
 
 ### Monitoring
 
@@ -164,11 +164,29 @@ history the next time it is read.
 
 ### Failed Jobs
 
-Failed jobs go to Dead Letter Queue (DLQ):
+### Webhook events
 
-- Kept for 7 days
-- Can be manually reprocessed
-- Check logs for failure reasons
+Every webhook the worker handles is recorded in the `webhook_event` table: the
+whole event, its status, the attempts made, why the last one failed, and when it
+was received and finished. Statuses: `processing`, `processed`, `retrying` (an
+attempt failed and the job will run again) and `dead` (its retries are used up,
+or it failed with an `UnrecoverableError`, so it will not run again). A dead job
+is also logged at ERROR. Redis only keeps failed jobs for 7 days; the table keeps
+them until someone deals with them. Recording is best effort: a database
+failure is logged, never thrown, so it cannot fail a webhook.
+
+To put a dead event back on the queue:
+
+```bash
+pnpm --filter @opulus/webhooks replay <webhookEventId>
+```
+
+An event can be replayed once (its `replayedAt` is set). The new job is recorded
+as an event of its own, so if it fails again it is dead again, under a new id.
+Find ids with
+`SELECT id, "webhookType", "webhookCode", error, "receivedAt" FROM webhook_event WHERE status = 'dead' AND "replayedAt" IS NULL ORDER BY "receivedAt" DESC;`.
+What happened to one item:
+`SELECT "receivedAt", "webhookType", "webhookCode", status, attempts FROM webhook_event WHERE "plaidItemId" = '<plaid item id>' ORDER BY "receivedAt" DESC;`.
 
 ### zrok Issues
 

@@ -17,3 +17,4 @@ export * from "./items.js";
 export * from "./liabilities.js";
 export * from "./passkey.js";
 export * from "./transactions.js";
+export * from "./webhook-events.js";

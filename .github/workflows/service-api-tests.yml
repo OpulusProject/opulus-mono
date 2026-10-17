@@ -153,6 +153,7 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      TEST_DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
       NODE_ENV: test
       # Test-only key, as in the backend job above.
       ITEM_TOKEN_ENCRYPTION_KEY: Y2ktdGVzdC1vbmx5LW5vdC1hLXJlYWwta2V5LTAwMDA=
