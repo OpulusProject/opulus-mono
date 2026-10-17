@@ -21,7 +21,10 @@ export type AuthSession = NonNullable<Awaited<ReturnType<typeof getSession>>>;
 function createRequireSession(options: { requireTwoFactor: boolean }) {
   return async function (req: Request, res: Response, next: NextFunction) {
     try {
-      const session = await getSession(req.headers);
+      // The default-deny guard (requireApiSession) may have looked it up already.
+      const session =
+        (res.locals.session as AuthSession | undefined) ??
+        (await getSession(req.headers));
 
       if (!session?.user) {
         throw new UnauthorizedError("Authentication required");
