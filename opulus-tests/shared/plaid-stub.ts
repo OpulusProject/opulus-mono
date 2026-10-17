@@ -89,3 +89,24 @@ export async function webhookSigningKey(): Promise<{
   const res = await fetch(`${STUB_URL}/__control/webhook-key`);
   return res.json();
 }
+
+/** The access tokens the backend has revoked at Plaid (`/item/remove`) since the last reset. */
+export async function removedAccessTokens(): Promise<string[]> {
+  const res = await fetch(`${STUB_URL}/__control/removed-items`);
+  return (await res.json()).accessTokens;
+}
+
+/** Make Plaid refuse to remove items with this error code (an empty call makes it work again). */
+export async function failItemRemoval(errorCode?: string): Promise<void> {
+  await fetch(`${STUB_URL}/__control/item-remove`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(errorCode ? { error_code: errorCode } : {}),
+  });
+}
+
+/** The public tokens the backend has exchanged with Plaid since the last reset. */
+export async function exchangedPublicTokens(): Promise<string[]> {
+  const res = await fetch(`${STUB_URL}/__control/exchanges`);
+  return (await res.json()).publicTokens;
+}

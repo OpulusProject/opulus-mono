@@ -1,14 +1,21 @@
 import { expect, test } from "@playwright/test";
+import { LinkTokenResponseSchema } from "@opulus/core";
 import { withSession } from "../../../shared/client.js";
-import { expectStatus, expectValidationError } from "../../../shared/assertions.js";
+import { readItemAccessToken } from "../../../shared/db.js";
+import { expectMatchesSchema, expectOk, expectStatus, expectValidationError } from "../../../shared/assertions.js";
 import { createAuthedUser, seedItemWithAccount } from "../../../shared/fixtures/index.js";
+import { linkTokenRequests, resetPlaidStub } from "../../../shared/plaid-stub.js";
 
 /**
- * This file: the Plaid link-token update-mode endpoint. Its happy path proxies
- * Plaid, so this suite covers the service-owned boundary that runs before any
- * Plaid call: authentication gating and request-body validation.
+ * This file: the Plaid link-token update-mode endpoint. The stub records what
+ * the backend asked Plaid for, so this covers which item's token it used and
+ * whether the user may pick accounts, besides validation and ownership.
  */
 test.describe("POST /api/link-tokens/update", () => {
+  test.beforeEach(async () => {
+    await resetPlaidStub();
+  });
+
   test("answers 404 for an item owned by a different user, as for one that does not exist", async ({ request }) => {
     // Arrange: `owner` has an item; `intruder` is someone else.
     const owner = await createAuthedUser(request);
@@ -56,5 +63,39 @@ test.describe("POST /api/link-tokens/update", () => {
 
     // Assert
     await expectValidationError(res);
+  });
+
+  test("asks Plaid for an update-mode link token with the item's own access token, to repair the connection", async ({ request }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const { itemId } = await seedItemWithAccount(userId);
+
+    // Act
+    const res = await request.post("/api/link-tokens/update", { headers: withSession(cookie), data: { itemId } });
+
+    // Assert
+    await expectOk(res);
+    const { data } = await expectMatchesSchema(res, LinkTokenResponseSchema);
+    expect(data.linkToken).toMatch(/^link-stub-/);
+    const [asked] = await linkTokenRequests();
+    expect(asked).toMatchObject({ access_token: await readItemAccessToken(itemId), client_name: "Opulus" });
+    expect(asked).not.toHaveProperty("update");
+  });
+
+  test("lets the user pick accounts when asked to add accounts", async ({ request }) => {
+    // Arrange
+    const { cookie, userId } = await createAuthedUser(request);
+    const { itemId } = await seedItemWithAccount(userId);
+
+    // Act
+    const res = await request.post("/api/link-tokens/update", {
+      headers: withSession(cookie),
+      data: { itemId, mode: "add-accounts" },
+    });
+
+    // Assert: Plaid is told to turn account selection on.
+    await expectOk(res);
+    const [asked] = await linkTokenRequests();
+    expect(asked).toMatchObject({ update: { account_selection_enabled: true } });
   });
 });
