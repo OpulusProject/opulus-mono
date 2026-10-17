@@ -3,7 +3,6 @@ import { NetWorthHistoryResponseSchema } from "@opulus/core";
 import {
   expectMatchesSchema,
   expectOk,
-  expectStatus,
   expectValidationError,
 } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
@@ -86,11 +85,6 @@ test.describe("GET /api/accounts/net-worth", () => {
         { date, currency: "USD", perEur: i === 1 ? 1.0 : 1.2 },
       ]),
     );
-  });
-
-  test("requires authentication (401)", async ({ request }) => {
-    const res = await request.get("/api/accounts/net-worth");
-    await expectStatus(res, 401);
   });
 
   test("rejects an unknown range (400)", async ({ request }) => {

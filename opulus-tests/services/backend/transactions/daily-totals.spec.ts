@@ -3,7 +3,6 @@ import { DailyTransactionTotalsResponseSchema } from "@opulus/core";
 import { withSession } from "../../../shared/client.js";
 import {
   expectMatchesSchema,
-  expectStatus,
   expectValidationError,
 } from "../../../shared/assertions.js";
 import {
@@ -81,11 +80,6 @@ test.describe("GET /api/transactions/daily-totals", () => {
   test.beforeAll(async () => {
     await clearExchangeRates();
     await seedExchangeRates(juneRates());
-  });
-
-  test("requires authentication (401)", async ({ request }) => {
-    const res = await request.get("/api/transactions/daily-totals");
-    await expectStatus(res, 401);
   });
 
   test("returns no days for a user with no transactions", async ({

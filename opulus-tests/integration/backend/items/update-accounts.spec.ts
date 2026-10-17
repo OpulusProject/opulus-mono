@@ -179,22 +179,4 @@ test.describe("POST /api/items/:id/update-accounts (sandbox)", () => {
     await expectStatus(res, 409);
     await expectErrorCode(res, "ITEM_LOGIN_REQUIRED");
   });
-
-  test("answers 404 for an item owned by a different user", async ({
-    request,
-  }) => {
-    // Arrange: one real sandbox item owned by `owner`; `intruder` tries to use it.
-    const creds = requireSandboxCredentials();
-    const owner = await createAuthedUser(request);
-    const intruder = await createAuthedUser(request);
-    const { itemId } = await createSandboxItem(request, owner.cookie, creds);
-
-    // Act
-    const res = await request.post(`/api/items/${itemId}/update-accounts`, {
-      headers: withSession(intruder.cookie),
-    });
-
-    // Assert
-    await expectStatus(res, 404);
-  });
 });

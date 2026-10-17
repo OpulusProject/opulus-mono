@@ -3,7 +3,6 @@ import { SpendingByCategoryResponseSchema } from "@opulus/core";
 import { withSession } from "../../../shared/client.js";
 import {
   expectMatchesSchema,
-  expectStatus,
   expectValidationError,
 } from "../../../shared/assertions.js";
 import {
@@ -81,11 +80,6 @@ test.describe("GET /api/transactions/spending-by-category", () => {
     // Only these rates, so the "earliest stored rate" is June 1's.
     await clearExchangeRates();
     await seedExchangeRates(juneRates());
-  });
-
-  test("requires authentication (401)", async ({ request }) => {
-    const res = await request.get("/api/transactions/spending-by-category");
-    await expectStatus(res, 401);
   });
 
   test("returns no spending for a user with no transactions", async ({

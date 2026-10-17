@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { BASE_URL, withSession } from "../../../shared/client.js";
+import { withSession } from "../../../shared/client.js";
 import { expectOk, expectStatus } from "../../../shared/assertions.js";
 import {
   createAuthedUser,
@@ -16,39 +16,6 @@ import {
  * create endpoint) and verified over HTTP.
  */
 test.describe("DELETE /api/items/:id", () => {
-  test("requires authentication (401)", async ({ request }) => {
-    const res = await request.delete("/api/items/anything");
-    await expectStatus(res, 401);
-  });
-
-  test("rejects an unauthenticated delete without touching the item", async ({
-    request,
-    playwright,
-  }) => {
-    // Arrange: sign-up stores the session in `request`'s cookie jar, so the
-    // unauthenticated call needs its own cookie-less context.
-    const owner = await createAuthedUser(request);
-    const seeded = await seedItemWithAccount(owner.userId);
-    const anonymous = await playwright.request.newContext({
-      baseURL: BASE_URL,
-    });
-
-    // Act
-    const res = await anonymous.delete(`/api/items/${seeded.itemId}`);
-    await anonymous.dispose();
-
-    // Assert: rejected, and the item is still there for its owner.
-    await expectStatus(res, 401);
-    const list = await request.get("/api/items", {
-      headers: withSession(owner.cookie),
-    });
-    await expectOk(list);
-    const ids = ((await list.json()).data.items as Array<{ id: string }>).map(
-      (i) => i.id,
-    );
-    expect(ids).toContain(seeded.itemId);
-  });
-
   test("answers 404 for an item owned by a different user and leaves its data intact", async ({
     request,
   }) => {

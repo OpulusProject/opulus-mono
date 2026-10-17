@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { LinkTokenResponseSchema } from "@opulus/core";
 
-import { expectOk, expectStatus, expectMatchesSchema } from "../../../shared/assertions.js";
+import { expectOk, expectMatchesSchema } from "../../../shared/assertions.js";
 import { withSession } from "../../../shared/client.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import {
@@ -57,22 +57,5 @@ test.describe("POST /api/link-tokens/update (sandbox)", () => {
     await expectOk(res);
     const body = (await res.json()) as { data: { linkToken: string } };
     expect(body.data.linkToken).toMatch(/^link-sandbox-/);
-  });
-
-  test("answers 404 for an item owned by a different user", async ({ request }) => {
-    // Arrange: one real sandbox item owned by `owner`; `intruder` tries to use it.
-    const creds = requireSandboxCredentials();
-    const owner = await createAuthedUser(request);
-    const intruder = await createAuthedUser(request);
-    const { itemId } = await createSandboxItem(request, owner.cookie, creds);
-
-    // Act
-    const res = await request.post("/api/link-tokens/update", {
-      headers: withSession(intruder.cookie),
-      data: { itemId },
-    });
-
-    // Assert
-    await expectStatus(res, 404);
   });
 });

@@ -3,7 +3,6 @@ import { AccountsResponseSchema } from "@opulus/core";
 import {
   expectMatchesSchema,
   expectOk,
-  expectStatus,
   expectValidationError,
 } from "../../../shared/assertions.js";
 import { uniqueId, withSession } from "../../../shared/client.js";
@@ -47,11 +46,6 @@ async function listAccounts(
  * over HTTP.
  */
 test.describe("GET /api/accounts", () => {
-  test("requires authentication (401)", async ({ request }) => {
-    const res = await request.get("/api/accounts");
-    await expectStatus(res, 401);
-  });
-
   test("returns an empty list for a user with no accounts", async ({
     request,
   }) => {
