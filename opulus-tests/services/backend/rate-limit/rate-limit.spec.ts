@@ -6,12 +6,13 @@ import {
 } from "../../../shared/assertions.js";
 import { createAuthedUser } from "../../../shared/fixtures/index.js";
 
-/** How many requests a user may make a minute to the routes that call Plaid. */
-const PLAID_LIMIT = 10;
+/** How many writes (POST, DELETE, ...) a user may make a minute, and how many reads (GET). */
+const WRITE_LIMIT = 10;
+const READ_LIMIT = 300;
 
 /**
- * A request to a Plaid route that the route's own validation rejects (400), so
- * it is counted by the limiter but never reaches Plaid.
+ * A write that the route's own validation rejects (400), so it is counted by the
+ * limiter but never reaches Plaid.
  */
 function badItemRequest(request: APIRequestContext, cookie: string) {
   return request.post("/api/items", {
@@ -21,21 +22,22 @@ function badItemRequest(request: APIRequestContext, cookie: string) {
 }
 
 /**
- * This file: request rate limiting. The per-user limiter on the routes that call
- * Plaid is what is exercised, because each test has a user of its own and so a
- * counter of its own; the per-IP limiter on the whole API shares one counter
- * with every other spec, so the suite runs with its limit raised
- * (RATE_LIMIT_PER_IP) and it is built the same way.
+ * This file: request rate limiting. The per-user limiter is what is exercised,
+ * because each test has a user of its own and so a counter of its own; the
+ * per-IP limiter on the whole API shares one counter with every other spec, so
+ * the suite runs with its limit raised (RATE_LIMIT_PER_IP) and it is built the
+ * same way. The limiter is app-wide, not per route: any route is counted as a
+ * read (GET) or a write, so these checks use whichever routes are handy.
  */
 test.describe("request rate limiting", () => {
-  test("answers 429 once a user is over the limit on a route that calls Plaid", async ({
+  test("answers 429 once a user is over the write limit", async ({
     request,
   }) => {
     // Arrange
     const { cookie } = await createAuthedUser(request);
 
     // Act: up to the limit every request is answered normally (here, rejected as invalid)...
-    for (let i = 0; i < PLAID_LIMIT; i++) {
+    for (let i = 0; i < WRITE_LIMIT; i++) {
       await expectValidationError(await badItemRequest(request, cookie));
     }
     const limited = await badItemRequest(request, cookie);
@@ -56,14 +58,14 @@ test.describe("request rate limiting", () => {
 
     const res = await badItemRequest(request, cookie);
 
-    expect(res.headers()["ratelimit"]).toContain(`remaining=${PLAID_LIMIT - 1}`);
+    expect(res.headers()["ratelimit"]).toContain(`remaining=${WRITE_LIMIT - 1}`);
   });
 
-  test("counts the routes that call Plaid together", async ({ request }) => {
+  test("counts every kind of write together", async ({ request }) => {
     // Arrange
     const { cookie } = await createAuthedUser(request);
 
-    // Act: some on connecting, some on updating a link token, then creating one.
+    // Act: some on connecting, some on updating a link token, then a delete.
     for (let i = 0; i < 5; i++) {
       await badItemRequest(request, cookie);
       await request.post("/api/link-tokens/update", {
@@ -71,9 +73,8 @@ test.describe("request rate limiting", () => {
         data: {},
       });
     }
-    const next = await request.post("/api/link-tokens", {
+    const next = await request.delete("/api/items/no-such-item", {
       headers: withSession(cookie),
-      data: {},
     });
 
     // Assert
@@ -83,7 +84,7 @@ test.describe("request rate limiting", () => {
   test("counts each user on their own", async ({ request }) => {
     // Arrange: one user uses up their limit.
     const busy = await createAuthedUser(request);
-    for (let i = 0; i <= PLAID_LIMIT; i++) {
+    for (let i = 0; i <= WRITE_LIMIT; i++) {
       await badItemRequest(request, busy.cookie);
     }
     const other = await createAuthedUser(request);
@@ -97,7 +98,7 @@ test.describe("request rate limiting", () => {
 
   test("does not count a request that has no session", async ({ request }) => {
     // Arrange: more unauthenticated requests than the limit, from the same address.
-    for (let i = 0; i < PLAID_LIMIT + 5; i++) {
+    for (let i = 0; i < WRITE_LIMIT + 5; i++) {
       await expectStatus(await request.post("/api/items", { data: {} }), 401);
     }
     const { cookie } = await createAuthedUser(request);
@@ -109,14 +110,31 @@ test.describe("request rate limiting", () => {
     await expectValidationError(res);
   });
 
-  test("does not limit routes that do not call Plaid", async ({ request }) => {
+  test("counts reads apart from writes, against a higher allowance", async ({ request }) => {
     const { cookie } = await createAuthedUser(request);
 
-    for (let i = 0; i < PLAID_LIMIT * 3; i++) {
-      const res = await request.get("/api/accounts", {
-        headers: withSession(cookie),
-      });
+    // Three times the write limit in reads, all answered.
+    for (let i = 0; i < WRITE_LIMIT * 3; i++) {
+      const res = await request.get("/api/accounts", { headers: withSession(cookie) });
       await expectStatus(res, 200);
     }
+
+    const res = await request.get("/api/accounts", { headers: withSession(cookie) });
+    expect(res.headers()["ratelimit"]).toContain(`limit=${READ_LIMIT}`);
+  });
+
+  test("lets a user who is over the write limit keep reading", async ({ request }) => {
+    // Arrange: all of the user's writes used up.
+    const { cookie } = await createAuthedUser(request);
+    for (let i = 0; i <= WRITE_LIMIT; i++) {
+      await badItemRequest(request, cookie);
+    }
+    await expectStatus(await badItemRequest(request, cookie), 429);
+
+    // Act
+    const res = await request.get("/api/accounts", { headers: withSession(cookie) });
+
+    // Assert
+    await expectStatus(res, 200);
   });
 });

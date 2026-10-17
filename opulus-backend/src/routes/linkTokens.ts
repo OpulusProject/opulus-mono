@@ -3,7 +3,6 @@ import {
   createUpdateLinkTokenController,
   updateLinkTokenBodySchema,
 } from "@/controllers/linkTokens/createUpdateLinkTokenController.js";
-import { plaidRateLimit } from "@/middleware/rateLimit.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
 import { validate } from "@/middleware/validation.js";
 import { Router } from "express";
@@ -14,12 +13,11 @@ const router: ReturnType<typeof Router> = Router();
  * Link token routes
  * All routes require authentication
  */
-router.post("/", requireSession, plaidRateLimit, createLinkTokenController);
+router.post("/", requireSession, createLinkTokenController);
 
 router.post(
   "/update",
   requireSession,
-  plaidRateLimit,
   validate(updateLinkTokenBodySchema),
   createUpdateLinkTokenController
 );

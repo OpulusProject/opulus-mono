@@ -3,7 +3,7 @@ import "dotenv/config";
 import "./checkConfig.js";
 
 import { auth } from "@/auth.js";
-import { apiRateLimit } from "@/middleware/rateLimit.js";
+import { apiRateLimit, userRateLimit } from "@/middleware/rateLimit.js";
 import { requireApiSession } from "@/middleware/session/requireApiSession.js";
 import router from "@/routes/index.js";
 import {
@@ -97,6 +97,7 @@ app.use(cookieParser());
 
 // API Routes: nothing under /api is open unless requireApiSession lists it
 app.use("/api", requireApiSession);
+app.use("/api", userRateLimit);
 app.use("/api", router);
 
 // Global error handler (must be last middleware)

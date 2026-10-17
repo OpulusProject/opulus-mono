@@ -118,6 +118,10 @@ file the conventions above already describe.
    request without a session and two-factor, so a route is protected even if it
    forgets `requireSession`. To open a route on purpose, add it to the list in
    `src/middleware/session/requireApiSession.ts` and say why.
+   Rate limits work the same way: `userRateLimit` counts every signed-in user's
+   requests as reads (300 a minute) or writes (10 a minute), so a route needs no
+   limiter of its own. A route that costs more than its method says goes in
+   `EXPENSIVE_ROUTES` in `src/middleware/rateLimit.ts` with its own limit.
 6. **Tests.** A service spec in `opulus-tests/services/backend/<resource>/`
    (401 first, validation, another user's data never returned, the response
    schema), and an integration spec if it calls Plaid.

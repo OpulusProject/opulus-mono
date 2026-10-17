@@ -31,11 +31,16 @@ export default {
   // the service test suite turns it off because it makes no third-party calls.
   breachedPasswordCheck: getEnv("BREACHED_PASSWORD_CHECK", "on") !== "off",
   plaidWebhookUrl: getEnv("PLAID_WEBHOOK_URL"),
-  // Requests per minute: one IP address across the API, and one user on the
-  // routes that call Plaid (link tokens, connecting, updating accounts).
+  // Requests per minute: one IP address across the API, and one signed-in user
+  // for reads (GET) and, separately, for writes (every other method). Writes are
+  // the requests that call Plaid or change data, so their limit is the low one.
   rateLimitPerIp: parseInt(getEnv("RATE_LIMIT_PER_IP", "600"), 10),
-  rateLimitPlaidPerUser: parseInt(
-    getEnv("RATE_LIMIT_PLAID_PER_USER", "10"),
+  rateLimitReadsPerUser: parseInt(
+    getEnv("RATE_LIMIT_READS_PER_USER", "300"),
+    10
+  ),
+  rateLimitWritesPerUser: parseInt(
+    getEnv("RATE_LIMIT_WRITES_PER_USER", "10"),
     10
   ),
   // Requests per minute the webhook receiver accepts from one IP address. They

@@ -86,28 +86,54 @@ function createLimiter({
   });
 }
 
-/** Every request to the API, counted by IP address (or user, once signed in). */
+/** Every request to the API, counted by IP address (it runs before the session is known). */
 export const apiRateLimit: RequestHandler = createLimiter({
   name: "api",
   limit: config.rateLimitPerIp,
 });
 
-/**
- * Routes that call Plaid (link tokens, connecting an institution, updating its accounts),
- * counted per signed-in user. Mount it after `requireSession`: without a
- * session it would count by IP address instead.
- */
-export const plaidRateLimit: RequestHandler = createLimiter({
-  name: "plaid",
-  limit: config.rateLimitPlaidPerUser,
+const reads = createLimiter({
+  name: "reads",
+  limit: config.rateLimitReadsPerUser,
+});
+
+const writes = createLimiter({
+  name: "writes",
+  limit: config.rateLimitWritesPerUser,
 });
 
 /**
- * The data export, which reads everything a user has: three an hour per
- * signed-in user. Mount it after `requireSession`.
+ * The data export reads everything a user has: three an hour per user.
  */
-export const exportRateLimit: RequestHandler = createLimiter({
+const exportData = createLimiter({
   name: "export",
   limit: 3,
   windowMs: 60 * 60_000,
 });
+
+/**
+ * Routes that cost more than their method says, each with a limiter of its own
+ * ("METHOD /path" under /api). This is the one place to give a route a stricter
+ * limit; every other route is counted as a read or a write.
+ */
+const EXPENSIVE_ROUTES: Record<string, RequestHandler> = {
+  "GET /user/export": exportData,
+};
+
+const READ_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/**
+ * Every signed-in user's requests to the API, counted per user: reads (GET)
+ * against one allowance, writes (everything else, which is what calls Plaid or
+ * changes data) against a much lower one, and the routes in EXPENSIVE_ROUTES
+ * against their own. A route added without a thought about limits is therefore
+ * limited. Mount it after the session guard; a request without a session (the
+ * health check) is left to the per-address limiter.
+ */
+export const userRateLimit: RequestHandler = (req, res, next) => {
+  if (!res.locals.session) return next();
+  const limiter =
+    EXPENSIVE_ROUTES[`${req.method} ${req.path}`] ??
+    (READ_METHODS.has(req.method) ? reads : writes);
+  return limiter(req, res, next);
+};
