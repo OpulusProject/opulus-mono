@@ -4,6 +4,7 @@ import "./checkConfig.js";
 
 import { auth } from "@/auth.js";
 import { apiRateLimit } from "@/middleware/rateLimit.js";
+import { requireApiSession } from "@/middleware/session/requireApiSession.js";
 import router from "@/routes/index.js";
 import {
   config,
@@ -94,7 +95,8 @@ app.use(json());
 app.use(urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// API Routes
+// API Routes: nothing under /api is open unless requireApiSession lists it
+app.use("/api", requireApiSession);
 app.use("/api", router);
 
 // Global error handler (must be last middleware)

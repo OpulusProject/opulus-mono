@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { type APIResponse } from "@playwright/test";
+import { type APIRequestContext, type APIResponse, type Playwright } from "@playwright/test";
 
 /**
  * Base URL of the service under test. Everything behind it is a black box.
@@ -93,4 +93,13 @@ export function cookiesFrom(res: APIResponse): string {
     .filter((h) => h.name.toLowerCase() === "set-cookie")
     .map((h) => h.value.split(";")[0]!.trim())
     .join("; ");
+}
+
+/**
+ * A request context with no cookies. Signing up stores the session in the
+ * `request` fixture's cookie jar, so an unauthenticated call needs its own.
+ * Dispose it when done.
+ */
+export function anonymousContext(playwright: Playwright): Promise<APIRequestContext> {
+  return playwright.request.newContext({ baseURL: BASE_URL });
 }

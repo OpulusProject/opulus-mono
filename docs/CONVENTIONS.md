@@ -113,7 +113,11 @@ file the conventions above already describe.
    `getValidatedQuery`, call the service, send the DTO, `next(error)` on failure.
 5. **Route.** In `src/routes/<resource>.ts`: `requireSession`, then `validate` or
    `validateQuery` with the request schema, then the controller. A new resource's
-   router is registered in `src/routes/index.ts`.
+   router is registered in `src/routes/index.ts`. The API is closed by default:
+   `requireApiSession` sits in front of the whole `/api` router and refuses any
+   request without a session and two-factor, so a route is protected even if it
+   forgets `requireSession`. To open a route on purpose, add it to the list in
+   `src/middleware/session/requireApiSession.ts` and say why.
 6. **Tests.** A service spec in `opulus-tests/services/backend/<resource>/`
    (401 first, validation, another user's data never returned, the response
    schema), and an integration spec if it calls Plaid.
