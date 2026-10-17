@@ -63,7 +63,7 @@ test.describe("request rate limiting", () => {
     // Arrange
     const { cookie } = await createAuthedUser(request);
 
-    // Act: some on connecting, some on updating a link token, then refreshing.
+    // Act: some on connecting, some on updating a link token, then creating one.
     for (let i = 0; i < 5; i++) {
       await badItemRequest(request, cookie);
       await request.post("/api/link-tokens/update", {
@@ -71,13 +71,13 @@ test.describe("request rate limiting", () => {
         data: {},
       });
     }
-    const refresh = await request.post("/api/transactions/refresh", {
+    const next = await request.post("/api/link-tokens", {
       headers: withSession(cookie),
       data: {},
     });
 
     // Assert
-    await expectStatus(refresh, 429);
+    await expectStatus(next, 429);
   });
 
   test("counts each user on their own", async ({ request }) => {

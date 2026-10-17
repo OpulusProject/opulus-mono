@@ -120,7 +120,7 @@ export interface CreatedSandboxItem {
  * End-to-end: mint a sandbox public_token, exchange it through the backend's
  * POST /api/items, and return the resulting item id. Used by specs that
  * need a persisted sandbox-backed Item before exercising a downstream endpoint
- * (update-accounts, link-token/update, transactions/refresh).
+ * (update-accounts, link-token/update).
  *
  * Fresh item per test — slower than a shared fixture, but a single failure is
  * debuggable without reconstructing shared state.

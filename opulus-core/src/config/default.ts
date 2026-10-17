@@ -32,7 +32,7 @@ export default {
   breachedPasswordCheck: getEnv("BREACHED_PASSWORD_CHECK", "on") !== "off",
   plaidWebhookUrl: getEnv("PLAID_WEBHOOK_URL"),
   // Requests per minute: one IP address across the API, and one user on the
-  // routes that call Plaid (link tokens, connecting, refreshing).
+  // routes that call Plaid (link tokens, connecting, updating accounts).
   rateLimitPerIp: parseInt(getEnv("RATE_LIMIT_PER_IP", "600"), 10),
   rateLimitPlaidPerUser: parseInt(
     getEnv("RATE_LIMIT_PLAID_PER_USER", "10"),

@@ -61,7 +61,6 @@ All authentication routes are handled by Better Auth at `/api/auth/*`:
   - Query params (all optional): `startDate`, `endDate`, `itemId`, `accountId`, `category`, `search`, `type`, `hideTransfers`, `includePending`, plus `page`, `limit`, `sort` and `order`
 - `GET /api/transactions/daily-totals` - Each day's spending, income and net in the base currency, for the same filters as the list (requires authentication)
 - `GET /api/transactions/spending-by-category` - What was spent in each category in the base currency, with each category's share of the total; the same filters as the list, plus `top` to list only the largest and add up the rest (requires authentication)
-- `POST /api/transactions/refresh` - Ask Plaid to refresh an item's transactions (requires authentication)
 
 ### User
 

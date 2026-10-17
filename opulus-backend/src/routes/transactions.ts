@@ -10,13 +10,8 @@ import {
   getDailyTransactionTotalsController,
   getDailyTransactionTotalsQuerySchema,
 } from "@/controllers/transactions/getDailyTransactionTotalsController.js";
-import {
-  refreshTransactionsBodySchema,
-  refreshTransactionsController,
-} from "@/controllers/transactions/refreshTransactionsController.js";
-import { plaidRateLimit } from "@/middleware/rateLimit.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
-import { validate, validateQuery } from "@/middleware/validation.js";
+import { validateQuery } from "@/middleware/validation.js";
 import { Router } from "express";
 
 const router: ReturnType<typeof Router> = Router();
@@ -44,14 +39,6 @@ router.get(
   requireSession,
   validateQuery(getSpendingByCategoryQuerySchema),
   getSpendingByCategoryController
-);
-
-router.post(
-  "/refresh",
-  requireSession,
-  plaidRateLimit,
-  validate(refreshTransactionsBodySchema),
-  refreshTransactionsController
 );
 
 export default router;
