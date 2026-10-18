@@ -214,11 +214,6 @@ const ActivityContent: React.FC<{
           />
         )}
       </List>
-
-      <p className="text-muted-foreground text-xs leading-5">
-        As your institutions report them, up to 24 months back. Moves between
-        your own accounts show once here, as money added.
-      </p>
     </>
   );
 };
