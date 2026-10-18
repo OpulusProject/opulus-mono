@@ -7,11 +7,22 @@ const run = promisify(execFile);
 const repoRoot = path.resolve(process.cwd(), "..");
 
 /** The services that ship as an image: the port each listens on, and the line it logs when it has stopped cleanly. */
-const services = [
+const allServices = [
   { name: "backend", port: 8080, hostPort: 18401, stopped: "Shut down gracefully" },
   { name: "webhooks", port: 8081, hostPort: 18402, stopped: "Server closed" },
   { name: "scheduler", port: 8082, hostPort: 18403, stopped: "Server closed" },
 ];
+
+/**
+ * Which of them to test: all by default, or the comma-separated names in
+ * IMAGE_SERVICES (CI tests only the images whose inputs changed). With
+ * IMAGES_PREBUILT set, the images are already built and tagged
+ * `opulus-deployment-test-<name>` (CI builds them with a layer cache), so the
+ * suite does not build them.
+ */
+const wanted = process.env.IMAGE_SERVICES?.split(",").map((name) => name.trim()).filter(Boolean);
+const services = allServices.filter((service) => !wanted || wanted.includes(service.name));
+const prebuilt = Boolean(process.env.IMAGES_PREBUILT);
 
 /** An address the container can reach on the host (it cannot reach "localhost"). */
 const forContainer = (value: string) =>
@@ -32,6 +43,7 @@ for (const service of services) {
 
     test.beforeAll(async () => {
       test.setTimeout(900_000);
+      if (prebuilt) return;
       await docker("build", "-f", `opulus-${service.name}/Dockerfile`, "-t", image, ".");
     });
 

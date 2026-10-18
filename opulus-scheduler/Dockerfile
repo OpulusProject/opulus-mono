@@ -1,8 +1,8 @@
 # Multi-stage build for the scheduler service
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 
 RUN apk add --no-cache python3 make g++ && \
-    corepack enable && corepack prepare pnpm@latest --activate
+    corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 WORKDIR /app
 
@@ -25,9 +25,9 @@ RUN pnpm --filter @opulus/core build
 RUN pnpm --filter @opulus/scheduler build
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:22-alpine AS production
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 WORKDIR /app
 
