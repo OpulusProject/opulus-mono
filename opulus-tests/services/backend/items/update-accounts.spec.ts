@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { UpdateItemAccountsResponseSchema } from "@opulus/core";
 import { uniqueId, withSession } from "../../../shared/client.js";
 import { expectErrorCode, expectMatchesSchema, expectOk, expectStatus } from "../../../shared/assertions.js";
-import { createAuthedUser, seedItemWithAccount } from "../../../shared/fixtures/index.js";
+import { createAuthedUser, readItemStatus, seedItemWithAccount } from "../../../shared/fixtures/index.js";
 import { failAccounts, resetPlaidStub, setPlaidItem, setPlaidLiabilities } from "../../../shared/plaid-stub.js";
 import {
   creditCardAccount,
@@ -114,6 +114,21 @@ test.describe("POST /api/items/:id/update-accounts", () => {
     await expectOk(second);
     expect((await second.json()).data.created).toBe(1);
     expect((await readItem(request, cookie, known.itemId)).newAccountsAvailable).toBe(false);
+  });
+
+  test("stores when the item's consent expires, as Plaid now reports it", async ({ request }) => {
+    // Arrange: an item linked with no expiry; Plaid then says its consent ends in December.
+    const { cookie } = await createAuthedUser(request);
+    const account = plaidAccount(uniqueId("a"));
+    const { itemId } = await linkInstitution(request, cookie, { accounts: [account] });
+    expect((await readItemStatus(itemId)).consentExpirationTime).toBeNull();
+    await setPlaidItem({ accounts: [account], consent_expiration_time: "2026-12-15T00:00:00Z" });
+
+    // Act
+    await expectOk(await updateItemAccounts(request, cookie, itemId));
+
+    // Assert
+    expect((await readItemStatus(itemId)).consentExpirationTime?.toISOString()).toBe("2026-12-15T00:00:00.000Z");
   });
 
   test("clears a connection warning once the user has re-authenticated", async ({ request }) => {

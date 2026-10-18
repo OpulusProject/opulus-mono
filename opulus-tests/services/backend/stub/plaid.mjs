@@ -52,6 +52,7 @@
  *   POST /sandbox/public_token/create   a public token (the request is remembered)
  *   POST /sandbox/item/fire_webhook     remembers the webhook asked for, delivers nothing
  *   GET  /__control/sandbox-requests    the two sandbox calls above, oldest first
+ *   POST /__control/institution-error  { error_code } makes /institutions/get_by_id fail; {} makes it work
  *   POST /__control/reset      forget the requests, the item and the holdings
  *
  * Everything else answers 404 in Plaid's error shape, as an unsupported call.
@@ -93,6 +94,8 @@ let liabilities = NO_LIABILITIES;
 /** @type {Failing} */
 let accountsError = {};
 /** @type {Failing} */
+let institutionError = {};
+/** @type {Failing} */
 let itemRemove = {};
 /** @type {string[]} */
 let exchanges = [];
@@ -131,10 +134,14 @@ const publicWebhookKey = (kid, expiredAt) => ({
 /** @type {Failing & { response?: { accounts: Plaid<AccountBase>[]; holdings: Plaid<Holding>[]; securities: Plaid<Security>[] } }} */
 const NO_HOLDINGS = { response: { accounts: [], holdings: [], securities: [] } };
 let holdings = NO_HOLDINGS;
-/** The institution and accounts the item, institution and accounts calls describe. */
+/**
+ * The institution and accounts the item, institution and accounts calls describe.
+ * @type {{ institution_id: string; institution_name: string; consent_expiration_time: string | null; accounts: Plaid<AccountBase>[] }}
+ */
 const DEFAULT_ITEM = {
   institution_id: "ins_stub",
   institution_name: "Stub Bank",
+  consent_expiration_time: null,
   accounts: [
     {
       account_id: "stub-account-checking",
@@ -213,6 +220,7 @@ const server = createServer(async (req, res) => {
     sandboxRequests = [];
     liabilities = NO_LIABILITIES;
     accountsError = {};
+    institutionError = {};
     return send(res, 200, {});
   }
   if (req.method === "POST" && url.pathname === "/__control/liabilities") {
@@ -221,6 +229,10 @@ const server = createServer(async (req, res) => {
   }
   if (req.method === "POST" && url.pathname === "/__control/accounts-error") {
     accountsError = await readJson(req);
+    return send(res, 200, {});
+  }
+  if (req.method === "POST" && url.pathname === "/__control/institution-error") {
+    institutionError = await readJson(req);
     return send(res, 200, {});
   }
   if (req.method === "GET" && url.pathname === "/__control/removed-items") {
@@ -300,7 +312,7 @@ const server = createServer(async (req, res) => {
     available_products: [],
     billed_products: ["transactions"],
     products: ["transactions"],
-    consent_expiration_time: null,
+    consent_expiration_time: itemSetup.consent_expiration_time ?? null,
     update_type: "background",
   });
 
@@ -366,6 +378,14 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "POST" && url.pathname === "/institutions/get_by_id") {
     counter += 1;
+    if (institutionError.error_code) {
+      return send(res, 500, {
+        error_type: "API_ERROR",
+        error_code: institutionError.error_code,
+        error_message: `the stub answers ${institutionError.error_code} on purpose`,
+        request_id: `stub-request-${counter}`,
+      });
+    }
     return send(res, 200, /** @satisfies {Wire<import("plaid").InstitutionsGetByIdResponse>} */ ({
       institution: {
         institution_id: itemSetup.institution_id,

@@ -86,6 +86,8 @@ export async function setPlaidHoldings(
 export async function setPlaidItem(item: {
   institution_id?: string;
   institution_name?: string;
+  /** When the item's consent expires (an ISO timestamp), as `/item/get` reports it. */
+  consent_expiration_time?: string;
   accounts: Plaid<AccountBase>[];
 }): Promise<void> {
   await fetch(`${STUB_URL}/__control/item`, {
@@ -215,4 +217,13 @@ export async function syncCursorsAskedFor(accessToken: string): Promise<(string 
 export async function sandboxRequests(): Promise<{ path: string; body: Record<string, unknown> }[]> {
   const res = await fetch(`${STUB_URL}/__control/sandbox-requests`);
   return (await res.json()).requests;
+}
+
+/** Make Plaid refuse to describe the institution (`/institutions/get_by_id`) with this error code (an empty call makes it work again). */
+export async function failInstitutionLookup(errorCode?: string): Promise<void> {
+  await fetch(`${STUB_URL}/__control/institution-error`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(errorCode ? { error_code: errorCode } : {}),
+  });
 }

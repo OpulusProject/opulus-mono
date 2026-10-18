@@ -6,7 +6,7 @@ import { uniqueId, withSession } from "../../../shared/client.js";
 import { readStoredItemAccessToken } from "../../../shared/db.js";
 import { createAuthedUser } from "../../../shared/fixtures/auth.js";
 import { describeInstitution, plaidAccount } from "../../../shared/scenarios/plaid.js";
-import { exchangedPublicTokens, resetPlaidStub } from "../../../shared/plaid-stub.js";
+import { exchangedPublicTokens, failInstitutionLookup, resetPlaidStub } from "../../../shared/plaid-stub.js";
 
 /**
  * POST /api/items: linking an institution from a public token. Plaid is the
@@ -82,6 +82,29 @@ test.describe("POST /api/items", () => {
     const stored = await readStoredItemAccessToken(itemId);
     expect(stored).toMatch(/^enc:v1:[A-Za-z0-9+/=]+:[A-Za-z0-9+/=]+$/);
     expect(stored).not.toContain("access-stub");
+  });
+
+  test("links the institution even when Plaid cannot describe it, leaving its name empty", async ({ request }) => {
+    // Arrange: the accounts are fine, but the institution lookup (optional) fails.
+    const { cookie } = await createAuthedUser(request);
+    const institutionId = await describeInstitution([plaidAccount(uniqueId("a"))], "Named Bank");
+    await failInstitutionLookup("INTERNAL_SERVER_ERROR");
+
+    // Act
+    const res = await request.post("/api/items", {
+      headers: withSession(cookie),
+      data: { publicToken: uniqueId("public-stub"), institutionId },
+    });
+
+    // Assert
+    await expectStatus(res, 201);
+    const { itemId } = (await res.json()).data as { itemId: string };
+    const items = (await (await request.get("/api/items", { headers: withSession(cookie) })).json()).data.items as Array<{
+      id: string;
+      institutionName: string | null;
+      accounts: unknown[];
+    }>;
+    expect(items.find((i) => i.id === itemId)).toMatchObject({ institutionName: null, accounts: [expect.anything()] });
   });
 
   test("answers 409 for a second link to the same institution, without exchanging its public token", async ({ request }) => {

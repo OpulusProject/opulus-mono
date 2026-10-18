@@ -12,6 +12,6 @@
     "noUnusedLocals": true,
     "types": ["node"]
   },
-  "include": ["**/*.ts", "services/backend/stub/plaid.mjs", "services/scheduler/stub/*.mjs"],
+  "include": ["**/*.ts", "../opulus-backend/src/types/express.d.ts", "services/backend/stub/plaid.mjs", "services/scheduler/stub/*.mjs"],
   "exclude": ["node_modules", "test-results"]
 }

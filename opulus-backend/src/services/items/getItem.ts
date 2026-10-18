@@ -5,12 +5,6 @@ export interface GetItemParams {
   itemId: string;
 }
 
-export interface GetItemByPlaidItemIdParams {
-  userId: string;
-  /** Plaid's id for the item (not ours). */
-  plaidItemId: string;
-}
-
 /**
  * Get one of the user's items.
  *
@@ -25,19 +19,6 @@ export interface GetItemByPlaidItemIdParams {
  */
 export async function getItem(params: GetItemParams) {
   const item = await itemRepository.getById(params.itemId);
-  if (item.userId !== params.userId) {
-    throw new NotFoundError("Item not found");
-  }
-  return item;
-}
-
-/**
- * Like `getItem`, for callers that identify the item by Plaid's item id.
- */
-export async function getItemByPlaidItemId(
-  params: GetItemByPlaidItemIdParams
-) {
-  const item = await itemRepository.getByPlaidItemId(params.plaidItemId);
   if (item.userId !== params.userId) {
     throw new NotFoundError("Item not found");
   }
