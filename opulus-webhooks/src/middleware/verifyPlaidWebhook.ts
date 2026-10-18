@@ -156,13 +156,10 @@ export async function verifyPlaidWebhook(
   }
 
   // Compare hashes.
-  // req.body is a Buffer from raw() middleware, convert to string
-  const bodyString =
-    typeof req.body === "string"
-      ? req.body
-      : Buffer.isBuffer(req.body)
-        ? req.body.toString("utf8")
-        : JSON.stringify(req.body, null, 2);
+  // req.body is a Buffer from the raw() middleware. It is not one if the request
+  // did not say it was JSON, which raw() then leaves unread (Plaid always does);
+  // such a body cannot match the hash that was signed.
+  const bodyString = Buffer.isBuffer(req.body) ? req.body.toString("utf8") : "";
 
   const bodyHash = sha256(bodyString);
   const claimedBodyHash = (decodedToken as { request_body_sha256: string })

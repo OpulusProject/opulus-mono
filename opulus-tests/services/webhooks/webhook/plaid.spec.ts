@@ -118,6 +118,16 @@ test.describe("POST /webhook/plaid", () => {
     expect(await res.json()).toMatchObject({ message: "Internal server error" });
   });
 
+  test("rejects a correctly signed body that was not sent as JSON, which the receiver cannot read (401)", async ({ request }) => {
+    const itemId = uniqueId("item");
+
+    const res = await postSignedWebhook(request, harmlessEvent(itemId), { contentType: "text/plain" });
+
+    await expectStatus(res, 401);
+    await expectMessageIncludes(res, "Invalid body hash");
+    expect(await readWebhookEvents(itemId)).toEqual([]);
+  });
+
   test("rejects a body that changed after it was signed (401)", async ({ request }) => {
     const itemId = uniqueId("item");
 
