@@ -28,11 +28,11 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
       aria-busy={isRefreshing}
       className={cn(
         // The height holds with a few kinds or many, so the page below stays put.
-        'flex flex-col gap-6 rounded-md border p-4 transition-opacity lg:min-h-56 lg:flex-row lg:items-center lg:gap-10 lg:p-6',
+        'flex flex-col gap-6 rounded-md border p-4 transition-opacity lg:grid lg:min-h-64 lg:grid-cols-2 lg:items-center lg:gap-0 lg:p-8',
         isRefreshing && 'opacity-60'
       )}
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+      <div className="flex min-w-0 flex-col gap-1.5 lg:pr-10">
         <div className="text-muted-foreground text-sm">
           Total value · {summary.accountCount}{' '}
           {summary.accountCount === 1 ? 'account' : 'accounts'} ·{' '}
@@ -53,11 +53,13 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
           </div>
         )}
       </div>
-      <div className="bg-border hidden w-px self-stretch lg:block" />
-      <AllocationDonut
-        slices={summary.allocation}
-        baseCurrency={baseCurrency}
-      />
+      {/* The divider is the left edge of the right half: the card's middle. */}
+      <div className="min-w-0 lg:self-stretch lg:border-l lg:pl-10">
+        <AllocationDonut
+          slices={summary.allocation}
+          baseCurrency={baseCurrency}
+        />
+      </div>
     </section>
   );
 };

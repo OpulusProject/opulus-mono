@@ -22,8 +22,8 @@ const KIND_COLOR: Record<AllocationKind, string> = {
   balance: '#06b6d4',
 };
 
-const SIZE = 148;
-const THICKNESS = 20;
+const SIZE = 176;
+const THICKNESS = 24;
 const RADIUS = (SIZE - THICKNESS) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
@@ -43,7 +43,7 @@ export const AllocationDonut: React.FC<AllocationDonutProps> = ({
 }) => {
   let offset = 0;
   return (
-    <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
+    <div className="flex h-full flex-col items-center justify-center gap-6 sm:flex-row sm:gap-10">
       <svg
         width={SIZE}
         height={SIZE}
@@ -78,7 +78,7 @@ export const AllocationDonut: React.FC<AllocationDonutProps> = ({
           return circle;
         })}
       </svg>
-      <ul className="flex w-full min-w-0 flex-col gap-2 sm:w-64">
+      <ul className="flex w-full min-w-0 flex-col gap-3 sm:flex-1">
         {slices.map((slice) => (
           <li key={slice.kind} className="flex items-center gap-2 text-sm">
             <span
