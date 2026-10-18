@@ -30,6 +30,9 @@ jobs:
       PLAID_CLIENT_ID: ci-test
       PLAID_SECRET: ci-test
       PLAID_ENV: sandbox
+      # For the specs that count rate limits in Redis (RATE_LIMIT_STORE=redis).
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
 
     services:
       db:
@@ -42,6 +45,15 @@ jobs:
           - 5432:5432
         options: >-
           --health-cmd "pg_isready -U app -d app_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
