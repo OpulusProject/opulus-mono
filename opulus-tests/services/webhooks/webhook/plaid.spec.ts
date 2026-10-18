@@ -102,6 +102,22 @@ test.describe("POST /webhook/plaid", () => {
     expect(await readWebhookEvents(itemId)).toHaveLength(2);
   });
 
+  test("rejects a token whose header cannot be read, though its payload can (401)", async ({ request }) => {
+    const payload = Buffer.from(JSON.stringify({ request_body_sha256: "abc" })).toString("base64url");
+
+    const res = await postWebhookWithMalformedSignature(request, `@@@.${payload}.signature`);
+
+    await expectStatus(res, 401);
+    await expectMessageIncludes(res, "Invalid JWT header format");
+  });
+
+  test("answers 500, not 401, when Plaid fails to give the key (a fault of Plaid's, not a forged webhook)", async ({ request }) => {
+    const res = await postSignedWebhook(request, harmlessEvent(uniqueId("item")), { key: "broken" });
+
+    await expectStatus(res, 500);
+    expect(await res.json()).toMatchObject({ message: "Internal server error" });
+  });
+
   test("rejects a body that changed after it was signed (401)", async ({ request }) => {
     const itemId = uniqueId("item");
 

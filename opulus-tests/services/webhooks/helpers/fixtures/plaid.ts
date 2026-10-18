@@ -61,7 +61,7 @@ export function fakeJwt(alg = "HS256"): string {
 
 export interface SignOptions {
   /** Which of the stub's keys to name in the token ("valid" by default). */
-  key?: "valid" | "expired" | "unknown";
+  key?: "valid" | "expired" | "unknown" | "broken";
   /** Sign with a key of the test's own instead of the stub's (a forged token). */
   forged?: boolean;
   /** When the token was issued, seconds since the epoch (now by default). */
@@ -73,7 +73,7 @@ export interface SignOptions {
 /** An ES256 JWT as Plaid signs a webhook: the key id in the header, the body's SHA-256 in the payload. */
 async function signToken(body: string, options: SignOptions): Promise<string> {
   const stub = await webhookSigningKey();
-  const kid = { valid: stub.kid, expired: stub.expiredKid, unknown: "not-a-key-the-stub-knows" }[options.key ?? "valid"];
+  const kid = { valid: stub.kid, expired: stub.expiredKid, unknown: "not-a-key-the-stub-knows", broken: "stub-broken-key" }[options.key ?? "valid"];
   const privateKey = options.forged
     ? generateKeyPairSync("ec", { namedCurve: "P-256" }).privateKey
     : createPrivateKey({ key: stub.privateJwk as never, format: "jwk" });
