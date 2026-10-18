@@ -10,7 +10,8 @@
 # up what each process ran, mapped back to the TypeScript): the total and the lines
 # that did not run in the job summary, and the lcov file as an artifact.
 #
-# Informational: it gates nothing, and runs on main after each merge, nightly and
+# Informational: it gates nothing (a failing suite does not stop the report; the
+# suites have their own workflows that fail), and runs on main after each merge, nightly and
 # on request, not on pull requests, since it runs the suites a second time.
 
 name: Coverage
@@ -155,12 +156,15 @@ jobs:
           exit 1
 
       - name: Run the unit tests
+        continue-on-error: true
         run: pnpm --filter @opulus/tests test:unit-core
 
       - name: Run the service-api suite
+        continue-on-error: true
         run: pnpm --filter @opulus/tests test:services-${{ matrix.service }}
 
       - name: Run the deployment suite
+        continue-on-error: true
         run: pnpm --filter @opulus/tests test:deployment-${{ matrix.service }}
 
       # The service is stopped with SIGTERM so it writes what it ran on the way out.
