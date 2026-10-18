@@ -26,8 +26,11 @@ interface AccountsOverviewProps {
   description: string;
   /** Groups to show, in order. Their types define which accounts belong here. */
   groups: AccountGroupConfig[];
-  /** Headline numbers for every account on this page, from the server's summary. */
-  getSummary: (summary: AccountsSummary) => SummaryStat[];
+  /**
+   * Headline numbers for every account on this page, from the server's summary.
+   * Without it the page shows only its groups.
+   */
+  getSummary?: (summary: AccountsSummary) => SummaryStat[];
   emptyTitle: string;
   emptyDescription: string;
 }
@@ -109,7 +112,7 @@ const AccountGroups: React.FC<Omit<AccountsOverviewProps, 'description'>> = ({
   }
   return (
     <>
-      {summary && <SummaryStats stats={getSummary(summary)} />}
+      {summary && getSummary && <SummaryStats stats={getSummary(summary)} />}
 
       <List aria-label={heading}>
         {visibleGroups.map((group) => (
