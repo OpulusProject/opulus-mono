@@ -2,7 +2,7 @@
  * Helpers for the webhook receiver end-to-end suite.
  */
 
-import { type APIRequestContext, type TestType } from "@playwright/test";
+import { type APIRequestContext } from "@playwright/test";
 
 import { withSession } from "../../shared/client.js";
 import { readItemAccessToken } from "../../shared/db.js";
@@ -54,18 +54,6 @@ export async function linkItemWithWebhook(
   return { itemId, accessToken: await readItemAccessToken(itemId) };
 }
 
-/** An error response from one of Plaid's sandbox endpoints. */
-export class SandboxError extends Error {
-  constructor(
-    readonly path: string,
-    readonly status: number,
-    readonly errorCode: string | undefined,
-    body: string,
-  ) {
-    super(`Plaid sandbox ${path} failed (${status}): ${body}`);
-  }
-}
-
 async function postSandbox(
   path: string,
   creds: SandboxCredentials,
@@ -81,14 +69,7 @@ async function postSandbox(
     }),
   });
   if (!res.ok) {
-    const text = await res.text();
-    let errorCode: string | undefined;
-    try {
-      errorCode = (JSON.parse(text) as { error_code?: string }).error_code;
-    } catch {
-      // Not JSON; the message still carries the body.
-    }
-    throw new SandboxError(path, res.status, errorCode, text);
+    throw new Error(`Plaid sandbox ${path} failed (${res.status}): ${await res.text()}`);
   }
 }
 
@@ -104,33 +85,6 @@ export function fireSandboxWebhook(
     webhook_type: webhookType,
     webhook_code: webhookCode,
   });
-}
-
-/**
- * Fire NEW_ACCOUNTS_AVAILABLE, or skip the calling test when the sandbox
- * can't. Plaid only fires it for items created through Link with Account
- * Select v2 enabled, which items minted by /sandbox/public_token/create are
- * not, so today this skips. It starts running if that changes.
- */
-export async function fireNewAccountsAvailableOrSkip(
-  test: Pick<TestType<never, never>, "skip">,
-  creds: SandboxCredentials,
-  accessToken: string,
-): Promise<void> {
-  try {
-    await fireSandboxWebhook(creds, accessToken, "ITEM", "NEW_ACCOUNTS_AVAILABLE");
-  } catch (error) {
-    if (
-      error instanceof SandboxError &&
-      error.errorCode === "SANDBOX_ACCOUNT_SELECT_V2_NOT_ENABLED"
-    ) {
-      test.skip(
-        true,
-        "Plaid only fires NEW_ACCOUNTS_AVAILABLE for items created through Link with Account Select v2; sandbox public tokens don't have it",
-      );
-    }
-    throw error;
-  }
 }
 
 /**
