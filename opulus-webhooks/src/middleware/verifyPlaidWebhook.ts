@@ -120,14 +120,6 @@ export async function verifyPlaidWebhook(
     }
   }
 
-  // If the key ID is not in the cache, the key ID may be invalid.
-  if (!KEY_CACHE.has(currentKeyID)) {
-    res
-      .status(401)
-      .json({ message: "Webhook verification failed: Invalid key ID" });
-    return;
-  }
-
   // Fetch the current key from the cache.
   const key = KEY_CACHE.get(currentKeyID);
 
