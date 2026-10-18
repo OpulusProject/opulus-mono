@@ -1,5 +1,5 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
-import { expectStatus } from "../helpers/assertions.js";
+import { expectStatus } from "../../../shared/assertions.js";
 import { postWebhookWithoutSignature } from "../helpers/fixtures/index.js";
 
 /** How many webhooks one IP address may post a minute (the receiver's default). */

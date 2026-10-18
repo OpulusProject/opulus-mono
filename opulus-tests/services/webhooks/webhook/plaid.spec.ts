@@ -1,7 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { uniqueId } from "../../../shared/client.js";
 import { readWebhookEvents, waitForWebhookEvents } from "../../../shared/fixtures/index.js";
-import { expectMessageIncludes, expectStatus } from "../helpers/assertions.js";
+import { expectStatus } from "../../../shared/assertions.js";
+import { expectMessageIncludes } from "../helpers/assertions.js";
 import {
   fakeJwt,
   postSignedWebhook,
