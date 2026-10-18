@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { type APIRequestContext, type APIResponse, type Playwright } from "@playwright/test";
+import { type APIRequestContext, type APIResponse, type PlaywrightWorkerArgs } from "@playwright/test";
 
 /**
  * Base URL of the service under test. Everything behind it is a black box.
@@ -100,6 +100,6 @@ export function cookiesFrom(res: APIResponse): string {
  * `request` fixture's cookie jar, so an unauthenticated call needs its own.
  * Dispose it when done.
  */
-export function anonymousContext(playwright: Playwright): Promise<APIRequestContext> {
+export function anonymousContext(playwright: PlaywrightWorkerArgs["playwright"]): Promise<APIRequestContext> {
   return playwright.request.newContext({ baseURL: BASE_URL });
 }

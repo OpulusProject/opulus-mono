@@ -1,10 +1,10 @@
 import { expect, type APIRequestContext } from "@playwright/test";
 import { uniqueId, withSession } from "../client.js";
 import { createAuthedUser } from "../fixtures/auth.js";
-import { setPlaidItem } from "../plaid-stub.js";
+import { setPlaidItem, type AccountBase, type Plaid, type PlaidLiabilities } from "../plaid-stub.js";
 
 /** An account in Plaid's shape, as the Plaid stub describes it to the accounts call. */
-export function plaidAccount(id: string, overrides: Record<string, unknown> = {}) {
+export function plaidAccount(id: string, overrides: Plaid<AccountBase> = {}): Plaid<AccountBase> {
   return {
     account_id: id,
     name: `Chequing ${id}`,
@@ -23,7 +23,7 @@ export function plaidAccount(id: string, overrides: Record<string, unknown> = {}
  * response, or to link twice).
  */
 export async function describeInstitution(
-  accounts: Record<string, unknown>[],
+  accounts: Plaid<AccountBase>[],
   name = "Stub Bank",
 ): Promise<string> {
   const institutionId = uniqueId("ins");
@@ -39,7 +39,7 @@ export async function describeInstitution(
 export async function linkInstitution(
   request: APIRequestContext,
   cookie: string,
-  options: { accounts?: Record<string, unknown>[]; institutionName?: string } = {},
+  options: { accounts?: Plaid<AccountBase>[]; institutionName?: string } = {},
 ): Promise<{ itemId: string; institutionId: string }> {
   const institutionId = await describeInstitution(
     options.accounts ?? [plaidAccount(uniqueId("acct"))],
@@ -88,7 +88,7 @@ export const loanAccount = (id: string, subtype: "mortgage" | "student") =>
   });
 
 /** Plaid's liabilities for a credit card, a mortgage and a student loan, one each. */
-export function liabilitiesFor(ids: { credit: string; mortgage: string; student: string }) {
+export function liabilitiesFor(ids: { credit: string; mortgage: string; student: string }): PlaidLiabilities {
   return {
     credit: [
       {

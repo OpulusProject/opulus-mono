@@ -1,7 +1,8 @@
 import { uniqueId } from "../client.js";
+import type { Plaid, Transaction } from "../plaid-stub.js";
 
 /** A transaction in Plaid's shape, as `/transactions/sync` returns it. */
-export function plaidTransaction(accountId: string, overrides: Record<string, unknown> = {}) {
+export function plaidTransaction(accountId: string, overrides: Plaid<Transaction> = {}): Plaid<Transaction> & { transaction_id: string } {
   return {
     transaction_id: uniqueId("txn"),
     account_id: accountId,

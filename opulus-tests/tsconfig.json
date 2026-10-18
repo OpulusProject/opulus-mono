@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2023", "DOM"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "checkJs": true,
+    "noUnusedLocals": true,
+    "types": ["node"]
+  },
+  "include": ["**/*.ts", "services/backend/stub/plaid.mjs", "services/scheduler/stub/*.mjs"],
+  "exclude": ["node_modules", "test-results"]
+}

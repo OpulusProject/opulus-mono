@@ -58,14 +58,42 @@ import { createServer } from "node:http";
 
 const PORT = Number(process.env.PLAID_STUB_PORT ?? 4546);
 
+/**
+ * The stub is type-checked (`pnpm --filter @opulus/tests type-check`): what it
+ * answers is held to the Plaid SDK's own response types, so a field Plaid renamed
+ * or dropped in a newer SDK fails the check instead of passing against a stub
+ * that agrees with our code.
+ * @typedef {{ error_code?: string }} Failing
+ * @typedef {import("../../../shared/plaid-stub.js").AccountBase} AccountBase
+ * @typedef {import("../../../shared/plaid-stub.js").Holding} Holding
+ * @typedef {import("../../../shared/plaid-stub.js").Security} Security
+ */
+
+/**
+ * @template T
+ * @typedef {import("../../../shared/plaid-stub.js").Plaid<T>} Plaid
+ */
+
+/**
+ * @template T
+ * @typedef {import("../../../shared/plaid-stub.js").Wire<T>} Wire
+ */
+
+/** @type {Record<string, unknown>[]} */
 let linkTokenRequests = [];
 let counter = 0;
+/** @type {string[]} */
 let removedItems = [];
+/** @type {Failing & { response?: { liabilities: import("../../../shared/plaid-stub.js").PlaidLiabilities } }} */
 const NO_LIABILITIES = { error_code: "PRODUCTS_NOT_SUPPORTED" };
 let liabilities = NO_LIABILITIES;
+/** @type {Failing} */
 let accountsError = {};
+/** @type {Failing} */
 let itemRemove = {};
+/** @type {string[]} */
 let exchanges = [];
+/** @type {Wire<import("plaid").Institution>[]} */
 const STUB_INSTITUTIONS = Array.from({ length: 25 }, (_, i) => ({
   institution_id: `ins_stub_${i}`,
   name: `Stub Bank ${i}`,
@@ -85,15 +113,17 @@ let syncCursors = new Map();
 const WEBHOOK_KEY_ID = "stub-webhook-key";
 const EXPIRED_KEY_ID = "stub-expired-key";
 const webhookKeys = generateKeyPairSync("ec", { namedCurve: "P-256" });
+/** @param {string} kid @param {number | null} expiredAt */
 const publicWebhookKey = (kid, expiredAt) => ({
   alg: "ES256",
   created_at: 1_700_000_000,
   expired_at: expiredAt,
   kid,
   use: "sig",
-  ...webhookKeys.publicKey.export({ format: "jwk" }),
+  .../** @type {{ kty: string; crv: string; x: string; y: string }} */ (webhookKeys.publicKey.export({ format: "jwk" })),
 });
 /** What /investments/holdings/get answers: a response, or a Plaid error. */
+/** @type {Failing & { response?: { accounts: Plaid<AccountBase>[]; holdings: Plaid<Holding>[]; securities: Plaid<Security>[] } }} */
 const NO_HOLDINGS = { response: { accounts: [], holdings: [], securities: [] } };
 let holdings = NO_HOLDINGS;
 /** The institution and accounts the item, institution and accounts calls describe. */
@@ -113,19 +143,23 @@ const DEFAULT_ITEM = {
   ],
 };
 let itemSetup = DEFAULT_ITEM;
+/** @type {Failing & { response?: { inflow_streams: unknown[]; outflow_streams: unknown[] } }} */
 const NO_STREAMS = { response: { inflow_streams: [], outflow_streams: [] } };
 let recurring = NO_STREAMS;
+/** @type {Record<string, unknown>[]} */
 let recurringRequests = [];
 
+/** @param {import("node:http").ServerResponse} res @param {number} status @param {unknown} body */
 function send(res, status, body) {
   res.writeHead(status, { "content-type": "application/json" });
   res.end(JSON.stringify(body));
 }
 
+/** @param {import("node:http").IncomingMessage} req @returns {Promise<any>} */
 function readJson(req) {
   return new Promise((resolve) => {
     let raw = "";
-    req.on("data", (chunk) => (raw += chunk));
+    req.on("data", (/** @type {Buffer} */ chunk) => (raw += chunk));
     req.on("end", () => {
       try {
         resolve(raw ? JSON.parse(raw) : {});
@@ -213,10 +247,10 @@ const server = createServer(async (req, res) => {
     const { key_id } = await readJson(req);
     counter += 1;
     if (key_id === WEBHOOK_KEY_ID || key_id === EXPIRED_KEY_ID) {
-      return send(res, 200, {
+      return send(res, 200, /** @satisfies {Wire<import("plaid").WebhookVerificationKeyGetResponse>} */ ({
         key: publicWebhookKey(key_id, key_id === EXPIRED_KEY_ID ? 1_700_100_000 : null),
         request_id: `stub-request-${counter}`,
-      });
+      }));
     }
     return send(res, 400, {
       error_type: "INVALID_REQUEST",
@@ -227,14 +261,12 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === "POST" && url.pathname === "/user/create") {
-    const body = await readJson(req);
     counter += 1;
-    return send(res, 200, {
+    return send(res, 200, /** @satisfies {Wire<import("plaid").UserCreateResponse>} */ ({
       user_id: `stub-user-${counter}`,
       user_token: `stub-user-token-${counter}`,
       request_id: `stub-request-${counter}`,
-      client_user_id: body.client_user_id,
-    });
+    }));
   }
 
   if (req.method === "POST" && url.pathname === "/link/token/create") {
@@ -243,13 +275,14 @@ const server = createServer(async (req, res) => {
     const { client_id, secret, ...request } = body;
     linkTokenRequests.push(request);
     counter += 1;
-    return send(res, 200, {
+    return send(res, 200, /** @satisfies {Wire<import("plaid").LinkTokenCreateResponse>} */ ({
       link_token: `link-stub-${counter}`,
       expiration: new Date(Date.now() + 4 * 3600_000).toISOString(),
       request_id: `stub-request-${counter}`,
-    });
+    }));
   }
 
+  /** @returns {Wire<import("plaid").Item>} */
   const plaidItem = () => ({
     item_id: `stub-item-${itemSetup.institution_id}`,
     institution_id: itemSetup.institution_id,
@@ -265,16 +298,16 @@ const server = createServer(async (req, res) => {
   if (req.method === "POST" && url.pathname === "/item/public_token/exchange") {
     exchanges.push((await readJson(req)).public_token);
     counter += 1;
-    return send(res, 200, {
+    return send(res, 200, /** @satisfies {Wire<import("plaid").ItemPublicTokenExchangeResponse>} */ ({
       access_token: `access-stub-${counter}`,
       item_id: `stub-item-${itemSetup.institution_id}`,
       request_id: `stub-request-${counter}`,
-    });
+    }));
   }
 
   if (req.method === "POST" && url.pathname === "/item/get") {
     counter += 1;
-    return send(res, 200, { item: plaidItem(), status: null, request_id: `stub-request-${counter}` });
+    return send(res, 200, /** @satisfies {Wire<import("plaid").ItemGetResponse>} */ ({ item: plaidItem(), status: null, request_id: `stub-request-${counter}` }));
   }
 
   if (req.method === "POST" && url.pathname === "/item/remove") {
@@ -289,7 +322,7 @@ const server = createServer(async (req, res) => {
       });
     }
     removedItems.push(access_token);
-    return send(res, 200, { request_id: `stub-request-${counter}` });
+    return send(res, 200, /** @satisfies {Wire<import("plaid").ItemRemoveResponse>} */ ({ request_id: `stub-request-${counter}` }));
   }
 
   if (req.method === "POST" && url.pathname === "/institutions/get") {
@@ -304,7 +337,7 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "POST" && url.pathname === "/institutions/get_by_id") {
     counter += 1;
-    return send(res, 200, {
+    return send(res, 200, /** @satisfies {Wire<import("plaid").InstitutionsGetByIdResponse>} */ ({
       institution: {
         institution_id: itemSetup.institution_id,
         name: itemSetup.institution_name,
@@ -316,7 +349,7 @@ const server = createServer(async (req, res) => {
         primary_color: null,
       },
       request_id: `stub-request-${counter}`,
-    });
+    }));
   }
 
   if (req.method === "POST" && url.pathname === "/accounts/get") {
@@ -349,7 +382,7 @@ const server = createServer(async (req, res) => {
     return send(res, 200, {
       accounts: itemSetup.accounts,
       item: plaidItem(),
-      liabilities: liabilities.response.liabilities,
+      liabilities: liabilities.response?.liabilities,
       request_id: `stub-request-${counter}`,
     });
   }
