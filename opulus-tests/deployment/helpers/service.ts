@@ -73,16 +73,23 @@ export function exited(child: ChildProcess, timeoutMs = 15_000): Promise<number 
 /**
  * Stop a service a spec started, whatever state it is in, and everything it
  * started: `tsx` runs the service as a child of its own, which would otherwise
- * be left holding the port. (A spec about how the service shuts down sends
- * SIGTERM itself and waits.)
+ * be left holding the port. It is asked to stop first (SIGTERM, as a platform
+ * does, which also lets it write the coverage it recorded) and killed if it has
+ * not by `graceMs` (a service whose dependency is gone may never finish
+ * stopping). A spec about how the service shuts down sends SIGTERM itself.
  */
-export async function stopService(service: RunningService): Promise<void> {
+export async function stopService(service: RunningService, graceMs = 3_000): Promise<void> {
   if (service.child.exitCode !== null) return;
-  try {
-    process.kill(-service.child.pid!, "SIGKILL");
-  } catch {
-    service.child.kill("SIGKILL");
-  }
+  const signal = (name: NodeJS.Signals) => {
+    try {
+      process.kill(-service.child.pid!, name);
+    } catch {
+      service.child.kill(name);
+    }
+  };
+  signal("SIGTERM");
+  await exited(service.child, graceMs).catch(() => undefined);
+  signal("SIGKILL");
   await exited(service.child).catch(() => undefined);
 }
 
