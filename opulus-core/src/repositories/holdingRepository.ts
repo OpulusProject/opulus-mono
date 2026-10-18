@@ -28,17 +28,6 @@ export interface NormalizedSecurity {
   };
 }
 
-/**
- * What Plaid sends for a bond. The SDK version in use predates it, so the
- * security's type does not have it; it is in the response all the same.
- */
-interface PlaidFixedIncome {
-  maturity_date?: string | null;
-  issue_date?: string | null;
-  face_value?: number | null;
-  yield_rate?: { percentage?: number | null; type?: string | null } | null;
-}
-
 /** A holding ready to store, keyed by Plaid's account and security ids. */
 export interface NormalizedHolding {
   providerAccountId: string;
@@ -64,8 +53,7 @@ const toDate = (value: string | null | undefined): Date | null =>
 export function normalizePlaidSecurity(
   security: PlaidSecurity
 ): NormalizedSecurity {
-  const fixedIncome = (security as { fixed_income?: PlaidFixedIncome | null })
-    .fixed_income;
+  const fixedIncome = security.fixed_income;
   const option = security.option_contract;
   return {
     plaidSecurityId: security.security_id,

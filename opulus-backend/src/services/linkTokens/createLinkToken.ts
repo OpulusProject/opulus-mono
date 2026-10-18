@@ -1,4 +1,5 @@
 import {
+  AppError,
   linkSessionRepository,
   plaidGateway,
   userRepository,
@@ -31,6 +32,16 @@ export async function createLinkToken(
   if (!userToken) {
     const plaidUserResponse = await plaidGateway.createUser(userId);
     const { user_token: plaidUserToken, user_id: plaidId } = plaidUserResponse;
+
+    // Plaid stopped issuing user tokens to integrations created after
+    // 2025-12-10; ours still depends on one to make link tokens.
+    if (!plaidUserToken) {
+      throw new AppError(
+        "Plaid did not return a user token",
+        502,
+        "PLAID_NO_USER_TOKEN"
+      );
+    }
 
     await userRepository.update({
       id: userId,

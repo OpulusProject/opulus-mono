@@ -7,6 +7,7 @@ import {
   InstitutionsGetRequest,
   InvestmentsHoldingsGetRequest,
   InvestmentsTransactionsGetRequest,
+  InvestmentsTransactionsGetResponse,
   InvestmentTransaction,
   ItemGetRequest,
   ItemPublicTokenExchangeRequest,
@@ -322,7 +323,7 @@ class PlaidGateway {
     try {
       const transactions: InvestmentTransaction[] = [];
       const securities = new Map<string, Security>();
-      let accounts: AccountBase[] = [];
+      let accounts: InvestmentsTransactionsGetResponse["accounts"] = [];
       let total = Infinity;
 
       while (transactions.length < total) {

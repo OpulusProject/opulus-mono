@@ -35,5 +35,10 @@
     "node": ">=22.0.0",
     "pnpm": ">=8.0.0"
   },
-  "packageManager": "pnpm@9.0.0"
+  "packageManager": "pnpm@9.0.0",
+  "pnpm": {
+    "overrides": {
+      "plaid>axios": "^1.20.0"
+    }
+  }
 }

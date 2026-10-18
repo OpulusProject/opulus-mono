@@ -1,5 +1,9 @@
 import { Prisma, PrismaClient } from "@prisma/client";
-import type { PlaidErrorType, Item as PlaidItem } from "plaid";
+import type {
+  PlaidErrorType,
+  Item as PlaidItemBase,
+  ItemWithConsentFields,
+} from "plaid";
 import prisma from "../client/prisma.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
 import {
@@ -7,6 +11,9 @@ import {
   encryptItemToken,
 } from "../utils/itemTokenCrypto.js";
 import { accountDtoSelect } from "./accountRepository.js";
+
+/** An item as Plaid describes it: `/item/get` answers with either shape, which differ only in their enum types. */
+type PlaidItem = PlaidItemBase | ItemWithConsentFields;
 
 export interface CreateItemData {
   plaidItemId: string;
