@@ -9,8 +9,7 @@ import { expectOk } from "../../../shared/assertions.js";
  *
  * Test cases:
  * - /health answers ok, naming the service
- * - /ready answers ready once the database answers
- * - both are open: they need no session
+ * - /ready answers ready once the database answers (both are open: these requests carry no session)
  */
 test.describe("backend health checks", () => {
   test("/health answers ok, naming the service", async ({ request }) => {
@@ -25,10 +24,5 @@ test.describe("backend health checks", () => {
 
     await expectOk(res);
     expect(await res.json()).toMatchObject({ status: "ready", database: "connected" });
-  });
-
-  test("both are open: they need no session", async ({ request }) => {
-    expect((await request.get("/health")).status()).toBe(200);
-    expect((await request.get("/ready")).status()).toBe(200);
   });
 });

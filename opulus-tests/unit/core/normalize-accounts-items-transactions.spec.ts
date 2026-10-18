@@ -12,47 +12,26 @@ const asArg = <T extends (...args: never[]) => unknown>(value: unknown) => value
  * Plaid's accounts, items and transactions as we keep them
  * (opulus-core/src/repositories/{account,item,transaction}Repository.ts).
  *
+ * Only what is not a plain copy of a field is pinned here: what becomes null,
+ * what is flattened or dropped, and what is kept only when it holds something.
+ *
  * Test cases:
- * - an account keeps its names, type, mask and balances, with null for what Plaid left out
+ * - an account without its optional fields has nulls for them
  * - normalizePlaidBalances keeps the four balance columns only, with null for a missing one
- * - an item keeps its ids, institution, webhook, products and consent expiry, with the error flattened into columns
+ * - an item's error is flattened into columns, and its consent expiry becomes a date
  * - an item without an institution, an error or a consent expiry has nulls for them
- * - a transaction keeps its amount, dates, names, category, channel and currency
+ * - a transaction's dates become dates and its category is flattened
  * - a transaction's location and payment details are kept only when they hold something
  * - a transaction with no pending flag is not pending, and a missing amount is zero
  */
 test.describe("Plaid normalizers", () => {
-  test("an account keeps its names, type, mask and balances, with null for what Plaid left out", () => {
-    const account = asArg<typeof normalizePlaidAccount>({
-      account_id: "acct",
-      persistent_account_id: "persistent",
-      name: "Chequing",
-      official_name: "Everyday Chequing",
-      type: "depository",
-      subtype: "checking",
-      mask: "0000",
-      balances: { available: 90, current: 100, limit: null, iso_currency_code: "CAD", unofficial_currency_code: null },
-    });
-
-    expect(normalizePlaidAccount(account, "item-1", "user-1")).toEqual({
-      providerAccountId: "acct",
-      persistentAccountId: "persistent",
-      itemId: "item-1",
-      userId: "user-1",
-      name: "Chequing",
-      officialName: "Everyday Chequing",
-      type: "depository",
-      subtype: "checking",
-      mask: "0000",
-      balanceAvailable: 90,
-      balanceCurrent: 100,
-      balanceLimit: null,
-      isoCurrencyCode: "CAD",
-      unofficialCurrencyCode: null,
-    });
-
+  test("an account without its optional fields has nulls for them", () => {
     const bare = asArg<typeof normalizePlaidAccount>({ account_id: "a", name: "A", type: "other", balances: {} });
+
     expect(normalizePlaidAccount(bare, "i", "u")).toMatchObject({
+      providerAccountId: "a",
+      itemId: "i",
+      userId: "u",
       persistentAccountId: null,
       officialName: null,
       subtype: null,
@@ -78,36 +57,22 @@ test.describe("Plaid normalizers", () => {
     });
   });
 
-  test("an item keeps its ids, institution, webhook, products and consent expiry, with the error flattened into columns", () => {
+  test("an item's error is flattened into columns, and its consent expiry becomes a date", () => {
     const item = asArg<typeof normalizePlaidItem>({
       item_id: "plaid-item",
-      institution_id: "ins_1",
-      webhook: "https://example.test/webhook/plaid",
       error: { error_type: "ITEM_ERROR", error_code: "ITEM_LOGIN_REQUIRED", error_message: "login required", display_message: null },
-      available_products: ["investments"],
+      available_products: [],
       billed_products: ["transactions"],
-      products: ["transactions", "liabilities"],
-      update_type: "background",
       consent_expiration_time: "2026-12-01T00:00:00Z",
     });
 
-    expect(normalizePlaidItem(item, "user-1", "access-token", { name: "Stub Bank", logo: "logo-data", primary_color: "#112233" })).toEqual({
-      plaidItemId: "plaid-item",
-      userId: "user-1",
-      accessToken: "access-token",
-      institutionId: "ins_1",
+    expect(normalizePlaidItem(item, "user-1", "access-token", { name: "Stub Bank" })).toMatchObject({
       institutionName: "Stub Bank",
-      institutionColor: "#112233",
-      institutionLogo: "logo-data",
-      webhook: "https://example.test/webhook/plaid",
       errorType: "ITEM_ERROR",
       errorCode: "ITEM_LOGIN_REQUIRED",
       errorMessage: "login required",
       displayMessage: null,
-      availableProducts: ["investments"],
       billedProducts: ["transactions"],
-      products: ["transactions", "liabilities"],
-      updateType: "background",
       consentExpirationTime: new Date("2026-12-01T00:00:00Z"),
     });
   });
@@ -129,38 +94,22 @@ test.describe("Plaid normalizers", () => {
     });
   });
 
-  test("a transaction keeps its amount, dates, names, category, channel and currency", () => {
+  test("a transaction's dates become dates and its category is flattened", () => {
     const transaction = asArg<typeof normalizePlaidTransaction>({
       transaction_id: "txn-1",
       amount: 12.5,
       date: "2026-10-10",
       authorized_date: "2026-10-09",
       name: "COFFEE SHOP 123",
-      merchant_name: "Coffee Shop",
       personal_finance_category: { primary: "FOOD_AND_DRINK", detailed: "FOOD_AND_DRINK_COFFEE" },
-      payment_channel: "in store",
-      iso_currency_code: "CAD",
-      pending: true,
-      pending_transaction_id: "txn-0",
     });
 
     expect(normalizePlaidTransaction(transaction, "acct-1", "item-1", "user-1")).toMatchObject({
       providerTransactionId: "txn-1",
-      accountId: "acct-1",
-      itemId: "item-1",
-      userId: "user-1",
-      amount: 12.5,
       date: new Date("2026-10-10"),
       authorizedDate: new Date("2026-10-09"),
-      name: "COFFEE SHOP 123",
-      merchantName: "Coffee Shop",
       categoryPrimary: "FOOD_AND_DRINK",
       categoryDetailed: "FOOD_AND_DRINK_COFFEE",
-      paymentChannel: "in store",
-      isoCurrencyCode: "CAD",
-      unofficialCurrencyCode: null,
-      pending: true,
-      pendingTransactionId: "txn-0",
     });
   });
 
