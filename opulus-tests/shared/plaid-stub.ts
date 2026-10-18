@@ -213,6 +213,15 @@ export async function syncCursorsAskedFor(accessToken: string): Promise<(string 
   return (await res.json()).cursors;
 }
 
+/** Make Plaid's sandbox endpoints refuse with this error code (an empty call makes them work again). */
+export async function failSandbox(errorCode?: string): Promise<void> {
+  await fetch(`${STUB_URL}/__control/sandbox-error`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(errorCode ? { error_code: errorCode } : {}),
+  });
+}
+
 /** The calls to Plaid's sandbox endpoints (`/sandbox/...`) since the last reset, oldest first, without the credentials. */
 export async function sandboxRequests(): Promise<{ path: string; body: Record<string, unknown> }[]> {
   const res = await fetch(`${STUB_URL}/__control/sandbox-requests`);

@@ -54,6 +54,7 @@
  *   POST /sandbox/item/fire_webhook     remembers the webhook asked for, delivers nothing
  *   GET  /__control/sandbox-requests    the two sandbox calls above, oldest first
  *   POST /__control/institution-error  { error_code } makes /institutions/get_by_id fail; {} makes it work
+ *   POST /__control/sandbox-error  { error_code } makes both sandbox calls fail; {} makes them work
  *   POST /__control/reset      forget the requests, the item and the holdings
  *
  * Everything else answers 404 in Plaid's error shape, as an unsupported call.
@@ -102,6 +103,8 @@ let itemRemove = {};
 let exchanges = [];
 /** @type {{ path: string; body: Record<string, unknown> }[]} */
 let sandboxRequests = [];
+/** @type {Failing} */
+let sandboxError = {};
 /** @type {Wire<import("plaid").Institution>[]} */
 const STUB_INSTITUTIONS = Array.from({ length: 25 }, (_, i) => ({
   institution_id: `ins_stub_${i}`,
@@ -220,6 +223,7 @@ const server = createServer(async (req, res) => {
     itemRemove = {};
     exchanges = [];
     sandboxRequests = [];
+    sandboxError = {};
     liabilities = NO_LIABILITIES;
     accountsError = {};
     institutionError = {};
@@ -242,6 +246,10 @@ const server = createServer(async (req, res) => {
   }
   if (req.method === "POST" && url.pathname === "/__control/item-remove") {
     itemRemove = await readJson(req);
+    return send(res, 200, {});
+  }
+  if (req.method === "POST" && url.pathname === "/__control/sandbox-error") {
+    sandboxError = await readJson(req);
     return send(res, 200, {});
   }
   if (req.method === "GET" && url.pathname === "/__control/sandbox-requests") {
@@ -345,6 +353,22 @@ const server = createServer(async (req, res) => {
     const { client_id, secret, ...request } = await readJson(req);
     sandboxRequests.push({ path: url.pathname, body: request });
     counter += 1;
+    if (sandboxError.error_code) {
+      return send(res, 400, {
+        error_type: "INVALID_REQUEST",
+        error_code: sandboxError.error_code,
+        error_message: `the stub answers ${sandboxError.error_code} on purpose`,
+        request_id: `stub-request-${counter}`,
+      });
+    }
+    if (sandboxError.error_code) {
+      return send(res, 400, {
+        error_type: "INVALID_REQUEST",
+        error_code: sandboxError.error_code,
+        error_message: `the stub answers ${sandboxError.error_code} on purpose`,
+        request_id: `stub-request-${counter}`,
+      });
+    }
     return send(res, 200, /** @satisfies {Wire<import("plaid").SandboxPublicTokenCreateResponse>} */ ({
       public_token: `public-sandbox-stub-${counter}`,
       request_id: `stub-request-${counter}`,
