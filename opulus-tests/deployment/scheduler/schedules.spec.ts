@@ -28,16 +28,18 @@ const queue = new Queue("scheduler", {
  * - registers each job's schedule, in UTC, with the pattern it asks for
  * - removes the schedule of a job that no longer exists, and keeps the others
  * - registers the same schedule again when started again (no duplicate)
+ * - queues the jobs that ask to run at start-up, unless told not to
+ * - fails a run of a job it does not have, saying so
  */
 test.describe("scheduler schedules", () => {
   let scheduler: RunningService | undefined;
 
-  const start = async (cron = "5 4 * * *") => {
+  const start = async (cron = "5 4 * * *", env: Record<string, string> = {}) => {
     scheduler = await startService({
       workspace: "opulus-scheduler",
       port: PORT,
       portVariable: "SCHEDULER_PORT",
-      env: { SCHEDULER_RUN_ON_START: "false", EXCHANGE_RATES_CRON: cron },
+      env: { SCHEDULER_RUN_ON_START: "false", EXCHANGE_RATES_CRON: cron, ...env },
     });
   };
 
@@ -85,5 +87,31 @@ test.describe("scheduler schedules", () => {
     const registered = await queue.getJobSchedulers();
     expect(registered).toHaveLength(1);
     expect(registered[0]).toMatchObject({ key: JOB, pattern: "30 6 * * *" });
+  });
+
+  test("queues the jobs that ask to run at start-up, unless told not to", async () => {
+    // Act: started the way a deploy starts it, with the provider unreachable so the run itself goes nowhere.
+    await start("5 4 * * *", { SCHEDULER_RUN_ON_START: "true", FRANKFURTER_BASE_URL: "http://localhost:1/v1" });
+
+    // Assert
+    expect(scheduler!.output()).toContain("Job queued to run on start");
+    await queue.obliterate({ force: true });
+  });
+
+  test("fails a run of a job it does not have, saying so", async () => {
+    // Arrange
+    await start();
+
+    // Act: a run of a name that is not a job (say, one removed after it was queued).
+    const job = await queue.add("a-job-that-was-removed", {}, { attempts: 1 });
+    let failed = "";
+    for (let i = 0; i < 100 && !failed; i++) {
+      failed = (await queue.getJob(job.id!))?.failedReason ?? "";
+      if (!failed) await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    // Assert
+    expect(failed).toBe("No job named a-job-that-was-removed");
+    await queue.obliterate({ force: true });
   });
 });
