@@ -35,7 +35,7 @@ export const AccountsAndGains: React.FC<AccountsAndGainsProps> = ({
   const navigate = useNavigate();
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid items-start gap-4 lg:grid-cols-2">
       <ByAccount
         data={data}
         onOpen={(id) =>

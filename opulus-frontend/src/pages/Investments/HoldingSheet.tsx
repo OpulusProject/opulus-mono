@@ -1,6 +1,6 @@
 import type { HoldingDTO, HoldingsResponse } from '@opulus/core/dto';
 import { Link } from '@tanstack/react-router';
-import { Info, TriangleAlert } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 import * as React from 'react';
 
 import { List, ListRow } from '@/common/List';
@@ -161,14 +161,6 @@ const HoldingDetail: React.FC<{
             ))}
           </List>
         </section>
-
-        <p className="text-muted-foreground flex gap-2 text-xs leading-5">
-          <Info className="mt-0.5 size-3.5 shrink-0" />
-          <span>
-            From {holding.institutionName ?? 'your institution'}. Opulus shows
-            what your institution reports.
-          </span>
-        </p>
       </div>
     </>
   );
