@@ -6,7 +6,7 @@ import {
   NetWorthHistoryResponse,
   NetWorthRangeSchema,
 } from "@opulus/core";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import { z } from "zod";
 
 /**
@@ -30,25 +30,20 @@ export const getNetWorthHistoryQuerySchema = z.object({
  */
 export async function getNetWorthHistoryController(
   req: Request,
-  res: Response<NetWorthHistoryResponse>,
-  next: NextFunction
+  res: Response<NetWorthHistoryResponse>
 ) {
-  try {
-    const session = getRequestSession(res);
+  const session = getRequestSession(res);
 
-    const { range, accountId } =
-      getValidatedQuery<typeof getNetWorthHistoryQuerySchema>(req);
+  const { range, accountId } =
+    getValidatedQuery<typeof getNetWorthHistoryQuerySchema>(req);
 
-    const { points } = await getNetWorthHistory({
-      userId: session.user.id,
-      range,
-      accountIds: accountId,
-    });
+  const { points } = await getNetWorthHistory({
+    userId: session.user.id,
+    range,
+    accountIds: accountId,
+  });
 
-    res
-      .status(200)
-      .json({ data: { range, baseCurrency: BASE_CURRENCY, points } });
-  } catch (error) {
-    next(error);
-  }
+  res
+    .status(200)
+    .json({ data: { range, baseCurrency: BASE_CURRENCY, points } });
 }

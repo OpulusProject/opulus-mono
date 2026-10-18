@@ -2,7 +2,7 @@ import { getValidatedQuery } from "@/middleware/validation.js";
 import { getRequestSession } from "@/middleware/session/requireSession.js";
 import { getSpendingByCategory } from "@/services/transactions/getSpendingByCategory.js";
 import { SpendingByCategoryResponse } from "@opulus/core";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import {
   optionalInt,
   toTransactionFilters,
@@ -24,23 +24,17 @@ export const getSpendingByCategoryQuerySchema =
  */
 export async function getSpendingByCategoryController(
   req: Request,
-  res: Response<SpendingByCategoryResponse>,
-  next: NextFunction
+  res: Response<SpendingByCategoryResponse>
 ) {
-  try {
-    const session = getRequestSession(res);
+  const session = getRequestSession(res);
 
-    const query =
-      getValidatedQuery<typeof getSpendingByCategoryQuerySchema>(req);
+  const query = getValidatedQuery<typeof getSpendingByCategoryQuerySchema>(req);
 
-    const data = await getSpendingByCategory({
-      userId: session.user.id,
-      filters: toTransactionFilters(query),
-      top: query.top,
-    });
+  const data = await getSpendingByCategory({
+    userId: session.user.id,
+    filters: toTransactionFilters(query),
+    top: query.top,
+  });
 
-    res.status(200).json({ data });
-  } catch (error) {
-    next(error);
-  }
+  res.status(200).json({ data });
 }

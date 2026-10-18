@@ -2,7 +2,7 @@ import { getRequestSession } from "@/middleware/session/requireSession.js";
 import { getValidatedQuery } from "@/middleware/validation.js";
 import { getHoldings } from "@/services/investments/getHoldings.js";
 import { HoldingsResponse } from "@opulus/core";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import { z } from "zod";
 
 /** Query parameters for the holdings endpoint. */
@@ -19,17 +19,12 @@ export const getHoldingsQuerySchema = z.object({
  */
 export async function getHoldingsController(
   req: Request,
-  res: Response<HoldingsResponse>,
-  next: NextFunction
+  res: Response<HoldingsResponse>
 ) {
-  try {
-    const session = getRequestSession(res);
-    const { accountId } = getValidatedQuery<typeof getHoldingsQuerySchema>(req);
+  const session = getRequestSession(res);
+  const { accountId } = getValidatedQuery<typeof getHoldingsQuerySchema>(req);
 
-    const data = await getHoldings({ userId: session.user.id, accountId });
+  const data = await getHoldings({ userId: session.user.id, accountId });
 
-    res.status(200).json({ data });
-  } catch (error) {
-    next(error);
-  }
+  res.status(200).json({ data });
 }

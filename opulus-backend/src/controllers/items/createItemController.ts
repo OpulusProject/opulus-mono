@@ -1,11 +1,8 @@
 import { getRequestSession } from "@/middleware/session/requireSession.js";
 import { getValidatedBody } from "@/middleware/validation.js";
 import { createItem } from "@/services/items/createItem.js";
-import {
-  CreateItemRequestSchema,
-  CreateItemResponse,
-} from "@opulus/core";
-import { NextFunction, Request, Response } from "express";
+import { CreateItemRequestSchema, CreateItemResponse } from "@opulus/core";
+import { Request, Response } from "express";
 
 export const createItemBodySchema = CreateItemRequestSchema;
 
@@ -14,33 +11,26 @@ export const createItemBodySchema = CreateItemRequestSchema;
  */
 export async function createItemController(
   req: Request,
-  res: Response<CreateItemResponse>,
-  next: NextFunction
+  res: Response<CreateItemResponse>
 ) {
-  try {
-    const session = getRequestSession(res);
+  const session = getRequestSession(res);
 
-    const { publicToken, institutionId } =
-      getValidatedBody<typeof createItemBodySchema>(req);
+  const { publicToken, institutionId } =
+    getValidatedBody<typeof createItemBodySchema>(req);
 
-    const result = await createItem({
-      userId: session.user.id,
-      publicToken,
-      institutionId,
+  const result = await createItem({
+    userId: session.user.id,
+    publicToken,
+    institutionId,
+  });
+
+  if (result.duplicate) {
+    res.status(409).json({
+      data: { itemId: result.existingItemId, duplicate: true },
+      message: "You are already connected to this institution.",
     });
-
-    if (result.duplicate) {
-      res.status(409).json({
-        data: { itemId: result.existingItemId, duplicate: true },
-        message: "You are already connected to this institution.",
-      });
-      return;
-    }
-
-    res
-      .status(201)
-      .json({ data: { itemId: result.item.id, duplicate: false } });
-  } catch (error) {
-    next(error);
+    return;
   }
+
+  res.status(201).json({ data: { itemId: result.item.id, duplicate: false } });
 }

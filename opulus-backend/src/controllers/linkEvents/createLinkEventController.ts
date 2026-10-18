@@ -1,7 +1,7 @@
 import { getRequestSession } from "@/middleware/session/requireSession.js";
 import { createLinkEvent } from "@/services/linkEvents/createLinkEvent.js";
 import { CreateLinkEventRequestSchema } from "@opulus/core";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 
 export const createLinkEventBodySchema = CreateLinkEventRequestSchema;
 
@@ -14,20 +14,15 @@ export const createLinkEventBodySchema = CreateLinkEventRequestSchema;
  */
 export async function createLinkEventController(
   req: Request,
-  res: Response<void>,
-  next: NextFunction
+  res: Response<void>
 ) {
-  try {
-    const { user, session } = getRequestSession(res);
+  const { user, session } = getRequestSession(res);
 
-    await createLinkEvent({
-      userId: user.id,
-      sessionId: session.id,
-      event: createLinkEventBodySchema.parse(req.body),
-    });
+  await createLinkEvent({
+    userId: user.id,
+    sessionId: session.id,
+    event: createLinkEventBodySchema.parse(req.body),
+  });
 
-    res.status(204).send();
-  } catch (error) {
-    next(error);
-  }
+  res.status(204).send();
 }

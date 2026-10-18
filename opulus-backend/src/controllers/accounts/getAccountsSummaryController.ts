@@ -2,7 +2,7 @@ import { getRequestSession } from "@/middleware/session/requireSession.js";
 import { getValidatedQuery } from "@/middleware/validation.js";
 import { getAccountsSummary } from "@/services/accounts/getAccountsSummary.js";
 import { AccountsSummaryResponse } from "@opulus/core";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import { getAccountsQuerySchema } from "./getAccountsController.js";
 
 /** Takes the same filter as the list, so the totals match what it shows. */
@@ -16,22 +16,16 @@ export const getAccountsSummaryQuerySchema = getAccountsQuerySchema;
  */
 export async function getAccountsSummaryController(
   req: Request,
-  res: Response<AccountsSummaryResponse>,
-  next: NextFunction
+  res: Response<AccountsSummaryResponse>
 ) {
-  try {
-    const session = getRequestSession(res);
+  const session = getRequestSession(res);
 
-    const { type } =
-      getValidatedQuery<typeof getAccountsSummaryQuerySchema>(req);
+  const { type } = getValidatedQuery<typeof getAccountsSummaryQuerySchema>(req);
 
-    const data = await getAccountsSummary({
-      userId: session.user.id,
-      types: type,
-    });
+  const data = await getAccountsSummary({
+    userId: session.user.id,
+    types: type,
+  });
 
-    res.status(200).json({ data });
-  } catch (error) {
-    next(error);
-  }
+  res.status(200).json({ data });
 }

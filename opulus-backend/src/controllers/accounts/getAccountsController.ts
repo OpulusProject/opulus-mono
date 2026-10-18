@@ -6,7 +6,7 @@ import {
   AccountsResponse,
   toAccountWithConnectionDTO,
 } from "@opulus/core";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import { z } from "zod";
 
 /**
@@ -29,20 +29,18 @@ export const getAccountsQuerySchema = z.object({
  */
 export async function getAccountsController(
   req: Request,
-  res: Response<AccountsResponse>,
-  next: NextFunction
+  res: Response<AccountsResponse>
 ) {
-  try {
-    const session = getRequestSession(res);
+  const session = getRequestSession(res);
 
-    const { type } = getValidatedQuery<typeof getAccountsQuerySchema>(req);
+  const { type } = getValidatedQuery<typeof getAccountsQuerySchema>(req);
 
-    const accounts = await accountRepository.getAllByUserId(session.user.id, type);
+  const accounts = await accountRepository.getAllByUserId(
+    session.user.id,
+    type
+  );
 
-    res.status(200).json({
-      data: { accounts: accounts.map(toAccountWithConnectionDTO) },
-    });
-  } catch (error) {
-    next(error);
-  }
+  res.status(200).json({
+    data: { accounts: accounts.map(toAccountWithConnectionDTO) },
+  });
 }
