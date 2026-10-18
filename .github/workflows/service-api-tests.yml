@@ -126,7 +126,9 @@ jobs:
 
       - name: Boot backend service
         run: |
-          NODE_V8_COVERAGE="$GITHUB_WORKSPACE/coverage/backend" pnpm --filter @opulus/backend exec tsx src/server.ts &
+          # Started through tsx's own binary, not `pnpm exec`: a wrapper in between
+          # can take the signal that makes the service write its coverage.
+          (cd opulus-backend && NODE_V8_COVERAGE="$GITHUB_WORKSPACE/coverage/backend" node_modules/.bin/tsx src/server.ts) &
           echo $! > /tmp/backend.pid
           for i in $(seq 1 60); do
             if curl -sf "$TEST_BASE_URL/health" >/dev/null; then
@@ -259,7 +261,9 @@ jobs:
 
       - name: Boot webhooks service
         run: |
-          NODE_V8_COVERAGE="$GITHUB_WORKSPACE/coverage/webhooks" pnpm --filter @opulus/webhooks exec tsx src/server.ts &
+          # Started through tsx's own binary, not `pnpm exec`: a wrapper in between
+          # can take the signal that makes the service write its coverage.
+          (cd opulus-webhooks && NODE_V8_COVERAGE="$GITHUB_WORKSPACE/coverage/webhooks" node_modules/.bin/tsx src/server.ts) &
           echo $! > /tmp/webhooks.pid
           for i in $(seq 1 60); do
             if curl -sf "$TEST_BASE_URL/health" >/dev/null; then
@@ -389,7 +393,9 @@ jobs:
 
       - name: Boot the scheduler
         run: |
-          NODE_V8_COVERAGE="$GITHUB_WORKSPACE/coverage/scheduler" pnpm --filter @opulus/scheduler exec tsx src/server.ts &
+          # Started through tsx's own binary, not `pnpm exec`: a wrapper in between
+          # can take the signal that makes the service write its coverage.
+          (cd opulus-scheduler && NODE_V8_COVERAGE="$GITHUB_WORKSPACE/coverage/scheduler" node_modules/.bin/tsx src/server.ts) &
           for i in $(seq 1 60); do
             if curl -sf "$TEST_BASE_URL/health" >/dev/null; then
               echo "Scheduler is up"; exit 0
