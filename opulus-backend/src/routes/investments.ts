@@ -1,4 +1,12 @@
 import {
+  getActivityController,
+  getActivityQuerySchema,
+} from "@/controllers/investments/getActivityController.js";
+import {
+  getActivitySummaryController,
+  getActivitySummaryQuerySchema,
+} from "@/controllers/investments/getActivitySummaryController.js";
+import {
   getHoldingsController,
   getHoldingsQuerySchema,
 } from "@/controllers/investments/getHoldingsController.js";
@@ -17,6 +25,20 @@ router.get(
   requireSession,
   validateQuery(getHoldingsQuerySchema),
   getHoldingsController
+);
+
+router.get(
+  "/activity",
+  requireSession,
+  validateQuery(getActivityQuerySchema),
+  getActivityController
+);
+
+router.get(
+  "/activity/summary",
+  requireSession,
+  validateQuery(getActivitySummaryQuerySchema),
+  getActivitySummaryController
 );
 
 export default router;

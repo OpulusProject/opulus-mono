@@ -54,6 +54,8 @@ const toBase = (rates: Record<string, number>) => (currency: string | null) => (
  * - the summary splits the value by kind, largest first, and each holding has its share of the total
  * - a price older than the limit is stale, one at the limit, or with no date, is not
  * - an option and a bond carry their terms, and other securities carry none
+ * - dividends are added up in the base currency, per holding and in total, only for accounts in view, and make the total return
+ * - the gain ranking is the best holdings by gain as a fraction of the basis, without those that have none
  * - an account with no holdings is counted by its balance, as "balance"
  */
 test.describe("holdings DTO", () => {
@@ -105,6 +107,7 @@ test.describe("holdings DTO", () => {
       baseCurrency: "CAD",
       summary: {
         value: 0, accountCount: 0, holdingCount: 0, allocation: [], currencies: [], topHoldingsShare: 0,
+        dividends: 0, dividendYield: 0, totalReturn: 0, totalReturnPercent: null, gainRanking: [],
         costBasis: 0, gain: 0, gainPercent: null, holdingsWithoutCostBasis: 0,
       },
       accounts: [],
@@ -170,6 +173,40 @@ test.describe("holdings DTO", () => {
     expect(by.opt).toMatchObject({ exchange: "XNAS", bond: null, option: { contractType: "call", expirationDate: "2027-01-15T00:00:00.000Z", strikePrice: 250, underlyingTicker: "AAPL" } });
     expect(by.bond).toMatchObject({ option: null, bond: { maturityDate: "2030-06-01T00:00:00.000Z", faceValue: 5000, yieldRate: 2.75, yieldType: "coupon", issueDate: null } });
     expect(by.stock).toMatchObject({ option: null, bond: null });
+  });
+
+  test("dividends are added up in the base currency, per holding and in total, only for accounts in view, and make the total return", () => {
+    // 1,000 worth, 800 paid (gain 200). Payments (Plaid's sign: money in is negative): 30 and 20 on the holding, 10 EUR (11 USD) with no security, and 99 in an account not in view.
+    const { holdings, summary } = toHoldingsDTO([row({ id: "h", value: 1000, basis: 800 })], {
+      baseCurrency: "USD",
+      rateOn: toBase({ EUR: 1.1 }),
+      dividends: [
+        { accountId: "acct-1", securityId: "sec-1", amount: D(-30), isoCurrencyCode: "USD" },
+        { accountId: "acct-1", securityId: "sec-1", amount: D(-20), isoCurrencyCode: "USD" },
+        { accountId: "acct-1", securityId: null, amount: D(-10), isoCurrencyCode: "EUR" },
+        { accountId: "elsewhere", securityId: "sec-1", amount: D(-99), isoCurrencyCode: "USD" },
+      ],
+    });
+
+    expect(holdings[0]!.dividends).toBe(50);
+    expect(summary.dividends).toBe(61);
+    expect(summary.dividendYield).toBeCloseTo(0.061, 6);
+    expect(summary.totalReturn).toBe(261);
+    expect(summary.totalReturnPercent).toBeCloseTo(261 / 800, 10);
+  });
+
+  test("the gain ranking is the best holdings by gain as a fraction of the basis, without those that have none", () => {
+    const rows = [
+      row({ id: "a", value: 150, basis: 100 }),
+      row({ id: "b", value: 110, basis: 100 }),
+      row({ id: "c", value: 80, basis: 100 }),
+      row({ id: "d", value: 100, basis: null }),
+      ...Array.from({ length: 6 }, (_, i) => row({ id: `s${i}`, value: 101 + i, basis: 100 })),
+    ];
+
+    const { summary } = toHoldingsDTO(rows, { baseCurrency: "USD", rateOn: toBase({}) });
+
+    expect(summary.gainRanking).toEqual(["a", "b", "s5", "s4", "s3", "s2"]);
   });
 
   test("an account with no holdings is counted by its balance, as \"balance\"", () => {

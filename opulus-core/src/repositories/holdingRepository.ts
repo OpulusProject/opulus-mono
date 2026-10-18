@@ -208,13 +208,28 @@ class HoldingRepository {
    * A user's current holdings, with their security, account name and the
    * institution's name. Only the user's own, whatever the filter.
    * @param userId - The user
-   * @param filters - Only this account's holdings (our account id), if given
+   * @param filters - Only this account's holdings (our account id), accounts of
+   *   this subtype (tfsa, rrsp, ...), or holdings of this security (our id)
    * @throws AppError if database error occurs
    */
-  async getAllByUserId(userId: string, filters: { accountId?: string } = {}) {
+  async getAllByUserId(
+    userId: string,
+    filters: {
+      accountId?: string;
+      accountSubtype?: string;
+      securityId?: string;
+    } = {}
+  ) {
     try {
       return await this.prisma.holding.findMany({
-        where: { userId, accountId: filters.accountId },
+        where: {
+          userId,
+          accountId: filters.accountId,
+          securityId: filters.securityId,
+          ...(filters.accountSubtype && {
+            account: { subtype: filters.accountSubtype },
+          }),
+        },
         include: {
           security: true,
           account: { select: { name: true, subtype: true, mask: true } },

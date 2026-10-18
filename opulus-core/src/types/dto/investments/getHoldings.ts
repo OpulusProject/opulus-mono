@@ -104,6 +104,11 @@ export const HoldingDTOSchema = z.object({
   gain: z.number().nullable(),
   /** `gain` as a fraction of `costBasis` (0.25 is +25%); null without a cost basis. */
   gainPercent: z.number().nullable(),
+  /**
+   * What this holding paid out in the last twelve months (dividends, interest,
+   * capital gains), in the base currency.
+   */
+  dividends: z.number(),
 });
 
 export type HoldingDTO = z.infer<typeof HoldingDTOSchema>;
@@ -161,6 +166,16 @@ export const HoldingsSummaryDTOSchema = z.object({
   currencies: z.array(CurrencySplitDTOSchema),
   /** The three largest holdings that are not cash, as a fraction of `value`. */
   topHoldingsShare: z.number(),
+  /** Dividends, interest and capital gains paid in the last twelve months, in the base currency. */
+  dividends: z.number(),
+  /** `dividends` as a fraction of `value`. */
+  dividendYield: z.number(),
+  /** `gain` plus `dividends`. */
+  totalReturn: z.number(),
+  /** `totalReturn` as a fraction of `costBasis`; null when no holding has a cost basis. */
+  totalReturnPercent: z.number().nullable(),
+  /** The ids of the holdings that did best, as a fraction of what was paid, best first. */
+  gainRanking: z.array(z.string()),
   /** The cost basis of the holdings that have one, in the base currency. */
   costBasis: z.number(),
   /** Their value minus that cost basis. */
@@ -210,12 +225,28 @@ export interface HoldingsAccountRow {
   item: { institutionName: string | null };
 }
 
+/** A dividend, interest or capital gain payment, as the DTO adds them up. */
+export interface DividendRow {
+  accountId: string;
+  securityId: string | null;
+  /** Plaid's sign: money in is negative. */
+  amount: Prisma.Decimal;
+  isoCurrencyCode: string | null;
+}
+
+/** How many holdings the gain ranking names. */
+export const GAIN_RANKING_SIZE = 6;
+
 export interface HoldingsOptions {
   baseCurrency: string;
   /** Base-currency units for one unit of `currency` today (see `loadExchangeRateConverter`). */
   rateOn: (currency: string | null) => number;
   /** The user's investment accounts; the ones with no holdings are counted by their balance. */
   accounts?: HoldingsAccountRow[];
+  /** The last twelve months' dividend payments of the user, all accounts. */
+  dividends?: DividendRow[];
+  /** `value` (largest first, the default) or `account` (account by account, then largest first). */
+  sort?: "value" | "account";
   /** The current moment, for telling a price is old. */
   now?: Date;
 }
@@ -265,7 +296,14 @@ const fraction = (part: number, whole: number) =>
  */
 export function toHoldingsDTO(
   rows: HoldingRow[],
-  { baseCurrency, rateOn, accounts = [], now = new Date() }: HoldingsOptions
+  {
+    baseCurrency,
+    rateOn,
+    accounts = [],
+    dividends = [],
+    sort = "value",
+    now = new Date(),
+  }: HoldingsOptions
 ): HoldingsResponse["data"] {
   let value = 0;
   let costBasis = 0;
@@ -280,6 +318,28 @@ export function toHoldingsDTO(
   >();
   const add = <K>(map: Map<K, number>, key: K, units: number) =>
     map.set(key, (map.get(key) ?? 0) + units);
+
+  // Dividends of the accounts in view, in total and per holding.
+  const accountsInView = new Set([
+    ...rows.map((row) => row.accountId),
+    ...accounts.map((account) => account.id),
+  ]);
+  let dividendUnits = 0;
+  const dividendsByHolding = new Map<string, number>();
+  for (const payment of dividends) {
+    if (!accountsInView.has(payment.accountId)) continue;
+    const units = toUnits(
+      -payment.amount.toNumber() * rateOn(payment.isoCurrencyCode)
+    );
+    dividendUnits += units;
+    if (payment.securityId) {
+      add(
+        dividendsByHolding,
+        `${payment.accountId}:${payment.securityId}`,
+        units
+      );
+    }
+  }
 
   const holdings = rows.map((row) => {
     const rate = rateOn(row.isoCurrencyCode);
@@ -356,6 +416,9 @@ export function toHoldingsDTO(
       currency: row.isoCurrencyCode,
       valueInBase,
       units,
+      dividends: fromUnits(
+        dividendsByHolding.get(`${row.accountId}:${security.id}`) ?? 0
+      ),
       costBasis: rowBasis,
       gain,
       gainPercent:
@@ -385,7 +448,24 @@ export function toHoldingsDTO(
     });
   }
 
-  holdings.sort((a, b) => b.units - a.units || a.id.localeCompare(b.id));
+  const accountOrder = new Map(
+    accounts
+      .map((account) => ({
+        id: account.id,
+        units: byAccount.get(account.id)?.value ?? 0,
+      }))
+      .sort((a, b) => b.units - a.units || a.id.localeCompare(b.id))
+      .map((account, index) => [account.id, index])
+  );
+  holdings.sort(
+    (a, b) =>
+      (sort === "account"
+        ? (accountOrder.get(a.accountId) ?? 0) -
+          (accountOrder.get(b.accountId) ?? 0)
+        : 0) ||
+      b.units - a.units ||
+      a.id.localeCompare(b.id)
+  );
   const top3 = holdings
     .filter((h) => h.security.kind !== "cash")
     .slice(0, 3)
@@ -418,6 +498,11 @@ export function toHoldingsDTO(
     [...map.entries()].sort((a, b) => b[1] - a[1]);
 
   const totalGain = valueWithBasis - costBasis;
+  const gainRanking = holdings
+    .filter((holding) => holding.gainPercent !== null)
+    .sort((a, b) => b.gainPercent! - a.gainPercent! || a.id.localeCompare(b.id))
+    .slice(0, GAIN_RANKING_SIZE)
+    .map((holding) => holding.id);
   return {
     baseCurrency,
     summary: {
@@ -435,6 +520,12 @@ export function toHoldingsDTO(
         share: fraction(units, value),
       })),
       topHoldingsShare: fraction(top3, value),
+      dividends: fromUnits(dividendUnits),
+      dividendYield: fraction(dividendUnits, value),
+      totalReturn: fromUnits(totalGain + dividendUnits),
+      totalReturnPercent:
+        costBasis === 0 ? null : (totalGain + dividendUnits) / costBasis,
+      gainRanking,
       costBasis: fromUnits(costBasis),
       gain: fromUnits(totalGain),
       gainPercent: costBasis === 0 ? null : totalGain / costBasis,

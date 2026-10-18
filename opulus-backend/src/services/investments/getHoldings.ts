@@ -1,7 +1,9 @@
 import {
   accountRepository,
+  addDays,
   BASE_CURRENCY,
   holdingRepository,
+  investmentTransactionRepository,
   loadExchangeRateConverter,
   toDay,
   toHoldingsDTO,
@@ -12,6 +14,12 @@ export interface GetHoldingsParams {
   userId: string;
   /** Only this account's holdings (our account id). */
   accountId?: string;
+  /** Only accounts of this subtype (tfsa, rrsp, ...). */
+  accountSubtype?: string;
+  /** Only holdings of this security (our security id). */
+  securityId?: string;
+  /** Largest first (the default), or account by account. */
+  sort?: "value" | "account";
   /** The current moment; only tests pass it. */
   now?: Date;
 }
@@ -28,22 +36,34 @@ export async function getHoldings(
   params: GetHoldingsParams
 ): Promise<HoldingsResponse["data"]> {
   const now = params.now ?? new Date();
-  const [rows, allAccounts] = await Promise.all([
+  const today = toDay(now);
+  const [rows, allAccounts, dividends] = await Promise.all([
     holdingRepository.getAllByUserId(params.userId, {
       accountId: params.accountId,
+      accountSubtype: params.accountSubtype,
+      securityId: params.securityId,
     }),
     accountRepository.getAllByUserId(params.userId, ["investment"]),
+    investmentTransactionRepository.getDividendsSince(
+      params.userId,
+      new Date(`${addDays(today, -364)}T00:00:00Z`)
+    ),
   ]);
+  // A security filter looks at holdings only: the accounts that hold it.
+  const holders = new Set(rows.map((row) => row.accountId));
   const accounts = allAccounts.filter(
-    (account) => !params.accountId || account.id === params.accountId
+    (account) =>
+      (!params.accountId || account.id === params.accountId) &&
+      (!params.accountSubtype || account.subtype === params.accountSubtype) &&
+      (!params.securityId || holders.has(account.id))
   );
 
-  const today = toDay(now);
   const converter = await loadExchangeRateConverter({
     baseCurrency: BASE_CURRENCY,
     currencies: [
       ...rows.map((row) => row.isoCurrencyCode),
       ...accounts.map((account) => account.isoCurrencyCode),
+      ...dividends.map((payment) => payment.isoCurrencyCode),
     ],
     days: [today],
   });
@@ -52,6 +72,8 @@ export async function getHoldings(
     baseCurrency: BASE_CURRENCY,
     rateOn: (currency) => converter.rateOn(currency, today),
     accounts,
+    dividends,
+    sort: params.sort,
     now,
   });
 }
