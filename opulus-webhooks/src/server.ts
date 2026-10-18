@@ -18,11 +18,7 @@ import { handleHoldingsWebhook } from "./plaid/handlers/holdings/index.js";
 import { handleItemWebhook } from "./plaid/handlers/item/index.js";
 import { handleLiabilitiesWebhook } from "./plaid/handlers/liabilities/index.js";
 import { handleTransactionsWebhook } from "./plaid/handlers/transactions/index.js";
-import {
-  createQueueEvents,
-  createWebhookWorker,
-  shutdownQueue,
-} from "./queue/webhookQueue.js";
+import { createWebhookWorker, shutdownQueue } from "./queue/webhookQueue.js";
 
 const WEBHOOK_PORT = parseInt(process.env.WEBHOOK_PORT || "8081", 10);
 
@@ -51,9 +47,6 @@ const webhookWorker = createWebhookWorker({
   handleLiabilitiesWebhook,
   handleTransactionsWebhook,
 });
-
-// Initialize queue events listener for monitoring
-const queueEvents = createQueueEvents();
 
 logger.info("Webhook queue worker initialized and ready to process webhooks");
 
@@ -129,20 +122,14 @@ const server = app.listen(WEBHOOK_PORT, "0.0.0.0", () => {
 });
 
 // Graceful shutdown
-process.on("SIGTERM", async () => {
-  logger.info("SIGTERM received, shutting down gracefully...");
-  await shutdownQueue(webhookWorker, queueEvents);
+async function shutdown(signal: string) {
+  logger.info(`${signal} received, shutting down gracefully...`);
+  await shutdownQueue(webhookWorker);
   server.close(() => {
     logger.info("Server closed");
     process.exit(0);
   });
-});
+}
 
-process.on("SIGINT", async () => {
-  logger.info("SIGINT received, shutting down gracefully...");
-  await shutdownQueue(webhookWorker, queueEvents);
-  server.close(() => {
-    logger.info("Server closed");
-    process.exit(0);
-  });
-});
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));

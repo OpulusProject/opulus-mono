@@ -12,36 +12,6 @@ const itemError = object({
 });
 
 /**
- * Schema for Plaid webhook event body (used in Express validation)
- * Wraps the event in a body object for middleware validation
- */
-export const WebhookSchema = object({
-  body: object({
-    webhook_type: string({ error: "Webhook type is required" }),
-    webhook_code: string({ error: "Webhook code is required" }),
-    item_id: string().optional(),
-    environment: string().optional(),
-    new_transactions: number().optional(),
-    removed_transactions: array(string()).optional(),
-    new_holdings: number().optional(),
-    updated_holdings: number().optional(),
-    account_ids: array(string()).optional(),
-    account_ids_with_new_liabilities: array(string()).optional(),
-    account_ids_with_updated_liabilities: record(
-      string(),
-      array(string())
-    ).optional(),
-    link_session_id: string().optional(),
-    link_token: string().optional(),
-    public_token: string().optional(),
-    error: itemError.nullish(),
-    consent_expiration_time: string().optional(),
-    disconnect_time: string().optional(),
-    reason: string().optional(),
-  }).passthrough(), // Allow additional fields (matches [key: string]: unknown)
-});
-
-/**
  * Schema for the actual Plaid webhook event (without body wrapper)
  * Use this for type inference and direct event validation
  */
@@ -74,8 +44,3 @@ export const PlaidWebhookEventSchema = object({
  * Single source of truth for Plaid webhook event structure
  */
 export type PlaidWebhookEvent = TypeOf<typeof PlaidWebhookEventSchema>;
-
-/**
- * Type for Express request body validation
- */
-export type WebhookInput = TypeOf<typeof WebhookSchema>["body"];

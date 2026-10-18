@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { PlaidWebhookEventSchema, WebhookSchema } from "../../../opulus-webhooks/src/types/plaid/webhookSchema.js";
+import { PlaidWebhookEventSchema } from "../../../opulus-webhooks/src/types/plaid/webhookSchema.js";
 
 /**
  * The shape the receiver accepts a Plaid webhook in
@@ -11,7 +11,6 @@ import { PlaidWebhookEventSchema, WebhookSchema } from "../../../opulus-webhooks
  * - accepts an error that is null, and one with a null display message
  * - keeps fields it does not know, so a new Plaid field is not dropped
  * - rejects an event without a type or a code, or with the wrong type for a known field
- * - the request-body schema wraps the same event, and says which field is missing
  */
 const minimal = { webhook_type: "TRANSACTIONS", webhook_code: "SYNC_UPDATES_AVAILABLE" };
 
@@ -64,13 +63,5 @@ test.describe("webhook payload schema", () => {
     expect(PlaidWebhookEventSchema.safeParse({ ...minimal, error: { error_type: "X" } }).success).toBe(false);
     expect(PlaidWebhookEventSchema.safeParse({ ...minimal, account_ids_with_updated_liabilities: { a: "apr" } }).success).toBe(false);
     expect(PlaidWebhookEventSchema.safeParse("not an object").success).toBe(false);
-  });
-
-  test("the request-body schema wraps the same event, and says which field is missing", () => {
-    expect(WebhookSchema.safeParse({ body: minimal }).success).toBe(true);
-
-    const missing = WebhookSchema.safeParse({ body: { webhook_code: "X" } });
-    expect(missing.success).toBe(false);
-    expect(JSON.stringify(missing.error?.issues)).toContain("Webhook type is required");
   });
 });
