@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { readItemSync, readSyncedTransactions, seedLinkedItem } from "../../../shared/fixtures/index.js";
-import { resetPlaidStub, setPlaidSyncPages } from "../../../shared/plaid-stub.js";
+import { readInvestmentTransactions, readItemSync, readSyncedTransactions, seedLinkedItem } from "../../../shared/fixtures/index.js";
+import { resetPlaidStub, setPlaidInvestmentTransactions, setPlaidSyncPages } from "../../../shared/plaid-stub.js";
+import { buy, daysAgo, transactionsAnswer } from "../../../shared/scenarios/plaid-investments.js";
 import { plaidTransaction } from "../../../shared/scenarios/plaid-sync.js";
 import { createEmptyDatabase } from "../helpers/emptyDatabase.js";
 import { runWebhooksScript } from "../helpers/script.js";
@@ -12,12 +13,13 @@ const reconcile = (...args: string[]) => runWebhooksScript("reconcile", args, { 
 /**
  * This file: the reconcile script, which an operator runs to catch items up after
  * an outage (Plaid does not replay webhooks after about a day). It syncs each
- * item's transactions from its stored cursor, then its holdings and recurring
- * payments, without the receiver. The script runs for real against the test
+ * item's transactions from its stored cursor, then its holdings, investment
+ * transactions and recurring payments, without the receiver. The script runs for real against the test
  * database and the Plaid stub; what it stored is read from the test DB.
  *
  * Test cases:
  * - catches an item up from its stored cursor and reports it
+ * - brings an item's investment transactions up to date as well
  * - with --item, syncs only that item
  * - without --item, syncs every item
  * - carries on past an item that fails, and exits non-zero
@@ -44,6 +46,19 @@ test.describe("reconcile script", () => {
     expect(result.output).toContain("Reconciled item");
     expect((await readSyncedTransactions(item.itemId)).map((t) => t.name)).toEqual(["Missed while down"]);
     expect((await readItemSync(item.itemId)).transactionCursor).toBe("cursor-1");
+  });
+
+  test("brings an item's investment transactions up to date as well", async () => {
+    // Arrange
+    const item = await linkedItem();
+    await setPlaidInvestmentTransactions(transactionsAnswer([buy(item.providerAccountId, `it_${Date.now()}`, "sec_x", daysAgo(3))], [], [item.providerAccountId]));
+
+    // Act
+    const result = await reconcile("--item", item.plaidItemId);
+
+    // Assert
+    expect(result.code).toBe(0);
+    expect(await readInvestmentTransactions(item.itemId)).toHaveLength(1);
   });
 
   test("with --item, syncs only that item", async () => {

@@ -7,6 +7,8 @@ const dataWebhooks = [
   { webhook_type: "TRANSACTIONS", webhook_code: "SYNC_UPDATES_AVAILABLE" },
   { webhook_type: "TRANSACTIONS", webhook_code: "RECURRING_TRANSACTIONS_UPDATE" },
   { webhook_type: "HOLDINGS", webhook_code: "DEFAULT_UPDATE" },
+  { webhook_type: "INVESTMENTS_TRANSACTIONS", webhook_code: "DEFAULT_UPDATE" },
+  { webhook_type: "INVESTMENTS_TRANSACTIONS", webhook_code: "HISTORICAL_UPDATE" },
   { webhook_type: "LIABILITIES", webhook_code: "DEFAULT_UPDATE" },
 ];
 
@@ -17,7 +19,7 @@ const dataWebhooks = [
  * item/item-status.spec.ts) rather than retry it into a dead event.
  *
  * Test cases:
- * - ignores a TRANSACTIONS, RECURRING_TRANSACTIONS_UPDATE, HOLDINGS or LIABILITIES webhook for an item that is gone, without retrying it
+ * - ignores a TRANSACTIONS, RECURRING_TRANSACTIONS_UPDATE, HOLDINGS, INVESTMENTS_TRANSACTIONS or LIABILITIES webhook for an item that is gone, without retrying it
  */
 test.describe("data webhooks for an item that is gone", () => {
   for (const { webhook_type, webhook_code } of dataWebhooks) {
