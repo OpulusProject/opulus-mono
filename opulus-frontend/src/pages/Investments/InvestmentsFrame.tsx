@@ -13,14 +13,13 @@ import {
   SelectValue,
 } from '@/components/ui';
 import { useHoldings } from '@/hooks/investments/useHoldings';
-import { cn } from '@/lib/utils';
 import { accountName } from '@/utils/investmentDisplay';
 
 const ALL_ACCOUNTS = 'all';
 
 interface InvestmentsFrameProps {
+  title: string;
   description: string;
-  active: 'overview' | 'holdings' | 'activity';
   /** The account the page is limited to (our account id), if any. */
   account: string | undefined;
   onAccountChange: (account: string | undefined) => void;
@@ -28,84 +27,28 @@ interface InvestmentsFrameProps {
 }
 
 /**
- * What the investments pages share: the heading, the Overview / Holdings / Activity tabs,
- * the account filter, and the empty state for a user with no investment
+ * What the investments pages share: the heading, the account filter, and the empty state for a user with no investment
  * accounts (their content is not rendered, so it makes no requests).
  */
 export const InvestmentsFrame: React.FC<InvestmentsFrameProps> = ({
+  title,
   description,
-  active,
   account,
   onAccountChange,
   children,
 }) => (
   <Page
-    title="Investments"
+    title={title}
     description={description}
     requiresConnections={{
       title: 'No investment accounts yet',
       description:
         'Connect a brokerage, TFSA, RRSP or other investment account and Opulus shows what you hold and what it is worth.',
     }}
-    actions={
-      <>
-        <Tabs active={active} account={account} />
-        <AccountFilter account={account} onChange={onAccountChange} />
-      </>
-    }
+    actions={<AccountFilter account={account} onChange={onAccountChange} />}
   >
     <NoAccountsGate>{children}</NoAccountsGate>
   </Page>
-);
-
-const TAB_CLASS =
-  'rounded-md px-3 py-1.5 text-sm font-medium transition-colors';
-
-const Tabs: React.FC<{
-  active: InvestmentsFrameProps['active'];
-  account: string | undefined;
-}> = ({ active, account }) => (
-  <nav aria-label="Investments" className="bg-muted flex rounded-lg p-0.5">
-    <Link
-      to="/investments"
-      search={{ account }}
-      aria-current={active === 'overview' ? 'page' : undefined}
-      className={cn(
-        TAB_CLASS,
-        active === 'overview'
-          ? 'bg-background shadow-sm'
-          : 'text-muted-foreground hover:text-foreground'
-      )}
-    >
-      Overview
-    </Link>
-    <Link
-      to="/investments/holdings"
-      search={{ account }}
-      aria-current={active === 'holdings' ? 'page' : undefined}
-      className={cn(
-        TAB_CLASS,
-        active === 'holdings'
-          ? 'bg-background shadow-sm'
-          : 'text-muted-foreground hover:text-foreground'
-      )}
-    >
-      Holdings
-    </Link>
-    <Link
-      to="/investments/activity"
-      search={{ account }}
-      aria-current={active === 'activity' ? 'page' : undefined}
-      className={cn(
-        TAB_CLASS,
-        active === 'activity'
-          ? 'bg-background shadow-sm'
-          : 'text-muted-foreground hover:text-foreground'
-      )}
-    >
-      Activity
-    </Link>
-  </nav>
 );
 
 const AccountFilter: React.FC<{

@@ -30,8 +30,8 @@ export const InvestmentHoldings: React.FC = () => {
 
   return (
     <InvestmentsFrame
+      title="Holdings"
       description="Everything you hold, account by account."
-      active="holdings"
       account={search.account}
       onAccountChange={(account) =>
         update({ account, holding: undefined, type: undefined })

@@ -23,7 +23,6 @@ import {
   ToggleGroupItem,
 } from '@/components/ui';
 import { useActivity } from '@/hooks/investments/useActivity';
-import { useActivitySummary } from '@/hooks/investments/useActivitySummary';
 import { useOnVisible } from '@/hooks/use-on-visible';
 import { resolveRange } from '@/utils/dateRange';
 import { formatDay } from '@/utils/day';
@@ -35,7 +34,6 @@ import {
 } from '@/utils/investmentDisplay';
 
 import { InvestmentsFrame } from './InvestmentsFrame';
-import { InvestmentStats } from './InvestmentStats';
 import { ACTIVITY_FILTER_KINDS, type ActivitySearch } from './searchSchema';
 
 const route = getRouteApi('/_authenticated/investments/activity');
@@ -68,8 +66,8 @@ export const InvestmentActivity: React.FC = () => {
 
   return (
     <InvestmentsFrame
+      title="Activity"
       description="What you put in, took out and earned."
-      active="activity"
       account={search.account}
       onAccountChange={(account) => update({ account })}
     >
@@ -82,8 +80,6 @@ const ActivityContent: React.FC<{
   search: ActivitySearch;
   update: (changes: Partial<ActivitySearch>) => void;
 }> = ({ search, update }) => {
-  const summary = useActivitySummary(search.account);
-
   // Fixed for the life of the page, so the query key does not change under it.
   const [{ yearStart, twelveMonthsAgo }] = React.useState(() => ({
     yearStart: `${new Date().getFullYear()}-01-01`,
@@ -117,8 +113,6 @@ const ActivityContent: React.FC<{
 
   return (
     <>
-      {summary.data && <InvestmentStats activity={summary.data} />}
-
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ToggleGroup
           type="single"

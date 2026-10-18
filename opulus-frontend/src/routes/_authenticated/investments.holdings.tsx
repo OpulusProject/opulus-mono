@@ -5,6 +5,6 @@ import { holdingsSearchSchema } from '@/pages/Investments/searchSchema';
 
 export const Route = createFileRoute('/_authenticated/investments/holdings')({
   validateSearch: (search) => holdingsSearchSchema.parse(search),
-  staticData: { title: 'Investment holdings' },
+  staticData: { title: 'Holdings', section: 'Investments' },
   component: InvestmentHoldings,
 });

@@ -2,11 +2,13 @@ import { getRouteApi } from '@tanstack/react-router';
 import * as React from 'react';
 
 import { List, ListError } from '@/common/List';
+import { useActivitySummary } from '@/hooks/investments/useActivitySummary';
 import { useHoldings } from '@/hooks/investments/useHoldings';
 
 import { AccountsAndGains } from './AccountsAndGains';
 import { HoldingSheet } from './HoldingSheet';
 import { InvestmentsFrame } from './InvestmentsFrame';
+import { InvestmentStats } from './InvestmentStats';
 import { PortfolioSummary } from './PortfolioSummary';
 import type { OverviewSearch } from './searchSchema';
 
@@ -19,8 +21,8 @@ export const Investments: React.FC = () => {
 
   return (
     <InvestmentsFrame
+      title="Investments"
       description="What you own across your investment accounts."
-      active="overview"
       account={search.account}
       onAccountChange={(account) =>
         void navigate({
@@ -51,6 +53,7 @@ const OverviewContent: React.FC<{
   onHoldingChange: (holding: string | undefined) => void;
 }> = ({ account, holding, onHoldingChange }) => {
   const holdings = useHoldings({ accountId: account });
+  const activity = useActivitySummary(account);
 
   if (holdings.isLoading) return <List isLoading aria-label="Loading" />;
   if (holdings.isError || !holdings.data) {
@@ -70,6 +73,7 @@ const OverviewContent: React.FC<{
         data={holdings.data}
         isRefreshing={holdings.isPlaceholderData}
       />
+      {activity.data && <InvestmentStats activity={activity.data} />}
       <AccountsAndGains
         data={holdings.data}
         isRefreshing={holdings.isPlaceholderData}
