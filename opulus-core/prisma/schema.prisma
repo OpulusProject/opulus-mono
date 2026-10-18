@@ -8,28 +8,29 @@ datasource db {
 }
 
 model User {
-  id                 String                   @id
-  name               String
-  email              String
-  emailVerified      Boolean                  @default(false)
-  image              String?
-  plaidId            String?                  @unique
-  plaidUserToken     String?                  @unique
-  twoFactorEnabled   Boolean                  @default(false)
-  createdAt          DateTime                 @default(now())
-  updatedAt          DateTime                 @default(now()) @updatedAt
-  sessions           Session[]
-  authAccounts       AuthAccount[]
-  linkSessions       LinkSession[]
-  linkEvents         LinkEvent[]
-  accountLiabilities AccountLiability[]
-  holdings           Holding[]
-  recurringStreams   RecurringStream[]
-  items              Item[]
-  accounts           Account[]
-  transactions       Transaction[]
-  twoFactor          TwoFactor?
-  passkeys           Passkey[]
+  id                     String                  @id
+  name                   String
+  email                  String
+  emailVerified          Boolean                 @default(false)
+  image                  String?
+  plaidId                String?                 @unique
+  plaidUserToken         String?                 @unique
+  twoFactorEnabled       Boolean                 @default(false)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @default(now()) @updatedAt
+  sessions               Session[]
+  authAccounts           AuthAccount[]
+  linkSessions           LinkSession[]
+  linkEvents             LinkEvent[]
+  accountLiabilities     AccountLiability[]
+  holdings               Holding[]
+  investmentTransactions InvestmentTransaction[]
+  recurringStreams       RecurringStream[]
+  items                  Item[]
+  accounts               Account[]
+  transactions           Transaction[]
+  twoFactor              TwoFactor?
+  passkeys               Passkey[]
 
   @@unique([email])
   @@map("user")
@@ -126,41 +127,43 @@ model LinkEvent {
 }
 
 model Item {
-  id                    String             @id @default(cuid())
-  plaidItemId           String             @unique
-  userId                String
-  accessToken           String
-  institutionId         String?
-  institutionName       String?
-  institutionColor      String? // Primary brand color from Plaid
-  institutionLogo       String? // Logo URL from Plaid
-  webhook               String?
-  errorType             String?
-  errorCode             String?
-  errorMessage          String?
-  displayMessage        String?
-  newAccountsAvailable  Boolean            @default(false) // Plaid detected accounts the user has not shared yet
-  availableProducts     String[]           @default([])
-  billedProducts        String[]           @default([])
-  products              String[]           @default([])
-  updateType            String // "background" | "user_present_required"
-  consentExpirationTime DateTime?
-  transactionCursor     String? // Cursor for /transactions/sync pagination
-  syncedAt              DateTime? // Set only after a successful transactions_sync
-  createdAt             DateTime           @default(now())
-  updatedAt             DateTime           @updatedAt
-  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accounts              Account[]
-  transactions          Transaction[]
-  accountLiabilities    AccountLiability[]
-  holdings              Holding[]
-  recurringStreams      RecurringStream[]
+  id                             String                  @id @default(cuid())
+  plaidItemId                    String                  @unique
+  userId                         String
+  accessToken                    String
+  institutionId                  String?
+  institutionName                String?
+  institutionColor               String? // Primary brand color from Plaid
+  institutionLogo                String? // Logo URL from Plaid
+  webhook                        String?
+  errorType                      String?
+  errorCode                      String?
+  errorMessage                   String?
+  displayMessage                 String?
+  newAccountsAvailable           Boolean                 @default(false) // Plaid detected accounts the user has not shared yet
+  availableProducts              String[]                @default([])
+  billedProducts                 String[]                @default([])
+  products                       String[]                @default([])
+  updateType                     String // "background" | "user_present_required"
+  consentExpirationTime          DateTime?
+  transactionCursor              String? // Cursor for /transactions/sync pagination
+  syncedAt                       DateTime? // Set only after a successful transactions_sync
+  investmentTransactionsSyncedAt DateTime? // Set only after a successful investment transactions sync
+  createdAt                      DateTime                @default(now())
+  updatedAt                      DateTime                @updatedAt
+  user                           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accounts                       Account[]
+  transactions                   Transaction[]
+  accountLiabilities             AccountLiability[]
+  holdings                       Holding[]
+  investmentTransactions         InvestmentTransaction[]
+  recurringStreams               RecurringStream[]
 
   @@map("item")
 }
 
 model Account {
-  id                     String                   @id @default(cuid())
+  id                     String                  @id @default(cuid())
   providerAccountId      String // Provider's account_id (may change across item updates)
   persistentAccountId    String? // Stable account identifier across item updates
   itemId                 String // Reference to Item (connection to financial institution)
@@ -175,13 +178,14 @@ model Account {
   balanceLimit           Decimal? // Credit limit (for credit accounts)
   isoCurrencyCode        String? // ISO 4217 currency code (e.g., "USD", "CAD")
   unofficialCurrencyCode String? // Unofficial currency code (used when ISO currency unavailable)
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
-  user                   User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  item                   Item                     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  user                   User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item                   Item                    @relation(fields: [itemId], references: [id], onDelete: Cascade)
   transactions           Transaction[]
   liabilityDetails       AccountLiability?
   holdings               Holding[]
+  investmentTransactions InvestmentTransaction[]
   recurringStreams       RecurringStream[]
 
   // Same account_id can exist in different items
@@ -339,17 +343,31 @@ model Passkey {
 /// user: it is public information about the instrument, not about anyone's
 /// holding of it.
 model Security {
-  id               String    @id @default(cuid())
-  plaidSecurityId  String    @unique
-  name             String?
-  tickerSymbol     String?
-  type             String? // equity, etf, mutual fund, fixed income, cash, ...
-  isCashEquivalent Boolean   @default(false)
-  isoCurrencyCode  String?
-  closePrice       Decimal? // the previous trading session's close, when Plaid has one
-  closePriceAsOf   DateTime?
-  updatedAt        DateTime  @updatedAt
-  holdings         Holding[]
+  id                     String                  @id @default(cuid())
+  plaidSecurityId        String                  @unique
+  name                   String?
+  tickerSymbol           String?
+  type                   String? // equity, etf, mutual fund, fixed income, cash, ...
+  isCashEquivalent       Boolean                 @default(false)
+  isoCurrencyCode        String?
+  closePrice             Decimal? // the previous trading session's close, when Plaid has one
+  closePriceAsOf         DateTime?
+  unofficialCurrencyCode String? // a currency ISO 4217 has no code for, such as a cryptocurrency's
+  marketIdentifierCode   String? // the ISO 10383 code of the exchange it trades on, when Plaid has one
+  // An option contract (type "derivative"):
+  optionContractType     String? // "call" or "put"
+  optionExpirationDate   DateTime?
+  optionStrikePrice      Decimal?
+  optionUnderlyingTicker String?
+  // A bond or other fixed income security (type "fixed income"):
+  bondMaturityDate       DateTime?
+  bondIssueDate          DateTime?
+  bondFaceValue          Decimal?
+  bondYieldRate          Decimal? // a percentage; bondYieldType says which kind
+  bondYieldType          String? // coupon, coupon_equivalent, discount, yield_to_maturity or yield_to_worst
+  updatedAt              DateTime                @updatedAt
+  holdings               Holding[]
+  investmentTransactions InvestmentTransaction[]
 
   @@map("security")
 }
@@ -381,6 +399,41 @@ model Holding {
   @@index([itemId])
   @@index([userId])
   @@map("holding")
+}
+
+/// A buy, sell, dividend, deposit, fee or other event Plaid reports in an
+/// investment account. Replaced by window on each sync (Plaid can change or cancel
+/// a recent one), so what is stored is Plaid's current view of the period synced.
+model InvestmentTransaction {
+  id                           String    @id @default(cuid())
+  plaidInvestmentTransactionId String    @unique
+  accountId                    String
+  itemId                       String
+  userId                       String
+  securityId                   String? // none for cash movements and fees
+  date                         DateTime
+  name                         String
+  /// buy, sell, cancel, cash, fee or transfer (Plaid's type)
+  type                         String
+  /// Plaid's subtype: dividend, contribution, deposit, withdrawal, interest, ...
+  subtype                      String?
+  quantity                     Decimal?
+  price                        Decimal?
+  amount                       Decimal // Plaid's sign: money out of the account is positive, so a buy is positive and a dividend negative
+  fees                         Decimal?
+  isoCurrencyCode              String?
+  unofficialCurrencyCode       String?
+  createdAt                    DateTime  @default(now())
+  updatedAt                    DateTime  @updatedAt
+  account                      Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  item                         Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user                         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  security                     Security? @relation(fields: [securityId], references: [id])
+
+  @@index([userId, date])
+  @@index([accountId, date])
+  @@index([itemId])
+  @@map("investment_transaction")
 }
 
 /// A recurring payment or income Plaid found in an account's transactions (a
@@ -424,15 +477,15 @@ model RecurringStream {
 /// job runs. A dead event that is replayed gets a row of its own when the new
 /// job runs.
 model WebhookEvent {
-  id          String    @id @default(cuid())
-  source      String    @default("plaid")
+  id          String             @id @default(cuid())
+  source      String             @default("plaid")
   jobId       String // the queue job's id; unique only with receivedAt, because a flushed Redis starts its ids over
   webhookType String // ITEM, TRANSACTIONS, ...
   webhookCode String // SYNC_UPDATES_AVAILABLE, ...
   plaidItemId String? // Plaid's item id, when the event has one
   payload     Json // the whole event as received, to read it later and to replay it
   status      WebhookEventStatus
-  attempts    Int       @default(0)
+  attempts    Int                @default(0)
   error       String? // why the last attempt failed
   receivedAt  DateTime // when the event was queued
   processedAt DateTime? // when it was handled, or given up on
