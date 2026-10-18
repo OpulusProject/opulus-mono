@@ -1,5 +1,6 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { expectStatus } from "../../../shared/assertions.js";
+import { uniqueIp } from "../../../shared/client.js";
 import { postWebhookWithoutSignature } from "../helpers/fixtures/index.js";
 
 /** How many webhooks one IP address may post a minute (the receiver's default). */
@@ -8,10 +9,11 @@ const LIMIT = 120;
 /**
  * An address of its own for a test. The receiver sits behind a proxy and counts
  * the address the proxy forwards (X-Forwarded-For), so a test picks one the
- * other specs do not use and its counter starts empty.
+ * other specs do not use and its counter starts empty. (A random pick of 250 could
+ * meet an earlier one, whose counter is not empty for a minute.)
  */
 function fromAddress(request: APIRequestContext) {
-  const address = `203.0.113.${Math.floor(Math.random() * 250) + 1}`;
+  const address = uniqueIp();
   const post = () =>
     request.post("/webhook/plaid", {
       headers: {

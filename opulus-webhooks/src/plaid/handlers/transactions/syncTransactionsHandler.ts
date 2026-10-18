@@ -37,10 +37,9 @@ export async function syncTransactionsHandler(
       throw error;
     }
 
-    const message =
-      error instanceof Error
-        ? `Failed to sync transactions: ${error.message}`
-        : "An unexpected error occurred while syncing transactions";
-    throw new AppError(message, 500);
+    throw new AppError(
+      `Failed to sync transactions: ${error instanceof Error ? error.message : String(error)}`,
+      500
+    );
   }
 }

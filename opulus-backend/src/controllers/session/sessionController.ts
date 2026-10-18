@@ -1,6 +1,6 @@
 import { getRequestSession } from "@/middleware/session/requireSession.js";
 import { SessionResponse, toSessionDTO } from "@opulus/core";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 
 /**
  * Get current user session
@@ -8,15 +8,9 @@ import { NextFunction, Request, Response } from "express";
  */
 export async function sessionController(
   req: Request,
-  res: Response<SessionResponse>,
-  next: NextFunction
+  res: Response<SessionResponse>
 ) {
-  try {
-    const session = getRequestSession(res);
+  const session = getRequestSession(res);
 
-    res.status(200).json({ data: toSessionDTO(session) });
-  } catch (error) {
-    // Pass error to error handling middleware
-    next(error);
-  }
+  res.status(200).json({ data: toSessionDTO(session) });
 }
