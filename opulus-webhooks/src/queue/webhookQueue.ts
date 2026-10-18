@@ -1,7 +1,6 @@
 import { logger, redisConnection } from "@opulus/core";
 import {
   Queue,
-  QueueEvents,
   UnrecoverableError,
   Worker,
   type Job,
@@ -176,44 +175,12 @@ export function isTerminalFailure(
 }
 
 /**
- * Queue events listener for monitoring
- * Logs job lifecycle events for debugging and monitoring
- */
-export function createQueueEvents(): QueueEvents {
-  const queueEvents = new QueueEvents("webhooks", {
-    connection: redisConnection,
-  });
-
-  // Log queue events (optional - can be disabled in production)
-  if (process.env.NODE_ENV === "development") {
-    queueEvents.on("completed", ({ jobId }) => {
-      logger.debug({ job_id: jobId }, "Queue event: job completed");
-    });
-
-    queueEvents.on("failed", ({ jobId, failedReason }) => {
-      logger.error(
-        { job_id: jobId, failed_reason: failedReason },
-        "Queue event: job failed"
-      );
-    });
-
-    queueEvents.on("stalled", ({ jobId }) => {
-      logger.warn({ job_id: jobId }, "Queue event: job stalled");
-    });
-  }
-
-  return queueEvents;
-}
-
-/**
  * Gracefully shutdown queue and worker
  * Call this when shutting down the application
  */
 export async function shutdownQueue(
-  worker: Worker<PlaidWebhookEvent>,
-  queueEvents: QueueEvents
+  worker: Worker<PlaidWebhookEvent>
 ): Promise<void> {
   await worker.close();
   await webhookQueue.close();
-  await queueEvents.close();
 }
