@@ -2,11 +2,12 @@ import { expect, test } from "@playwright/test";
 import { readItemSync, readSyncedTransactions, seedLinkedItem } from "../../../shared/fixtures/index.js";
 import { resetPlaidStub, setPlaidSyncPages } from "../../../shared/plaid-stub.js";
 import { plaidTransaction } from "../../../shared/scenarios/plaid-sync.js";
+import { createEmptyDatabase } from "../helpers/emptyDatabase.js";
 import { runWebhooksScript } from "../helpers/script.js";
 
 const linkedItem = seedLinkedItem;
 
-const reconcile = (...args: string[]) => runWebhooksScript("reconcile", args);
+const reconcile = (...args: string[]) => runWebhooksScript("reconcile", args, { NODE_ENV: "production" });
 
 /**
  * This file: the reconcile script, which an operator runs to catch items up after
@@ -21,6 +22,7 @@ const reconcile = (...args: string[]) => runWebhooksScript("reconcile", args);
  * - without --item, syncs every item
  * - carries on past an item that fails, and exits non-zero
  * - asks for the item id when --item has none, and syncs nothing
+ * - says there is nothing to do, and succeeds, when there are no items
  */
 test.describe("reconcile script", () => {
   test.beforeEach(async () => {
@@ -104,5 +106,21 @@ test.describe("reconcile script", () => {
     expect(result.code).not.toBe(0);
     expect(result.output).toContain("Usage: reconcile [--item <plaidItemId>]");
     expect(await readSyncedTransactions(item.itemId)).toEqual([]);
+  });
+
+  test("says there is nothing to do, and succeeds, when there are no items", async () => {
+    // Arrange: a database with no items at all.
+    const empty = await createEmptyDatabase();
+
+    try {
+      // Act
+      const result = await runWebhooksScript("reconcile", [], { NODE_ENV: "production", DATABASE_URL: empty.url });
+
+      // Assert
+      expect(result.code).toBe(0);
+      expect(result.output).toContain("No items to reconcile");
+    } finally {
+      await empty.drop();
+    }
   });
 });

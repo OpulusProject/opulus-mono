@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { resetPlaidStub, sandboxRequests } from "../../../shared/plaid-stub.js";
+import { failSandbox, resetPlaidStub, sandboxRequests } from "../../../shared/plaid-stub.js";
 import { runWebhooksScript } from "../helpers/script.js";
 
 // NODE_ENV=production makes the logger write plain JSON straight to stdout; its
@@ -22,6 +22,7 @@ const fire = (args: string[], env: Record<string, string | undefined> = {}) =>
  * Test cases:
  * - makes a sandbox item that sends webhooks to PLAID_WEBHOOK_URL, and asks Plaid to fire the code given
  * - fires SYNC_UPDATES_AVAILABLE for the default institution when told nothing
+ * - says what Plaid answered, and exits non-zero, when the sandbox refuses
  * - refuses without PLAID_WEBHOOK_URL, outside the sandbox and for a code Plaid does not have, without calling Plaid
  */
 test.describe("fire-webhook script", () => {
@@ -52,6 +53,19 @@ test.describe("fire-webhook script", () => {
     const [created, fired] = await sandboxRequests();
     expect(created!.body).toMatchObject({ institution_id: "ins_109508" });
     expect(fired!.body).toMatchObject({ webhook_code: "SYNC_UPDATES_AVAILABLE" });
+  });
+
+  test("says what Plaid answered, and exits non-zero, when the sandbox refuses", async () => {
+    // Arrange
+    await failSandbox("INVALID_INSTITUTION");
+
+    // Act
+    const result = await fire(["--institution", "ins_nowhere"]);
+
+    // Assert
+    expect(result.code).not.toBe(0);
+    expect(result.output).toContain("fire-webhook failed");
+    expect(result.output).toContain("INVALID_INSTITUTION");
   });
 
   test("refuses without PLAID_WEBHOOK_URL, outside the sandbox and for a code Plaid does not have, without calling Plaid", async () => {

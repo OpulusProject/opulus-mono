@@ -30,8 +30,10 @@ export async function startService(options: {
   waitMs?: number;
 }): Promise<RunningService> {
   const cwd = path.resolve(process.cwd(), "..", options.workspace);
+  // Its own process group, so a spec can stop tsx and the service it runs together.
   const child = spawn(path.join(cwd, "node_modules/.bin/tsx"), ["src/server.ts"], {
     cwd,
+    detached: true,
     env: {
       ...(options.cleanEnv
         ? { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "" }
@@ -68,10 +70,19 @@ export function exited(child: ChildProcess, timeoutMs = 15_000): Promise<number 
   });
 }
 
-/** Stop a service a spec started, whatever state it is in. */
+/**
+ * Stop a service a spec started, whatever state it is in, and everything it
+ * started: `tsx` runs the service as a child of its own, which would otherwise
+ * be left holding the port. (A spec about how the service shuts down sends
+ * SIGTERM itself and waits.)
+ */
 export async function stopService(service: RunningService): Promise<void> {
   if (service.child.exitCode !== null) return;
-  service.child.kill("SIGKILL");
+  try {
+    process.kill(-service.child.pid!, "SIGKILL");
+  } catch {
+    service.child.kill("SIGKILL");
+  }
   await exited(service.child).catch(() => undefined);
 }
 
