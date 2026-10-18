@@ -126,7 +126,7 @@ jobs:
 
       - name: Boot backend service
         run: |
-          pnpm --filter @opulus/backend exec tsx src/server.ts &
+          NODE_V8_COVERAGE="$GITHUB_WORKSPACE/coverage/backend" pnpm --filter @opulus/backend exec tsx src/server.ts &
           echo $! > /tmp/backend.pid
           for i in $(seq 1 60); do
             if curl -sf "$TEST_BASE_URL/health" >/dev/null; then
@@ -142,6 +142,33 @@ jobs:
 
       - name: Run backend service-api tests
         run: pnpm --filter @opulus/tests test:services-backend
+
+      # How much of the service's code the suite ran, for finding what no test
+      # reaches. Informational: it never fails the job. The service is stopped
+      # with SIGTERM so it writes its coverage on the way out.
+      - name: Report Backend coverage
+        if: always()
+        continue-on-error: true
+        run: |
+          pkill -TERM -f "src/server.ts" || true
+          sleep 5
+          {
+            echo '### Backend coverage (lines the service-api suite ran)'
+            echo '```'
+            pnpm exec c8 report --temp-directory coverage/backend --report-dir coverage/backend-report \
+              --reporter text-summary --reporter lcovonly --all --src opulus-backend/src --src opulus-core/src \
+              --exclude-after-remap --exclude '**/node_modules/**' --exclude '**/*.d.ts'
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Backend coverage
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-backend
+          path: coverage/backend-report
+          if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
   # Branch protection matches this job by NAME ("Webhooks service-api tests").
@@ -232,7 +259,7 @@ jobs:
 
       - name: Boot webhooks service
         run: |
-          pnpm --filter @opulus/webhooks exec tsx src/server.ts &
+          NODE_V8_COVERAGE="$GITHUB_WORKSPACE/coverage/webhooks" pnpm --filter @opulus/webhooks exec tsx src/server.ts &
           echo $! > /tmp/webhooks.pid
           for i in $(seq 1 60); do
             if curl -sf "$TEST_BASE_URL/health" >/dev/null; then
@@ -245,6 +272,33 @@ jobs:
 
       - name: Run webhooks service-api tests
         run: pnpm --filter @opulus/tests test:services-webhooks
+
+      # How much of the service's code the suite ran, for finding what no test
+      # reaches. Informational: it never fails the job. The service is stopped
+      # with SIGTERM so it writes its coverage on the way out.
+      - name: Report Webhooks coverage
+        if: always()
+        continue-on-error: true
+        run: |
+          pkill -TERM -f "src/server.ts" || true
+          sleep 5
+          {
+            echo '### Webhooks coverage (lines the service-api suite ran)'
+            echo '```'
+            pnpm exec c8 report --temp-directory coverage/webhooks --report-dir coverage/webhooks-report \
+              --reporter text-summary --reporter lcovonly --all --src opulus-webhooks/src --src opulus-core/src \
+              --exclude-after-remap --exclude '**/node_modules/**' --exclude '**/*.d.ts'
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Webhooks coverage
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-webhooks
+          path: coverage/webhooks-report
+          if-no-files-found: ignore
 
   # ---------------------------------------------------------------------------
   # Scheduler: its jobs API and what each job stores, with the provider stubbed
@@ -335,7 +389,7 @@ jobs:
 
       - name: Boot the scheduler
         run: |
-          pnpm --filter @opulus/scheduler exec tsx src/server.ts &
+          NODE_V8_COVERAGE="$GITHUB_WORKSPACE/coverage/scheduler" pnpm --filter @opulus/scheduler exec tsx src/server.ts &
           for i in $(seq 1 60); do
             if curl -sf "$TEST_BASE_URL/health" >/dev/null; then
               echo "Scheduler is up"; exit 0
@@ -347,3 +401,30 @@ jobs:
 
       - name: Run scheduler service-api tests
         run: pnpm --filter @opulus/tests test:services-scheduler
+
+      # How much of the service's code the suite ran, for finding what no test
+      # reaches. Informational: it never fails the job. The service is stopped
+      # with SIGTERM so it writes its coverage on the way out.
+      - name: Report Scheduler coverage
+        if: always()
+        continue-on-error: true
+        run: |
+          pkill -TERM -f "src/server.ts" || true
+          sleep 5
+          {
+            echo '### Scheduler coverage (lines the service-api suite ran)'
+            echo '```'
+            pnpm exec c8 report --temp-directory coverage/scheduler --report-dir coverage/scheduler-report \
+              --reporter text-summary --reporter lcovonly --all --src opulus-scheduler/src --src opulus-core/src \
+              --exclude-after-remap --exclude '**/node_modules/**' --exclude '**/*.d.ts'
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Scheduler coverage
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-scheduler
+          path: coverage/scheduler-report
+          if-no-files-found: ignore
