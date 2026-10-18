@@ -1,5 +1,6 @@
 import type { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
 import { logger } from "@opulus/core";
+import { skipWhenItemIsGone } from "../skipWhenItemIsGone.js";
 import { syncHoldingsHandler } from "./syncHoldingsHandler.js";
 
 /**
@@ -11,7 +12,7 @@ export async function handleHoldingsWebhook(
 ): Promise<void> {
   switch (webhook_code) {
     case "DEFAULT_UPDATE":
-      await syncHoldingsHandler(event);
+      await skipWhenItemIsGone(event, () => syncHoldingsHandler(event));
       break;
     default:
       logger.warn(

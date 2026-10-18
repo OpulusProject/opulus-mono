@@ -1,9 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { uniqueId } from "../../../shared/client.js";
+import { readItemAccessToken } from "../../../shared/db.js";
 import {
   readWebhookEvents,
+  seedItemWithAccount,
+  seedUser,
   waitForWebhookEvents,
 } from "../../../shared/fixtures/index.js";
+import { setPlaidSyncPages } from "../../../shared/plaid-stub.js";
 import {
   closeQueue,
   enqueueWebhook,
@@ -12,12 +16,19 @@ import {
 } from "../helpers/queue.js";
 import { runWebhooksScript } from "../helpers/script.js";
 
-/** A TRANSACTIONS webhook for an item we do not have: its handler always fails. */
-const failingEvent = (itemId: string) => ({
-  webhook_type: "TRANSACTIONS",
-  webhook_code: "SYNC_UPDATES_AVAILABLE",
-  item_id: itemId,
-});
+/** A TRANSACTIONS webhook for an item whose sync Plaid always fails: its handler always fails. */
+async function failingEvent() {
+  const user = await seedUser();
+  const item = await seedItemWithAccount(user.id);
+  await setPlaidSyncPages(
+    await readItemAccessToken(item.itemId),
+    Array.from({ length: 10 }, () => ({ error_code: "INTERNAL_SERVER_ERROR" })),
+  );
+  return {
+    itemId: item.plaidItemId,
+    event: { webhook_type: "TRANSACTIONS", webhook_code: "SYNC_UPDATES_AVAILABLE", item_id: item.plaidItemId },
+  };
+}
 
 /** A webhook of a type we do not handle: the worker logs it and finishes. */
 const unhandledEvent = (itemId: string) => ({
@@ -67,8 +78,7 @@ test.describe("webhook events", () => {
 
   test("marks a job dead once its attempts are used up, with why it failed", async () => {
     // Arrange
-    const itemId = uniqueId("item");
-    const event = failingEvent(itemId);
+    const { itemId, event } = await failingEvent();
 
     // Act: two attempts, 100ms apart, both fail.
     await enqueueWebhook(event, { attempts: 2, backoff: { type: "fixed", delay: 100 } });
@@ -82,10 +92,10 @@ test.describe("webhook events", () => {
 
   test("keeps one event for all of a job's attempts", async () => {
     // Arrange
-    const itemId = uniqueId("item");
+    const { itemId, event } = await failingEvent();
 
     // Act
-    await enqueueWebhook(failingEvent(itemId), { attempts: 3, backoff: { type: "fixed", delay: 100 } });
+    await enqueueWebhook(event, { attempts: 3, backoff: { type: "fixed", delay: 100 } });
     await waitForWebhookEvents(itemId, "dead");
     await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -95,8 +105,8 @@ test.describe("webhook events", () => {
 
   test("shows a job that failed but will run again as retrying, not dead", async () => {
     // Arrange: a long backoff, so after the first failed attempt the job waits.
-    const itemId = uniqueId("item");
-    const jobId = await enqueueWebhook(failingEvent(itemId), { attempts: 3, backoff: { type: "fixed", delay: 60_000 } });
+    const { itemId, event } = await failingEvent();
+    const jobId = await enqueueWebhook(event, { attempts: 3, backoff: { type: "fixed", delay: 60_000 } });
 
     // Act: wait for the first attempt to fail and the job to be put off.
     for (let i = 0; i < 100 && (await jobState(jobId)) !== "delayed"; i++) {
@@ -115,8 +125,8 @@ test.describe("webhook events", () => {
 
   test("replays a dead event once, and says why when asked again", async () => {
     // Arrange
-    const itemId = uniqueId("item");
-    await enqueueWebhook(failingEvent(itemId), { attempts: 1 });
+    const { itemId, event } = await failingEvent();
+    await enqueueWebhook(event, { attempts: 1 });
     const [dead] = await waitForWebhookEvents(itemId, "dead");
 
     // Act

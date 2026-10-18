@@ -2,6 +2,7 @@ import type { PlaidWebhookEvent } from "@/types/plaid/webhookSchema";
 import { syncRecurringHandler } from "./syncRecurringHandler.js";
 import { syncTransactionsHandler } from "./syncTransactionsHandler.js";
 import { logger } from "@opulus/core";
+import { skipWhenItemIsGone } from "../skipWhenItemIsGone.js";
 
 /**
  * Handle TRANSACTIONS webhook events
@@ -13,10 +14,10 @@ export async function handleTransactionsWebhook(
   switch (webhook_code) {
     case "INITIAL_UPDATE":
     case "SYNC_UPDATES_AVAILABLE":
-      await syncTransactionsHandler(event);
+      await skipWhenItemIsGone(event, () => syncTransactionsHandler(event));
       break;
     case "RECURRING_TRANSACTIONS_UPDATE":
-      await syncRecurringHandler(event);
+      await skipWhenItemIsGone(event, () => syncRecurringHandler(event));
       break;
     case "TRANSACTIONS_REMOVED":
       // handled by SYNC_UPDATES_AVAILABLE
