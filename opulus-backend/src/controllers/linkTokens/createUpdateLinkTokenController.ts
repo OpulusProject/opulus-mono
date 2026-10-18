@@ -2,7 +2,7 @@ import { getRequestSession } from "@/middleware/session/requireSession.js";
 import { getValidatedBody } from "@/middleware/validation.js";
 import { createUpdateLinkToken } from "@/services/linkTokens/createUpdateLinkToken.js";
 import { LinkTokenResponse } from "@opulus/core";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import { z } from "zod";
 
 export const updateLinkTokenBodySchema = z.object({
@@ -18,23 +18,18 @@ export const updateLinkTokenBodySchema = z.object({
  */
 export async function createUpdateLinkTokenController(
   req: Request,
-  res: Response<LinkTokenResponse>,
-  next: NextFunction
+  res: Response<LinkTokenResponse>
 ) {
-  try {
-    const session = getRequestSession(res);
+  const session = getRequestSession(res);
 
-    const { itemId, mode } =
-      getValidatedBody<typeof updateLinkTokenBodySchema>(req);
+  const { itemId, mode } =
+    getValidatedBody<typeof updateLinkTokenBodySchema>(req);
 
-    const { linkToken } = await createUpdateLinkToken({
-      userId: session.user.id,
-      itemId,
-      mode,
-    });
+  const { linkToken } = await createUpdateLinkToken({
+    userId: session.user.id,
+    itemId,
+    mode,
+  });
 
-    res.status(200).json({ data: { linkToken } });
-  } catch (error) {
-    next(error);
-  }
+  res.status(200).json({ data: { linkToken } });
 }

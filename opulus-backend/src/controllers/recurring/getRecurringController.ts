@@ -2,7 +2,7 @@ import { getRequestSession } from "@/middleware/session/requireSession.js";
 import { getValidatedQuery } from "@/middleware/validation.js";
 import { getRecurring } from "@/services/recurring/getRecurring.js";
 import { RecurringDirectionSchema, RecurringResponse } from "@opulus/core";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import { z } from "zod";
 
 /** Query parameters for the recurring transactions endpoint. */
@@ -23,22 +23,17 @@ export const getRecurringQuerySchema = z.object({
  */
 export async function getRecurringController(
   req: Request,
-  res: Response<RecurringResponse>,
-  next: NextFunction
+  res: Response<RecurringResponse>
 ) {
-  try {
-    const session = getRequestSession(res);
-    const { direction, includeInactive } =
-      getValidatedQuery<typeof getRecurringQuerySchema>(req);
+  const session = getRequestSession(res);
+  const { direction, includeInactive } =
+    getValidatedQuery<typeof getRecurringQuerySchema>(req);
 
-    const data = await getRecurring({
-      userId: session.user.id,
-      direction,
-      includeInactive,
-    });
+  const data = await getRecurring({
+    userId: session.user.id,
+    direction,
+    includeInactive,
+  });
 
-    res.status(200).json({ data });
-  } catch (error) {
-    next(error);
-  }
+  res.status(200).json({ data });
 }

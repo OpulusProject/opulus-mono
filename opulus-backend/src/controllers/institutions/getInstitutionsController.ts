@@ -1,6 +1,6 @@
 import { getInstitutions } from "@/services/institutions/getInstitutions.js";
 import { InstitutionsResponse, toInstitutionDTO } from "@opulus/core";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 
 /**
  * Get all institutions from Plaid
@@ -8,20 +8,15 @@ import { NextFunction, Request, Response } from "express";
  */
 export async function getInstitutionsController(
   req: Request,
-  res: Response<InstitutionsResponse>,
-  next: NextFunction
+  res: Response<InstitutionsResponse>
 ) {
-  try {
-    const { institutions, total } = await getInstitutions();
+  const { institutions, total } = await getInstitutions();
 
-    res.status(200).json({
-      data: {
-        institutions: institutions.map(toInstitutionDTO),
-        total,
-        count: institutions.length,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+  res.status(200).json({
+    data: {
+      institutions: institutions.map(toInstitutionDTO),
+      total,
+      count: institutions.length,
+    },
+  });
 }

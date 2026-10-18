@@ -5,7 +5,7 @@ import {
   transactionRepository,
   TransactionsResponse,
 } from "@opulus/core";
-import { NextFunction, Request, Response } from "express";
+import { Request, Response } from "express";
 import { z } from "zod";
 import {
   optionalInt,
@@ -31,35 +31,30 @@ export const getTransactionsQuerySchema = transactionFilterQuerySchema.extend({
  */
 export async function getTransactionsController(
   req: Request,
-  res: Response<TransactionsResponse>,
-  next: NextFunction
+  res: Response<TransactionsResponse>
 ) {
-  try {
-    const session = getRequestSession(res);
+  const session = getRequestSession(res);
 
-    const query = getValidatedQuery<typeof getTransactionsQuerySchema>(req);
-    const { page, limit, sort, order } = query;
+  const query = getValidatedQuery<typeof getTransactionsQuerySchema>(req);
+  const { page, limit, sort, order } = query;
 
-    const result = await transactionRepository.getAllByUserId(
-      session.user.id,
-      toTransactionFilters(query),
-      {
-        ...(page && { page }),
-        ...(limit && { limit }),
-      },
-      {
-        by: sort ?? "date",
-        order: order ?? "desc",
-      }
-    );
+  const result = await transactionRepository.getAllByUserId(
+    session.user.id,
+    toTransactionFilters(query),
+    {
+      ...(page && { page }),
+      ...(limit && { limit }),
+    },
+    {
+      by: sort ?? "date",
+      order: order ?? "desc",
+    }
+  );
 
-    res.status(200).json({
-      data: {
-        transactions: result.transactions.map(toTransactionDTO),
-        pagination: result.pagination,
-      },
-    });
-  } catch (error) {
-    next(error);
-  }
+  res.status(200).json({
+    data: {
+      transactions: result.transactions.map(toTransactionDTO),
+      pagination: result.pagination,
+    },
+  });
 }
