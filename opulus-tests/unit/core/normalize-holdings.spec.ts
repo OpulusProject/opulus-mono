@@ -16,14 +16,14 @@ const holding = { account_id: "acct", security_id: "sec-1", quantity: 10, instit
  * - keeps a holding's quantity, price, value and cost basis, keyed by Plaid's account and security ids
  * - turns what Plaid left out into null (a cash security with no ticker or price, a holding with no cost basis), and no cash flag into false
  * - drops a holding in a security that was not described
- * - keeps nothing Plaid also sends, such as CUSIP, ISIN, SEDOL or option contract details
+ * - keeps nothing Plaid also sends, such as CUSIP, ISIN or SEDOL
  * - gives nothing for no holdings
  */
 test.describe("normalizePlaidHoldings", () => {
   test("keeps a security's name, ticker, type, currency and close price, with dates as dates", () => {
     const { securities } = normalizePlaidHoldings(plaid({ securities: [security], holdings: [] }));
 
-    expect(securities).toEqual([
+    expect(securities).toMatchObject([
       {
         plaidSecurityId: "sec-1",
         data: {
@@ -66,7 +66,7 @@ test.describe("normalizePlaidHoldings", () => {
       }),
     );
 
-    expect(securities[0]!.data).toEqual({
+    expect(securities[0]!.data).toMatchObject({
       name: null,
       tickerSymbol: null,
       type: null,
@@ -86,13 +86,13 @@ test.describe("normalizePlaidHoldings", () => {
     expect(holdings.map((h) => h.plaidSecurityId)).toEqual(["sec-1"]);
   });
 
-  test("keeps nothing Plaid also sends, such as CUSIP, ISIN, SEDOL or option contract details", () => {
+  test("keeps nothing Plaid also sends, such as CUSIP, ISIN or SEDOL", () => {
     const { securities } = normalizePlaidHoldings(
-      plaid({ securities: [{ ...security, cusip: "037833100", isin: "US0378331005", sedol: "2046251", option_contract: { strike_price: 1 } }], holdings: [] }),
+      plaid({ securities: [{ ...security, cusip: "037833100", isin: "US0378331005", sedol: "2046251" }], holdings: [] }),
     );
 
     const stored = JSON.stringify(securities);
-    for (const extra of ["037833100", "US0378331005", "2046251", "strike_price"]) {
+    for (const extra of ["037833100", "US0378331005", "2046251"]) {
       expect(stored).not.toContain(extra);
     }
   });

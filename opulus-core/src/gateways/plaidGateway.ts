@@ -6,6 +6,8 @@ import {
   InstitutionsGetByIdRequest,
   InstitutionsGetRequest,
   InvestmentsHoldingsGetRequest,
+  InvestmentsTransactionsGetRequest,
+  InvestmentTransaction,
   ItemGetRequest,
   ItemPublicTokenExchangeRequest,
   ItemRemoveRequest,
@@ -17,6 +19,7 @@ import {
   TransactionsSyncRequest,
   TransactionsUpdateStatus,
   UserCreateRequest,
+  Security,
 } from "plaid";
 import plaidClient from "../client/plaid.js";
 import config from "../config/default.js";
@@ -295,6 +298,59 @@ class PlaidGateway {
     } catch (error) {
       // Unwrap Plaid's error body so the AppError carries its error_code (as for
       // liabilities): callers tell "not available for this item" from a failure.
+      const plaidBody = (error as { response?: { data?: unknown } } | null)
+        ?.response?.data;
+      throw handlePlaidError(plaidBody ?? error);
+    }
+  }
+
+  /**
+   * Fetch an item's investment transactions (buys, sells, dividends, deposits,
+   * fees) from a period, following Plaid's pages until it has them all. Plaid
+   * keeps up to 24 months.
+   * @param accessToken - The access token for the item
+   * @param startDate - First day, "YYYY-MM-DD"
+   * @param endDate - Last day, "YYYY-MM-DD"
+   * @returns The transactions, the securities they mention and the item's investment accounts
+   */
+  async getInvestmentTransactions(
+    accessToken: string,
+    startDate: string,
+    endDate: string
+  ) {
+    const PAGE = 500;
+    try {
+      const transactions: InvestmentTransaction[] = [];
+      const securities = new Map<string, Security>();
+      let accounts: AccountBase[] = [];
+      let total = Infinity;
+
+      while (transactions.length < total) {
+        const request: InvestmentsTransactionsGetRequest = {
+          access_token: accessToken,
+          start_date: startDate,
+          end_date: endDate,
+          options: { count: PAGE, offset: transactions.length },
+        };
+        const { data } = await this.plaid.investmentsTransactionsGet(request);
+        total = data.total_investment_transactions;
+        accounts = data.accounts;
+        for (const security of data.securities) {
+          securities.set(security.security_id, security);
+        }
+        transactions.push(...data.investment_transactions);
+        // A page that adds nothing would never reach the total.
+        if (data.investment_transactions.length === 0) break;
+      }
+
+      return {
+        investmentTransactions: transactions,
+        securities: [...securities.values()],
+        accounts,
+      };
+    } catch (error) {
+      // Unwrap Plaid's error body so the AppError carries its error_code (as for
+      // holdings): callers tell "not available for this item" from a failure.
       const plaidBody = (error as { response?: { data?: unknown } } | null)
         ?.response?.data;
       throw handlePlaidError(plaidBody ?? error);

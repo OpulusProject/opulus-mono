@@ -7,6 +7,7 @@ import type {
   AccountBase,
   CreditCardLiability,
   Holding,
+  InvestmentTransaction,
   MortgageLiability,
   Security,
   StudentLoan,
@@ -20,7 +21,7 @@ import type {
  * does not know (a typo, or one Plaid renamed in a newer SDK) fails the
  * type-check instead of passing against a stub that quietly agrees with us.
  */
-export type { AccountBase, Holding, Security, Transaction, TransactionStream };
+export type { AccountBase, Holding, InvestmentTransaction, Security, Transaction, TransactionStream };
 
 /**
  * The SDK's enums are TypeScript enums, which a plain string such as "checking"
@@ -235,4 +236,28 @@ export async function failInstitutionLookup(errorCode?: string): Promise<void> {
     headers: { "content-type": "application/json" },
     body: JSON.stringify(errorCode ? { error_code: errorCode } : {}),
   });
+}
+
+/**
+ * What the stub answers to `/investments/transactions/get`: the item's
+ * investment transactions and the securities they mention (it pages through them
+ * as the backend asks), or a Plaid error code. The accounts are the item's, as
+ * set with `setPlaidItem`.
+ */
+export async function setPlaidInvestmentTransactions(
+  answer:
+    | { response: { investment_transactions: Plaid<InvestmentTransaction>[]; securities: Plaid<Security>[] } }
+    | { error_code: string },
+): Promise<void> {
+  await fetch(`${STUB_URL}/__control/investment-transactions`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(answer),
+  });
+}
+
+/** The investment transaction requests (dates and paging) the backend has made to the stub since the last reset. */
+export async function investmentTransactionRequests(): Promise<Record<string, unknown>[]> {
+  const res = await fetch(`${STUB_URL}/__control/investment-transaction-requests`);
+  return (await res.json()).requests;
 }

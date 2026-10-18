@@ -14,7 +14,29 @@ export interface NormalizedSecurity {
     isoCurrencyCode: string | null;
     closePrice: number | null;
     closePriceAsOf: Date | null;
+    unofficialCurrencyCode: string | null;
+    marketIdentifierCode: string | null;
+    optionContractType: string | null;
+    optionExpirationDate: Date | null;
+    optionStrikePrice: number | null;
+    optionUnderlyingTicker: string | null;
+    bondMaturityDate: Date | null;
+    bondIssueDate: Date | null;
+    bondFaceValue: number | null;
+    bondYieldRate: number | null;
+    bondYieldType: string | null;
   };
+}
+
+/**
+ * What Plaid sends for a bond. The SDK version in use predates it, so the
+ * security's type does not have it; it is in the response all the same.
+ */
+interface PlaidFixedIncome {
+  maturity_date?: string | null;
+  issue_date?: string | null;
+  face_value?: number | null;
+  yield_rate?: { percentage?: number | null; type?: string | null } | null;
 }
 
 /** A holding ready to store, keyed by Plaid's account and security ids. */
@@ -35,15 +57,17 @@ const toDate = (value: string | null | undefined): Date | null =>
   value ? new Date(value) : null;
 
 /**
- * Normalize Plaid's holdings and securities. A holding in a security Plaid did
- * not describe is dropped: it cannot be shown without one. Only what the API
- * shows is kept (no CUSIP, ISIN or SEDOL, and no option contract details).
+ * Normalize one of Plaid's securities. Only what the API shows is kept: no
+ * CUSIP, ISIN or SEDOL. An option's contract and a bond's terms are kept, for
+ * the holding's detail.
  */
-export function normalizePlaidHoldings(response: {
-  holdings: PlaidHolding[];
-  securities: PlaidSecurity[];
-}): { securities: NormalizedSecurity[]; holdings: NormalizedHolding[] } {
-  const securities = response.securities.map((security) => ({
+export function normalizePlaidSecurity(
+  security: PlaidSecurity
+): NormalizedSecurity {
+  const fixedIncome = (security as { fixed_income?: PlaidFixedIncome | null })
+    .fixed_income;
+  const option = security.option_contract;
+  return {
     plaidSecurityId: security.security_id,
     data: {
       name: security.name ?? null,
@@ -53,8 +77,51 @@ export function normalizePlaidHoldings(response: {
       isoCurrencyCode: security.iso_currency_code ?? null,
       closePrice: security.close_price ?? null,
       closePriceAsOf: toDate(security.close_price_as_of),
+      unofficialCurrencyCode: security.unofficial_currency_code ?? null,
+      marketIdentifierCode: security.market_identifier_code ?? null,
+      optionContractType: option?.contract_type ?? null,
+      optionExpirationDate: toDate(option?.expiration_date),
+      optionStrikePrice: option?.strike_price ?? null,
+      optionUnderlyingTicker: option?.underlying_security_ticker ?? null,
+      bondMaturityDate: toDate(fixedIncome?.maturity_date),
+      bondIssueDate: toDate(fixedIncome?.issue_date),
+      bondFaceValue: fixedIncome?.face_value ?? null,
+      bondYieldRate: fixedIncome?.yield_rate?.percentage ?? null,
+      bondYieldType: fixedIncome?.yield_rate?.type ?? null,
     },
-  }));
+  };
+}
+
+/**
+ * Upsert securities inside a transaction. Returns our id for each, by Plaid's
+ * security id.
+ */
+export async function upsertSecurities(
+  tx: Prisma.TransactionClient,
+  securities: NormalizedSecurity[]
+): Promise<Map<string, string>> {
+  const ids = new Map<string, string>();
+  for (const { plaidSecurityId, data } of securities) {
+    const stored = await tx.security.upsert({
+      where: { plaidSecurityId },
+      create: { plaidSecurityId, ...data },
+      update: data,
+      select: { id: true },
+    });
+    ids.set(plaidSecurityId, stored.id);
+  }
+  return ids;
+}
+
+/**
+ * Normalize Plaid's holdings and securities. A holding in a security Plaid did
+ * not describe is dropped: it cannot be shown without one.
+ */
+export function normalizePlaidHoldings(response: {
+  holdings: PlaidHolding[];
+  securities: PlaidSecurity[];
+}): { securities: NormalizedSecurity[]; holdings: NormalizedHolding[] } {
+  const securities = response.securities.map(normalizePlaidSecurity);
   const known = new Set(securities.map((s) => s.plaidSecurityId));
 
   const holdings = response.holdings
@@ -108,16 +175,7 @@ class HoldingRepository {
 
     try {
       await this.prisma.$transaction(async (tx) => {
-        const securityIds = new Map<string, string>();
-        for (const { plaidSecurityId, data } of securities) {
-          const stored = await tx.security.upsert({
-            where: { plaidSecurityId },
-            create: { plaidSecurityId, ...data },
-            update: data,
-            select: { id: true },
-          });
-          securityIds.set(plaidSecurityId, stored.id);
-        }
+        const securityIds = await upsertSecurities(tx, securities);
 
         const kept: Array<{ accountId: string; securityId: string }> = [];
         for (const { accountId, plaidSecurityId, data } of holdings) {
