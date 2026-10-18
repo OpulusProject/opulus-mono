@@ -54,8 +54,15 @@ const OverviewContent: React.FC<{ account: string | undefined }> = ({
 
   return (
     <>
-      <PortfolioSummary data={holdings.data} />
-      <AccountsAndGains data={holdings.data} account={account} />
+      <PortfolioSummary
+        data={holdings.data}
+        isRefreshing={holdings.isPlaceholderData}
+      />
+      <AccountsAndGains
+        data={holdings.data}
+        account={account}
+        isRefreshing={holdings.isPlaceholderData}
+      />
     </>
   );
 };

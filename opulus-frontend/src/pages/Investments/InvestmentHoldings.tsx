@@ -75,6 +75,7 @@ const HoldingsContent: React.FC<{
     <>
       <HoldingsList
         data={data}
+        isRefreshing={holdings.isPlaceholderData}
         subtypes={[...new Set(subtypes)]}
         layout={search.layout}
         type={search.type}

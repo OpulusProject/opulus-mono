@@ -21,6 +21,8 @@ interface AccountsAndGainsProps {
   data: HoldingsResponse['data'];
   /** The account the page is limited to, which a link keeps. */
   account: string | undefined;
+  /** The rows shown are the previous ones, while new ones load. */
+  isRefreshing?: boolean;
 }
 
 /**
@@ -31,6 +33,7 @@ interface AccountsAndGainsProps {
 export const AccountsAndGains: React.FC<AccountsAndGainsProps> = ({
   data,
   account,
+  isRefreshing = false,
 }) => {
   const navigate = useNavigate();
 
@@ -38,6 +41,7 @@ export const AccountsAndGains: React.FC<AccountsAndGainsProps> = ({
     <div className="grid items-start gap-4 lg:grid-cols-2">
       <ByAccount
         data={data}
+        isRefreshing={isRefreshing}
         onOpen={(id) =>
           void navigate({
             to: '/investments/holdings',
@@ -47,6 +51,7 @@ export const AccountsAndGains: React.FC<AccountsAndGainsProps> = ({
       />
       <GainByHolding
         data={data}
+        isRefreshing={isRefreshing}
         onOpen={(holding) =>
           void navigate({
             to: '/investments/holdings',
@@ -60,9 +65,10 @@ export const AccountsAndGains: React.FC<AccountsAndGainsProps> = ({
 
 const ByAccount: React.FC<{
   data: HoldingsResponse['data'];
+  isRefreshing: boolean;
   onOpen: (accountId: string) => void;
-}> = ({ data, onOpen }) => (
-  <List aria-label="By account">
+}> = ({ data, isRefreshing, onOpen }) => (
+  <List aria-label="By account" isRefreshing={isRefreshing}>
     <ListHeader
       title="By account"
       trailingTitle={`${formatMoney(data.summary.value, data.baseCurrency)} total`}
@@ -95,8 +101,9 @@ const ByAccount: React.FC<{
 
 const GainByHolding: React.FC<{
   data: HoldingsResponse['data'];
+  isRefreshing: boolean;
   onOpen: (holdingId: string) => void;
-}> = ({ data, onOpen }) => {
+}> = ({ data, isRefreshing, onOpen }) => {
   // The server ranks them; the ids are looked up here.
   const ranked = data.summary.gainRanking
     .flatMap((id) => {
@@ -106,7 +113,7 @@ const GainByHolding: React.FC<{
     .slice(0, ROWS);
 
   return (
-    <List aria-label="Gain since purchase">
+    <List aria-label="Gain since purchase" isRefreshing={isRefreshing}>
       <ListHeader title="Gain since purchase" trailingTitle="best to worst" />
       {ranked.length === 0 ? (
         <ListRow

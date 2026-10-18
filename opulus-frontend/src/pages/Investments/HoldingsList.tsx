@@ -44,6 +44,8 @@ const KIND_ICONS = {
 interface HoldingsListProps {
   /** The holdings in view (filtered and ordered by the server). */
   data: HoldingsResponse['data'];
+  /** The rows shown are the previous ones, while new ones load. */
+  isRefreshing?: boolean;
   /** Account subtypes to pick from, e.g. ["tfsa", "rrsp"]. */
   subtypes: string[];
   layout: HoldingsSearch['layout'];
@@ -59,6 +61,7 @@ interface HoldingsListProps {
  */
 export const HoldingsList: React.FC<HoldingsListProps> = ({
   data,
+  isRefreshing = false,
   subtypes,
   layout,
   type,
@@ -79,7 +82,7 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({
   );
 
   return (
-    <List aria-label="Holdings">
+    <List aria-label="Holdings" isRefreshing={isRefreshing}>
       <ListHeader
         title="Holdings"
         trailingTitle={`${holdings.length}`}
