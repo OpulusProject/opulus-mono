@@ -3,7 +3,6 @@ import * as React from 'react';
 
 import { List, ListError } from '@/common/List';
 import { useHoldings } from '@/hooks/investments/useHoldings';
-import { formatDay } from '@/utils/day';
 
 import { HoldingSheet } from './HoldingSheet';
 import { HoldingsList } from './HoldingsList';
@@ -83,15 +82,6 @@ const HoldingsContent: React.FC<{
         onTypeChange={(type) => update({ type })}
         onOpenHolding={(holding) => update({ holding })}
       />
-      <p className="text-muted-foreground text-xs leading-5">
-        Prices are as your institutions last reported them (usually the previous
-        close), not live quotes, and values are in{' '}
-        {data.baseCurrency === 'CAD' ? 'Canadian dollars' : data.baseCurrency}.
-        Gains use the cost basis your institution reports; where it sends none,
-        that holding is left out of the gain.
-        {latestPriceDay(data.holdings) &&
-          ` The latest price is from ${latestPriceDay(data.holdings)}.`}
-      </p>
       <HoldingSheet
         data={data}
         holdingId={search.holding}
@@ -100,12 +90,3 @@ const HoldingsContent: React.FC<{
     </>
   );
 };
-
-/** The most recent price date among the holdings, as "Oct 15", if any has one. */
-function latestPriceDay(
-  holdings: { priceAsOf: string | null }[]
-): string | undefined {
-  const dates = holdings.flatMap((h) => (h.priceAsOf ? [h.priceAsOf] : []));
-  if (dates.length === 0) return undefined;
-  return formatDay(dates.sort().at(-1)!, { month: 'short', day: 'numeric' });
-}
