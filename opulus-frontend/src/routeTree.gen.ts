@@ -20,7 +20,9 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCreditAndLoansRouteImport } from './routes/_authenticated/credit-and-loans'
 import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
+import { Route as AuthenticatedInvestmentsIndexRouteImport } from './routes/_authenticated/investments.index'
 import { Route as AuthenticatedSettingsConnectionsRouteImport } from './routes/_authenticated/settings.connections'
+import { Route as AuthenticatedInvestmentsActivityRouteImport } from './routes/_authenticated/investments.activity'
 
 const TwoFactorRoute = TwoFactorRouteImport.update({
   id: '/two-factor',
@@ -79,10 +81,22 @@ const AuthenticatedSettingsIndexRoute =
     path: '/settings/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedInvestmentsIndexRoute =
+  AuthenticatedInvestmentsIndexRouteImport.update({
+    id: '/investments/',
+    path: '/investments/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSettingsConnectionsRoute =
   AuthenticatedSettingsConnectionsRouteImport.update({
     id: '/settings/connections',
     path: '/settings/connections',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedInvestmentsActivityRoute =
+  AuthenticatedInvestmentsActivityRouteImport.update({
+    id: '/investments/activity',
+    path: '/investments/activity',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 
@@ -96,7 +110,9 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/spending': typeof AuthenticatedSpendingRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
+  '/investments/activity': typeof AuthenticatedInvestmentsActivityRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
+  '/investments': typeof AuthenticatedInvestmentsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -109,7 +125,9 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/spending': typeof AuthenticatedSpendingRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
+  '/investments/activity': typeof AuthenticatedInvestmentsActivityRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
+  '/investments': typeof AuthenticatedInvestmentsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRoutesById {
@@ -124,7 +142,9 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/spending': typeof AuthenticatedSpendingRoute
   '/_authenticated/transactions': typeof AuthenticatedTransactionsRoute
+  '/_authenticated/investments/activity': typeof AuthenticatedInvestmentsActivityRoute
   '/_authenticated/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
+  '/_authenticated/investments/': typeof AuthenticatedInvestmentsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -139,7 +159,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/spending'
     | '/transactions'
+    | '/investments/activity'
     | '/settings/connections'
+    | '/investments'
     | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -152,7 +174,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/spending'
     | '/transactions'
+    | '/investments/activity'
     | '/settings/connections'
+    | '/investments'
     | '/settings'
   id:
     | '__root__'
@@ -166,7 +190,9 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/spending'
     | '/_authenticated/transactions'
+    | '/_authenticated/investments/activity'
     | '/_authenticated/settings/connections'
+    | '/_authenticated/investments/'
     | '/_authenticated/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -257,11 +283,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/investments/': {
+      id: '/_authenticated/investments/'
+      path: '/investments'
+      fullPath: '/investments'
+      preLoaderRoute: typeof AuthenticatedInvestmentsIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/settings/connections': {
       id: '/_authenticated/settings/connections'
       path: '/settings/connections'
       fullPath: '/settings/connections'
       preLoaderRoute: typeof AuthenticatedSettingsConnectionsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/investments/activity': {
+      id: '/_authenticated/investments/activity'
+      path: '/investments/activity'
+      fullPath: '/investments/activity'
+      preLoaderRoute: typeof AuthenticatedInvestmentsActivityRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
   }
@@ -273,7 +313,9 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedSpendingRoute: typeof AuthenticatedSpendingRoute
   AuthenticatedTransactionsRoute: typeof AuthenticatedTransactionsRoute
+  AuthenticatedInvestmentsActivityRoute: typeof AuthenticatedInvestmentsActivityRoute
   AuthenticatedSettingsConnectionsRoute: typeof AuthenticatedSettingsConnectionsRoute
+  AuthenticatedInvestmentsIndexRoute: typeof AuthenticatedInvestmentsIndexRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
@@ -283,7 +325,9 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedSpendingRoute: AuthenticatedSpendingRoute,
   AuthenticatedTransactionsRoute: AuthenticatedTransactionsRoute,
+  AuthenticatedInvestmentsActivityRoute: AuthenticatedInvestmentsActivityRoute,
   AuthenticatedSettingsConnectionsRoute: AuthenticatedSettingsConnectionsRoute,
+  AuthenticatedInvestmentsIndexRoute: AuthenticatedInvestmentsIndexRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
 

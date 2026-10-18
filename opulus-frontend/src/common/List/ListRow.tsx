@@ -132,7 +132,7 @@ export const ListRow = React.forwardRef<HTMLElement, ListRowProps>(
           <div className="truncate text-sm font-medium" title={title}>
             {title}
           </div>
-          {(subtitle || notices?.length) && (
+          {(subtitle || !!notices?.length) && (
             <div className="text-muted-foreground truncate text-xs">
               {subtitle}
               {notices?.map((notice) => (
