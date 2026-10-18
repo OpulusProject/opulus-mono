@@ -12,6 +12,7 @@
 export * from "./auth.js";
 export * from "./exchange-rates.js";
 export * from "./holdings.js";
+export * from "./investment-transactions.js";
 export * from "./two-factor.js";
 export * from "./items.js";
 export * from "./link-events.js";

@@ -174,7 +174,7 @@ const NO_STREAMS = { response: { inflow_streams: [], outflow_streams: [] } };
 let recurring = NO_STREAMS;
 /** @type {Record<string, unknown>[]} */
 let recurringRequests = [];
-/** @type {Failing & { response?: { investment_transactions: Plaid<InvestmentTransaction>[]; securities: Plaid<Security>[] } }} */
+/** @type {Failing & { response?: { accounts?: { account_id: string }[]; investment_transactions: Plaid<InvestmentTransaction>[]; securities: Plaid<Security>[] } }} */
 const NO_INVESTMENT_TRANSACTIONS = { response: { investment_transactions: [], securities: [] } };
 let investmentTransactions = NO_INVESTMENT_TRANSACTIONS;
 /** @type {Record<string, unknown>[]} */
@@ -552,7 +552,7 @@ const server = createServer(async (req, res) => {
     const all = investmentTransactions.response?.investment_transactions ?? [];
     const { count = 100, offset = 0 } = request.options ?? {};
     return send(res, 200, {
-      accounts: itemSetup.accounts,
+      accounts: investmentTransactions.response?.accounts ?? itemSetup.accounts,
       item: plaidItem(),
       securities: investmentTransactions.response?.securities ?? [],
       investment_transactions: all.slice(offset, offset + count),

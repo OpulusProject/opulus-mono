@@ -241,12 +241,12 @@ export async function failInstitutionLookup(errorCode?: string): Promise<void> {
 /**
  * What the stub answers to `/investments/transactions/get`: the item's
  * investment transactions and the securities they mention (it pages through them
- * as the backend asks), or a Plaid error code. The accounts are the item's, as
- * set with `setPlaidItem`.
+ * as the backend asks), or a Plaid error code. The accounts are the ones named
+ * (as for holdings), or the item's, as set with `setPlaidItem`.
  */
 export async function setPlaidInvestmentTransactions(
   answer:
-    | { response: { investment_transactions: Plaid<InvestmentTransaction>[]; securities: Plaid<Security>[] } }
+    | { response: { accounts?: { account_id: string }[]; investment_transactions: Plaid<InvestmentTransaction>[]; securities: Plaid<Security>[] } }
     | { error_code: string },
 ): Promise<void> {
   await fetch(`${STUB_URL}/__control/investment-transactions`, {

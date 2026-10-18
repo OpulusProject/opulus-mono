@@ -22,6 +22,7 @@ import {
   prisma,
   syncItemTransactions,
   trySyncItemHoldings,
+  trySyncItemInvestmentTransactions,
   trySyncItemRecurring,
 } from "@opulus/core";
 
@@ -67,6 +68,9 @@ async function main(): Promise<void> {
       // never throws, and an item that has no investments is just "unavailable".
       const syncable = await itemRepository.getByPlaidItemId(item.plaidItemId);
       const holdings = await trySyncItemHoldings({ item: syncable });
+      const investmentTransactions = await trySyncItemInvestmentTransactions({
+        item: syncable,
+      });
       // Likewise recurring payments and income, which Plaid may not have ready.
       const recurring = await trySyncItemRecurring({ item: syncable });
       succeeded += 1;
@@ -76,6 +80,7 @@ async function main(): Promise<void> {
           institution: item.institutionName,
           ...result,
           holdings_status: holdings.status,
+          investment_transactions_status: investmentTransactions.status,
           recurring_status: recurring.status,
         },
         "Reconciled item"

@@ -7,6 +7,7 @@ import {
   runInTransaction,
   toItemErrorData,
   trySyncItemHoldings,
+  trySyncItemInvestmentTransactions,
   trySyncItemRecurring,
   trySyncItemLiabilities,
 } from "@opulus/core";
@@ -100,6 +101,7 @@ export async function updateItemAccounts(
   // New or re-consented accounts may now have liabilities data.
   await trySyncItemLiabilities({ item });
   await trySyncItemHoldings({ item });
+  await trySyncItemInvestmentTransactions({ item });
   await trySyncItemRecurring({ item });
 
   logger.info(
