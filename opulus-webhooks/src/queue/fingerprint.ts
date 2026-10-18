@@ -16,6 +16,23 @@ import type { PlaidWebhookEvent } from "../types/plaid/webhookSchema.js";
  * duplicate deliveries (identical payloads) inside a small time window.
  */
 export function webhookFingerprint(event: PlaidWebhookEvent): string {
-  const stable = JSON.stringify(event, Object.keys(event).sort());
-  return createHash("sha256").update(stable).digest("hex");
+  return createHash("sha256").update(JSON.stringify(sortKeys(event))).digest("hex");
+}
+
+/**
+ * The value with its object keys in order at every depth, so equal events
+ * stringify equally. (`JSON.stringify`'s key-list argument is not enough: it
+ * also applies to nested objects, and drops every nested key that is not a
+ * top-level one, so events that differ only inside `error` looked identical.)
+ */
+function sortKeys(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sortKeys);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value)
+        .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+        .map(([key, nested]) => [key, sortKeys(nested)])
+    );
+  }
+  return value;
 }
