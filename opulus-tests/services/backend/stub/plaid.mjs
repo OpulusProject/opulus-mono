@@ -49,6 +49,9 @@
  *   POST /__control/transactions-sync  { access_token, pages }: pages of added, modified,
  *                              removed, accounts, next_cursor, has_more, or { error_code }
  *   GET  /__control/transactions-sync-cursors?access_token=  the cursors it was asked from
+ *   POST /sandbox/public_token/create   a public token (the request is remembered)
+ *   POST /sandbox/item/fire_webhook     remembers the webhook asked for, delivers nothing
+ *   GET  /__control/sandbox-requests    the two sandbox calls above, oldest first
  *   POST /__control/reset      forget the requests, the item and the holdings
  *
  * Everything else answers 404 in Plaid's error shape, as an unsupported call.
@@ -93,6 +96,8 @@ let accountsError = {};
 let itemRemove = {};
 /** @type {string[]} */
 let exchanges = [];
+/** @type {{ path: string; body: Record<string, unknown> }[]} */
+let sandboxRequests = [];
 /** @type {Wire<import("plaid").Institution>[]} */
 const STUB_INSTITUTIONS = Array.from({ length: 25 }, (_, i) => ({
   institution_id: `ins_stub_${i}`,
@@ -205,6 +210,7 @@ const server = createServer(async (req, res) => {
     removedItems = [];
     itemRemove = {};
     exchanges = [];
+    sandboxRequests = [];
     liabilities = NO_LIABILITIES;
     accountsError = {};
     return send(res, 200, {});
@@ -223,6 +229,9 @@ const server = createServer(async (req, res) => {
   if (req.method === "POST" && url.pathname === "/__control/item-remove") {
     itemRemove = await readJson(req);
     return send(res, 200, {});
+  }
+  if (req.method === "GET" && url.pathname === "/__control/sandbox-requests") {
+    return send(res, 200, { requests: sandboxRequests });
   }
   if (req.method === "GET" && url.pathname === "/__control/exchanges") {
     return send(res, 200, { publicTokens: exchanges });
@@ -308,6 +317,26 @@ const server = createServer(async (req, res) => {
   if (req.method === "POST" && url.pathname === "/item/get") {
     counter += 1;
     return send(res, 200, /** @satisfies {Wire<import("plaid").ItemGetResponse>} */ ({ item: plaidItem(), status: null, request_id: `stub-request-${counter}` }));
+  }
+
+  if (req.method === "POST" && url.pathname === "/sandbox/public_token/create") {
+    const { client_id, secret, ...request } = await readJson(req);
+    sandboxRequests.push({ path: url.pathname, body: request });
+    counter += 1;
+    return send(res, 200, /** @satisfies {Wire<import("plaid").SandboxPublicTokenCreateResponse>} */ ({
+      public_token: `public-sandbox-stub-${counter}`,
+      request_id: `stub-request-${counter}`,
+    }));
+  }
+
+  if (req.method === "POST" && url.pathname === "/sandbox/item/fire_webhook") {
+    const { client_id, secret, ...request } = await readJson(req);
+    sandboxRequests.push({ path: url.pathname, body: request });
+    counter += 1;
+    return send(res, 200, /** @satisfies {Wire<import("plaid").SandboxItemFireWebhookResponse>} */ ({
+      webhook_fired: true,
+      request_id: `stub-request-${counter}`,
+    }));
   }
 
   if (req.method === "POST" && url.pathname === "/item/remove") {

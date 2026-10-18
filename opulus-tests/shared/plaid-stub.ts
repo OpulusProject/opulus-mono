@@ -210,3 +210,9 @@ export async function syncCursorsAskedFor(accessToken: string): Promise<(string 
   const res = await fetch(`${STUB_URL}/__control/transactions-sync-cursors?access_token=${encodeURIComponent(accessToken)}`);
   return (await res.json()).cursors;
 }
+
+/** The calls to Plaid's sandbox endpoints (`/sandbox/...`) since the last reset, oldest first, without the credentials. */
+export async function sandboxRequests(): Promise<{ path: string; body: Record<string, unknown> }[]> {
+  const res = await fetch(`${STUB_URL}/__control/sandbox-requests`);
+  return (await res.json()).requests;
+}
