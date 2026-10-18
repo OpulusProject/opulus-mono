@@ -1,5 +1,5 @@
 # Multi-stage build for backend service
-FROM node:18-alpine AS base
+FROM node:22-alpine AS base
 
 # Install pnpm and build dependencies for native modules (better-sqlite3, etc.)
 RUN apk add --no-cache python3 make g++ && \
@@ -32,7 +32,7 @@ RUN pnpm --filter @opulus/core build
 RUN pnpm --filter @opulus/backend build
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:22-alpine AS production
 
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 

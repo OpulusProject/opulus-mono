@@ -69,7 +69,7 @@ this repo should not be treated as production-ready financial infrastructure.
 
 ### Prereqs
 
-- Node 18+
+- Node 22+
 - pnpm 9 (`corepack enable` will use the version pinned in `package.json`)
 - Docker Desktop
 - Plaid sandbox credentials
