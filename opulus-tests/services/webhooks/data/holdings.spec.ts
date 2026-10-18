@@ -1,17 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { uniqueId } from "../../../shared/client.js";
-import { readItemAccessToken } from "../../../shared/db.js";
-import { seedItemWithAccount, seedUser, readWebhookEvents, readHoldings } from "../../../shared/fixtures/index.js";
+import { seedLinkedItem, readWebhookEvents, readHoldings } from "../../../shared/fixtures/index.js";
 import { resetPlaidStub, setPlaidHoldings } from "../../../shared/plaid-stub.js";
 import { answer, apple, cash, holding } from "../../../shared/scenarios/plaid-investments.js";
 import { deliverWebhook } from "../helpers/fixtures/index.js";
 
-/** A user with one linked item and its account, and the access token the stub knows them by. */
-async function linkedItem() {
-  const user = await seedUser();
-  const item = await seedItemWithAccount(user.id);
-  return { ...item, accessToken: await readItemAccessToken(item.itemId) };
-}
+const linkedItem = seedLinkedItem;
 
 const holdingsWebhook = (plaidItemId: string, newHoldings = 1) => ({
   webhook_type: "HOLDINGS",

@@ -1,17 +1,11 @@
 import { expect, test } from "@playwright/test";
 import { uniqueId } from "../../../shared/client.js";
-import { readItemAccessToken } from "../../../shared/db.js";
-import { seedItemWithAccount, seedUser, readWebhookEvents, readStreams } from "../../../shared/fixtures/index.js";
+import { seedLinkedItem, readWebhookEvents, readStreams } from "../../../shared/fixtures/index.js";
 import { recurringRequests, resetPlaidStub, setPlaidRecurring } from "../../../shared/plaid-stub.js";
 import { payroll, stream } from "../../../shared/scenarios/plaid-recurring.js";
 import { deliverWebhook } from "../helpers/fixtures/index.js";
 
-/** A user with one linked item and its account, and the access token the stub knows them by. */
-async function linkedItem() {
-  const user = await seedUser();
-  const item = await seedItemWithAccount(user.id);
-  return { ...item, accessToken: await readItemAccessToken(item.itemId) };
-}
+const linkedItem = seedLinkedItem;
 
 const recurringWebhook = (plaidItemId: string, accountIds: string[]) => ({
   webhook_type: "TRANSACTIONS",
