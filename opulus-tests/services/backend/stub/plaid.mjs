@@ -55,6 +55,13 @@
  *   GET  /__control/sandbox-requests    the two sandbox calls above, oldest first
  *   POST /__control/institution-error  { error_code } makes /institutions/get_by_id fail; {} makes it work
  *   POST /__control/sandbox-error  { error_code } makes both sandbox calls fail; {} makes them work
+ *   POST /investments/transactions/get   the investment transactions a test set with
+ *                              /__control/investment-transactions (none by default), a page at
+ *                              a time as asked (count, offset), or the Plaid error it set; the
+ *                              request (dates) is remembered
+ *   POST /__control/investment-transactions  set what it answers: { response } (investment_transactions,
+ *                              securities) or { error_code }
+ *   GET  /__control/investment-transaction-requests  the requests received so far
  *   POST /__control/reset      forget the requests, the item and the holdings
  *
  * Everything else answers 404 in Plaid's error shape, as an unsupported call.
@@ -73,6 +80,7 @@ const PORT = Number(process.env.PLAID_STUB_PORT ?? 4546);
  * @typedef {import("../../../shared/plaid-stub.js").AccountBase} AccountBase
  * @typedef {import("../../../shared/plaid-stub.js").Holding} Holding
  * @typedef {import("../../../shared/plaid-stub.js").Security} Security
+ * @typedef {import("../../../shared/plaid-stub.js").InvestmentTransaction} InvestmentTransaction
  */
 
 /**
@@ -165,6 +173,11 @@ const NO_STREAMS = { response: { inflow_streams: [], outflow_streams: [] } };
 let recurring = NO_STREAMS;
 /** @type {Record<string, unknown>[]} */
 let recurringRequests = [];
+/** @type {Failing & { response?: { investment_transactions: Plaid<InvestmentTransaction>[]; securities: Plaid<Security>[] } }} */
+const NO_INVESTMENT_TRANSACTIONS = { response: { investment_transactions: [], securities: [] } };
+let investmentTransactions = NO_INVESTMENT_TRANSACTIONS;
+/** @type {Record<string, unknown>[]} */
+let investmentTransactionRequests = [];
 
 /** @param {import("node:http").ServerResponse} res @param {number} status @param {unknown} body */
 function send(res, status, body) {
@@ -219,6 +232,8 @@ const server = createServer(async (req, res) => {
     itemSetup = DEFAULT_ITEM;
     recurring = NO_STREAMS;
     recurringRequests = [];
+    investmentTransactions = NO_INVESTMENT_TRANSACTIONS;
+    investmentTransactionRequests = [];
     removedItems = [];
     itemRemove = {};
     exchanges = [];
@@ -268,6 +283,13 @@ const server = createServer(async (req, res) => {
   }
   if (req.method === "GET" && url.pathname === "/__control/recurring-requests") {
     return send(res, 200, { requests: recurringRequests });
+  }
+  if (req.method === "POST" && url.pathname === "/__control/investment-transactions") {
+    investmentTransactions = await readJson(req);
+    return send(res, 200, {});
+  }
+  if (req.method === "GET" && url.pathname === "/__control/investment-transaction-requests") {
+    return send(res, 200, { requests: investmentTransactionRequests });
   }
   if (req.method === "POST" && url.pathname === "/__control/holdings") {
     holdings = await readJson(req);
@@ -509,6 +531,30 @@ const server = createServer(async (req, res) => {
       has_more: false,
       transactions_update_status: "HISTORICAL_UPDATE_COMPLETE",
       ...page,
+      request_id: `stub-request-${counter}`,
+    });
+  }
+
+  if (req.method === "POST" && url.pathname === "/investments/transactions/get") {
+    const { client_id, secret, access_token, ...request } = await readJson(req);
+    investmentTransactionRequests.push(request);
+    counter += 1;
+    if (investmentTransactions.error_code) {
+      return send(res, 400, {
+        error_type: "ITEM_ERROR",
+        error_code: investmentTransactions.error_code,
+        error_message: `the stub answers ${investmentTransactions.error_code} on purpose`,
+        request_id: `stub-request-${counter}`,
+      });
+    }
+    const all = investmentTransactions.response?.investment_transactions ?? [];
+    const { count = 100, offset = 0 } = request.options ?? {};
+    return send(res, 200, {
+      accounts: itemSetup.accounts,
+      item: plaidItem(),
+      securities: investmentTransactions.response?.securities ?? [],
+      investment_transactions: all.slice(offset, offset + count),
+      total_investment_transactions: all.length,
       request_id: `stub-request-${counter}`,
     });
   }
