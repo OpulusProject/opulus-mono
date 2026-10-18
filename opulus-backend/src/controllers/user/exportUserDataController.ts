@@ -1,8 +1,7 @@
 import { getRequestSession } from "@/middleware/session/requireSession.js";
 import { exportUserData } from "@/services/user/exportUserData.js";
-import { logger } from "@opulus/core";
 import { Request, Response } from "express";
-import { once } from "node:events";
+import { streamChunks } from "./streamChunks.js";
 
 /**
  * Download everything we hold about the authenticated user, as JSON
@@ -27,20 +26,5 @@ export async function exportUserDataController(req: Request, res: Response) {
   );
   res.setHeader("Cache-Control", "no-store");
 
-  try {
-    for await (const chunk of userExport.chunks()) {
-      // Wait when the client reads slower than we write.
-      if (!res.write(chunk)) await once(res, "drain");
-    }
-    res.end();
-  } catch (error) {
-    logger.error(
-      {
-        user_id: user.id,
-        error_message: error instanceof Error ? error.message : String(error),
-      },
-      "User data export failed after it had started"
-    );
-    res.destroy(error instanceof Error ? error : undefined);
-  }
+  await streamChunks(res, userExport.chunks(), { user_id: user.id });
 }

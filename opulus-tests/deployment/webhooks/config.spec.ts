@@ -13,8 +13,9 @@ const base64url = (value: unknown) => Buffer.from(JSON.stringify(value)).toStrin
  *
  * Test cases:
  * - answers 500, saying why, to a webhook it has no credentials to verify
+ * - answers 500, not 401, when Plaid cannot be reached for the key
  */
-test.describe("webhook receiver without Plaid credentials", () => {
+test.describe("webhook receiver without Plaid credentials or reach of Plaid", () => {
   let receiver: RunningService;
   test.afterEach(() => stopService(receiver));
 
@@ -39,5 +40,27 @@ test.describe("webhook receiver without Plaid credentials", () => {
     // Assert
     expect(res.status).toBe(500);
     expect(await res.json()).toMatchObject({ message: expect.stringContaining("Plaid credentials not configured") });
+  });
+
+  test("answers 500, not 401, when Plaid cannot be reached for the key", async () => {
+    // Arrange: credentials, but a Plaid address nothing listens on.
+    receiver = await startService({
+      workspace: "opulus-webhooks",
+      port: PORT,
+      portVariable: "WEBHOOK_PORT",
+      env: { PLAID_BASE_URL: "http://localhost:1" },
+    });
+    const token = `${base64url({ alg: "ES256", typ: "JWT", kid: "any-key" })}.${base64url({ request_body_sha256: "x" })}.signature`;
+
+    // Act
+    const res = await fetch(`http://localhost:${PORT}/webhook/plaid`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "plaid-verification": token },
+      body: JSON.stringify({ webhook_type: "ITEM", webhook_code: "ERROR" }),
+    });
+
+    // Assert: Plaid being down is our 500, not a verdict on the webhook.
+    expect(res.status).toBe(500);
+    expect(await res.json()).toMatchObject({ message: "Internal server error", details: expect.any(String) });
   });
 });
