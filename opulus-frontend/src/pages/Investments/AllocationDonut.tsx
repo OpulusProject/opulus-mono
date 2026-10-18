@@ -10,10 +10,17 @@ interface Slice {
   share: number;
 }
 
-/** Slices fade from the foreground colour, so no hue has to mean anything. */
-const OPACITY = [1, 0.62, 0.4, 0.26, 0.16, 0.1];
-const opacityFor = (index: number) =>
-  OPACITY[Math.min(index, OPACITY.length - 1)];
+/** One colour for each kind, so a kind looks the same wherever it appears. */
+const KIND_COLOR: Record<AllocationKind, string> = {
+  etf: '#3b82f6',
+  stock: '#10b981',
+  mutualFund: '#8b5cf6',
+  bond: '#f59e0b',
+  option: '#ec4899',
+  cash: '#94a3b8',
+  other: '#78716c',
+  balance: '#06b6d4',
+};
 
 const SIZE = 148;
 const THICKNESS = 20;
@@ -42,7 +49,7 @@ export const AllocationDonut: React.FC<AllocationDonutProps> = ({
         height={SIZE}
         viewBox={`0 0 ${SIZE} ${SIZE}`}
         aria-hidden="true"
-        className="text-foreground shrink-0 -rotate-90"
+        className="shrink-0 -rotate-90"
       >
         <circle
           cx={SIZE / 2}
@@ -52,7 +59,7 @@ export const AllocationDonut: React.FC<AllocationDonutProps> = ({
           strokeWidth={THICKNESS}
           className="stroke-muted"
         />
-        {slices.map((slice, index) => {
+        {slices.map((slice) => {
           const length = slice.share * CIRCUMFERENCE;
           const circle = (
             <circle
@@ -61,8 +68,7 @@ export const AllocationDonut: React.FC<AllocationDonutProps> = ({
               cy={SIZE / 2}
               r={RADIUS}
               fill="none"
-              stroke="currentColor"
-              strokeOpacity={opacityFor(index)}
+              stroke={KIND_COLOR[slice.kind]}
               strokeWidth={THICKNESS}
               strokeDasharray={`${length} ${CIRCUMFERENCE - length}`}
               strokeDashoffset={-offset}
@@ -73,12 +79,12 @@ export const AllocationDonut: React.FC<AllocationDonutProps> = ({
         })}
       </svg>
       <ul className="flex w-full min-w-0 flex-col gap-2 sm:w-64">
-        {slices.map((slice, index) => (
+        {slices.map((slice) => (
           <li key={slice.kind} className="flex items-center gap-2 text-sm">
             <span
               aria-hidden="true"
-              className="bg-foreground size-2.5 shrink-0 rounded-full"
-              style={{ opacity: opacityFor(index) }}
+              className="size-2.5 shrink-0 rounded-full"
+              style={{ backgroundColor: KIND_COLOR[slice.kind] }}
             />
             <span className="min-w-0 flex-1 truncate">
               {ALLOCATION_LABELS[slice.kind]}

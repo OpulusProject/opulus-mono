@@ -20,7 +20,7 @@ const ALL_ACCOUNTS = 'all';
 
 interface InvestmentsFrameProps {
   description: string;
-  active: 'overview' | 'activity';
+  active: 'overview' | 'holdings' | 'activity';
   /** The account the page is limited to (our account id), if any. */
   account: string | undefined;
   onAccountChange: (account: string | undefined) => void;
@@ -28,7 +28,7 @@ interface InvestmentsFrameProps {
 }
 
 /**
- * What both investments pages share: the heading, the Overview / Activity tabs,
+ * What the investments pages share: the heading, the Overview / Holdings / Activity tabs,
  * the account filter, and the empty state for a user with no investment
  * accounts (their content is not rendered, so it makes no requests).
  */
@@ -78,6 +78,19 @@ const Tabs: React.FC<{
       )}
     >
       Overview
+    </Link>
+    <Link
+      to="/investments/holdings"
+      search={{ account }}
+      aria-current={active === 'holdings' ? 'page' : undefined}
+      className={cn(
+        TAB_CLASS,
+        active === 'holdings'
+          ? 'bg-background shadow-sm'
+          : 'text-muted-foreground hover:text-foreground'
+      )}
+    >
+      Holdings
     </Link>
     <Link
       to="/investments/activity"

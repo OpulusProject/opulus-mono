@@ -20,13 +20,14 @@ import type { Notice } from '@/types/notice';
 import { formatMoney } from '@/utils/accountDisplay';
 import {
   accountLabel,
+  amountTone,
   daysUntil,
   formatGain,
   formatPercent,
   holdingTitle,
 } from '@/utils/investmentDisplay';
 
-import type { OverviewSearch } from './searchSchema';
+import type { HoldingsSearch } from './searchSchema';
 
 const ALL_TYPES = 'all';
 
@@ -45,9 +46,9 @@ interface HoldingsListProps {
   data: HoldingsResponse['data'];
   /** Account subtypes to pick from, e.g. ["tfsa", "rrsp"]. */
   subtypes: string[];
-  layout: OverviewSearch['layout'];
+  layout: HoldingsSearch['layout'];
   type: string | undefined;
-  onLayoutChange: (layout: OverviewSearch['layout']) => void;
+  onLayoutChange: (layout: HoldingsSearch['layout']) => void;
   onTypeChange: (type: string | undefined) => void;
   onOpenHolding: (holdingId: string) => void;
 }
@@ -202,6 +203,7 @@ const HoldingRow: React.FC<{
             : 'No cost basis'
           : formatGain(holding.gain, holding.gainPercent, holding.currency)
       }
+      trailingSubtitleTone={amountTone(holding.gain)}
       onClick={onOpen}
     />
   );

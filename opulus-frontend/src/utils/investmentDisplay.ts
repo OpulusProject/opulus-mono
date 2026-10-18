@@ -112,6 +112,14 @@ export function activityTitle(item: ActivityItemDTO): string {
   }
 }
 
+/** Whether a change is a gain or a loss, for `ListRow`'s tones; none for no change. */
+export function amountTone(
+  amount: number | null
+): 'positive' | 'negative' | undefined {
+  if (!amount) return undefined;
+  return amount > 0 ? 'positive' : 'negative';
+}
+
 /** Whole days from now until an ISO date (negative once it has passed). */
 export function daysUntil(iso: string, now = new Date()): number {
   return Math.ceil((Date.parse(iso) - now.getTime()) / (24 * 60 * 60 * 1000));
@@ -154,13 +162,6 @@ export function formatSignedMoney(
   return amount < 0 ? `−${text}` : text;
 }
 
-/** "+26.8%" or "−3.0%" (a real minus sign, as for money). */
-export function formatSignedPercent(fraction: number, digits = 1): string {
-  const text = formatPercent(Math.abs(fraction), digits);
-  if (fraction > 0) return `+${text}`;
-  return fraction < 0 ? `−${text}` : text;
-}
-
 const ACTIVITY_ICONS: Record<ActivityItemDTO['kind'], LucideIcon> = {
   buy: TrendingUp,
   sell: TrendingDown,
@@ -171,10 +172,19 @@ const ACTIVITY_ICONS: Record<ActivityItemDTO['kind'], LucideIcon> = {
   other: RefreshCw,
 };
 
-/** Text colour for a gain or loss; none for no change. */
+/** "+26.8%" or "−3.0%" (a real minus sign, as for money). */
+export function formatSignedPercent(fraction: number, digits = 1): string {
+  const text = formatPercent(Math.abs(fraction), digits);
+  if (fraction > 0) return `+${text}`;
+  return fraction < 0 ? `−${text}` : text;
+}
+
+/** Text and tint for a gain (green) or a loss (red) badge; none for no change. */
 export function gainTone(amount: number): string {
-  if (amount > 0) return 'text-emerald-600 dark:text-emerald-400';
-  return amount < 0 ? 'text-destructive' : '';
+  if (amount > 0) {
+    return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400';
+  }
+  return amount < 0 ? 'bg-destructive/10 text-destructive' : '';
 }
 
 /** What a holding is called in a list: its ticker, or "Cash", or its name. */

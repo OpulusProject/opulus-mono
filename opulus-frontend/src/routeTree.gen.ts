@@ -22,6 +22,7 @@ import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedInvestmentsIndexRouteImport } from './routes/_authenticated/investments.index'
 import { Route as AuthenticatedSettingsConnectionsRouteImport } from './routes/_authenticated/settings.connections'
+import { Route as AuthenticatedInvestmentsHoldingsRouteImport } from './routes/_authenticated/investments.holdings'
 import { Route as AuthenticatedInvestmentsActivityRouteImport } from './routes/_authenticated/investments.activity'
 
 const TwoFactorRoute = TwoFactorRouteImport.update({
@@ -93,6 +94,12 @@ const AuthenticatedSettingsConnectionsRoute =
     path: '/settings/connections',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedInvestmentsHoldingsRoute =
+  AuthenticatedInvestmentsHoldingsRouteImport.update({
+    id: '/investments/holdings',
+    path: '/investments/holdings',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedInvestmentsActivityRoute =
   AuthenticatedInvestmentsActivityRouteImport.update({
     id: '/investments/activity',
@@ -111,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/spending': typeof AuthenticatedSpendingRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
   '/investments/activity': typeof AuthenticatedInvestmentsActivityRoute
+  '/investments/holdings': typeof AuthenticatedInvestmentsHoldingsRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/investments': typeof AuthenticatedInvestmentsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
@@ -126,6 +134,7 @@ export interface FileRoutesByTo {
   '/spending': typeof AuthenticatedSpendingRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
   '/investments/activity': typeof AuthenticatedInvestmentsActivityRoute
+  '/investments/holdings': typeof AuthenticatedInvestmentsHoldingsRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/investments': typeof AuthenticatedInvestmentsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
@@ -143,6 +152,7 @@ export interface FileRoutesById {
   '/_authenticated/spending': typeof AuthenticatedSpendingRoute
   '/_authenticated/transactions': typeof AuthenticatedTransactionsRoute
   '/_authenticated/investments/activity': typeof AuthenticatedInvestmentsActivityRoute
+  '/_authenticated/investments/holdings': typeof AuthenticatedInvestmentsHoldingsRoute
   '/_authenticated/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/_authenticated/investments/': typeof AuthenticatedInvestmentsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/spending'
     | '/transactions'
     | '/investments/activity'
+    | '/investments/holdings'
     | '/settings/connections'
     | '/investments'
     | '/settings'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/spending'
     | '/transactions'
     | '/investments/activity'
+    | '/investments/holdings'
     | '/settings/connections'
     | '/investments'
     | '/settings'
@@ -191,6 +203,7 @@ export interface FileRouteTypes {
     | '/_authenticated/spending'
     | '/_authenticated/transactions'
     | '/_authenticated/investments/activity'
+    | '/_authenticated/investments/holdings'
     | '/_authenticated/settings/connections'
     | '/_authenticated/investments/'
     | '/_authenticated/settings/'
@@ -297,6 +310,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsConnectionsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/investments/holdings': {
+      id: '/_authenticated/investments/holdings'
+      path: '/investments/holdings'
+      fullPath: '/investments/holdings'
+      preLoaderRoute: typeof AuthenticatedInvestmentsHoldingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/investments/activity': {
       id: '/_authenticated/investments/activity'
       path: '/investments/activity'
@@ -314,6 +334,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSpendingRoute: typeof AuthenticatedSpendingRoute
   AuthenticatedTransactionsRoute: typeof AuthenticatedTransactionsRoute
   AuthenticatedInvestmentsActivityRoute: typeof AuthenticatedInvestmentsActivityRoute
+  AuthenticatedInvestmentsHoldingsRoute: typeof AuthenticatedInvestmentsHoldingsRoute
   AuthenticatedSettingsConnectionsRoute: typeof AuthenticatedSettingsConnectionsRoute
   AuthenticatedInvestmentsIndexRoute: typeof AuthenticatedInvestmentsIndexRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
@@ -326,6 +347,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSpendingRoute: AuthenticatedSpendingRoute,
   AuthenticatedTransactionsRoute: AuthenticatedTransactionsRoute,
   AuthenticatedInvestmentsActivityRoute: AuthenticatedInvestmentsActivityRoute,
+  AuthenticatedInvestmentsHoldingsRoute: AuthenticatedInvestmentsHoldingsRoute,
   AuthenticatedSettingsConnectionsRoute: AuthenticatedSettingsConnectionsRoute,
   AuthenticatedInvestmentsIndexRoute: AuthenticatedInvestmentsIndexRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,

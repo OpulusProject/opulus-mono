@@ -39,6 +39,10 @@ interface ListRowProps
   trailingTitle?: string;
   /** Muted line under `trailingTitle`, e.g. an available balance. */
   trailingSubtitle?: string;
+  /** Colour `trailingTitle` as a gain (green) or a loss (red). */
+  trailingTitleTone?: AmountTone;
+  /** Colour `trailingSubtitle` as a gain (green) or a loss (red). */
+  trailingSubtitleTone?: AmountTone;
   /**
    * Buttons or a menu at the far right. Pass them as siblings or a fragment;
    * ListRow spaces them in a row.
@@ -55,6 +59,14 @@ interface ListRowProps
    */
   interactive?: boolean;
 }
+
+/** A change in value: up, or down. */
+export type AmountTone = 'positive' | 'negative';
+
+const AMOUNT_TONE: Record<AmountTone, string> = {
+  positive: 'text-emerald-600 dark:text-emerald-400',
+  negative: 'text-destructive',
+};
 
 const NOTICE_TONE: Record<Notice['tone'], string> = {
   danger: 'font-medium text-destructive',
@@ -91,6 +103,8 @@ export const ListRow = React.forwardRef<HTMLElement, ListRowProps>(
       notices,
       trailingTitle,
       trailingSubtitle,
+      trailingTitleTone,
+      trailingSubtitleTone,
       action,
       expanded,
       interactive,
@@ -149,11 +163,23 @@ export const ListRow = React.forwardRef<HTMLElement, ListRowProps>(
 
         {(trailingTitle || trailingSubtitle) && (
           <div className="shrink-0 text-right">
-            <div className="text-sm font-medium tabular-nums">
+            <div
+              className={cn(
+                'text-sm font-medium tabular-nums',
+                trailingTitleTone && AMOUNT_TONE[trailingTitleTone]
+              )}
+            >
               {trailingTitle}
             </div>
             {trailingSubtitle && (
-              <div className="text-muted-foreground text-xs tabular-nums">
+              <div
+                className={cn(
+                  'text-xs tabular-nums',
+                  trailingSubtitleTone
+                    ? AMOUNT_TONE[trailingSubtitleTone]
+                    : 'text-muted-foreground'
+                )}
+              >
                 {trailingSubtitle}
               </div>
             )}
