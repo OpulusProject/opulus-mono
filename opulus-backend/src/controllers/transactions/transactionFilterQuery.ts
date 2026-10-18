@@ -14,7 +14,7 @@ const orUndefined = (val: unknown) =>
  * (`?page=abc`, `?startDate=garbage`) is a 400, not silently ignored: the client
  * would otherwise get unfiltered or first-page data and not know.
  */
-const optionalDate = z.preprocess(
+export const optionalDate = z.preprocess(
   (val) => {
     const v = orUndefined(val);
     return typeof v === "string" ? new Date(v) : v;

@@ -3,3 +3,4 @@
  */
 
 export * from "./getHoldings.js";
+export * from "./getActivity.js";
