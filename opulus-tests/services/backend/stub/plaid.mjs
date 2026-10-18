@@ -31,7 +31,8 @@
  *   POST /webhook_verification_key/get   the public key that Plaid signs webhooks with:
  *                              the stub's own (key id "stub-webhook-key"); the key
  *                              id "stub-expired-key" answers the same key marked
- *                              expired; any other id is Plaid's INVALID_WEBHOOK_VERIFICATION_KEY_ID
+ *                              expired; the key id "stub-broken-key" is a Plaid server error (500);
+ *                              any other id is Plaid's INVALID_WEBHOOK_VERIFICATION_KEY_ID
  *   GET  /__control/webhook-key   that key's id and its PRIVATE key, so a test can
  *                              sign a webhook the receiver will accept
  *   POST /item/remove          revokes an access token (remembered); answers the
@@ -117,6 +118,7 @@ let syncCursors = new Map();
 /** The key this stub signs webhooks with, made fresh each time the stub starts. */
 const WEBHOOK_KEY_ID = "stub-webhook-key";
 const EXPIRED_KEY_ID = "stub-expired-key";
+const BROKEN_KEY_ID = "stub-broken-key";
 const webhookKeys = generateKeyPairSync("ec", { namedCurve: "P-256" });
 /** @param {string} kid @param {number | null} expiredAt */
 const publicWebhookKey = (kid, expiredAt) => ({
@@ -260,6 +262,14 @@ const server = createServer(async (req, res) => {
         key: publicWebhookKey(key_id, key_id === EXPIRED_KEY_ID ? 1_700_100_000 : null),
         request_id: `stub-request-${counter}`,
       }));
+    }
+    if (key_id === BROKEN_KEY_ID) {
+      return send(res, 500, {
+        error_type: "API_ERROR",
+        error_code: "INTERNAL_SERVER_ERROR",
+        error_message: "the stub fails this key id on purpose",
+        request_id: `stub-request-${counter}`,
+      });
     }
     return send(res, 400, {
       error_type: "INVALID_REQUEST",

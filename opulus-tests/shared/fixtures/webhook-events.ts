@@ -36,3 +36,27 @@ export async function waitForWebhookEvents(
     await new Promise((resolve) => setTimeout(resolve, 100));
   }
 }
+
+/**
+ * Wait for the event whose payload has `field` equal to `value` to reach
+ * `status`, for an event that names no item to look it up by (one a real webhook
+ * never is). Give the payload a field of your own to tell it from the others.
+ */
+export async function waitForWebhookEventWithPayload(
+  field: string,
+  value: string,
+  status: "processing" | "processed" | "retrying" | "dead",
+  timeoutMs = 15_000,
+) {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    const row = await testDb().webhookEvent.findFirst({
+      where: { status, payload: { path: [field], equals: value } },
+    });
+    if (row) return row;
+    if (Date.now() > deadline) {
+      throw new Error(`No ${status} webhook event with ${field}=${value} within ${timeoutMs}ms`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+}
