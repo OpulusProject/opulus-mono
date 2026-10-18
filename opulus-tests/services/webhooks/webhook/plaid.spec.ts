@@ -70,6 +70,20 @@ test.describe("POST /webhook/plaid", () => {
     expect(await readWebhookEvents(itemId)).toHaveLength(1);
   });
 
+  test("handles an event that differs from an earlier one in any field as a new event", async ({ request }) => {
+    // Arrange
+    const itemId = uniqueId("item");
+    const event = harmlessEvent(itemId);
+
+    // Act: the same item and code, but another payload (as Plaid's repeat events carry other counts).
+    await postSignedWebhook(request, event);
+    await postSignedWebhook(request, { ...event, environment: "sandbox" });
+    await waitForWebhookEvents(itemId, "processed", 2);
+
+    // Assert
+    expect(await readWebhookEvents(itemId)).toHaveLength(2);
+  });
+
   test("rejects a body that changed after it was signed (401)", async ({ request }) => {
     const itemId = uniqueId("item");
 

@@ -34,6 +34,16 @@ const syncWebhook = (plaidItemId: string, newTransactions = 1) => ({
  * (the stub plays it: the pages it answers are set per access token) for what
  * changed since the cursor it stored, and stores the result. What it stored is
  * read from the test DB (the backend that serves it is not part of this suite).
+ *
+ * Test cases:
+ * - stores the transactions Plaid added, with their category, and remembers where the sync got to
+ * - asks from the stored cursor next time, and applies what changed since
+ * - follows Plaid's pages until it has no more, in one webhook
+ * - stores the balances Plaid lists with the transactions
+ * - skips transactions for an account that was not shared with us
+ * - leaves the item as it was when Plaid cannot sync, then syncs on the retry
+ * - INITIAL_UPDATE syncs the item like SYNC_UPDATES_AVAILABLE
+ * - TRANSACTIONS_REMOVED and codes it has no action for are processed without asking Plaid
  */
 test.describe("TRANSACTIONS webhooks", () => {
   test("stores the transactions Plaid added, with their category, and remembers where the sync got to", async ({ request }) => {
@@ -162,4 +172,37 @@ test.describe("TRANSACTIONS webhooks", () => {
     const [event] = await readWebhookEvents(item.plaidItemId);
     expect(event).toMatchObject({ status: "processed", attempts: 2 });
   });
+
+  test("INITIAL_UPDATE syncs the item like SYNC_UPDATES_AVAILABLE", async ({ request }) => {
+    // Arrange
+    const item = await linkedItem();
+    await setPlaidSyncPages(item.accessToken, [
+      { added: [plaidTransaction(item.providerAccountId, { name: "First load" })], next_cursor: "cursor-1" },
+    ]);
+
+    // Act
+    await deliverWebhook(request, { ...syncWebhook(item.plaidItemId), webhook_code: "INITIAL_UPDATE" });
+
+    // Assert
+    expect((await readSyncedTransactions(item.itemId)).map((t) => t.name)).toEqual(["First load"]);
+    expect((await readItemSync(item.itemId)).transactionCursor).toBe("cursor-1");
+  });
+
+  for (const webhook_code of ["TRANSACTIONS_REMOVED", "SOMETHING_NEW"]) {
+    test(`${webhook_code} is processed without asking Plaid (a sync covers removals)`, async ({ request }) => {
+      // Arrange: Plaid has a page waiting, which would be stored if it were asked.
+      const item = await linkedItem();
+      await setPlaidSyncPages(item.accessToken, [
+        { added: [plaidTransaction(item.providerAccountId)], next_cursor: "cursor-1" },
+      ]);
+
+      // Act
+      await deliverWebhook(request, { ...syncWebhook(item.plaidItemId), webhook_code });
+
+      // Assert
+      expect(await syncCursorsAskedFor(item.accessToken)).toEqual([]);
+      expect(await readSyncedTransactions(item.itemId)).toEqual([]);
+      expect(await readWebhookEvents(item.plaidItemId)).toMatchObject([{ status: "processed", attempts: 1 }]);
+    });
+  }
 });

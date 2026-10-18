@@ -49,3 +49,9 @@ export async function seedStream(params: {
     },
   });
 }
+
+/** An item's stored streams, by description. */
+export async function readStreams(itemId: string) {
+  const rows = await testDb().recurringStream.findMany({ where: { itemId } });
+  return rows.sort((a, b) => a.description.localeCompare(b.description));
+}

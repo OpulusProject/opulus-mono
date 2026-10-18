@@ -57,3 +57,8 @@ export async function seedCreditLiability(params: {
 
   return seeded;
 }
+
+/** An item's stored liabilities, with the Plaid account each describes left out (an account id is all that identifies it). */
+export async function readLiabilities(itemId: string) {
+  return testDb().accountLiability.findMany({ where: { itemId }, orderBy: { kind: "asc" } });
+}

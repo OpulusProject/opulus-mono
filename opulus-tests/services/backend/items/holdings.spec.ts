@@ -7,6 +7,7 @@ import {
   readHoldings,
 } from "../../../shared/fixtures/index.js";
 import { resetPlaidStub, setPlaidHoldings } from "../../../shared/plaid-stub.js";
+import { answer, apple, cash, holding, microsoft } from "../../../shared/scenarios/plaid-investments.js";
 import { linkInstitution, plaidAccount, updateItemAccounts } from "../../../shared/scenarios/plaid.js";
 
 /** A brokerage account in Plaid's shape, as the stub describes it to the accounts call. */
@@ -29,52 +30,6 @@ async function link(request: APIRequestContext, cookie: string, accountIds: stri
 }
 
 const updateAccounts = updateItemAccounts;
-
-/** Plaid's holdings answer for some accounts, in Plaid's snake_case. */
-const answer = (
-  accountIds: string[],
-  holdings: Record<string, unknown>[],
-  securities: Record<string, unknown>[],
-) => ({
-  response: {
-    accounts: accountIds.map((account_id) => ({ account_id })),
-    holdings,
-    securities,
-  },
-});
-
-const holding = (accountId: string, securityId: string, quantity: number, price: number, costBasis: number | null = null, currency = "USD") => ({
-  account_id: accountId,
-  security_id: securityId,
-  quantity,
-  institution_price: price,
-  institution_price_as_of: "2026-10-14",
-  institution_value: quantity * price,
-  cost_basis: costBasis,
-  iso_currency_code: currency,
-});
-
-const apple = (id: string) => ({
-  security_id: id,
-  name: "Apple Inc.",
-  ticker_symbol: "AAPL",
-  type: "equity",
-  is_cash_equivalent: false,
-  iso_currency_code: "USD",
-  close_price: 189.5,
-  close_price_as_of: "2026-10-14",
-});
-const microsoft = (id: string) => ({ ...apple(id), name: "Microsoft Corp.", ticker_symbol: "MSFT" });
-const cash = (id: string) => ({
-  security_id: id,
-  name: "Cash",
-  ticker_symbol: "CAD",
-  type: "cash",
-  is_cash_equivalent: true,
-  iso_currency_code: "CAD",
-  close_price: null,
-  close_price_as_of: null,
-});
 
 /**
  * This file: what an item's investment holdings look like after the backend
