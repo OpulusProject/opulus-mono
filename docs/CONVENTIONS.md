@@ -279,18 +279,23 @@ with the schemas, so a field that isn't in the schema fails a test.
 
 ## Tests
 
-`opulus-tests` has two kinds of suite, one directory each: `services/<service>` for what a service does itself (no third party) and `integration/<service>` for what needs a real third party. Put a test in the one that matches what it needs.
+`opulus-tests` has four kinds of suite, one directory each: `unit` for pure logic, `services/<service>` for what a service does itself (the third party is a stub), `integration/<service>` for what only a real third party can prove, and `deployment` for whether a service starts, stops and fails as it should. Put a test in the one that matches what it needs.
+
+The business logic is tested in `services` with the third party stubbed. `integration` holds only wiring canaries: one test per real call that proves our code and the third party still understand each other (a link token, an item created from a sandbox public token, one webhook delivered). Before adding a test to `integration`, ask whether the stub could answer it; if so it belongs in `services`.
 
 | Suite | What it covers | Needs |
 | --- | --- | --- |
-| `unit/core` | Pure functions in core that no endpoint can observe (the access-token crypto). The one suite that isn't black-box over HTTP. | Nothing |
+| `unit/core`, `unit/webhooks` | Pure functions that no endpoint can observe or that are cheaper to pin directly: the access-token crypto, money and day arithmetic, account helpers, Plaid error mapping, config checks, the exchange rate converter (its repository replaced), the DTO mappers' arithmetic, the webhook fingerprint and payload schema. The one suite that isn't black-box over HTTP. `test:unit-core` runs both directories. | Nothing |
 | `services/backend`, `services/webhooks` | The service's own behaviour over HTTP: auth, validation, response shape. No third party: Plaid is the stub (`services/backend/stub/plaid.mjs`). The webhook receiver's specs sign webhooks with the stub's key (`postSignedWebhook`), so a webhook is verified, queued and handled for real. | A running service, the Plaid stub and `TEST_DATABASE_URL` |
-| `services/scheduler` | The scheduler's jobs API, and what each job stores, with the job's provider replaced by a stub (`services/scheduler/stub`) | A running scheduler pointed at the stub, Redis, `TEST_DATABASE_URL` |
+| `services/scheduler` | The scheduler's jobs API, the `run-job` script, and what each job stores, with the job's provider replaced by a stub (`services/scheduler/stub`) | A running scheduler pointed at the stub, Redis, `TEST_DATABASE_URL` |
+| `deployment/<service>`, `deployment/config`, `deployment/images`, `deployment/migrations` | Each service starts from source or from its Docker image, refuses an incomplete production configuration, stops cleanly on SIGTERM, fails visibly when a dependency is down, registers its schedules; the migrations apply to an empty database. These run first and gate the rest. | Postgres and Redis (the images and migrations suites bring their own) |
 | `integration/backend` | Real round-trips through Plaid's sandbox | Sandbox credentials |
-| `integration/webhooks` | Plaid's sandbox delivering real webhooks to the real receiver | A public tunnel to the receiver, plus the above |
+| `integration/webhooks` | Plaid's sandbox delivering a real webhook to the real receiver (what the webhook does with Plaid's data is in `services/webhooks`) | A public tunnel to the receiver, plus the above |
 | `integration/scheduler` | A job run against the real provider (Frankfurter), asserting evidence rather than exact rates | A running scheduler with the default provider URL, Redis, `TEST_DATABASE_URL`, network access (no credentials) |
 
 The tests package is type-checked (`pnpm --filter @opulus/tests type-check`, run by the Type Check workflow). What the Plaid stub answers, and what a test tells it to answer, is typed with the Plaid SDK's own types (`Wire<T>` for the stub's complete answers, `Plaid<T>` for the partial objects a test supplies), so a field the SDK does not have fails the check instead of passing against a stub that agrees with our code.
+
+Every suite's Playwright config is `defineSuite({...})` from `shared/suite.ts`: it states only what is its own (project name, timeout, retries in CI, the port of the service it calls).
 
 Rules that apply to all of them:
 - Verify over HTTP. Read the database only to set up a test (for example an
