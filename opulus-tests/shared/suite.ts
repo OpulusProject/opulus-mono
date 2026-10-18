@@ -11,7 +11,12 @@ export interface SuiteOptions {
   project: string;
   /** Per-test timeout, in milliseconds. */
   timeout: number;
-  /** Retries when running in CI (none locally). Default none. */
+  /**
+   * Retries when running in CI (none locally). Default none, which is right for
+   * a suite that runs against stubs: it is deterministic, so a retry only hides
+   * a flaky spec. Only a suite that calls a real third party (integration) sets
+   * it, for that third party's own transient failures.
+   */
   ciRetries?: number;
   /**
    * The port the service under test listens on by default. Give it for a suite
