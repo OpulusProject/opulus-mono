@@ -8,24 +8,26 @@ const PORT = 18291;
 const startBackend = () => startService({ workspace: "opulus-backend", port: PORT, portVariable: "PORT" });
 
 /**
- * This file: the backend stops cleanly on SIGTERM, as a deploy asks it to. It
+ * This file: the backend stops cleanly on SIGTERM or SIGINT (an interrupt, as in a terminal), as a deploy asks it to. It
  * starts a backend of its own and stops that one.
  */
 test.describe("graceful shutdown", () => {
-  test("exits cleanly on SIGTERM and stops accepting connections", async () => {
-    // Arrange
-    const { child, output } = await startBackend();
+  for (const signal of ["SIGTERM", "SIGINT"] as const) {
+    test(`exits cleanly on ${signal} and stops accepting connections`, async () => {
+      // Arrange
+      const { child, output } = await startBackend();
 
-    // Act
-    child.kill("SIGTERM");
-    const code = await exited(child);
+      // Act
+      child.kill(signal);
+      const code = await exited(child);
 
-    // Assert
-    expect(code).toBe(0);
-    expect(output()).toContain("Shutting down gracefully");
-    expect(output()).toContain("Shut down gracefully");
-    await expect(fetch(`http://localhost:${PORT}/health`)).rejects.toThrow();
-  });
+      // Assert
+      expect(code).toBe(0);
+      expect(output()).toContain("Shutting down gracefully");
+      expect(output()).toContain("Shut down gracefully");
+      await expect(fetch(`http://localhost:${PORT}/health`)).rejects.toThrow();
+    });
+  }
 
   test("lets a request that is already running finish before it exits", async () => {
     // Arrange: a sign-in request whose body is half sent when the signal arrives.

@@ -13,23 +13,25 @@ const startScheduler = () =>
   });
 
 /**
- * This file: the scheduler stops on SIGTERM, as a deploy asks it to. It starts
+ * This file: the scheduler stops on SIGTERM or SIGINT (an interrupt, as in a terminal), as a deploy asks it to. It starts
  * a scheduler of its own and stops that one.
  */
 test.describe("scheduler graceful shutdown", () => {
-  test("exits cleanly on SIGTERM and stops accepting connections", async () => {
-    // Arrange
-    const { child, output } = await startScheduler();
+  for (const signal of ["SIGTERM", "SIGINT"] as const) {
+    test(`exits cleanly on ${signal} and stops accepting connections`, async () => {
+      // Arrange
+      const { child, output } = await startScheduler();
 
-    // Act
-    child.kill("SIGTERM");
-    const code = await exited(child);
+      // Act
+      child.kill(signal);
+      const code = await exited(child);
 
-    // Assert
-    expect(code).toBe(0);
-    expect(output()).toContain("Server closed");
-    await expect(fetch(`http://localhost:${PORT}/health`)).rejects.toThrow();
-  });
+      // Assert
+      expect(code).toBe(0);
+      expect(output()).toContain("Server closed");
+      await expect(fetch(`http://localhost:${PORT}/health`)).rejects.toThrow();
+    });
+  }
 
   test("is not held open by a connection a client keeps alive", async () => {
     // Arrange

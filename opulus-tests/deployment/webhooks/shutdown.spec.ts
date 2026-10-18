@@ -7,23 +7,25 @@ const startWebhooks = () =>
   startService({ workspace: "opulus-webhooks", port: PORT, portVariable: "WEBHOOK_PORT" });
 
 /**
- * This file: the webhooks receiver stops on SIGTERM, as a deploy asks it to.
+ * This file: the webhooks receiver stops on SIGTERM or SIGINT (an interrupt, as in a terminal), as a deploy asks it to.
  * It starts a receiver of its own and stops that one.
  */
 test.describe("webhooks graceful shutdown", () => {
-  test("exits cleanly on SIGTERM and stops accepting connections", async () => {
-    // Arrange
-    const { child, output } = await startWebhooks();
+  for (const signal of ["SIGTERM", "SIGINT"] as const) {
+    test(`exits cleanly on ${signal} and stops accepting connections`, async () => {
+      // Arrange
+      const { child, output } = await startWebhooks();
 
-    // Act
-    child.kill("SIGTERM");
-    const code = await exited(child);
+      // Act
+      child.kill(signal);
+      const code = await exited(child);
 
-    // Assert
-    expect(code).toBe(0);
-    expect(output()).toContain("Server closed");
-    await expect(fetch(`http://localhost:${PORT}/health`)).rejects.toThrow();
-  });
+      // Assert
+      expect(code).toBe(0);
+      expect(output()).toContain("Server closed");
+      await expect(fetch(`http://localhost:${PORT}/health`)).rejects.toThrow();
+    });
+  }
 
   test("is not held open by a connection a client keeps alive", async () => {
     // Arrange: one request, whose connection the client keeps open afterwards.
