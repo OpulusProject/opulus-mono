@@ -85,6 +85,23 @@ test.describe("POST /webhook/plaid", () => {
     expect(await readWebhookEvents(itemId)).toHaveLength(2);
   });
 
+  test("handles events that differ only inside a nested field as separate events", async ({ request }) => {
+    // Arrange: two different errors for one item, close together.
+    const itemId = uniqueId("item");
+    const withError = (error_code: string) => ({
+      ...harmlessEvent(itemId),
+      error: { error_type: "ITEM_ERROR", error_code, error_message: error_code },
+    });
+
+    // Act
+    await postSignedWebhook(request, withError("ITEM_LOGIN_REQUIRED"));
+    await postSignedWebhook(request, withError("ITEM_NOT_FOUND"));
+    await waitForWebhookEvents(itemId, "processed", 2);
+
+    // Assert: neither was taken for a repeat of the other.
+    expect(await readWebhookEvents(itemId)).toHaveLength(2);
+  });
+
   test("rejects a body that changed after it was signed (401)", async ({ request }) => {
     const itemId = uniqueId("item");
 
