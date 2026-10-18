@@ -1,16 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { readItemAccessToken } from "../../../shared/db.js";
-import { readItemSync, readSyncedTransactions, seedItemWithAccount, seedUser } from "../../../shared/fixtures/index.js";
+import { readItemSync, readSyncedTransactions, seedLinkedItem } from "../../../shared/fixtures/index.js";
 import { resetPlaidStub, setPlaidSyncPages } from "../../../shared/plaid-stub.js";
 import { plaidTransaction } from "../../../shared/scenarios/plaid-sync.js";
 import { runWebhooksScript } from "../helpers/script.js";
 
-/** A user with one linked item and its account, and the access token the stub knows them by. */
-async function linkedItem() {
-  const user = await seedUser();
-  const item = await seedItemWithAccount(user.id);
-  return { ...item, accessToken: await readItemAccessToken(item.itemId) };
-}
+const linkedItem = seedLinkedItem;
 
 const reconcile = (...args: string[]) => runWebhooksScript("reconcile", args);
 

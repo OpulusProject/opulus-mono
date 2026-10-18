@@ -1,16 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { readItemAccessToken } from "../../../shared/db.js";
-import { seedItemWithAccount, seedUser, readWebhookEvents, readLiabilities, seedCreditLiability } from "../../../shared/fixtures/index.js";
+import { seedItemWithAccount, seedLinkedItem, seedUser, readWebhookEvents, readLiabilities, seedCreditLiability } from "../../../shared/fixtures/index.js";
 import { resetPlaidStub, setPlaidLiabilities } from "../../../shared/plaid-stub.js";
 import { liabilitiesFor } from "../../../shared/scenarios/plaid.js";
 import { deliverWebhook } from "../helpers/fixtures/index.js";
 
-/** A user with one linked item and its account, and the access token the stub knows them by. */
-async function linkedItem() {
-  const user = await seedUser();
-  const item = await seedItemWithAccount(user.id);
-  return { ...item, accessToken: await readItemAccessToken(item.itemId) };
-}
+const linkedItem = seedLinkedItem;
 
 const liabilitiesWebhook = (plaidItemId: string, extra: Record<string, unknown> = {}) => ({
   webhook_type: "LIABILITIES",

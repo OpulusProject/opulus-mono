@@ -1,24 +1,17 @@
 import { expect, test } from "@playwright/test";
 import { uniqueId } from "../../../shared/client.js";
-import { readItemAccessToken } from "../../../shared/db.js";
 import {
   readAccountBalances,
   readItemSync,
   readSyncedTransactions,
   readWebhookEvents,
-  seedItemWithAccount,
-  seedUser,
+  seedLinkedItem,
 } from "../../../shared/fixtures/index.js";
 import { setPlaidSyncPages, syncCursorsAskedFor } from "../../../shared/plaid-stub.js";
 import { plaidTransaction } from "../../../shared/scenarios/plaid-sync.js";
 import { deliverWebhook } from "../helpers/fixtures/index.js";
 
-/** A user with one linked item and its account, and the access token the stub knows them by. */
-async function linkedItem() {
-  const user = await seedUser();
-  const item = await seedItemWithAccount(user.id);
-  return { ...item, accessToken: await readItemAccessToken(item.itemId) };
-}
+const linkedItem = seedLinkedItem;
 
 /** `newTransactions` is in Plaid's payload; it also keeps two webhooks for one item from being taken for a repeat delivery (see plaid.spec.ts). */
 const syncWebhook = (plaidItemId: string, newTransactions = 1) => ({

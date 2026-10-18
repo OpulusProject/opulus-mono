@@ -1,6 +1,7 @@
 import { encryptItemToken } from "@opulus/core";
 import { uniqueId } from "../client.js";
-import { testDb } from "../db.js";
+import { readItemAccessToken, testDb } from "../db.js";
+import { seedUser } from "./users.js";
 
 /**
  * Item / account fixtures.
@@ -154,3 +155,13 @@ export async function readAccountBalances(accountId: string) {
   };
 }
 
+
+/**
+ * A user with one linked item and its account, and the access token the Plaid
+ * stub knows the item by (to queue the pages `/transactions/sync` answers).
+ */
+export async function seedLinkedItem() {
+  const user = await seedUser();
+  const item = await seedItemWithAccount(user.id);
+  return { ...item, userId: user.id, accessToken: await readItemAccessToken(item.itemId) };
+}
