@@ -9,6 +9,7 @@ import router from "@/routes/index.js";
 import {
   config,
   errorHandler,
+  NotFoundError,
   logger,
   prisma,
   requestIdMiddleware,
@@ -20,6 +21,9 @@ import cors from "cors";
 import express, { json, urlencoded } from "express";
 
 const app = express();
+
+// Do not announce the framework in every response.
+app.disable("x-powered-by");
 
 // Trust proxy (Railway uses a reverse proxy)
 // This ensures Express correctly detects HTTPS and sets secure cookies
@@ -98,6 +102,11 @@ app.use(cookieParser());
 // API Routes: nothing under /api is open unless requireApiSession lists it
 app.use("/api", requireApiSession);
 app.use("/api", router);
+
+// Anything under /api that no route answered is a JSON 404, not Express's HTML page.
+app.use("/api", (_req, _res, next) =>
+  next(new NotFoundError("Route not found"))
+);
 
 // Global error handler (must be last middleware)
 app.use(errorHandler);
