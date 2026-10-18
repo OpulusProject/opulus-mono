@@ -69,11 +69,11 @@ const OverviewContent: React.FC<{
 
   return (
     <>
-      {activity.data && <InvestmentStats activity={activity.data} />}
       <PortfolioSummary
         data={holdings.data}
         isRefreshing={holdings.isPlaceholderData}
       />
+      {activity.data && <InvestmentStats activity={activity.data} />}
       <AccountsAndGains
         data={holdings.data}
         isRefreshing={holdings.isPlaceholderData}
