@@ -217,7 +217,7 @@ class HoldingRepository {
         where: { userId, accountId: filters.accountId },
         include: {
           security: true,
-          account: { select: { name: true } },
+          account: { select: { name: true, subtype: true, mask: true } },
           item: { select: { institutionName: true } },
         },
       });

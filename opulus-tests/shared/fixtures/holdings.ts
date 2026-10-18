@@ -42,6 +42,19 @@ export async function seedHolding(params: {
   /** The total paid; null (the default) is "the institution sent none". */
   costBasis?: number | null;
   currency?: string | null;
+  /** Exchange, option and bond details of the security. */
+  details?: Partial<{
+    marketIdentifierCode: string;
+    optionContractType: string;
+    optionExpirationDate: Date;
+    optionStrikePrice: number;
+    optionUnderlyingTicker: string;
+    bondMaturityDate: Date;
+    bondIssueDate: Date;
+    bondFaceValue: number;
+    bondYieldRate: number;
+    bondYieldType: string;
+  }>;
 }) {
   const db = testDb();
   const plaidSecurityId =
@@ -54,6 +67,7 @@ export async function seedHolding(params: {
       name: params.securityName ?? "Seeded security",
       type: params.type ?? "equity",
       isCashEquivalent: params.isCashEquivalent ?? false,
+      ...params.details,
     },
     update: {},
   });
