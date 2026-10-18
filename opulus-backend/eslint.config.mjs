@@ -1,6 +1,7 @@
 import js from "@eslint/js";
 import tsPlugin from "@typescript-eslint/eslint-plugin";
 import globals from "globals";
+import requirePlaidRateLimit from "./eslint-rules/require-plaid-rate-limit.mjs";
 
 export default [
   { ignores: ["dist/**", "node_modules/**", "prisma/migrations/**"] },
@@ -76,5 +77,11 @@ export default [
         },
       ],
     },
+  },
+  {
+    // Every route that changes something carries the Plaid rate limiter.
+    files: ["src/routes/**/*.ts"],
+    plugins: { opulus: { rules: { "require-plaid-rate-limit": requirePlaidRateLimit } } },
+    rules: { "opulus/require-plaid-rate-limit": "error" },
   },
 ];
