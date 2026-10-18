@@ -97,12 +97,12 @@ async function signToken(body: string, options: SignOptions): Promise<string> {
 export async function postSignedWebhook(
   request: APIRequestContext,
   event: Record<string, unknown>,
-  options: SignOptions & { bodyAfterSigning?: string; rawBody?: string } = {},
+  options: SignOptions & { bodyAfterSigning?: string; rawBody?: string; contentType?: string } = {},
 ): ReturnType<APIRequestContext["post"]> {
   const signed = options.rawBody ?? JSON.stringify(event);
   return request.post("/webhook/plaid", {
     headers: {
-      "content-type": "application/json",
+      "content-type": options.contentType ?? "application/json",
       "plaid-verification": await signToken(signed, options),
     },
     // Bytes, so the client sends exactly what was signed (it would re-quote a string that is not JSON).
