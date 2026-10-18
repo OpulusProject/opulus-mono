@@ -3,8 +3,8 @@
  * What the tests ran of one service's own source, from the V8 coverage that Node
  * wrote while they ran (NODE_V8_COVERAGE).
  *
- *   node scripts/coverage-report.mjs <coverage dir> <source dir> <report dir>
- *   node scripts/coverage-report.mjs coverage/webhooks opulus-webhooks/src coverage/webhooks-report
+ *   node scripts/coverage-report.mjs <coverage dir> <source dir> <report dir> [--min <percent>]
+ *   node scripts/coverage-report.mjs coverage/webhooks opulus-webhooks/src coverage/webhooks-report --min 99
  *
  * Each process writes a file of its own, and the processes do not run the same
  * code: the services run through tsx, the tests through Playwright's own
@@ -15,16 +15,20 @@
  * run (`--all`), so a file nothing loaded is all uncovered.
  *
  * Prints the totals and, for each file, the lines that did not run; writes
- * lcov.info to the report dir.
+ * lcov.info to the report dir. With --min, exits 1 if fewer than that percent of
+ * the lines ran.
  */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync, copyFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-const [coverageDir, sourceDir, reportDir] = process.argv.slice(2);
+const args = process.argv.slice(2);
+const minIndex = args.indexOf("--min");
+const min = minIndex === -1 ? undefined : Number(args.splice(minIndex, 2)[1]);
+const [coverageDir, sourceDir, reportDir] = args;
 if (!coverageDir || !sourceDir || !reportDir) {
-  console.error("Usage: coverage-report.mjs <coverage dir> <source dir> <report dir>");
+  console.error("Usage: coverage-report.mjs <coverage dir> <source dir> <report dir> [--min <percent>]");
   process.exit(2);
 }
 
@@ -106,6 +110,10 @@ try {
 
   console.log(`${sourceDir}: ${ran}/${all} lines ran = ${((100 * ran) / all).toFixed(1)}%  (${processes.length} processes recorded)`);
   console.log(gaps.length ? gaps.join("\n") : "Every line ran.");
+  if (min !== undefined && (100 * ran) / all < min) {
+    console.log(`Below the floor of ${min}%.`);
+    process.exitCode = 1;
+  }
 } finally {
   rmSync(work, { recursive: true, force: true });
 }

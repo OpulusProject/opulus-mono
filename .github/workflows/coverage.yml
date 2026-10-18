@@ -10,9 +10,11 @@
 # up what each process ran, mapped back to the TypeScript): the total and the lines
 # that did not run in the job summary, and the lcov file as an artifact.
 #
-# Informational: it gates nothing (a failing suite does not stop the report; the
-# suites have their own workflows that fail), and runs on main after each merge, nightly and
-# on request, not on pull requests, since it runs the suites a second time.
+# Not a pull request gate (a failing suite does not stop the report; the suites
+# have their own workflows that fail). The job fails if fewer than 99% of a
+# service's lines ran, so slippage shows on main and in the nightly run. It runs
+# on main after each merge, nightly and on request, not on pull requests, since
+# it runs the suites a second time.
 
 name: Coverage
 
@@ -171,12 +173,13 @@ jobs:
       - name: Report what ran
         if: always()
         run: |
+          set -o pipefail
           pkill -TERM -f "src/server.ts" || true
           sleep 5
           {
             echo '### ${{ matrix.service }}: lines the tests ran, in opulus-${{ matrix.service }}/src'
             echo '```'
-            node scripts/coverage-report.mjs "coverage/${{ matrix.service }}" "opulus-${{ matrix.service }}/src" "coverage/${{ matrix.service }}-report"
+            node scripts/coverage-report.mjs "coverage/${{ matrix.service }}" "opulus-${{ matrix.service }}/src" "coverage/${{ matrix.service }}-report" --min 99
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
