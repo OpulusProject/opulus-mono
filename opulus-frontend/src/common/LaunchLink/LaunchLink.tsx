@@ -14,9 +14,17 @@ import {
 
 import { useCreateItem } from '@/hooks/items/useCreateItem';
 import { useUpdateItemAccounts } from '@/hooks/items/useUpdateItemAccounts';
+import { useLogLinkEvent } from '@/hooks/linkEvents/useLogLinkEvent';
 import { type UpdateMode, useLinkToken } from '@/hooks/linkTokens/useLinkToken';
 
 import { clearLinkResume, saveLinkResume } from './linkResume';
+
+/**
+ * The Link events worth logging: a session opening, an error, the user leaving,
+ * and the handoff on success. The rest (typing, view changes) are too chatty to
+ * send.
+ */
+const LOGGED_LINK_EVENTS = new Set(['OPEN', 'ERROR', 'EXIT', 'HANDOFF']);
 
 interface LaunchLinkProps {
   /**
@@ -95,6 +103,7 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
   const linkToken = resume?.linkToken ?? tokenData?.linkToken;
   const createItem = useCreateItem();
   const updateItemAccounts = useUpdateItemAccounts();
+  const { mutate: logLinkEvent } = useLogLinkEvent();
 
   // An OAuth bank takes the browser away from this page and back to the
   // Connections page, which reopens Link with the same token: keep it until
@@ -161,14 +170,27 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
     onClose();
   };
 
-  // Event handler for Link events (for analytics/logging)
+  // Report the Link events worth keeping (see LOGGED_LINK_EVENTS) to the backend
   const handleEvent: PlaidLinkOnEvent = (
     eventName: PlaidLinkStableEvent | string,
     metadata: PlaidLinkOnEventMetadata
   ) => {
-    // Log events for debugging/analytics
-    // TODO: Implement proper event logging
-    console.log('Plaid Link Event:', eventName, metadata);
+    if (!LOGGED_LINK_EVENTS.has(eventName)) return;
+
+    logLinkEvent({
+      eventName,
+      mode: itemId ? (updateMode ?? 'reconnect') : 'new',
+      itemId,
+      plaidLinkSessionId: metadata.link_session_id,
+      plaidRequestId: metadata.request_id,
+      institutionId: metadata.institution_id ?? undefined,
+      institutionName: metadata.institution_name ?? undefined,
+      viewName: metadata.view_name ?? undefined,
+      exitStatus: metadata.exit_status ?? undefined,
+      errorType: metadata.error_type ?? undefined,
+      errorCode: metadata.error_code ?? undefined,
+      errorMessage: metadata.error_message?.slice(0, 500),
+    });
   };
 
   // Configure Plaid Link

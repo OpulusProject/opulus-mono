@@ -5,6 +5,7 @@ import accountsRouter from "./accounts.js";
 import institutionsRouter from "./institutions.js";
 import investmentsRouter from "./investments.js";
 import itemsRouter from "./items.js";
+import linkEventsRouter from "./linkEvents.js";
 import linkTokensRouter from "./linkTokens.js";
 import recurringTransactionsRouter from "./recurringTransactions.js";
 import transactionsRouter from "./transactions.js";
@@ -34,6 +35,9 @@ router.use("/investments", investmentsRouter);
 
 // Items routes
 router.use("/items", itemsRouter);
+
+// Link event routes
+router.use("/link-events", linkEventsRouter);
 
 // Link token routes
 router.use("/link-tokens", linkTokensRouter);
