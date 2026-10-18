@@ -166,16 +166,7 @@ export const auth = betterAuth({
     haveIBeenPwned({ enabled: config.breachedPasswordCheck }),
   ],
   // Only allow requests from our frontend
-  trustedOrigins: (() => {
-    const clientUrl = config.clientUrl;
-    if (!clientUrl) {
-      console.warn(
-        "⚠️  CLIENT_URL is not set. Better Auth origin validation may fail."
-      );
-      return [];
-    }
-    return [clientUrl];
-  })(),
+  trustedOrigins: [config.clientUrl],
   advanced: {
     cookiePrefix: "opulus",
     crossSubDomainCookies: {

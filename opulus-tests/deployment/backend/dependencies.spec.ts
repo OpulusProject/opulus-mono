@@ -1,5 +1,11 @@
 import { expect, test } from "@playwright/test";
-import { get, startService, stopService, type RunningService } from "../helpers/service.js";
+import { exited, get, startService, type RunningService } from "../helpers/service.js";
+
+/** Stop it the way a deploy does, so nothing is left holding the port (a kill would leave tsx's child running). */
+async function stopService(service: RunningService) {
+  service.child.kill("SIGTERM");
+  await exited(service.child);
+}
 
 const PORT = 18294;
 
@@ -7,7 +13,8 @@ const PORT = 18294;
  * This file: the backend when Postgres is not there. It still starts and says
  * it is alive (`/health`), but says it is not ready (`/ready`, 503), so a
  * platform keeps traffic away instead of sending it to a backend that cannot
- * answer.
+ * answer. A request that needs the database (checking a session) is refused
+ * as unauthenticated, not answered with a server error.
  */
 test.describe("backend without its database", () => {
   let backend: RunningService;
@@ -30,5 +37,24 @@ test.describe("backend without its database", () => {
     expect(health.status).toBe(200);
     expect(ready.status).toBe(503);
     expect(ready.body.database).toBe("disconnected");
+  });
+
+  test("refuses a request with a session cookie as unauthenticated (401), not with a server error", async () => {
+    // Arrange
+    backend = await startService({
+      workspace: "opulus-backend",
+      port: PORT,
+      portVariable: "PORT",
+      env: { DATABASE_URL: "postgresql://app:app@localhost:1/none?schema=public&connect_timeout=2" },
+    });
+
+    // Act: the session cannot be looked up.
+    const res = await fetch(`http://localhost:${PORT}/api/session`, {
+      headers: { cookie: "opulus.session_token=not-a-real-token" },
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    // Assert
+    expect(res.status).toBe(401);
   });
 });
