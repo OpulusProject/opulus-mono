@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test";
+import { defineSuite } from "../../shared/suite.js";
 
 /**
  * Playwright config for the @opulus/scheduler black-box API suite.
@@ -21,30 +21,16 @@ import { defineConfig } from "@playwright/test";
  * Serial: the jobs share one table (exchange_rate is not per user), so each
  * spec clears it and they must not overlap.
  */
-const BASE_URL = process.env.TEST_BASE_URL ?? "http://localhost:8082";
-const STUB_URL = process.env.STUB_URL ?? "http://localhost:4545";
 
-export default defineConfig({
-  testDir: ".",
-  fullyParallel: false,
-  forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
-  workers: 1,
-  reporter: [["list"]],
+export default defineSuite({
+  project: "api",
   timeout: 60_000,
-  globalTeardown: "./global-teardown.ts",
-
-  use: {
-    baseURL: BASE_URL,
-    extraHTTPHeaders: { accept: "application/json" },
-  },
-
+  ciRetries: 1,
+  port: 8082,
   webServer: {
     command: "node stub/frankfurter.mjs",
-    url: `${STUB_URL}/health`,
+    url: `${process.env.STUB_URL ?? "http://localhost:4545"}/health`,
     reuseExistingServer: true,
     timeout: 10_000,
   },
-
-  projects: [{ name: "api", testMatch: /.*\.spec\.ts$/ }],
 });
