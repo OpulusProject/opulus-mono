@@ -4,6 +4,7 @@ import { expectMatchesSchema, expectValidationError } from "../../../shared/asse
 import { withSession } from "../../../shared/client.js";
 import {
   clearExchangeRates,
+  seedInvestmentTransaction,
   createAuthedUser,
   seedExchangeRates,
   seedHolding,
@@ -59,7 +60,12 @@ async function getHoldings(
  * - counts an investment account with no holdings by its balance, and says it has no holdings
  * - flags a price older than five days as stale, and not one with no date
  * - gives an option's contract and a bond's terms, and exchange
+ * - gives the dividends of the last twelve months in total and per holding, the dividend yield, and the total return (gain plus dividends)
+ * - ranks the holdings by gain as a fraction of what was paid, best first, leaving out those without a cost basis
  * - filters to one account with accountId
+ * - filters to accounts of one subtype, with the summary over just those
+ * - filters to the holdings of one security
+ * - sorts account by account, the largest account first, each account's holdings largest first
  * - contains only the requesting user's holdings, even with another user's accountId
  * - rejects an empty accountId (validation)
  */
@@ -84,6 +90,7 @@ test.describe("GET /api/investments/holdings", () => {
       baseCurrency: "CAD",
       summary: {
         value: 0, accountCount: 0, holdingCount: 0, allocation: [], currencies: [], topHoldingsShare: 0,
+        dividends: 0, dividendYield: 0, totalReturn: 0, totalReturnPercent: null, gainRanking: [],
         costBasis: 0, gain: 0, gainPercent: null, holdingsWithoutCostBasis: 0,
       },
       accounts: [],
@@ -351,6 +358,100 @@ test.describe("GET /api/investments/holdings", () => {
       kind: "bond", option: null,
       bond: { maturityDate: "2030-06-01T00:00:00.000Z", issueDate: "2020-06-01T00:00:00.000Z", faceValue: 5000, yieldRate: 2.75, yieldType: "coupon" },
     });
+  });
+
+  test("gives the dividends of the last twelve months in total and per holding, the dividend yield, and the total return (gain plus dividends)", async ({ request }) => {
+    // Arrange: 1,000 worth, 800 paid (gain 200); XIC paid 30 + 20 this year and 99 two years ago; a 10 USD interest payment (12.50 CAD) belongs to no holding.
+    const { cookie, userId, item } = await setup(request);
+    const base = { userId, itemId: item.itemId, accountId: item.accountId };
+    const xic = await seedHolding({ ...base, tickerSymbol: "XIC", value: 1000, costBasis: 800, currency: "CAD" });
+    const recent = (amount: number, daysAgo: number, extra = {}) =>
+      seedInvestmentTransaction({ ...base, type: "cash", subtype: "dividend", amount: -amount, date: day(-daysAgo), ...extra });
+    await recent(30, 40, { securityId: xic.securityId });
+    await recent(20, 10, { securityId: xic.securityId });
+    await recent(99, 800, { securityId: xic.securityId });
+    await seedInvestmentTransaction({ ...base, type: "cash", subtype: "interest", amount: -10, currency: "USD", date: day(-5) });
+    await seedInvestmentTransaction({ ...base, type: "buy", amount: 500, securityId: xic.securityId });
+
+    // Act
+    const { summary, holdings } = await getHoldings(request, cookie);
+
+    // Assert
+    expect(holdings[0]!.dividends).toBe(50);
+    expect(summary).toMatchObject({ gain: 200, dividends: 62.5, totalReturn: 262.5 });
+    expect(summary.dividendYield).toBeCloseTo(62.5 / 1000, 6);
+    expect(summary.totalReturnPercent).toBeCloseTo(262.5 / 800, 10);
+  });
+
+  test("ranks the holdings by gain as a fraction of what was paid, best first, leaving out those without a cost basis", async ({ request }) => {
+    // Arrange: +50%, +10%, -20%, and one with no cost basis. Eight more with small gains push the list past six.
+    const { cookie, userId, item } = await setup(request);
+    const base = { userId, itemId: item.itemId, accountId: item.accountId, currency: "CAD" };
+    const ids: Record<string, string> = {};
+    for (const [tickerSymbol, value, costBasis] of [["A", 150, 100], ["B", 110, 100], ["C", 80, 100], ["D", 100, null]] as const) {
+      ids[tickerSymbol] = (await seedHolding({ ...base, tickerSymbol, value, costBasis })).id;
+    }
+    for (let i = 0; i < 8; i++) {
+      ids[`S${i}`] = (await seedHolding({ ...base, tickerSymbol: `S${i}`, value: 100 + i, costBasis: 100 })).id;
+    }
+
+    // Act
+    const { summary } = await getHoldings(request, cookie);
+
+    // Assert: A (+50%), B (+10%), S7 (+7%), S6, S5, S4: six in all, D never.
+    expect(summary.gainRanking).toEqual([ids.A, ids.B, ids.S7, ids.S6, ids.S5, ids.S4]);
+  });
+
+  test("filters to accounts of one subtype, with the summary over just those", async ({ request }) => {
+    // Arrange: a TFSA (setup) and an RRSP, 300 and 700.
+    const { cookie, userId, item } = await setup(request);
+    const rrsp = await seedItemWithAccount(userId, { account: { type: "investment", subtype: "rrsp" } });
+    await seedHolding({ userId, itemId: item.itemId, accountId: item.accountId, tickerSymbol: "T", value: 300, currency: "CAD" });
+    await seedHolding({ userId, itemId: rrsp.itemId, accountId: rrsp.accountId, tickerSymbol: "R", value: 700, currency: "CAD" });
+
+    // Act
+    const { holdings, summary, accounts } = await getHoldings(request, cookie, "?accountSubtype=rrsp");
+
+    // Assert
+    expect(holdings.map((h) => h.security.tickerSymbol)).toEqual(["R"]);
+    expect(accounts.map((a) => a.id)).toEqual([rrsp.accountId]);
+    expect(summary).toMatchObject({ value: 700, accountCount: 1 });
+  });
+
+  test("filters to the holdings of one security", async ({ request }) => {
+    // Arrange: the same security held in two accounts, and another security.
+    const { cookie, userId, item } = await setup(request);
+    const other = await seedItemWithAccount(userId, { account: { type: "investment" } });
+    const one = await seedHolding({ userId, itemId: item.itemId, accountId: item.accountId, plaidSecurityId: "sec_shared", tickerSymbol: "SH", value: 100, currency: "CAD" });
+    await seedHolding({ userId, itemId: other.itemId, accountId: other.accountId, plaidSecurityId: "sec_shared", tickerSymbol: "SH", value: 200, currency: "CAD" });
+    await seedHolding({ userId, itemId: item.itemId, accountId: item.accountId, tickerSymbol: "ELSE", value: 50, currency: "CAD" });
+
+    // Act
+    const { holdings, summary } = await getHoldings(request, cookie, `?securityId=${one.securityId}`);
+
+    // Assert
+    expect(holdings.map((h) => h.value)).toEqual([200, 100]);
+    expect(summary.holdingCount).toBe(2);
+  });
+
+  test("sorts account by account, the largest account first, each account's holdings largest first", async ({ request }) => {
+    // Arrange: account X holds 300 + 100, account Y holds 500 and 50; by value alone Y500, X300, X100, Y50.
+    const { cookie, userId, item } = await setup(request);
+    const y = await seedItemWithAccount(userId, { account: { type: "investment" } });
+    const x = { userId, itemId: item.itemId, accountId: item.accountId, currency: "CAD" };
+    const yy = { userId, itemId: y.itemId, accountId: y.accountId, currency: "CAD" };
+    await seedHolding({ ...x, tickerSymbol: "X300", value: 300 });
+    await seedHolding({ ...x, tickerSymbol: "X100", value: 100 });
+    await seedHolding({ ...yy, tickerSymbol: "Y500", value: 500 });
+    await seedHolding({ ...yy, tickerSymbol: "Y50", value: 50 });
+
+    // Act
+    const byValue = await getHoldings(request, cookie);
+    const byAccount = await getHoldings(request, cookie, "?sort=account");
+
+    // Assert: X is worth 400 and Y 550, so Y comes first.
+    expect(byValue.holdings.map((h) => h.security.tickerSymbol)).toEqual(["Y500", "X300", "X100", "Y50"]);
+    expect(byAccount.holdings.map((h) => h.security.tickerSymbol)).toEqual(["Y500", "Y50", "X300", "X100"]);
   });
 
   test("filters to one account with accountId", async ({ request }) => {

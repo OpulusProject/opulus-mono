@@ -37,13 +37,17 @@ export async function seedInvestmentTransaction(params: {
   date?: string;
   name?: string;
   tickerSymbol?: string;
+  /** An existing security (our id, as `seedHolding` returns it) instead of a new one. */
+  securityId?: string;
   quantity?: number;
   price?: number;
   fees?: number | null;
   currency?: string | null;
 }) {
   const db = testDb();
-  const security = params.tickerSymbol
+  const security = params.securityId
+    ? { id: params.securityId }
+    : params.tickerSymbol
     ? await db.security.create({
         data: {
           plaidSecurityId: `sec_${Math.random().toString(36).slice(2)}`,
