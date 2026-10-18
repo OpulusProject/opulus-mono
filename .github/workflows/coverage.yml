@@ -1,0 +1,185 @@
+# How much of each service's own code the tests run, all of them together.
+#
+# For each of the backend, the webhook receiver and the scheduler, one job runs
+# everything that exercises it: the unit tests, the service-api suite against the
+# running service, and the deployment suite (which starts the service itself and
+# stops it, breaks its dependencies, and so on), with Node recording which code
+# ran (NODE_V8_COVERAGE, no instrumentation). The processes the specs start,
+# scripts included, record into the same place. A report of the service's own
+# source (opulus-<service>/src) follows (scripts/coverage-report.mjs, which adds
+# up what each process ran, mapped back to the TypeScript): the total and the lines
+# that did not run in the job summary, and the lcov file as an artifact.
+#
+# Informational: it gates nothing, and runs on main after each merge, nightly and
+# on request, not on pull requests, since it runs the suites a second time.
+
+name: Coverage
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "15 8 * * *" # 08:15 UTC nightly
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  coverage:
+    name: ${{ matrix.service }} coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: backend
+            port: "8080"
+            stub: plaid
+          - service: webhooks
+            port: "8081"
+            stub: plaid
+          - service: scheduler
+            port: "8082"
+            stub: frankfurter
+
+    env:
+      DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      TEST_DATABASE_URL: postgresql://app:app_dev@localhost:5432/app_test?schema=public
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
+      BETTER_AUTH_SECRET: ci-coverage-secret-not-for-production
+      ITEM_TOKEN_ENCRYPTION_KEY: Y2ktdGVzdC1vbmx5LW5vdC1hLXJlYWwta2V5LTAwMDA=
+      CLIENT_URL: http://localhost:5173
+      NODE_ENV: test
+      BREACHED_PASSWORD_CHECK: "off"
+      RATE_LIMIT_PER_IP: "100000"
+      PLAID_CLIENT_ID: ci-test
+      PLAID_SECRET: ci-test
+      PLAID_ENV: sandbox
+      PLAID_BASE_URL: http://localhost:4546
+      PLAID_REDIRECT_URI: http://localhost:5173/settings/connections
+      PORT: "8080"
+      WEBHOOK_PORT: "8081"
+      SCHEDULER_PORT: "8082"
+      SCHEDULER_ADMIN_TOKEN: ci-coverage-token-not-a-secret
+      SCHEDULER_RUN_ON_START: "false"
+      FRANKFURTER_BASE_URL: http://localhost:4545/v1
+      STUB_URL: http://localhost:4545
+      TEST_BASE_URL: http://localhost:${{ matrix.port }}
+      # Where Node writes what ran. Set for the service and for every test step,
+      # so the processes the specs start are recorded too.
+      NODE_V8_COVERAGE: ${{ github.workspace }}/coverage/${{ matrix.service }}
+
+    services:
+      db:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app_dev
+          POSTGRES_DB: app_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d app_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @opulus/core prisma:generate
+
+      - name: Build core package
+        run: pnpm --filter @opulus/core build
+
+      - name: Apply database migrations
+        run: pnpm --filter @opulus/core exec prisma migrate deploy --schema=./prisma/schema.prisma
+
+      - name: Start the stub of the service's third party
+        run: |
+          if [ "${{ matrix.stub }}" = "plaid" ]; then
+            node opulus-tests/services/backend/stub/plaid.mjs &
+            url=http://localhost:4546/health
+          else
+            node opulus-tests/services/scheduler/stub/frankfurter.mjs &
+            url=http://localhost:4545/health
+          fi
+          for i in $(seq 1 30); do
+            curl -sf "$url" >/dev/null && exit 0
+            sleep 1
+          done
+          echo "The stub did not start in time" >&2
+          exit 1
+
+      # Through tsx's own binary, not `pnpm exec`: a wrapper in between can take
+      # the signal that makes the service write what it ran.
+      - name: Boot the ${{ matrix.service }} service
+        run: |
+          (cd opulus-${{ matrix.service }} && node_modules/.bin/tsx src/server.ts) &
+          for i in $(seq 1 60); do
+            curl -sf "$TEST_BASE_URL/health" >/dev/null && exit 0
+            sleep 1
+          done
+          echo "The service did not become healthy in time" >&2
+          exit 1
+
+      - name: Run the unit tests
+        run: pnpm --filter @opulus/tests test:unit-core
+
+      - name: Run the service-api suite
+        run: pnpm --filter @opulus/tests test:services-${{ matrix.service }}
+
+      - name: Run the deployment suite
+        run: pnpm --filter @opulus/tests test:deployment-${{ matrix.service }}
+
+      # The service is stopped with SIGTERM so it writes what it ran on the way out.
+      - name: Report what ran
+        if: always()
+        run: |
+          pkill -TERM -f "src/server.ts" || true
+          sleep 5
+          {
+            echo '### ${{ matrix.service }}: lines the tests ran, in opulus-${{ matrix.service }}/src'
+            echo '```'
+            node scripts/coverage-report.mjs "coverage/${{ matrix.service }}" "opulus-${{ matrix.service }}/src" "coverage/${{ matrix.service }}-report"
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.service }}
+          path: coverage/${{ matrix.service }}-report
+          if-no-files-found: ignore
