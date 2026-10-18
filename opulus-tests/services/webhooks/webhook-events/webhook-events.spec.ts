@@ -1,6 +1,3 @@
-import { execFile } from "node:child_process";
-import path from "node:path";
-import { promisify } from "node:util";
 import { expect, test } from "@playwright/test";
 import { uniqueId } from "../../../shared/client.js";
 import {
@@ -13,8 +10,7 @@ import {
   jobState,
   removeJob,
 } from "../helpers/queue.js";
-
-const run = promisify(execFile);
+import { runWebhooksScript } from "../helpers/script.js";
 
 /** A TRANSACTIONS webhook for an item we do not have: its handler always fails. */
 const failingEvent = (itemId: string) => ({
@@ -30,21 +26,7 @@ const unhandledEvent = (itemId: string) => ({
   item_id: itemId,
 });
 
-/** Run the replay script the way an operator would. */
-async function replay(eventId: string) {
-  const repoRoot = path.resolve(process.cwd(), "..");
-  try {
-    const { stdout } = await run(
-      "pnpm",
-      ["--filter", "@opulus/webhooks", "replay", eventId],
-      { cwd: repoRoot, env: process.env },
-    );
-    return { code: 0, output: stdout };
-  } catch (error) {
-    const e = error as { code?: number; stdout?: string; stderr?: string };
-    return { code: e.code ?? 1, output: `${e.stdout ?? ""}${e.stderr ?? ""}` };
-  }
-}
+const replay = (eventId: string) => runWebhooksScript("replay", [eventId]);
 
 /**
  * This file: the audit trail of webhooks. The jobs are put on the queue directly
