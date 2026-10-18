@@ -12,6 +12,7 @@ const router: ReturnType<typeof Router> = Router();
  * Link event routes
  * All routes require authentication
  */
+// eslint-disable-next-line opulus/require-plaid-rate-limit -- only stores the event the browser reports; it never calls Plaid
 router.post(
   "/",
   requireSession,
