@@ -25,7 +25,6 @@ import { defineSuite } from "../../shared/suite.js";
 export default defineSuite({
   project: "api",
   timeout: 60_000,
-  ciRetries: 1,
   port: 8082,
   webServer: {
     command: "node stub/frankfurter.mjs",

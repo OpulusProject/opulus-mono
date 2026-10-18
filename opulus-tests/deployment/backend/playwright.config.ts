@@ -19,5 +19,4 @@ import { defineSuite } from "../../shared/suite.js";
 export default defineSuite({
   project: "deployment",
   timeout: 60_000,
-  ciRetries: 1,
 });

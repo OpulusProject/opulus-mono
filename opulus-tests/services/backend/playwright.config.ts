@@ -21,6 +21,5 @@ import { defineSuite } from "../../shared/suite.js";
 export default defineSuite({
   project: "api",
   timeout: 30_000,
-  ciRetries: 2,
   port: 8080,
 });
