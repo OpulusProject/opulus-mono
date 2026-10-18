@@ -1,6 +1,5 @@
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { uniqueIp, withSession } from "../../../shared/client.js";
-import { expectStatus } from "../../../shared/assertions.js";
 import { createUserWithTwoFactor } from "../../../shared/fixtures/index.js";
 
 /**
@@ -45,23 +44,37 @@ const DISABLED: Array<{ method: "GET" | "POST"; path: string; why: string }> = [
 ];
 
 /**
- * This file: the Better Auth routes that are switched off answer 404.
+ * This file: the Better Auth routes that are switched off answer 404. One
+ * signed-in user (two-factor on, as every user will be) tries each, with and
+ * without their session, and the test names every route that answered anything
+ * else.
+ *
+ * Test cases:
+ * - every switched-off route answers 404, to a signed-in user and to nobody alike
  */
 test.describe("auth routes that are switched off", () => {
-  for (const { method, path, why } of DISABLED) {
-    test(`${method} /api/auth${path} answers 404 (${why})`, async ({ request }) => {
-      // Arrange: a signed-in user (two-factor on, as every user will be).
-      const user = await createUserWithTwoFactor(request);
-      const send = (headers: Record<string, string>) =>
-        request.fetch(`/api/auth${path}`, {
+  test("every switched-off route answers 404, to a signed-in user and to nobody alike", async ({ request }) => {
+    const user = await createUserWithTwoFactor(request);
+    const statusOf = async (method: "GET" | "POST", path: string, headers: Record<string, string>) =>
+      (
+        await request.fetch(`/api/auth${path}`, {
           method,
           headers,
           ...(method === "POST" ? { data: {} } : {}),
-        });
+        })
+      ).status();
 
-      // Act + Assert: gone for a signed-in user, and for nobody alike.
-      await expectStatus(await send(withSession(user.cookie)), 404);
-      await expectStatus(await send({ "x-forwarded-for": uniqueIp() }), 404);
-    });
-  }
+    const wrong: string[] = [];
+    for (const { method, path, why } of DISABLED) {
+      for (const [who, headers] of [
+        ["signed in", withSession(user.cookie)],
+        ["signed out", { "x-forwarded-for": uniqueIp() }],
+      ] as const) {
+        const status = await statusOf(method, path, headers);
+        if (status !== 404) wrong.push(`${method} /api/auth${path} (${why}) answered ${status} to a user who is ${who}`);
+      }
+    }
+
+    expect(wrong, wrong.join("\n")).toEqual([]);
+  });
 });

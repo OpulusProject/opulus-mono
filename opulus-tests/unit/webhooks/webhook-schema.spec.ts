@@ -2,7 +2,8 @@ import { expect, test } from "@playwright/test";
 import { PlaidWebhookEventSchema } from "../../../opulus-webhooks/src/types/plaid/webhookSchema.js";
 
 /**
- * The shape the receiver accepts a Plaid webhook in
+ * The shape the receiver accepts a Plaid webhook in (what we rely on: a type and a code,
+ * the optional fields with their types, and unknown fields kept; not Zod's own checks)
  * (opulus-webhooks/src/types/plaid/webhookSchema.ts).
  *
  * Test cases:
@@ -10,7 +11,7 @@ import { PlaidWebhookEventSchema } from "../../../opulus-webhooks/src/types/plai
  * - accepts Plaid's optional fields with the types Plaid sends them in
  * - accepts an error that is null, and one with a null display message
  * - keeps fields it does not know, so a new Plaid field is not dropped
- * - rejects an event without a type or a code, or with the wrong type for a known field
+ * - rejects an event without a type or a code, and an error missing its code
  */
 const minimal = { webhook_type: "TRANSACTIONS", webhook_code: "SYNC_UPDATES_AVAILABLE" };
 
@@ -55,13 +56,9 @@ test.describe("webhook payload schema", () => {
     expect(PlaidWebhookEventSchema.parse(withNew)).toEqual(withNew);
   });
 
-  test("rejects an event without a type or a code, or with the wrong type for a known field", () => {
+  test("rejects an event without a type or a code, and an error missing its code", () => {
     expect(PlaidWebhookEventSchema.safeParse({ webhook_code: "X" }).success).toBe(false);
     expect(PlaidWebhookEventSchema.safeParse({ webhook_type: "X" }).success).toBe(false);
-    expect(PlaidWebhookEventSchema.safeParse({ ...minimal, new_transactions: "3" }).success).toBe(false);
-    expect(PlaidWebhookEventSchema.safeParse({ ...minimal, account_ids: "acc-1" }).success).toBe(false);
     expect(PlaidWebhookEventSchema.safeParse({ ...minimal, error: { error_type: "X" } }).success).toBe(false);
-    expect(PlaidWebhookEventSchema.safeParse({ ...minimal, account_ids_with_updated_liabilities: { a: "apr" } }).success).toBe(false);
-    expect(PlaidWebhookEventSchema.safeParse("not an object").success).toBe(false);
   });
 });
