@@ -41,6 +41,7 @@ async function getActivity(request: Parameters<typeof createAuthedUser>[0], cook
  * - classifies cash by subtype: dividend and interest as dividends, deposits and contributions as added, withdrawals as removed, the rest as other
  * - filters by kind, including other
  * - filters by account
+ * - filters by security
  * - filters by dates, inclusive of both days
  * - converts a USD amount to CAD at today's rate
  * - pages the list and counts the total
@@ -176,6 +177,20 @@ test.describe("GET /api/investments/activity", () => {
 
     // Assert
     expect(items.map((i) => i.description)).toEqual(["there"]);
+  });
+
+  test("filters by security", async ({ request }) => {
+    // Arrange
+    const { cookie, base } = await setup(request);
+    await seedInvestmentTransaction({ ...base, type: "buy", amount: 1, tickerSymbol: "AAPL", name: "apple" });
+    await seedInvestmentTransaction({ ...base, type: "buy", amount: 1, tickerSymbol: "MSFT", name: "microsoft" });
+    const apple = (await getActivity(request, cookie)).items.find((i) => i.description === "apple")!;
+
+    // Act
+    const { items } = await getActivity(request, cookie, `?securityId=${apple.security!.id}`);
+
+    // Assert
+    expect(items.map((i) => i.description)).toEqual(["apple"]);
   });
 
   test("filters by dates, inclusive of both days", async ({ request }) => {

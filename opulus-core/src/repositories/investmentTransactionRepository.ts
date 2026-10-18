@@ -15,6 +15,8 @@ import {
 
 export interface ActivityFilters {
   accountId?: string;
+  /** Only this security's transactions (our security id). */
+  securityId?: string;
   kind?: ActivityKind;
   /** First day, inclusive. */
   from?: Date;
@@ -59,10 +61,11 @@ function activityWhere(
   userId: string,
   filters: ActivityFilters
 ): Prisma.InvestmentTransactionWhereInput {
-  const { accountId, kind, from, to } = filters;
+  const { accountId, securityId, kind, from, to } = filters;
   return {
     userId,
     ...(accountId && { accountId }),
+    ...(securityId && { securityId }),
     ...((from || to) && {
       date: {
         ...(from && { gte: from }),

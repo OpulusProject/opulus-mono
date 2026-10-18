@@ -13,6 +13,8 @@ import { z } from "zod";
 export const getActivityQuerySchema = z.object({
   /** Only this account's activity (our account id). */
   accountId: z.string().min(1).optional(),
+  /** Only this security's activity (our security id, as holdings give it). */
+  securityId: z.string().min(1).optional(),
   kind: z.enum(ACTIVITY_KINDS).optional(),
   /** First day, inclusive. */
   startDate: optionalDate,
@@ -33,12 +35,12 @@ export async function getActivityController(
   res: Response<ActivityResponse>
 ) {
   const session = getRequestSession(res);
-  const { accountId, kind, startDate, endDate, page, limit } =
+  const { accountId, securityId, kind, startDate, endDate, page, limit } =
     getValidatedQuery<typeof getActivityQuerySchema>(req);
 
   const data = await getActivity({
     userId: session.user.id,
-    filters: { accountId, kind, from: startDate, to: endDate },
+    filters: { accountId, securityId, kind, from: startDate, to: endDate },
     page: page ?? 1,
     limit: limit ?? 50,
   });
