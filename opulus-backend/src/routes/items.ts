@@ -33,6 +33,6 @@ router.post(
   updateItemAccountsController
 );
 
-router.delete("/:id", requireSession, deleteItemController);
+router.delete("/:id", requireSession, plaidRateLimit, deleteItemController);
 
 export default router;
