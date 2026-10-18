@@ -40,4 +40,6 @@ export const holdingsSearchSchema = z.object({
 export const overviewSearchSchema = z.object({
   /** Only this account (our account id). */
   account: z.string().optional().catch(undefined),
+  /** The holding whose sheet is open (its id). */
+  holding: z.string().optional().catch(undefined),
 });

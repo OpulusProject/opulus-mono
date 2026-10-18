@@ -19,21 +19,21 @@ const ROWS = 5;
 
 interface AccountsAndGainsProps {
   data: HoldingsResponse['data'];
-  /** The account the page is limited to, which a link keeps. */
-  account: string | undefined;
   /** The rows shown are the previous ones, while new ones load. */
   isRefreshing?: boolean;
+  /** Open a holding's sheet, on this page. */
+  onOpenHolding: (holdingId: string) => void;
 }
 
 /**
  * Two short lists side by side: what each account is worth, and what each
- * holding has gained. Each row opens the Holdings page, on that account or on
- * that holding's sheet.
+ * holding has gained. An account opens the Holdings page, limited to it; a
+ * holding opens its sheet over this page.
  */
 export const AccountsAndGains: React.FC<AccountsAndGainsProps> = ({
   data,
-  account,
   isRefreshing = false,
+  onOpenHolding,
 }) => {
   const navigate = useNavigate();
 
@@ -52,12 +52,7 @@ export const AccountsAndGains: React.FC<AccountsAndGainsProps> = ({
       <GainByHolding
         data={data}
         isRefreshing={isRefreshing}
-        onOpen={(holding) =>
-          void navigate({
-            to: '/investments/holdings',
-            search: { account, holding },
-          })
-        }
+        onOpen={onOpenHolding}
       />
     </div>
   );

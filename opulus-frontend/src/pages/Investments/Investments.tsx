@@ -5,6 +5,7 @@ import { List, ListError } from '@/common/List';
 import { useHoldings } from '@/hooks/investments/useHoldings';
 
 import { AccountsAndGains } from './AccountsAndGains';
+import { HoldingSheet } from './HoldingSheet';
 import { InvestmentsFrame } from './InvestmentsFrame';
 import { PortfolioSummary } from './PortfolioSummary';
 import type { OverviewSearch } from './searchSchema';
@@ -28,16 +29,27 @@ export const Investments: React.FC = () => {
         })
       }
     >
-      <OverviewContent account={search.account} />
+      <OverviewContent
+        account={search.account}
+        holding={search.holding}
+        onHoldingChange={(holding) =>
+          void navigate({
+            search: (previous: OverviewSearch) => ({ ...previous, holding }),
+            replace: true,
+          })
+        }
+      />
     </InvestmentsFrame>
   );
 };
 
 // Its own component so that its queries wait until the page knows something is
 // connected.
-const OverviewContent: React.FC<{ account: string | undefined }> = ({
-  account,
-}) => {
+const OverviewContent: React.FC<{
+  account: string | undefined;
+  holding: string | undefined;
+  onHoldingChange: (holding: string | undefined) => void;
+}> = ({ account, holding, onHoldingChange }) => {
   const holdings = useHoldings({ accountId: account });
 
   if (holdings.isLoading) return <List isLoading aria-label="Loading" />;
@@ -60,8 +72,13 @@ const OverviewContent: React.FC<{ account: string | undefined }> = ({
       />
       <AccountsAndGains
         data={holdings.data}
-        account={account}
         isRefreshing={holdings.isPlaceholderData}
+        onOpenHolding={onHoldingChange}
+      />
+      <HoldingSheet
+        data={holdings.data}
+        holdingId={holding}
+        onClose={() => onHoldingChange(undefined)}
       />
     </>
   );
