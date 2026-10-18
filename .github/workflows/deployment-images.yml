@@ -3,7 +3,17 @@
 # ready, and exits 0 when stopped. The other suites run the services from source,
 # so none of them would notice a broken Dockerfile.
 #
-# Slow (three image builds), so it is its own workflow.
+# Building an image is the slow part, so:
+#   - `changes` works out which services' images a pull request can affect (what
+#     goes into an image: the service's folder, opulus-core, the lockfile and
+#     workspace manifests, the Dockerfiles, the root .dockerignore, this
+#     workflow and the image suite), and only those are built. Every other
+#     event (a merge to main, a manual run) tests all of them.
+#   - the images are built in parallel, one job each, with BuildKit's layer
+#     cache kept in GitHub Actions' cache, so the dependency install is reused
+#     until the lockfile or a package manifest changes.
+#   - the workflow always runs, even when no image is affected, so it can be made
+#     a required check later without a skipped workflow blocking the merge.
 
 name: Docker Image Tests
 
@@ -12,15 +22,74 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: images-${{ github.ref }}
+  # Superseded PR runs are cancelled; runs on main are not.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
+  changes:
+    name: Which images changed
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      services: ${{ steps.detect.outputs.services }}
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Work out which images to test
+        id: detect
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          all='["backend","webhooks","scheduler"]'
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "services=$all" >> "$GITHUB_OUTPUT"
+            echo "Not a pull request: all images."
+            exit 0
+          fi
+
+          files=$(git diff --name-only "$BASE_SHA...$HEAD_SHA")
+          echo "Changed files:"; echo "$files"
+
+          # Anything every image is built from.
+          shared='^(opulus-core/|package\.json$|pnpm-lock\.yaml$|pnpm-workspace\.yaml$|\.dockerignore$|\.github/workflows/deployment-images\.yml$|opulus-tests/deployment/images/)'
+          if echo "$files" | grep -Eq "$shared"; then
+            echo "services=$all" >> "$GITHUB_OUTPUT"
+            echo "A shared input changed: all images."
+            exit 0
+          fi
+
+          picked=""
+          for service in backend webhooks scheduler; do
+            if echo "$files" | grep -Eq "^opulus-$service/"; then
+              picked="$picked\"$service\","
+            fi
+          done
+          echo "services=[${picked%,}]" >> "$GITHUB_OUTPUT"
+          echo "Images to test: [${picked%,}]"
+
   images:
-    name: Docker image tests
+    name: ${{ matrix.service }} image
+    needs: changes
+    if: needs.changes.outputs.services != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.changes.outputs.services) }}
 
     env:
       # The containers reach these through host.docker.internal (the suite rewrites "localhost").
@@ -29,6 +98,9 @@ jobs:
       REDIS_PORT: "6379"
       BETTER_AUTH_SECRET: ci-image-tests-secret-not-for-production
       CLIENT_URL: http://localhost:5173
+      # Built below with a layer cache; the suite tests that image.
+      IMAGES_PREBUILT: "1"
+      IMAGE_SERVICES: ${{ matrix.service }}
 
     services:
       db:
@@ -57,6 +129,21 @@ jobs:
     steps:
       - name: Check out repo
         uses: actions/checkout@v7
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # The layer cache is per service and per branch family: a pull request
+      # reads main's cache when it has none of its own.
+      - name: Build the ${{ matrix.service }} image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: opulus-${{ matrix.service }}/Dockerfile
+          tags: opulus-deployment-test-${{ matrix.service }}
+          load: true
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v6

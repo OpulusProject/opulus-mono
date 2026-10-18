@@ -1,0 +1,24 @@
+# The build context of every service image is the repository root (the
+# Dockerfiles copy opulus-core and the service from it). Without this file the
+# whole working tree is sent to the builder, and a change to any file in it, even
+# one the image never copies, can invalidate the cached layers.
+#
+# Dependencies and build output are rebuilt inside the image.
+**/node_modules
+**/dist
+**/coverage
+# Local settings and secrets must never be baked into an image.
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+**/.DS_Store
+# Not part of any service image.
+.git
+.github
+docs
+ops
+opulus-tests
+opulus-frontend
+**/bruno
+**/*.md
