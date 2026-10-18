@@ -14,13 +14,16 @@ import {
 const day = (offset = 0) =>
   new Date(Date.now() + offset * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
+/** A fraction as the API rounds it (6 places). */
+const r6 = (x: number) => Math.round(x * 1e6) / 1e6;
+
 /** A user with an investment account (and its item). */
 async function setup(request: Parameters<typeof createAuthedUser>[0]) {
   const { cookie, userId } = await createAuthedUser(request);
   const item = await seedItemWithAccount(userId, {
     institutionName: "Maple Brokerage",
     accountName: "TFSA",
-    account: { type: "investment", subtype: "tfsa" },
+    account: { type: "investment", subtype: "tfsa", mask: "7714" },
   });
   return { cookie, userId, item };
 }
@@ -38,9 +41,27 @@ async function getHoldings(
 
 /**
  * This file: the holdings endpoint: each holding's value, cost basis and gain
- * (as an amount and as a fraction), and what they add up to in CAD. Exchange
- * rates are seeded (a USD is 1.25 CAD) because this file clears and seeds the
- * shared table itself.
+ * (as an amount and as a fraction), and what they add up to in CAD, split by
+ * kind, currency and account. Exchange rates are seeded (a USD is 1.25 CAD)
+ * because this file clears and seeds the shared table itself.
+ *
+ * Test cases:
+ * - gives nothing for a user with no holdings
+ * - gives a holding's value, cost basis, gain and gain as a fraction, with its security and account
+ * - a holding that lost value has a negative gain and a negative fraction
+ * - gives no gain for a holding the institution sent no cost basis for
+ * - adds the holdings up in CAD, converting USD at today's rate, and counts the gain only over those with a cost basis
+ * - lists the largest holding first, by its value in CAD
+ * - splits the value by kind, largest first, with each kind's share
+ * - splits the value by currency, converted to CAD, with each currency's share
+ * - gives each holding's share of the total and the share of the three largest that are not cash
+ * - gives each account's value, share and gain, largest first
+ * - counts an investment account with no holdings by its balance, and says it has no holdings
+ * - flags a price older than five days as stale, and not one with no date
+ * - gives an option's contract and a bond's terms, and exchange
+ * - filters to one account with accountId
+ * - contains only the requesting user's holdings, even with another user's accountId
+ * - rejects an empty accountId (validation)
  */
 test.describe("GET /api/investments/holdings", () => {
   test.beforeAll(async () => {
@@ -61,7 +82,11 @@ test.describe("GET /api/investments/holdings", () => {
 
     expect(data).toEqual({
       baseCurrency: "CAD",
-      summary: { value: 0, costBasis: 0, gain: 0, gainPercent: null, holdingsWithoutCostBasis: 0 },
+      summary: {
+        value: 0, accountCount: 0, holdingCount: 0, allocation: [], currencies: [], topHoldingsShare: 0,
+        costBasis: 0, gain: 0, gainPercent: null, holdingsWithoutCostBasis: 0,
+      },
+      accounts: [],
       holdings: [],
     });
   });
@@ -87,7 +112,8 @@ test.describe("GET /api/investments/holdings", () => {
       accountId: item.accountId,
       accountName: "TFSA",
       institutionName: "Maple Brokerage",
-      security: { tickerSymbol: "XEQT", name: "iShares Core Equity ETF", type: "etf", isCashEquivalent: false },
+      accountSubtype: "tfsa",
+      security: { tickerSymbol: "XEQT", name: "iShares Core Equity ETF", type: "etf", kind: "etf", isCashEquivalent: false, option: null, bond: null },
       quantity: 50,
       price: 38.05,
       priceAsOf: "2026-10-14T00:00:00.000Z",
@@ -127,7 +153,7 @@ test.describe("GET /api/investments/holdings", () => {
     const { holdings, summary } = await getHoldings(request, cookie);
 
     expect(holdings[0]).toMatchObject({ costBasis: null, gain: null, gainPercent: null, valueInBase: 250 });
-    expect(summary).toEqual({
+    expect(summary).toMatchObject({
       value: 250, costBasis: 0, gain: 0, gainPercent: null, holdingsWithoutCostBasis: 1,
     });
   });
@@ -167,6 +193,164 @@ test.describe("GET /api/investments/holdings", () => {
     const { holdings } = await getHoldings(request, cookie);
 
     expect(holdings.map((h) => h.security.tickerSymbol)).toEqual(["BIG", "SMALL"]);
+  });
+
+  test("splits the value by kind, largest first, with each kind's share", async ({ request }) => {
+    // Arrange: 600 of ETFs, 300 of stock, 100 of cash.
+    const { cookie, userId, item } = await setup(request);
+    const base = { userId, itemId: item.itemId, accountId: item.accountId, currency: "CAD" };
+    await seedHolding({ ...base, tickerSymbol: "E1", type: "etf", value: 400 });
+    await seedHolding({ ...base, tickerSymbol: "E2", type: "etf", value: 200 });
+    await seedHolding({ ...base, tickerSymbol: "S1", type: "equity", value: 300 });
+    await seedHolding({ ...base, tickerSymbol: "CASH", type: "cash", isCashEquivalent: true, value: 100 });
+
+    // Act
+    const { summary } = await getHoldings(request, cookie);
+
+    // Assert
+    expect(summary.allocation).toEqual([
+      { kind: "etf", value: 600, share: 0.6 },
+      { kind: "stock", value: 300, share: 0.3 },
+      { kind: "cash", value: 100, share: 0.1 },
+    ]);
+    expect(summary.holdingCount).toBe(4);
+  });
+
+  test("splits the value by currency, converted to CAD, with each currency's share", async ({ request }) => {
+    // Arrange: 750 CAD and 800 USD (1,000 CAD); a holding with no currency counts as CAD.
+    const { cookie, userId, item } = await setup(request);
+    const base = { userId, itemId: item.itemId, accountId: item.accountId };
+    await seedHolding({ ...base, tickerSymbol: "A", value: 500, currency: "CAD" });
+    await seedHolding({ ...base, tickerSymbol: "B", value: 250, currency: null });
+    await seedHolding({ ...base, tickerSymbol: "C", value: 800, currency: "USD" });
+
+    // Act
+    const { summary } = await getHoldings(request, cookie);
+
+    // Assert
+    expect(summary.currencies).toEqual([
+      { currency: "USD", value: 1000, share: r6(1000 / 1750) },
+      { currency: "CAD", value: 750, share: r6(750 / 1750) },
+    ]);
+  });
+
+  test("gives each holding's share of the total and the share of the three largest that are not cash", async ({ request }) => {
+    // Arrange: total 1,000: cash 400, then 300, 150, 100, 50.
+    const { cookie, userId, item } = await setup(request);
+    const base = { userId, itemId: item.itemId, accountId: item.accountId, currency: "CAD" };
+    await seedHolding({ ...base, tickerSymbol: "CASH", type: "cash", isCashEquivalent: true, value: 400 });
+    for (const [tickerSymbol, value] of [["A", 300], ["B", 150], ["C", 100], ["D", 50]] as const) {
+      await seedHolding({ ...base, tickerSymbol, value });
+    }
+
+    // Act
+    const { holdings, summary } = await getHoldings(request, cookie);
+
+    // Assert: the top three that are not cash are A, B and C: 550 of 1,000.
+    expect(summary.topHoldingsShare).toBe(0.55);
+    expect(holdings.map((h) => [h.security.tickerSymbol, h.share])).toEqual([
+      ["CASH", 0.4],
+      ["A", 0.3],
+      ["B", 0.15],
+      ["C", 0.1],
+      ["D", 0.05],
+    ]);
+  });
+
+  test("gives each account's value, share and gain, largest first", async ({ request }) => {
+    // Arrange: a TFSA (1,200 worth, 1,000 paid) and an RRSP (800 worth, no cost basis).
+    const { cookie, userId, item } = await setup(request);
+    const rrsp = await seedItemWithAccount(userId, {
+      institutionName: "Other Brokerage",
+      accountName: "RRSP",
+      account: { type: "investment", subtype: "rrsp", mask: "4321" },
+    });
+    await seedHolding({ userId, itemId: item.itemId, accountId: item.accountId, tickerSymbol: "T", value: 1200, costBasis: 1000, currency: "CAD" });
+    await seedHolding({ userId, itemId: rrsp.itemId, accountId: rrsp.accountId, tickerSymbol: "R", value: 800, currency: "CAD" });
+
+    // Act
+    const { accounts, summary } = await getHoldings(request, cookie);
+
+    // Assert
+    expect(accounts).toEqual([
+      { id: item.accountId, name: "TFSA", institutionName: "Maple Brokerage", subtype: "tfsa", mask: "7714", value: 1200, share: 0.6, hasHoldings: true, gain: 200, gainPercent: 0.2 },
+      { id: rrsp.accountId, name: "RRSP", institutionName: "Other Brokerage", subtype: "rrsp", mask: "4321", value: 800, share: 0.4, hasHoldings: true, gain: null, gainPercent: null },
+    ]);
+    expect(summary.accountCount).toBe(2);
+  });
+
+  test("counts an investment account with no holdings by its balance, and says it has no holdings", async ({ request }) => {
+    // Arrange: one account with a holding (500) and one RESP that reports only a balance (1,500; 1,000 USD is 1,250 CAD).
+    const { cookie, userId, item } = await setup(request);
+    const resp = await seedItemWithAccount(userId, {
+      accountName: "RESP",
+      account: { type: "investment", subtype: "resp", balanceCurrent: 1000, isoCurrencyCode: "USD" },
+    });
+    await seedHolding({ userId, itemId: item.itemId, accountId: item.accountId, tickerSymbol: "A", value: 500, currency: "CAD" });
+
+    // Act
+    const { summary, accounts, holdings } = await getHoldings(request, cookie);
+
+    // Assert: it is in the total and the split, but has no holding rows.
+    expect(summary.value).toBe(1750);
+    expect(summary.accountCount).toBe(2);
+    expect(summary.allocation).toEqual([
+      { kind: "balance", value: 1250, share: r6(1250 / 1750) },
+      { kind: "stock", value: 500, share: r6(500 / 1750) },
+    ]);
+    expect(accounts[0]).toMatchObject({ id: resp.accountId, name: "RESP", value: 1250, hasHoldings: false, gain: null });
+    expect(holdings).toHaveLength(1);
+  });
+
+  test("flags a price older than five days as stale, and not one with no date", async ({ request }) => {
+    // Arrange
+    const { cookie, userId, item } = await setup(request);
+    const base = { userId, itemId: item.itemId, accountId: item.accountId, currency: "CAD" };
+    await seedHolding({ ...base, tickerSymbol: "FRESH", priceAsOf: new Date(Date.now() - 2 * 86_400_000) });
+    await seedHolding({ ...base, tickerSymbol: "OLD", priceAsOf: new Date(Date.now() - 9 * 86_400_000) });
+    await seedHolding({ ...base, tickerSymbol: "NODATE", priceAsOf: null });
+
+    // Act
+    const { holdings } = await getHoldings(request, cookie);
+
+    // Assert
+    const stale = Object.fromEntries(holdings.map((h) => [h.security.tickerSymbol, h.priceStale]));
+    expect(stale).toEqual({ FRESH: false, OLD: true, NODATE: false });
+  });
+
+  test("gives an option's contract and a bond's terms, and exchange", async ({ request }) => {
+    // Arrange
+    const { cookie, userId, item } = await setup(request);
+    const base = { userId, itemId: item.itemId, accountId: item.accountId, currency: "USD" };
+    await seedHolding({
+      ...base, tickerSymbol: "AAPL27", type: "derivative", value: 2840,
+      details: {
+        marketIdentifierCode: "XNAS", optionContractType: "call", optionExpirationDate: new Date("2027-01-15T00:00:00Z"),
+        optionStrikePrice: 250, optionUnderlyingTicker: "AAPL",
+      },
+    });
+    await seedHolding({
+      ...base, tickerSymbol: "GOC30", type: "fixed income", value: 4920, currency: "CAD",
+      details: {
+        bondMaturityDate: new Date("2030-06-01T00:00:00Z"), bondIssueDate: new Date("2020-06-01T00:00:00Z"),
+        bondFaceValue: 5000, bondYieldRate: 2.75, bondYieldType: "coupon",
+      },
+    });
+
+    // Act
+    const { holdings } = await getHoldings(request, cookie);
+
+    // Assert
+    const option = holdings.find((h) => h.security.tickerSymbol === "AAPL27")!.security;
+    const bond = holdings.find((h) => h.security.tickerSymbol === "GOC30")!.security;
+    expect(option).toMatchObject({
+      kind: "option", exchange: "XNAS", bond: null,
+      option: { contractType: "call", expirationDate: "2027-01-15T00:00:00.000Z", strikePrice: 250, underlyingTicker: "AAPL" },
+    });
+    expect(bond).toMatchObject({
+      kind: "bond", option: null,
+      bond: { maturityDate: "2030-06-01T00:00:00.000Z", issueDate: "2020-06-01T00:00:00.000Z", faceValue: 5000, yieldRate: 2.75, yieldType: "coupon" },
+    });
   });
 
   test("filters to one account with accountId", async ({ request }) => {

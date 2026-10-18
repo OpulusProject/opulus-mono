@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { Prisma, toHoldingsDTO } from "@opulus/core";
+import { holdingKind, Prisma, STALE_PRICE_DAYS, toHoldingsDTO } from "@opulus/core";
 
 const D = (n: number | string) => new Prisma.Decimal(n);
 type Rows = Parameters<typeof toHoldingsDTO>[0];
@@ -12,10 +12,14 @@ const row = (overrides: {
   ticker?: string;
   id?: string;
   priceAsOf?: Date | null;
+  type?: string;
+  isCashEquivalent?: boolean;
+  accountId?: string;
+  security?: Record<string, unknown>;
 }): Rows[number] =>
   ({
     id: overrides.id ?? `h${++nextId}`,
-    accountId: "acct-1",
+    accountId: overrides.accountId ?? "acct-1",
     itemId: "item-1",
     userId: "user-1",
     securityId: "sec-1",
@@ -25,9 +29,9 @@ const row = (overrides: {
     institutionValue: D(overrides.value),
     costBasis: overrides.basis === null ? null : D(overrides.basis),
     isoCurrencyCode: overrides.currency === undefined ? "USD" : overrides.currency,
-    account: { name: "Brokerage" },
+    account: { name: "Brokerage", subtype: "tfsa", mask: "1234" },
     item: { institutionName: "Stub Brokerage" },
-    security: { id: "sec-1", name: "Apple Inc.", tickerSymbol: overrides.ticker ?? "AAPL", type: "equity", isCashEquivalent: false },
+    security: { id: "sec-1", name: "Apple Inc.", tickerSymbol: overrides.ticker ?? "AAPL", type: overrides.type ?? "equity", isCashEquivalent: overrides.isCashEquivalent ?? false, ...overrides.security },
   }) as unknown as Rows[number];
 
 const toBase = (rates: Record<string, number>) => (currency: string | null) => (currency === null ? 1 : (rates[currency] ?? 1));
@@ -46,6 +50,11 @@ const toBase = (rates: Record<string, number>) => (currency: string | null) => (
  * - holdings come largest in the base currency first, ties by id
  * - an empty list gives an empty, zero summary with no percentage
  * - a holding with no price date has a null priceAsOf
+ * - a security's kind comes from Plaid's type, and cash from the cash flag
+ * - the summary splits the value by kind, largest first, and each holding has its share of the total
+ * - a price older than the limit is stale, one at the limit, or with no date, is not
+ * - an option and a bond carry their terms, and other securities carry none
+ * - an account with no holdings is counted by its balance, as "balance"
  */
 test.describe("holdings DTO", () => {
   test("a holding's gain is its value minus its cost basis, with the gain as a fraction of the basis", () => {
@@ -58,7 +67,7 @@ test.describe("holdings DTO", () => {
     const { holdings, summary } = toHoldingsDTO([row({ value: 250, basis: null })], { baseCurrency: "USD", rateOn: toBase({}) });
 
     expect(holdings[0]).toMatchObject({ costBasis: null, gain: null, gainPercent: null });
-    expect(summary).toEqual({ value: 250, costBasis: 0, gain: 0, gainPercent: null, holdingsWithoutCostBasis: 1 });
+    expect(summary).toMatchObject({ value: 250, costBasis: 0, gain: 0, gainPercent: null, holdingsWithoutCostBasis: 1 });
   });
 
   test("a cost basis of zero gives a gain but no percentage", () => {
@@ -94,7 +103,11 @@ test.describe("holdings DTO", () => {
   test("an empty list gives an empty, zero summary with no percentage", () => {
     expect(toHoldingsDTO([], { baseCurrency: "CAD", rateOn: toBase({}) })).toEqual({
       baseCurrency: "CAD",
-      summary: { value: 0, costBasis: 0, gain: 0, gainPercent: null, holdingsWithoutCostBasis: 0 },
+      summary: {
+        value: 0, accountCount: 0, holdingCount: 0, allocation: [], currencies: [], topHoldingsShare: 0,
+        costBasis: 0, gain: 0, gainPercent: null, holdingsWithoutCostBasis: 0,
+      },
+      accounts: [],
       holdings: [],
     });
   });
@@ -103,5 +116,75 @@ test.describe("holdings DTO", () => {
     const { holdings } = toHoldingsDTO([row({ value: 100, basis: 50, priceAsOf: null })], { baseCurrency: "USD", rateOn: toBase({}) });
 
     expect(holdings[0]!.priceAsOf).toBeNull();
+  });
+
+  test("a security's kind comes from Plaid's type, and cash from the cash flag", () => {
+    expect(
+      [["etf", false], ["equity", false], ["mutual fund", false], ["fixed income", false], ["derivative", false], ["cash", false], ["loan", false], [null, false], ["equity", true]].map(
+        ([type, cash]) => holdingKind(type as string | null, cash as boolean),
+      ),
+    ).toEqual(["etf", "stock", "mutualFund", "bond", "option", "cash", "other", "other", "cash"]);
+  });
+
+  test("the summary splits the value by kind, largest first, and each holding has its share of the total", () => {
+    const { summary, holdings } = toHoldingsDTO(
+      [row({ id: "e", value: 600, basis: null, type: "etf" }), row({ id: "s", value: 300, basis: null }), row({ id: "c", value: 100, basis: null, type: "cash", isCashEquivalent: true })],
+      { baseCurrency: "USD", rateOn: toBase({}) },
+    );
+
+    expect(summary.allocation).toEqual([
+      { kind: "etf", value: 600, share: 0.6 },
+      { kind: "stock", value: 300, share: 0.3 },
+      { kind: "cash", value: 100, share: 0.1 },
+    ]);
+    expect(holdings.map((h) => [h.id, h.share])).toEqual([["e", 0.6], ["s", 0.3], ["c", 0.1]]);
+    expect(summary.topHoldingsShare).toBe(0.9);
+  });
+
+  test("a price older than the limit is stale, one at the limit, or with no date, is not", () => {
+    const now = new Date("2026-10-20T00:00:00Z");
+    const ago = (days: number) => new Date(now.getTime() - days * 86_400_000);
+    const { holdings } = toHoldingsDTO(
+      [
+        row({ id: "old", value: 1, basis: null, priceAsOf: ago(STALE_PRICE_DAYS + 1) }),
+        row({ id: "edge", value: 1, basis: null, priceAsOf: ago(STALE_PRICE_DAYS) }),
+        row({ id: "none", value: 1, basis: null, priceAsOf: null }),
+      ],
+      { baseCurrency: "USD", rateOn: toBase({}), now },
+    );
+
+    expect(Object.fromEntries(holdings.map((h) => [h.id, h.priceStale]))).toEqual({ old: true, edge: false, none: false });
+  });
+
+  test("an option and a bond carry their terms, and other securities carry none", () => {
+    const { holdings } = toHoldingsDTO(
+      [
+        row({ id: "opt", value: 3, basis: null, type: "derivative", security: { optionContractType: "call", optionExpirationDate: new Date("2027-01-15T00:00:00Z"), optionStrikePrice: D(250), optionUnderlyingTicker: "AAPL", marketIdentifierCode: "XNAS" } }),
+        row({ id: "bond", value: 2, basis: null, type: "fixed income", security: { bondMaturityDate: new Date("2030-06-01T00:00:00Z"), bondFaceValue: D(5000), bondYieldRate: D(2.75), bondYieldType: "coupon" } }),
+        row({ id: "stock", value: 1, basis: null }),
+      ],
+      { baseCurrency: "USD", rateOn: toBase({}) },
+    );
+    const by = Object.fromEntries(holdings.map((h) => [h.id, h.security]));
+
+    expect(by.opt).toMatchObject({ exchange: "XNAS", bond: null, option: { contractType: "call", expirationDate: "2027-01-15T00:00:00.000Z", strikePrice: 250, underlyingTicker: "AAPL" } });
+    expect(by.bond).toMatchObject({ option: null, bond: { maturityDate: "2030-06-01T00:00:00.000Z", faceValue: 5000, yieldRate: 2.75, yieldType: "coupon", issueDate: null } });
+    expect(by.stock).toMatchObject({ option: null, bond: null });
+  });
+
+  test("an account with no holdings is counted by its balance, as \"balance\"", () => {
+    const { summary, accounts } = toHoldingsDTO([row({ value: 100, basis: null })], {
+      baseCurrency: "USD",
+      rateOn: toBase({ EUR: 1.1 }),
+      accounts: [
+        { id: "acct-1", name: "Brokerage", subtype: "tfsa", mask: "1234", balanceCurrent: D(5), isoCurrencyCode: "USD", item: { institutionName: "X" } },
+        { id: "resp", name: "RESP", subtype: "resp", mask: null, balanceCurrent: D(1000), isoCurrencyCode: "EUR", item: { institutionName: "Y" } },
+        { id: "no-balance", name: "Empty", subtype: null, mask: null, balanceCurrent: null, isoCurrencyCode: "USD", item: { institutionName: null } },
+      ],
+    });
+
+    expect(summary.value).toBe(1200);
+    expect(summary.allocation.map((a) => a.kind)).toEqual(["balance", "stock"]);
+    expect(accounts.map((a) => [a.id, a.value, a.hasHoldings])).toEqual([["resp", 1100, false], ["acct-1", 100, true]]);
   });
 });
