@@ -8,6 +8,8 @@ import { investmentKeys } from './queryKeys';
 export interface HoldingsParams {
   /** Only these accounts (our account ids). */
   accountIds?: string[];
+  /** Only holdings of this security (our security id). */
+  securityId?: string;
 }
 
 const getHoldingsApi = async (
@@ -16,9 +18,10 @@ const getHoldingsApi = async (
   const response = await apiClient.get<HoldingsResponse>(
     '/api/investments/holdings',
     {
-      params: params.accountIds?.length
-        ? { accountId: params.accountIds }
-        : undefined,
+      params: {
+        ...(params.accountIds?.length && { accountId: params.accountIds }),
+        ...(params.securityId && { securityId: params.securityId }),
+      },
       // Repeat the parameter (?accountId=a&accountId=b), not accountId[]=a.
       paramsSerializer: { indexes: null },
     }
