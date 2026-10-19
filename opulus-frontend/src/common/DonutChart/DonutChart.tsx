@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
  * A ring split into slices, shadcn's pie chart in its donut form. Hovering a
  * slice grows it outward (as in shadcn's "Donut Active"), dims the others and
  * reads out its name, share of the whole and value in the hole. It draws only
- * the ring; put a legend beside it for the numbers.
+ * the ring; put a `DonutLegend` beside it for the numbers.
  *
  * @example
  * <DonutChart
