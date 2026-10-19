@@ -2,6 +2,7 @@ import { UpdateItemAccountsResponse } from '@opulus/core/dto';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { accountKeys } from '@/hooks/accounts/queryKeys';
+import { investmentKeys } from '@/hooks/investments/queryKeys';
 import { apiClient } from '@/lib/api/client';
 
 import { itemKeys } from './queryKeys';
@@ -23,6 +24,7 @@ export function useUpdateItemAccounts() {
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: itemKeys.all });
       void queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      void queryClient.invalidateQueries({ queryKey: investmentKeys.all });
     },
   });
 }
