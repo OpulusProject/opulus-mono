@@ -63,6 +63,7 @@ export const InvestmentsFrame: React.FC<InvestmentsFrameProps> = ({
 const TABS = [
   { key: 'overview', label: 'Overview', to: '/investments' },
   { key: 'holdings', label: 'Holdings', to: '/investments/holdings' },
+  { key: 'activity', label: 'Activity', to: '/investments/activity' },
 ] as const;
 
 export type InvestmentsTab = (typeof TABS)[number]['key'];
