@@ -5,6 +5,6 @@ import { activitySearchSchema } from '@/pages/Investments/searchSchema';
 
 export const Route = createFileRoute('/_authenticated/investments/activity')({
   validateSearch: (search) => activitySearchSchema.parse(search),
-  staticData: { title: 'Activity', section: 'Investments' },
+  staticData: { title: 'Investment activity' },
   component: InvestmentActivity,
 });

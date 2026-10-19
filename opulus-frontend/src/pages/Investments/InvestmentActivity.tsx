@@ -66,7 +66,8 @@ export const InvestmentActivity: React.FC = () => {
 
   return (
     <InvestmentsFrame
-      title="Activity"
+      title="Investments"
+      active="activity"
       description="What you put in, took out and earned."
       account={search.account}
       onAccountChange={(account) => update({ account })}

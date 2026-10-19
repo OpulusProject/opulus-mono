@@ -22,6 +22,7 @@ export const Investments: React.FC = () => {
   return (
     <InvestmentsFrame
       title="Investments"
+      active="overview"
       description="What you own across your investment accounts."
       account={search.account}
       onAccountChange={(account) =>
