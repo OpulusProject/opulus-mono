@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   PieChart,
   Settings,
+  TrendingUp,
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -46,6 +47,11 @@ const navMain: NavItem[] = [
     title: 'Accounts',
     url: '/accounts',
     icon: Landmark,
+  },
+  {
+    title: 'Investments',
+    url: '/investments',
+    icon: TrendingUp,
   },
   {
     title: 'Credit & loans',

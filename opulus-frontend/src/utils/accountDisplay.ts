@@ -23,6 +23,12 @@ const SUBTYPE_LABELS: Record<string, string> = {
   '401k': '401(k)',
   rrsp: 'RRSP',
   tfsa: 'TFSA',
+  fhsa: 'FHSA',
+  resp: 'RESP',
+  rdsp: 'RDSP',
+  rrif: 'RRIF',
+  lira: 'LIRA',
+  lif: 'LIF',
 };
 
 const TYPE_LABELS: Record<string, string> = {
