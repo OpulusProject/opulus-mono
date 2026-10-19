@@ -102,6 +102,8 @@ export const HoldingDTOSchema = z.object({
   costBasis: z.number().nullable(),
   /** `value` minus `costBasis` (negative for a loss); null without a cost basis. */
   gain: z.number().nullable(),
+  /** `gain` in the base currency, at today's rate; null without a cost basis. */
+  gainInBase: z.number().nullable(),
   /** `gain` as a fraction of `costBasis` (0.25 is +25%); null without a cost basis. */
   gainPercent: z.number().nullable(),
   /**
@@ -174,7 +176,7 @@ export const HoldingsSummaryDTOSchema = z.object({
   totalReturn: z.number(),
   /** `totalReturn` as a fraction of `costBasis`; null when no holding has a cost basis. */
   totalReturnPercent: z.number().nullable(),
-  /** The ids of the holdings that did best, as a fraction of what was paid, best first. */
+  /** The ids of the holdings that earned the most, by `gainInBase`, largest first. */
   gainRanking: z.array(z.string()),
   /** The cost basis of the holdings that have one, in the base currency. */
   costBasis: z.number(),
@@ -369,6 +371,8 @@ export function toHoldingsDTO(
     byAccount.set(row.accountId, account);
 
     const gain = rowBasis === null ? null : round(rowValue - rowBasis);
+    const gainUnits =
+      rowBasis === null ? null : units - toUnits(rowBasis * rate);
     const stale =
       row.institutionPriceAsOf !== null &&
       now.getTime() - row.institutionPriceAsOf.getTime() >
@@ -421,6 +425,8 @@ export function toHoldingsDTO(
       ),
       costBasis: rowBasis,
       gain,
+      gainUnits,
+      gainInBase: gainUnits === null ? null : fromUnits(gainUnits),
       gainPercent:
         rowBasis === null || rowBasis === 0
           ? null
@@ -499,8 +505,8 @@ export function toHoldingsDTO(
 
   const totalGain = valueWithBasis - costBasis;
   const gainRanking = holdings
-    .filter((holding) => holding.gainPercent !== null)
-    .sort((a, b) => b.gainPercent! - a.gainPercent! || a.id.localeCompare(b.id))
+    .filter((holding) => holding.gainUnits !== null)
+    .sort((a, b) => b.gainUnits! - a.gainUnits! || a.id.localeCompare(b.id))
     .slice(0, GAIN_RANKING_SIZE)
     .map((holding) => holding.id);
   return {
@@ -532,7 +538,7 @@ export function toHoldingsDTO(
       holdingsWithoutCostBasis: withoutBasis,
     },
     accounts: accountRows.map(({ units: _units, ...account }) => account),
-    holdings: holdings.map(({ units, ...holding }) => ({
+    holdings: holdings.map(({ units, gainUnits: _gainUnits, ...holding }) => ({
       ...holding,
       share: fraction(units, value),
     })),

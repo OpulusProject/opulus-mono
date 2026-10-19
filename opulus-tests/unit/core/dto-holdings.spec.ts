@@ -55,7 +55,8 @@ const toBase = (rates: Record<string, number>) => (currency: string | null) => (
  * - a price older than the limit is stale, one at the limit, or with no date, is not
  * - an option and a bond carry their terms, and other securities carry none
  * - dividends are added up in the base currency, per holding and in total, only for accounts in view, and make the total return
- * - the gain ranking is the best holdings by gain as a fraction of the basis, without those that have none
+ * - a holding's gain is also given in the base currency, at today's rate
+ * - the gain ranking is the holdings that earned the most, in the base currency and not as a fraction, without those that have no cost basis
  * - an account with no holdings is counted by its balance, as "balance"
  */
 test.describe("holdings DTO", () => {
@@ -195,18 +196,33 @@ test.describe("holdings DTO", () => {
     expect(summary.totalReturnPercent).toBeCloseTo(261 / 800, 10);
   });
 
-  test("the gain ranking is the best holdings by gain as a fraction of the basis, without those that have none", () => {
+  test("a holding's gain is also given in the base currency, at today's rate", () => {
+    // 500 EUR worth, 400 paid: a gain of 100 EUR is 110 USD at 1 EUR = 1.1 USD.
+    const { holdings } = toHoldingsDTO([row({ value: 500, basis: 400, currency: "EUR" }), row({ value: 90, basis: null })], {
+      baseCurrency: "USD",
+      rateOn: toBase({ EUR: 1.1 }),
+    });
+
+    expect(holdings.find((h) => h.currency === "EUR")).toMatchObject({ gain: 100, gainInBase: 110 });
+    expect(holdings.find((h) => h.costBasis === null)!.gainInBase).toBeNull();
+  });
+
+  test("the gain ranking is the holdings that earned the most, in the base currency and not as a fraction, without those that have no cost basis", () => {
+    // By fraction "tiny" (+50%) would lead; by amount "big" (+500) does. The EUR holding
+    // gained 200 EUR = 220 USD, more than the USD one's 210, though 200 < 210 as numbers.
     const rows = [
-      row({ id: "a", value: 150, basis: 100 }),
-      row({ id: "b", value: 110, basis: 100 }),
-      row({ id: "c", value: 80, basis: 100 }),
-      row({ id: "d", value: 100, basis: null }),
-      ...Array.from({ length: 6 }, (_, i) => row({ id: `s${i}`, value: 101 + i, basis: 100 })),
+      row({ id: "tiny", value: 15, basis: 10 }),
+      row({ id: "big", value: 2000, basis: 1500 }),
+      row({ id: "usd", value: 310, basis: 100 }),
+      row({ id: "eur", value: 400, basis: 200, currency: "EUR" }),
+      row({ id: "loss", value: 80, basis: 100 }),
+      row({ id: "none", value: 100, basis: null }),
+      ...Array.from({ length: 4 }, (_, i) => row({ id: `s${i}`, value: 101 + i, basis: 100 })),
     ];
 
-    const { summary } = toHoldingsDTO(rows, { baseCurrency: "USD", rateOn: toBase({}) });
+    const { summary } = toHoldingsDTO(rows, { baseCurrency: "USD", rateOn: toBase({ EUR: 1.1 }) });
 
-    expect(summary.gainRanking).toEqual(["a", "b", "s5", "s4", "s3", "s2"]);
+    expect(summary.gainRanking).toEqual(["big", "eur", "usd", "tiny", "s3", "s2"]);
   });
 
   test("an account with no holdings is counted by its balance, as \"balance\"", () => {

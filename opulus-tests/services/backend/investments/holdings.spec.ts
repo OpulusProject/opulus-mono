@@ -61,7 +61,7 @@ async function getHoldings(
  * - flags a price older than five days as stale, and not one with no date
  * - gives an option's contract and a bond's terms, and exchange
  * - gives the dividends of the last twelve months in total and per holding, the dividend yield, and the total return (gain plus dividends)
- * - ranks the holdings by gain as a fraction of what was paid, best first, leaving out those without a cost basis
+ * - ranks the holdings by what they earned (in CAD, not as a fraction), largest first, leaving out those without a cost basis
  * - filters to one account with accountId
  * - filters to accounts of one subtype, with the summary over just those
  * - filters to the holdings of one security
@@ -383,23 +383,27 @@ test.describe("GET /api/investments/holdings", () => {
     expect(summary.totalReturnPercent).toBeCloseTo(262.5 / 800, 10);
   });
 
-  test("ranks the holdings by gain as a fraction of what was paid, best first, leaving out those without a cost basis", async ({ request }) => {
-    // Arrange: +50%, +10%, -20%, and one with no cost basis. Eight more with small gains push the list past six.
+  test("ranks the holdings by what they earned (in CAD, not as a fraction), largest first, leaving out those without a cost basis", async ({ request }) => {
+    // Arrange: A earned 50 (+50%), B 500 (+10%), C lost 20, D has no cost basis, and a USD holding earned 400 USD (500 CAD).
+    // Eight more with small gains push the list past six.
     const { cookie, userId, item } = await setup(request);
     const base = { userId, itemId: item.itemId, accountId: item.accountId, currency: "CAD" };
     const ids: Record<string, string> = {};
-    for (const [tickerSymbol, value, costBasis] of [["A", 150, 100], ["B", 110, 100], ["C", 80, 100], ["D", 100, null]] as const) {
+    for (const [tickerSymbol, value, costBasis] of [["A", 150, 100], ["B", 5500, 5000], ["C", 80, 100], ["D", 100, null]] as const) {
       ids[tickerSymbol] = (await seedHolding({ ...base, tickerSymbol, value, costBasis })).id;
     }
+    ids.USD = (await seedHolding({ ...base, currency: "USD", tickerSymbol: "USD1", value: 1400, costBasis: 1000 })).id;
     for (let i = 0; i < 8; i++) {
       ids[`S${i}`] = (await seedHolding({ ...base, tickerSymbol: `S${i}`, value: 100 + i, costBasis: 100 })).id;
     }
 
     // Act
-    const { summary } = await getHoldings(request, cookie);
+    const { summary, holdings } = await getHoldings(request, cookie);
 
-    // Assert: A (+50%), B (+10%), S7 (+7%), S6, S5, S4: six in all, D never.
-    expect(summary.gainRanking).toEqual([ids.A, ids.B, ids.S7, ids.S6, ids.S5, ids.S4]);
+    // Assert: B and the USD holding (500 CAD each; the tie goes by id), then A (50), S7 (7), S6 (6), S5 (5): six in all, D never.
+    const tied = [ids.B!, ids.USD!].sort();
+    expect(summary.gainRanking).toEqual([...tied, ids.A, ids.S7, ids.S6, ids.S5]);
+    expect(holdings.find((h) => h.id === ids.USD)).toMatchObject({ gain: 400, gainInBase: 500 });
   });
 
   test("filters to accounts of one subtype, with the summary over just those", async ({ request }) => {
