@@ -12,8 +12,8 @@ import {
 
 export interface GetHoldingsParams {
   userId: string;
-  /** Only this account's holdings (our account id). */
-  accountId?: string;
+  /** Only these accounts' holdings (our account ids). */
+  accountIds?: string[];
   /** Only accounts of this subtype (tfsa, rrsp, ...). */
   accountSubtype?: string;
   /** Only holdings of this security (our security id). */
@@ -39,7 +39,7 @@ export async function getHoldings(
   const today = toDay(now);
   const [rows, allAccounts, dividends] = await Promise.all([
     holdingRepository.getAllByUserId(params.userId, {
-      accountId: params.accountId,
+      accountIds: params.accountIds,
       accountSubtype: params.accountSubtype,
       securityId: params.securityId,
     }),
@@ -53,7 +53,7 @@ export async function getHoldings(
   const holders = new Set(rows.map((row) => row.accountId));
   const accounts = allAccounts.filter(
     (account) =>
-      (!params.accountId || account.id === params.accountId) &&
+      (!params.accountIds || params.accountIds.includes(account.id)) &&
       (!params.accountSubtype || account.subtype === params.accountSubtype) &&
       (!params.securityId || holders.has(account.id))
   );

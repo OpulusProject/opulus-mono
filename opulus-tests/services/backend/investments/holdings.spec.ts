@@ -63,6 +63,7 @@ async function getHoldings(
  * - gives the dividends of the last twelve months in total and per holding, the dividend yield, and the total return (gain plus dividends)
  * - ranks the holdings by what they earned (in CAD, not as a fraction), largest first, leaving out those without a cost basis
  * - filters to one account with accountId
+ * - filters to several accounts with a repeated accountId, with the summary over just those
  * - filters to accounts of one subtype, with the summary over just those
  * - filters to the holdings of one security
  * - sorts account by account, the largest account first, each account's holdings largest first
@@ -456,6 +457,24 @@ test.describe("GET /api/investments/holdings", () => {
     // Assert: X is worth 400 and Y 550, so Y comes first.
     expect(byValue.holdings.map((h) => h.security.tickerSymbol)).toEqual(["Y500", "X300", "X100", "Y50"]);
     expect(byAccount.holdings.map((h) => h.security.tickerSymbol)).toEqual(["Y500", "Y50", "X300", "X100"]);
+  });
+
+  test("filters to several accounts with a repeated accountId, with the summary over just those", async ({ request }) => {
+    // Arrange: three accounts with 100, 200 and 400 in them.
+    const { cookie, userId, item } = await setup(request);
+    const second = await seedItemWithAccount(userId, { account: { type: "investment" } });
+    const third = await seedItemWithAccount(userId, { account: { type: "investment" } });
+    await seedHolding({ userId, itemId: item.itemId, accountId: item.accountId, tickerSymbol: "A", value: 100, currency: "CAD" });
+    await seedHolding({ userId, itemId: second.itemId, accountId: second.accountId, tickerSymbol: "B", value: 200, currency: "CAD" });
+    await seedHolding({ userId, itemId: third.itemId, accountId: third.accountId, tickerSymbol: "C", value: 400, currency: "CAD" });
+
+    // Act
+    const { holdings, summary, accounts } = await getHoldings(request, cookie, `?accountId=${item.accountId}&accountId=${third.accountId}`);
+
+    // Assert
+    expect(holdings.map((h) => h.security.tickerSymbol)).toEqual(["C", "A"]);
+    expect(accounts.map((a) => a.id).sort()).toEqual([item.accountId, third.accountId].sort());
+    expect(summary).toMatchObject({ value: 500, accountCount: 2 });
   });
 
   test("filters to one account with accountId", async ({ request }) => {
