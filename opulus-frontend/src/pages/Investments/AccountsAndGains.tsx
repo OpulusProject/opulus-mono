@@ -5,10 +5,12 @@ import * as React from 'react';
 import { List, ListHeader, ListRow } from '@/common/List';
 import { formatMoney } from '@/utils/accountDisplay';
 import {
+  accountLabel,
   accountName,
   amountTone,
   formatGain,
   formatPercent,
+  formatSignedMoney,
   formatSignedPercent,
   holdingTitle,
 } from '@/utils/investmentDisplay';
@@ -92,7 +94,7 @@ const GainByHolding: React.FC<{
 
   return (
     <List aria-label="Gain since purchase" isRefreshing={isRefreshing}>
-      <ListHeader title="Gain since purchase" trailingTitle="best to worst" />
+      <ListHeader title="Gain since purchase" trailingTitle="largest first" />
       {ranked.length === 0 ? (
         <ListRow
           title="No cost basis yet"
@@ -103,11 +105,22 @@ const GainByHolding: React.FC<{
           <ListRow
             key={holding.id}
             title={holdingTitle(holding)}
-            subtitle={formatGain(holding.gain!, null, holding.currency)}
-            trailingTitle={formatSignedPercent(holding.gainPercent!)}
-            trailingTitleTone={amountTone(holding.gain)}
+            subtitle={accountLabel({
+              subtype: holding.accountSubtype,
+              mask: holding.accountMask,
+            })}
+            trailingTitle={formatSignedMoney(
+              holding.gainInBase!,
+              data.baseCurrency
+            )}
+            trailingTitleTone={amountTone(holding.gainInBase)}
+            trailingSubtitle={
+              holding.gainPercent === null
+                ? undefined
+                : formatSignedPercent(holding.gainPercent)
+            }
+            trailingSubtitleTone={amountTone(holding.gainInBase)}
             onClick={() => onOpen(holding.id)}
-            aria-label={`${holdingTitle(holding)}, ${formatSignedPercent(holding.gainPercent!)}`}
           />
         ))
       )}
