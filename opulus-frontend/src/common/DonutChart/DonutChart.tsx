@@ -48,9 +48,19 @@ export const DonutChart: React.FC<DonutChartProps> = ({
     fill: `var(--color-${slice.key})`,
   }));
   const lit = slices.find((slice) => slice.key === current);
+  // The readout stays mounted and fades, so it keeps the last slice's text
+  // while it fades out.
+  const lastLit = React.useRef(lit);
+  if (lit) lastLit.current = lit;
+  const shown = lit ?? lastLit.current;
 
   return (
-    <div className={cn('relative aspect-square', className)}>
+    <div
+      className={cn(
+        'animate-in fade-in relative aspect-square duration-700',
+        className
+      )}
+    >
       <ChartContainer
         config={config}
         role="img"
@@ -67,6 +77,8 @@ export const DonutChart: React.FC<DonutChartProps> = ({
             startAngle={90}
             endAngle={-270}
             strokeWidth={0}
+            // The ring fades in with its container instead of sweeping round.
+            isAnimationActive={false}
             onMouseEnter={(_, index) => setActive(slices[index]?.key)}
             onMouseLeave={() => setActive(undefined)}
           >
@@ -83,8 +95,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({
                     slice.key === current ? `scale(${ACTIVE_SCALE})` : 'none',
                   opacity:
                     current && slice.key !== current ? DIMMED_OPACITY : 1,
-                  transition:
-                    'transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 220ms ease',
+                  transition: `transform ${EASE}, opacity ${EASE}`,
                 }}
               />
             ))}
@@ -95,14 +106,20 @@ export const DonutChart: React.FC<DonutChartProps> = ({
         aria-live="polite"
         className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center"
       >
-        {lit && (
-          <div className="animate-in fade-in zoom-in-95 duration-200">
-            <div className="text-muted-foreground text-xs">{lit.label}</div>
+        {shown && (
+          <div
+            style={{
+              opacity: lit ? 1 : 0,
+              transform: lit ? 'scale(1)' : 'scale(0.94)',
+              transition: `opacity ${EASE}, transform ${EASE}`,
+            }}
+          >
+            <div className="text-muted-foreground text-xs">{shown.label}</div>
             <div className="text-2xl leading-8 font-semibold tracking-tight tabular-nums">
-              {Math.round(lit.share * 100)}%
+              {Math.round(shown.share * 100)}%
             </div>
             <div className="text-muted-foreground text-xs tabular-nums">
-              {formatValue(lit.value)}
+              {formatValue(shown.value)}
             </div>
           </div>
         )}
@@ -130,7 +147,9 @@ interface DonutChartProps {
 
 /** How much the lit slice grows, and how far the others dim. */
 const ACTIVE_SCALE = 1.09;
-const DIMMED_OPACITY = 0.45;
+const DIMMED_OPACITY = 0.4;
+/** One easing for every fade and grow, slow in and slow out. */
+const EASE = '320ms cubic-bezier(0.4, 0, 0.2, 1)';
 
 export interface DonutSlice {
   /** Identifies the slice. Letters and digits only: it names a CSS variable. */

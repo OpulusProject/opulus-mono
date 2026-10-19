@@ -113,13 +113,11 @@ const GainByHolding: React.FC<{
               holding.gainInBase!,
               data.baseCurrency
             )}
-            trailingTitleTone={amountTone(holding.gainInBase)}
             trailingSubtitle={
               holding.gainPercent === null
                 ? undefined
                 : formatSignedPercent(holding.gainPercent)
             }
-            trailingSubtitleTone={amountTone(holding.gainInBase)}
             onClick={() => onOpen(holding.id)}
           />
         ))
