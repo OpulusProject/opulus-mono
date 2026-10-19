@@ -1,10 +1,12 @@
 import type { HoldingDTO, HoldingsResponse } from '@opulus/core/dto';
+import { Link } from '@tanstack/react-router';
 import { TriangleAlert } from 'lucide-react';
 import * as React from 'react';
 
 import { List, ListRow } from '@/common/List';
 import {
   Badge,
+  Button,
   Sheet,
   SheetContent,
   SheetDescription,
@@ -300,7 +302,12 @@ const HoldingActivity: React.FC<{ holding: HoldingDTO }> = ({ holding }) => {
       aria-label="Activity in this holding"
       className="flex flex-col gap-2"
     >
-      <h3 className="text-sm font-semibold">Activity in this holding</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-semibold">Activity in this holding</h3>
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/investments/activity">See all</Link>
+        </Button>
+      </div>
       <List>
         {items.map((item) => (
           <ListRow

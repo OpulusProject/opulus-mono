@@ -52,6 +52,11 @@ const navMain: NavItem[] = [
     title: 'Investments',
     url: '/investments',
     icon: TrendingUp,
+    items: [
+      { title: 'Overview', url: '/investments', exact: true },
+      { title: 'Holdings', url: '/investments/holdings' },
+      { title: 'Activity', url: '/investments/activity' },
+    ],
   },
   {
     title: 'Credit & loans',

@@ -29,17 +29,18 @@ export interface NavItem {
   url: string;
   icon?: LucideIcon;
   /** Child links. When present the item renders as an expandable group. */
-  items?: { title: string; url: string }[];
+  items?: { title: string; url: string; exact?: boolean }[];
 }
 
-function isPathActive(pathname: string, url: string) {
-  return url !== '#' && (pathname === url || pathname.startsWith(`${url}/`));
+function isPathActive(pathname: string, url: string, exact = false) {
+  if (url === '#') return false;
+  return pathname === url || (!exact && pathname.startsWith(`${url}/`));
 }
 
 function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
   const children = item.items ?? [];
   const hasActiveChild = children.some((child) =>
-    isPathActive(pathname, child.url)
+    isPathActive(pathname, child.url, child.exact)
   );
   const [open, setOpen] = React.useState(hasActiveChild);
 
@@ -96,7 +97,7 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
                 <SidebarMenuSubButton
                   asChild
                   className="h-8"
-                  isActive={isPathActive(pathname, child.url)}
+                  isActive={isPathActive(pathname, child.url, child.exact)}
                 >
                   <Link to={child.url}>
                     <span>{child.title}</span>
