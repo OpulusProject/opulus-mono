@@ -7,6 +7,7 @@ import { Page } from '@/common/Page';
 import { Button } from '@/components/ui';
 import { useHoldings } from '@/hooks/investments/useHoldings';
 
+import { AccountsAndGains } from './AccountsAndGains';
 import { PortfolioSummary } from './PortfolioSummary';
 
 /** What the user's investments are worth and made of, and how they have done. */
@@ -58,5 +59,10 @@ const InvestmentsContent: React.FC = () => {
     );
   }
 
-  return <PortfolioSummary data={holdings.data} />;
+  return (
+    <>
+      <PortfolioSummary data={holdings.data} />
+      <AccountsAndGains data={holdings.data} />
+    </>
+  );
 };
