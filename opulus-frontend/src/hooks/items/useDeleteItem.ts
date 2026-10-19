@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { accountKeys } from '@/hooks/accounts/queryKeys';
+import { investmentKeys } from '@/hooks/investments/queryKeys';
 import { transactionKeys } from '@/hooks/transactions/queryKeys';
 import { apiClient } from '@/lib/api/client';
 
@@ -25,6 +26,7 @@ export function useDeleteItem() {
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: itemKeys.all });
       void queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      void queryClient.invalidateQueries({ queryKey: investmentKeys.all });
       void queryClient.invalidateQueries({ queryKey: transactionKeys.all });
     },
   });

@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AxiosError } from 'axios';
 
 import { accountKeys } from '@/hooks/accounts/queryKeys';
+import { investmentKeys } from '@/hooks/investments/queryKeys';
 import { apiClient } from '@/lib/api/client';
 
 import { itemKeys } from './queryKeys';
@@ -34,6 +35,7 @@ export function useCreateItem() {
     onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: itemKeys.all });
       void queryClient.invalidateQueries({ queryKey: accountKeys.all });
+      void queryClient.invalidateQueries({ queryKey: investmentKeys.all });
     },
   });
 }
