@@ -49,10 +49,11 @@ export const InvestmentsFrame: React.FC<InvestmentsFrameProps> = ({
         'Connect a brokerage, TFSA, RRSP or other investment account and Opulus shows what you hold and what it is worth.',
     }}
     actions={
-      <>
+      // Wraps, so on a phone the account menu goes under the toggle.
+      <div className="flex flex-wrap items-center gap-2">
         <Tabs active={active} account={account} />
         <AccountFilter account={account} onChange={onAccountChange} />
-      </>
+      </div>
     }
   >
     <NoAccountsGate>{children}</NoAccountsGate>
@@ -61,6 +62,7 @@ export const InvestmentsFrame: React.FC<InvestmentsFrameProps> = ({
 
 const TABS = [
   { key: 'overview', label: 'Overview', to: '/investments' },
+  { key: 'holdings', label: 'Holdings', to: '/investments/holdings' },
 ] as const;
 
 export type InvestmentsTab = (typeof TABS)[number]['key'];

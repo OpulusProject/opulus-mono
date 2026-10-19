@@ -1,4 +1,5 @@
 import type { HoldingsResponse } from '@opulus/core/dto';
+import { useNavigate } from '@tanstack/react-router';
 import { Landmark } from 'lucide-react';
 import * as React from 'react';
 
@@ -13,7 +14,7 @@ import {
   holdingTitle,
 } from '@/utils/investmentDisplay';
 
-/** Rows each list shows. */
+/** Rows each list shows; the Holdings page has the rest. */
 const ROWS = 5;
 
 interface AccountsAndGainsProps {
@@ -26,27 +27,42 @@ interface AccountsAndGainsProps {
 
 /**
  * Two short lists side by side: what each account is worth, and what each
- * holding has gained. A holding opens its sheet over this page.
+ * holding has gained. An account opens the Holdings page, limited to it; a
+ * holding opens its sheet over this page.
  */
 export const AccountsAndGains: React.FC<AccountsAndGainsProps> = ({
   data,
   isRefreshing = false,
   onOpenHolding,
-}) => (
-  <div className="grid items-start gap-4 lg:grid-cols-2">
-    <ByAccount data={data} isRefreshing={isRefreshing} />
-    <GainByHolding
-      data={data}
-      isRefreshing={isRefreshing}
-      onOpen={onOpenHolding}
-    />
-  </div>
-);
+}) => {
+  const navigate = useNavigate();
+
+  return (
+    <div className="grid items-start gap-4 lg:grid-cols-2">
+      <ByAccount
+        data={data}
+        isRefreshing={isRefreshing}
+        onOpen={(id) =>
+          void navigate({
+            to: '/investments/holdings',
+            search: { account: id },
+          })
+        }
+      />
+      <GainByHolding
+        data={data}
+        isRefreshing={isRefreshing}
+        onOpen={onOpenHolding}
+      />
+    </div>
+  );
+};
 
 const ByAccount: React.FC<{
   data: HoldingsResponse['data'];
   isRefreshing: boolean;
-}> = ({ data, isRefreshing }) => (
+  onOpen: (accountId: string) => void;
+}> = ({ data, isRefreshing, onOpen }) => (
   <List aria-label="By account" isRefreshing={isRefreshing}>
     <ListHeader
       title="By account"
@@ -72,6 +88,7 @@ const ByAccount: React.FC<{
             : 'Balance only'
         }
         trailingSubtitleTone={amountTone(account.gain)}
+        onClick={() => onOpen(account.id)}
       />
     ))}
   </List>

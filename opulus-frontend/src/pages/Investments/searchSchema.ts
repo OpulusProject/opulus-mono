@@ -1,6 +1,18 @@
 import { z } from 'zod';
 
+export type HoldingsSearch = z.infer<typeof holdingsSearchSchema>;
+
 export type OverviewSearch = z.infer<typeof overviewSearchSchema>;
+
+export const holdingsSearchSchema = z.object({
+  account: z.string().optional().catch(undefined),
+  /** The holding whose sheet is open (its id). */
+  holding: z.string().optional().catch(undefined),
+  /** How holdings are laid out; the list is the default. */
+  layout: z.enum(['accounts']).optional().catch(undefined),
+  /** Only accounts of this subtype (tfsa, rrsp, ...). */
+  type: z.string().optional().catch(undefined),
+});
 
 /**
  * The overview's state, kept in the URL so a view survives a refresh and can be
