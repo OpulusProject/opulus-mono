@@ -7,7 +7,8 @@ import { Page } from '@/common/Page';
 import { Button } from '@/components/ui';
 import { useHoldings } from '@/hooks/investments/useHoldings';
 
-import { AccountsAndGains } from './AccountsAndGains';
+import { ByAccountList } from './ByAccountList';
+import { LargestChangesList } from './LargestChangesList';
 import { PortfolioSummary } from './PortfolioSummary';
 
 /** What the user's investments are worth and made of, and how they have done. */
@@ -62,7 +63,10 @@ const InvestmentsContent: React.FC = () => {
   return (
     <>
       <PortfolioSummary data={holdings.data} />
-      <AccountsAndGains data={holdings.data} />
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <ByAccountList data={holdings.data} />
+        <LargestChangesList data={holdings.data} />
+      </div>
     </>
   );
 };
