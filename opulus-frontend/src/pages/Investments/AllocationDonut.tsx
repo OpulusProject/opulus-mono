@@ -1,8 +1,7 @@
 import type { AllocationKind } from '@opulus/core/dto';
 import * as React from 'react';
 
-import { DonutChart } from '@/common/DonutChart';
-import { cn } from '@/lib/utils';
+import { DonutChart, DonutLegend, type DonutSlice } from '@/common/DonutChart';
 import { formatMoney } from '@/utils/accountDisplay';
 import { ALLOCATION_LABELS } from '@/utils/investmentDisplay';
 
@@ -43,50 +42,32 @@ export const AllocationDonut: React.FC<AllocationDonutProps> = ({
   baseCurrency,
 }) => {
   const [active, setActive] = React.useState<string>();
+  const donutSlices: DonutSlice[] = slices.map((slice) => ({
+    key: slice.kind,
+    label: ALLOCATION_LABELS[slice.kind],
+    value: slice.value,
+    share: slice.share,
+    color: KIND_COLOR[slice.kind],
+  }));
+  const formatValue = (value: number) => formatMoney(value, baseCurrency);
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-6 sm:flex-row sm:gap-8">
       <DonutChart
         aria-label="Portfolio by kind"
         className="size-44 shrink-0"
-        slices={slices.map((slice) => ({
-          key: slice.kind,
-          label: ALLOCATION_LABELS[slice.kind],
-          value: slice.value,
-          share: slice.share,
-          color: KIND_COLOR[slice.kind],
-        }))}
-        formatValue={(value) => formatMoney(value, baseCurrency)}
+        slices={donutSlices}
+        formatValue={formatValue}
         activeKey={active}
         onActiveKeyChange={setActive}
       />
-      <ul
-        className="flex w-full min-w-0 flex-col gap-0.5 sm:flex-1"
-        onMouseLeave={() => setActive(undefined)}
-      >
-        {slices.map((slice) => (
-          <li
-            key={slice.kind}
-            onMouseEnter={() => setActive(slice.kind)}
-            className={cn(
-              '-mx-1.5 flex items-center gap-2 rounded-md px-1.5 py-1 text-sm transition-colors',
-              active === slice.kind && 'bg-muted/60'
-            )}
-          >
-            <span
-              aria-hidden="true"
-              className="size-2.5 shrink-0 rounded-[3px]"
-              style={{ backgroundColor: KIND_COLOR[slice.kind] }}
-            />
-            <span className="min-w-0 flex-1 truncate">
-              {ALLOCATION_LABELS[slice.kind]}
-            </span>
-            <span className="shrink-0 text-right tabular-nums">
-              {formatMoney(slice.value, baseCurrency)}
-            </span>
-          </li>
-        ))}
-      </ul>
+      <DonutLegend
+        className="w-full sm:flex-1"
+        slices={donutSlices}
+        formatValue={formatValue}
+        activeKey={active}
+        onActiveKeyChange={setActive}
+      />
     </div>
   );
 };

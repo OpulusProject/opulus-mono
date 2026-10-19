@@ -1,19 +1,27 @@
+import { Link } from '@tanstack/react-router';
+import { Landmark } from 'lucide-react';
 import * as React from 'react';
 
-import { List, ListError } from '@/common/List';
+import { List, ListEmpty, ListError } from '@/common/List';
+import { Page } from '@/common/Page';
+import { Button } from '@/components/ui';
 import { useHoldings } from '@/hooks/investments/useHoldings';
 
-import { InvestmentsFrame } from './InvestmentsFrame';
 import { PortfolioSummary } from './PortfolioSummary';
 
 /** What the user's investments are worth and made of, and how they have done. */
 export const Investments: React.FC = () => (
-  <InvestmentsFrame
+  <Page
     title="Investments"
     description="What you own across your investment accounts."
+    requiresConnections={{
+      title: 'No investment accounts yet',
+      description:
+        'Connect a brokerage, TFSA, RRSP or other investment account and Opulus shows what you hold and what it is worth.',
+    }}
   >
     <InvestmentsContent />
-  </InvestmentsFrame>
+  </Page>
 );
 
 // Its own component so that its queries wait until the page knows something is
@@ -28,6 +36,23 @@ const InvestmentsContent: React.FC = () => {
         <ListError
           subject="your investments"
           onRetry={() => void holdings.refetch()}
+        />
+      </List>
+    );
+  }
+  // Connected, but with no investment account: say so, and where cash lives.
+  if (holdings.data.accounts.length === 0) {
+    return (
+      <List>
+        <ListEmpty
+          icon={Landmark}
+          title="No investment accounts yet"
+          description="Connect a brokerage, TFSA, RRSP or other investment account and Opulus shows what you hold and what it is worth. Your cash accounts are on the Accounts page."
+          action={
+            <Button asChild>
+              <Link to="/settings/connections">Go to connections</Link>
+            </Button>
+          }
         />
       </List>
     );
