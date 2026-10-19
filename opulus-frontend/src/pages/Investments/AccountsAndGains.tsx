@@ -1,5 +1,4 @@
 import type { HoldingsResponse } from '@opulus/core/dto';
-import { useNavigate } from '@tanstack/react-router';
 import { Landmark } from 'lucide-react';
 import * as React from 'react';
 
@@ -21,42 +20,32 @@ interface AccountsAndGainsProps {
   data: HoldingsResponse['data'];
   /** The rows shown are the previous ones, while new ones load. */
   isRefreshing?: boolean;
+  /** Limit the page to this account. */
+  onOpenAccount: (accountId: string) => void;
   /** Open a holding's sheet, on this page. */
   onOpenHolding: (holdingId: string) => void;
 }
 
 /**
  * Two short lists side by side: what each account is worth, and what each
- * holding has gained. An account opens the Holdings page, limited to it; a
- * holding opens its sheet over this page.
+ * holding has gained. An account limits the page to it; a holding opens its
+ * sheet.
  */
 export const AccountsAndGains: React.FC<AccountsAndGainsProps> = ({
   data,
   isRefreshing = false,
+  onOpenAccount,
   onOpenHolding,
-}) => {
-  const navigate = useNavigate();
-
-  return (
-    <div className="grid items-start gap-4 lg:grid-cols-2">
-      <ByAccount
-        data={data}
-        isRefreshing={isRefreshing}
-        onOpen={(id) =>
-          void navigate({
-            to: '/investments/holdings',
-            search: { account: id },
-          })
-        }
-      />
-      <GainByHolding
-        data={data}
-        isRefreshing={isRefreshing}
-        onOpen={onOpenHolding}
-      />
-    </div>
-  );
-};
+}) => (
+  <div className="grid items-start gap-4 lg:grid-cols-2">
+    <ByAccount data={data} isRefreshing={isRefreshing} onOpen={onOpenAccount} />
+    <GainByHolding
+      data={data}
+      isRefreshing={isRefreshing}
+      onOpen={onOpenHolding}
+    />
+  </div>
+);
 
 const ByAccount: React.FC<{
   data: HoldingsResponse['data'];

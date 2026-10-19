@@ -16,14 +16,12 @@ import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedTransactionsRouteImport } from './routes/_authenticated/transactions'
 import { Route as AuthenticatedSpendingRouteImport } from './routes/_authenticated/spending'
+import { Route as AuthenticatedInvestmentsRouteImport } from './routes/_authenticated/investments'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCreditAndLoansRouteImport } from './routes/_authenticated/credit-and-loans'
 import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticated/accounts'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
-import { Route as AuthenticatedInvestmentsIndexRouteImport } from './routes/_authenticated/investments.index'
 import { Route as AuthenticatedSettingsConnectionsRouteImport } from './routes/_authenticated/settings.connections'
-import { Route as AuthenticatedInvestmentsHoldingsRouteImport } from './routes/_authenticated/investments.holdings'
-import { Route as AuthenticatedInvestmentsActivityRouteImport } from './routes/_authenticated/investments.activity'
 
 const TwoFactorRoute = TwoFactorRouteImport.update({
   id: '/two-factor',
@@ -60,6 +58,12 @@ const AuthenticatedSpendingRoute = AuthenticatedSpendingRouteImport.update({
   path: '/spending',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedInvestmentsRoute =
+  AuthenticatedInvestmentsRouteImport.update({
+    id: '/investments',
+    path: '/investments',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -82,28 +86,10 @@ const AuthenticatedSettingsIndexRoute =
     path: '/settings/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
-const AuthenticatedInvestmentsIndexRoute =
-  AuthenticatedInvestmentsIndexRouteImport.update({
-    id: '/investments/',
-    path: '/investments/',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
 const AuthenticatedSettingsConnectionsRoute =
   AuthenticatedSettingsConnectionsRouteImport.update({
     id: '/settings/connections',
     path: '/settings/connections',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedInvestmentsHoldingsRoute =
-  AuthenticatedInvestmentsHoldingsRouteImport.update({
-    id: '/investments/holdings',
-    path: '/investments/holdings',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedInvestmentsActivityRoute =
-  AuthenticatedInvestmentsActivityRouteImport.update({
-    id: '/investments/activity',
-    path: '/investments/activity',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 
@@ -115,12 +101,10 @@ export interface FileRoutesByFullPath {
   '/accounts': typeof AuthenticatedAccountsRoute
   '/credit-and-loans': typeof AuthenticatedCreditAndLoansRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/investments': typeof AuthenticatedInvestmentsRoute
   '/spending': typeof AuthenticatedSpendingRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
-  '/investments/activity': typeof AuthenticatedInvestmentsActivityRoute
-  '/investments/holdings': typeof AuthenticatedInvestmentsHoldingsRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
-  '/investments': typeof AuthenticatedInvestmentsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -131,12 +115,10 @@ export interface FileRoutesByTo {
   '/accounts': typeof AuthenticatedAccountsRoute
   '/credit-and-loans': typeof AuthenticatedCreditAndLoansRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/investments': typeof AuthenticatedInvestmentsRoute
   '/spending': typeof AuthenticatedSpendingRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
-  '/investments/activity': typeof AuthenticatedInvestmentsActivityRoute
-  '/investments/holdings': typeof AuthenticatedInvestmentsHoldingsRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
-  '/investments': typeof AuthenticatedInvestmentsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRoutesById {
@@ -149,12 +131,10 @@ export interface FileRoutesById {
   '/_authenticated/accounts': typeof AuthenticatedAccountsRoute
   '/_authenticated/credit-and-loans': typeof AuthenticatedCreditAndLoansRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/investments': typeof AuthenticatedInvestmentsRoute
   '/_authenticated/spending': typeof AuthenticatedSpendingRoute
   '/_authenticated/transactions': typeof AuthenticatedTransactionsRoute
-  '/_authenticated/investments/activity': typeof AuthenticatedInvestmentsActivityRoute
-  '/_authenticated/investments/holdings': typeof AuthenticatedInvestmentsHoldingsRoute
   '/_authenticated/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
-  '/_authenticated/investments/': typeof AuthenticatedInvestmentsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
 }
 export interface FileRouteTypes {
@@ -167,12 +147,10 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/credit-and-loans'
     | '/dashboard'
+    | '/investments'
     | '/spending'
     | '/transactions'
-    | '/investments/activity'
-    | '/investments/holdings'
     | '/settings/connections'
-    | '/investments'
     | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -183,12 +161,10 @@ export interface FileRouteTypes {
     | '/accounts'
     | '/credit-and-loans'
     | '/dashboard'
+    | '/investments'
     | '/spending'
     | '/transactions'
-    | '/investments/activity'
-    | '/investments/holdings'
     | '/settings/connections'
-    | '/investments'
     | '/settings'
   id:
     | '__root__'
@@ -200,12 +176,10 @@ export interface FileRouteTypes {
     | '/_authenticated/accounts'
     | '/_authenticated/credit-and-loans'
     | '/_authenticated/dashboard'
+    | '/_authenticated/investments'
     | '/_authenticated/spending'
     | '/_authenticated/transactions'
-    | '/_authenticated/investments/activity'
-    | '/_authenticated/investments/holdings'
     | '/_authenticated/settings/connections'
-    | '/_authenticated/investments/'
     | '/_authenticated/settings/'
   fileRoutesById: FileRoutesById
 }
@@ -268,6 +242,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSpendingRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/investments': {
+      id: '/_authenticated/investments'
+      path: '/investments'
+      fullPath: '/investments'
+      preLoaderRoute: typeof AuthenticatedInvestmentsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -296,32 +277,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
-    '/_authenticated/investments/': {
-      id: '/_authenticated/investments/'
-      path: '/investments'
-      fullPath: '/investments'
-      preLoaderRoute: typeof AuthenticatedInvestmentsIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
     '/_authenticated/settings/connections': {
       id: '/_authenticated/settings/connections'
       path: '/settings/connections'
       fullPath: '/settings/connections'
       preLoaderRoute: typeof AuthenticatedSettingsConnectionsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/investments/holdings': {
-      id: '/_authenticated/investments/holdings'
-      path: '/investments/holdings'
-      fullPath: '/investments/holdings'
-      preLoaderRoute: typeof AuthenticatedInvestmentsHoldingsRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/investments/activity': {
-      id: '/_authenticated/investments/activity'
-      path: '/investments/activity'
-      fullPath: '/investments/activity'
-      preLoaderRoute: typeof AuthenticatedInvestmentsActivityRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
   }
@@ -331,12 +291,10 @@ interface AuthenticatedRouteChildren {
   AuthenticatedAccountsRoute: typeof AuthenticatedAccountsRoute
   AuthenticatedCreditAndLoansRoute: typeof AuthenticatedCreditAndLoansRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedInvestmentsRoute: typeof AuthenticatedInvestmentsRoute
   AuthenticatedSpendingRoute: typeof AuthenticatedSpendingRoute
   AuthenticatedTransactionsRoute: typeof AuthenticatedTransactionsRoute
-  AuthenticatedInvestmentsActivityRoute: typeof AuthenticatedInvestmentsActivityRoute
-  AuthenticatedInvestmentsHoldingsRoute: typeof AuthenticatedInvestmentsHoldingsRoute
   AuthenticatedSettingsConnectionsRoute: typeof AuthenticatedSettingsConnectionsRoute
-  AuthenticatedInvestmentsIndexRoute: typeof AuthenticatedInvestmentsIndexRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
@@ -344,12 +302,10 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAccountsRoute: AuthenticatedAccountsRoute,
   AuthenticatedCreditAndLoansRoute: AuthenticatedCreditAndLoansRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedInvestmentsRoute: AuthenticatedInvestmentsRoute,
   AuthenticatedSpendingRoute: AuthenticatedSpendingRoute,
   AuthenticatedTransactionsRoute: AuthenticatedTransactionsRoute,
-  AuthenticatedInvestmentsActivityRoute: AuthenticatedInvestmentsActivityRoute,
-  AuthenticatedInvestmentsHoldingsRoute: AuthenticatedInvestmentsHoldingsRoute,
   AuthenticatedSettingsConnectionsRoute: AuthenticatedSettingsConnectionsRoute,
-  AuthenticatedInvestmentsIndexRoute: AuthenticatedInvestmentsIndexRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
 

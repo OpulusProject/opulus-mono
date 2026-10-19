@@ -27,7 +27,7 @@ import {
   holdingTitle,
 } from '@/utils/investmentDisplay';
 
-import type { HoldingsSearch } from './searchSchema';
+import type { InvestmentsSearch } from './searchSchema';
 
 const ALL_TYPES = 'all';
 
@@ -48,9 +48,9 @@ interface HoldingsListProps {
   isRefreshing?: boolean;
   /** Account subtypes to pick from, e.g. ["tfsa", "rrsp"]. */
   subtypes: string[];
-  layout: HoldingsSearch['layout'];
+  layout: InvestmentsSearch['layout'];
   type: string | undefined;
-  onLayoutChange: (layout: HoldingsSearch['layout']) => void;
+  onLayoutChange: (layout: InvestmentsSearch['layout']) => void;
   onTypeChange: (type: string | undefined) => void;
   onOpenHolding: (holdingId: string) => void;
 }

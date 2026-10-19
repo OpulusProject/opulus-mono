@@ -1,4 +1,3 @@
-import { getRouteApi } from '@tanstack/react-router';
 import { Receipt } from 'lucide-react';
 import * as React from 'react';
 
@@ -33,10 +32,7 @@ import {
   formatSignedMoney,
 } from '@/utils/investmentDisplay';
 
-import { InvestmentsFrame } from './InvestmentsFrame';
-import { ACTIVITY_FILTER_KINDS, type ActivitySearch } from './searchSchema';
-
-const route = getRouteApi('/_authenticated/investments/activity');
+import { ACTIVITY_FILTER_KINDS, type InvestmentsSearch } from './searchSchema';
 
 const KIND_LABELS = {
   buy: 'Buys',
@@ -49,36 +45,9 @@ const KIND_LABELS = {
 const ALL_KINDS = 'all';
 
 /** What went in, came out and was earned across the user's investment accounts. */
-export const InvestmentActivity: React.FC = () => {
-  const search = route.useSearch();
-  const navigate = route.useNavigate();
-
-  const update = (changes: Partial<ActivitySearch>) =>
-    void navigate({
-      search: (previous) =>
-        Object.fromEntries(
-          Object.entries({ ...previous, ...changes }).filter(
-            ([, value]) => value !== undefined
-          )
-        ),
-      replace: true,
-    });
-
-  return (
-    <InvestmentsFrame
-      title="Activity"
-      description="What you put in, took out and earned."
-      account={search.account}
-      onAccountChange={(account) => update({ account })}
-    >
-      <ActivityContent search={search} update={update} />
-    </InvestmentsFrame>
-  );
-};
-
-const ActivityContent: React.FC<{
-  search: ActivitySearch;
-  update: (changes: Partial<ActivitySearch>) => void;
+export const InvestmentActivity: React.FC<{
+  search: Pick<InvestmentsSearch, 'account' | 'kind' | 'range'>;
+  update: (changes: Partial<InvestmentsSearch>) => void;
 }> = ({ search, update }) => {
   // Fixed for the life of the page, so the query key does not change under it.
   const [{ yearStart, twelveMonthsAgo }] = React.useState(() => ({
@@ -112,7 +81,8 @@ const ActivityContent: React.FC<{
   });
 
   return (
-    <>
+    <section aria-label="Activity" className="flex flex-col gap-4">
+      <h3 className="text-base font-semibold">Activity</h3>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ToggleGroup
           type="single"
@@ -214,7 +184,7 @@ const ActivityContent: React.FC<{
           />
         )}
       </List>
-    </>
+    </section>
   );
 };
 
