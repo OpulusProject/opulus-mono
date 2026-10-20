@@ -17,6 +17,8 @@ interface LargestChangesListProps {
   data: HoldingsResponse['data'];
   /** The rows shown are the previous ones, while new ones load. */
   isRefreshing?: boolean;
+  /** Open a holding's sheet. */
+  onOpenHolding: (holdingId: string) => void;
 }
 
 /**
@@ -25,11 +27,12 @@ interface LargestChangesListProps {
  * the rows run on into the flat and the losses, so this is not only gains. The
  * ticker and its account are on the left; the amount is on the right with the
  * percentage under it, and only the percentage is coloured (green, red, or
- * neutral for none), as in By account.
+ * neutral for none), as in By account. A row opens the holding's sheet.
  */
 export const LargestChangesList: React.FC<LargestChangesListProps> = ({
   data,
   isRefreshing = false,
+  onOpenHolding,
 }) => {
   // The server ranks them; the ids are looked up here.
   const ranked = data.summary.gainRanking
@@ -66,6 +69,7 @@ export const LargestChangesList: React.FC<LargestChangesListProps> = ({
                 : formatSignedPercent(holding.gainPercent)
             }
             trailingSubtitleTone={amountTone(holding.gainInBase)}
+            onClick={() => onOpenHolding(holding.id)}
           />
         ))
       )}

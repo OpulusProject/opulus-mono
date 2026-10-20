@@ -9,6 +9,7 @@ import { useHoldings } from '@/hooks/investments/useHoldings';
 
 import { AccountFilter } from './AccountFilter';
 import { ByAccountList } from './ByAccountList';
+import { HoldingSheet } from './HoldingSheet';
 import { LargestChangesList } from './LargestChangesList';
 import { PortfolioSummary } from './PortfolioSummary';
 
@@ -41,14 +42,27 @@ export const Investments: React.FC = () => {
         />
       }
     >
-      <InvestmentsContent accounts={accounts} />
+      <InvestmentsContent
+        accounts={accounts}
+        holding={search.holding}
+        onHoldingChange={(holding) =>
+          void navigate({
+            search: (previous) => ({ ...previous, holding }),
+            replace: true,
+          })
+        }
+      />
     </Page>
   );
 };
 
 // Its own component so that its queries wait until the page knows something is
 // connected.
-const InvestmentsContent: React.FC<{ accounts: string[] }> = ({ accounts }) => {
+const InvestmentsContent: React.FC<{
+  accounts: string[];
+  holding: string | undefined;
+  onHoldingChange: (holding: string | undefined) => void;
+}> = ({ accounts, holding, onHoldingChange }) => {
   const holdings = useHoldings({ accountIds: accounts });
 
   if (holdings.isLoading) return <List isLoading aria-label="Loading" />;
@@ -95,8 +109,14 @@ const InvestmentsContent: React.FC<{ accounts: string[] }> = ({ accounts }) => {
         <LargestChangesList
           data={holdings.data}
           isRefreshing={holdings.isPlaceholderData}
+          onOpenHolding={onHoldingChange}
         />
       </div>
+      <HoldingSheet
+        data={holdings.data}
+        holdingId={holding}
+        onClose={() => onHoldingChange(undefined)}
+      />
     </>
   );
 };
