@@ -12,7 +12,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui';
 import { useHoldings } from '@/hooks/investments/useHoldings';
-import { accountName } from '@/utils/investmentDisplay';
 
 interface AccountFilterProps {
   /** The accounts the page is limited to (our account ids); none is all of them. */
@@ -21,10 +20,10 @@ interface AccountFilterProps {
 }
 
 /**
- * A menu for limiting the page to some of the user's investment accounts: a
- * dashed button with a filter icon, saying "All accounts", one account's name,
- * or how many; it opens a list of checkboxes. Not shown with fewer than two
- * accounts, as there is nothing to choose.
+ * A menu for limiting the page to some of the user's investment accounts, each
+ * listed by its name: a dashed button with a filter icon, saying "All
+ * accounts", one account's name, or how many; it opens a list of checkboxes.
+ * Not shown with fewer than two accounts, as there is nothing to choose.
  */
 export const AccountFilter: React.FC<AccountFilterProps> = ({
   selected,
@@ -36,7 +35,7 @@ export const AccountFilter: React.FC<AccountFilterProps> = ({
 
   const options: MenuOption[] = accounts.map((account) => ({
     value: account.id,
-    label: accountName(account),
+    label: account.name,
   }));
   const label =
     selected.length === 0
@@ -62,7 +61,7 @@ export const AccountFilter: React.FC<AccountFilterProps> = ({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="max-h-80 min-w-64 overflow-y-auto"
+        className="max-h-80 min-w-48 overflow-y-auto"
       >
         <DropdownMenuLabel>Filter by account</DropdownMenuLabel>
         <DropdownMenuSeparator />
