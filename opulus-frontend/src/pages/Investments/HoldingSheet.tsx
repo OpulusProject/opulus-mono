@@ -78,7 +78,7 @@ const HoldingDetail: React.FC<{
 
   return (
     <>
-      <SheetHeader className="pr-12">
+      <SheetHeader className="border-b pr-12">
         <SheetTitle className="text-lg">{holdingTitle(holding)}</SheetTitle>
         <SheetDescription>{security.name}</SheetDescription>
         <div className="flex flex-wrap gap-1.5 pt-1">
