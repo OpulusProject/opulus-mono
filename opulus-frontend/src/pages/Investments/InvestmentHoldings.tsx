@@ -10,7 +10,7 @@ import { HoldingSheet } from './HoldingSheet';
 import { HoldingsList } from './HoldingsList';
 import { InvestmentsTabs } from './InvestmentsTabs';
 import { NoInvestmentAccounts } from './NoInvestmentAccounts';
-import type { HoldingsSearch } from './searchSchema';
+import type { OverviewSearch } from './searchSchema';
 
 const route = getRouteApi('/_authenticated/investments/holdings');
 
@@ -20,7 +20,7 @@ export const InvestmentHoldings: React.FC = () => {
   const navigate = route.useNavigate();
   const accounts = React.useMemo(() => search.account ?? [], [search.account]);
 
-  const update = (changes: Partial<HoldingsSearch>) =>
+  const update = (changes: Partial<OverviewSearch>) =>
     void navigate({
       search: (previous) =>
         Object.fromEntries(
@@ -34,7 +34,7 @@ export const InvestmentHoldings: React.FC = () => {
   return (
     <Page
       title="Investments"
-      description="Everything you hold, account by account."
+      description="Everything you hold, by kind of investment."
       requiresConnections={{
         title: 'No investment accounts yet',
         description:
@@ -50,7 +50,6 @@ export const InvestmentHoldings: React.FC = () => {
               update({
                 account: selected.length > 0 ? selected : undefined,
                 holding: undefined,
-                type: undefined,
               })
             }
           />
@@ -65,20 +64,12 @@ export const InvestmentHoldings: React.FC = () => {
 // Its own component so that its queries wait until the page knows something is
 // connected.
 const HoldingsContent: React.FC<{
-  search: HoldingsSearch;
-  update: (changes: Partial<HoldingsSearch>) => void;
+  search: OverviewSearch;
+  update: (changes: Partial<OverviewSearch>) => void;
 }> = ({ search, update }) => {
   const holdings = useHoldings({
     accountIds: search.account,
-    accountSubtype: search.type,
-    sort: search.layout === 'accounts' ? 'account' : undefined,
   });
-  // The types to pick from are those of all the accounts, not just those in view.
-  const all = useHoldings().data;
-  const subtypes = all?.accounts.flatMap((account) =>
-    account.subtype ? [account.subtype] : []
-  );
-
   if (holdings.isLoading) return <List isLoading aria-label="Loading" />;
   if (holdings.isError || !holdings.data) {
     return (
@@ -90,7 +81,9 @@ const HoldingsContent: React.FC<{
       </List>
     );
   }
-  if (all?.accounts.length === 0) return <NoInvestmentAccounts />;
+  if (holdings.data.accounts.length === 0 && !search.account) {
+    return <NoInvestmentAccounts />;
+  }
   const data = holdings.data;
 
   return (
@@ -98,11 +91,6 @@ const HoldingsContent: React.FC<{
       <HoldingsList
         data={data}
         isRefreshing={holdings.isPlaceholderData}
-        subtypes={[...new Set(subtypes)]}
-        layout={search.layout}
-        type={search.type}
-        onLayoutChange={(layout) => update({ layout })}
-        onTypeChange={(type) => update({ type })}
         onOpenHolding={(holding) => update({ holding })}
       />
       <HoldingSheet

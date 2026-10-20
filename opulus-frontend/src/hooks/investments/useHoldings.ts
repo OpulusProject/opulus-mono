@@ -10,10 +10,6 @@ export interface HoldingsParams {
   accountIds?: string[];
   /** Only holdings of this security (our security id). */
   securityId?: string;
-  /** Only accounts of this subtype (tfsa, rrsp, ...). */
-  accountSubtype?: string;
-  /** `account` groups the holdings account by account (largest first otherwise). */
-  sort?: 'value' | 'account';
 }
 
 const getHoldingsApi = async (
@@ -25,8 +21,6 @@ const getHoldingsApi = async (
       params: {
         ...(params.accountIds?.length && { accountId: params.accountIds }),
         ...(params.securityId && { securityId: params.securityId }),
-        ...(params.accountSubtype && { accountSubtype: params.accountSubtype }),
-        ...(params.sort && { sort: params.sort }),
       },
       // Repeat the parameter (?accountId=a&accountId=b), not accountId[]=a.
       paramsSerializer: { indexes: null },

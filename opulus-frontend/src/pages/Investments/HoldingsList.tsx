@@ -1,24 +1,12 @@
-import type {
-  HoldingDTO,
-  HoldingsAccountDTO,
-  HoldingsResponse,
-} from '@opulus/core/dto';
+import type { HoldingDTO, HoldingsResponse } from '@opulus/core/dto';
 import { Coins, Gem, Landmark, LineChart, Wallet } from 'lucide-react';
 import * as React from 'react';
 
-import { List, ListEmpty, ListGroup, ListHeader, ListRow } from '@/common/List';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  ToggleGroup,
-  ToggleGroupItem,
-} from '@/components/ui';
+import { List, ListEmpty, ListGroup, ListRow } from '@/common/List';
 import type { Notice } from '@/types/notice';
 import { formatMoney } from '@/utils/accountDisplay';
 import {
+  ALLOCATION_LABELS,
   accountLabel,
   amountTone,
   daysUntil,
@@ -26,10 +14,6 @@ import {
   formatPercent,
   holdingTitle,
 } from '@/utils/investmentDisplay';
-
-import type { HoldingsSearch } from './searchSchema';
-
-const ALL_TYPES = 'all';
 
 const KIND_ICONS = {
   etf: LineChart,
@@ -46,107 +30,52 @@ interface HoldingsListProps {
   data: HoldingsResponse['data'];
   /** The rows shown are the previous ones, while new ones load. */
   isRefreshing?: boolean;
-  /** Account subtypes to pick from, e.g. ["tfsa", "rrsp"]. */
-  subtypes: string[];
-  layout: HoldingsSearch['layout'];
-  type: string | undefined;
-  onLayoutChange: (layout: HoldingsSearch['layout']) => void;
-  onTypeChange: (type: string | undefined) => void;
   onOpenHolding: (holdingId: string) => void;
 }
 
 /**
- * Every holding, largest first, as one list or grouped by account, and limited
- * to one kind of account (TFSA, RRSP, ...). Each opens its sheet.
+ * Every holding, one group per kind (stocks, ETFs, bonds, ...) as on Credit and
+ * loans: the largest kind first, each with its total (the server's allocation)
+ * and its holdings largest first. Each opens its sheet.
  */
 export const HoldingsList: React.FC<HoldingsListProps> = ({
   data,
   isRefreshing = false,
-  subtypes,
-  layout,
-  type,
-  onLayoutChange,
-  onTypeChange,
   onOpenHolding,
 }) => {
-  const holdings = data.holdings;
-
-  const row = (holding: HoldingDTO, showAccount: boolean) => (
-    <HoldingRow
-      key={holding.id}
-      holding={holding}
-      baseCurrency={data.baseCurrency}
-      showAccount={showAccount}
-      onOpen={() => onOpenHolding(holding.id)}
-    />
-  );
+  const groups = data.summary.allocation.flatMap((slice) => {
+    if (slice.kind === 'balance') return [];
+    const rows = data.holdings.filter(
+      (holding) => holding.security.kind === slice.kind
+    );
+    return rows.length > 0 ? [{ slice, rows }] : [];
+  });
 
   return (
     <List aria-label="Holdings" isRefreshing={isRefreshing}>
-      <ListHeader
-        title="Holdings"
-        trailingTitle={`${holdings.length}`}
-        action={
-          <div className="flex items-center gap-2">
-            {subtypes.length > 1 && (
-              <Select
-                value={type ?? ALL_TYPES}
-                onValueChange={(value) =>
-                  onTypeChange(value === ALL_TYPES ? undefined : value)
-                }
-              >
-                <SelectTrigger
-                  size="sm"
-                  className="w-28"
-                  aria-label="Account type"
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={ALL_TYPES}>All types</SelectItem>
-                  {subtypes.map((subtype) => (
-                    <SelectItem key={subtype} value={subtype}>
-                      {accountLabel({ subtype, mask: null })}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              size="sm"
-              value={layout ?? 'list'}
-              onValueChange={(value) => {
-                if (value)
-                  onLayoutChange(value === 'accounts' ? 'accounts' : undefined);
-              }}
-              aria-label="Layout"
-            >
-              <ToggleGroupItem value="list">List</ToggleGroupItem>
-              <ToggleGroupItem value="accounts">By account</ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-        }
-      />
-      {holdings.length === 0 ? (
+      {groups.length === 0 ? (
         <ListEmpty
           icon={Coins}
           title="No holdings to show"
           description="Your institutions have not reported any holdings for these accounts."
         />
-      ) : layout === 'accounts' ? (
-        byAccount(holdings, data.accounts).map(({ account, rows }) => (
+      ) : (
+        groups.map(({ slice, rows }) => (
           <ListGroup
-            key={account.id}
-            title={`${account.name} · ${accountLabel(account)}`}
-            trailingTitle={formatMoney(account.value, data.baseCurrency)}
+            key={slice.kind}
+            title={ALLOCATION_LABELS[slice.kind]}
+            trailingTitle={formatMoney(slice.value, data.baseCurrency)}
           >
-            {rows.map((holding) => row(holding, false))}
+            {rows.map((holding) => (
+              <HoldingRow
+                key={holding.id}
+                holding={holding}
+                baseCurrency={data.baseCurrency}
+                onOpen={() => onOpenHolding(holding.id)}
+              />
+            ))}
           </ListGroup>
         ))
-      ) : (
-        holdings.map((holding) => row(holding, true))
       )}
     </List>
   );
@@ -155,9 +84,8 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({
 const HoldingRow: React.FC<{
   holding: HoldingDTO;
   baseCurrency: string;
-  showAccount: boolean;
   onOpen: () => void;
-}> = ({ holding, baseCurrency, showAccount, onOpen }) => {
+}> = ({ holding, baseCurrency, onOpen }) => {
   const { security } = holding;
   const cash = security.kind === 'cash';
   const price = formatMoney(holding.price, holding.currency);
@@ -170,9 +98,7 @@ const HoldingRow: React.FC<{
   const subtitle = [
     cash ? null : security.name,
     detail,
-    showAccount
-      ? `${holding.accountName} ${accountLabel({ subtype: holding.accountSubtype, mask: holding.accountMask })}`
-      : null,
+    `${holding.accountName} ${accountLabel({ subtype: holding.accountSubtype, mask: holding.accountMask })}`,
   ]
     .filter(Boolean)
     .join(' · ');
@@ -211,21 +137,3 @@ const HoldingRow: React.FC<{
     />
   );
 };
-
-/**
- * Put a heading between the rows of different accounts. The server sends them
- * account by account (`sort=account`), so each account's rows are adjacent.
- */
-function byAccount(holdings: HoldingDTO[], accounts: HoldingsAccountDTO[]) {
-  const groups: { account: HoldingsAccountDTO; rows: HoldingDTO[] }[] = [];
-  for (const holding of holdings) {
-    const last = groups[groups.length - 1];
-    if (last?.account.id === holding.accountId) {
-      last.rows.push(holding);
-    } else {
-      const account = accounts.find((entry) => entry.id === holding.accountId);
-      if (account) groups.push({ account, rows: [holding] });
-    }
-  }
-  return groups;
-}
