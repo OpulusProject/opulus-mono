@@ -34,7 +34,7 @@ interface HoldingsListProps {
 }
 
 /**
- * Every holding, one group per kind (stocks, ETFs, bonds, ...) as on Credit and
+ * Every holding but cash, one group per kind (stocks, ETFs, bonds, ...) as on Credit and
  * loans: the largest kind first, each with its total (the server's allocation)
  * and its holdings largest first. Each opens its sheet.
  */
@@ -44,7 +44,7 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({
   onOpenHolding,
 }) => {
   const groups = data.summary.allocation.flatMap((slice) => {
-    if (slice.kind === 'balance') return [];
+    if (slice.kind === 'balance' || slice.kind === 'cash') return [];
     const rows = data.holdings.filter(
       (holding) => holding.security.kind === slice.kind
     );
