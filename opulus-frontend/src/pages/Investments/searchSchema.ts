@@ -10,4 +10,6 @@ export type OverviewSearch = z.infer<typeof overviewSearchSchema>;
 export const overviewSearchSchema = z.object({
   /** Only these accounts (our account ids); none is all of them. */
   account: z.array(z.string()).optional().catch(undefined),
+  /** The holding whose sheet is open (its id). */
+  holding: z.string().optional().catch(undefined),
 });
