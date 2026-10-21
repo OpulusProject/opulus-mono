@@ -1,4 +1,8 @@
-import type { HoldingDTO, HoldingsResponse } from '@opulus/core/dto';
+import type {
+  HoldingDTO,
+  HoldingsResponse,
+  PositionDTO,
+} from '@opulus/core/dto';
 import { TriangleAlert } from 'lucide-react';
 import * as React from 'react';
 
@@ -12,13 +16,13 @@ import {
   SheetTitle,
 } from '@/components/ui';
 import { useActivity } from '@/hooks/investments/useActivity';
-import { useHoldings } from '@/hooks/investments/useHoldings';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/utils/accountDisplay';
 import {
   KIND_LABELS,
   accountLabel,
   activityIcon,
+  activityQuantity,
   activitySubtitle,
   activityTitle,
   daysUntil,
@@ -27,6 +31,7 @@ import {
   formatPercent,
   formatShortDay,
   formatSignedMoney,
+  formatSignedPercent,
   gainTone,
   holdingTitle,
   timeUntil,
@@ -71,10 +76,25 @@ const HoldingDetail: React.FC<{
   const { security } = holding;
   const { baseCurrency } = data;
   const foreign = holding.currency && holding.currency !== baseCurrency;
-  // The same security in other accounts: the server finds them.
-  const heldIn = useHoldings({ securityId: security.id }).data?.holdings ?? [
-    holding,
-  ];
+  // The same security in the other accounts in view (the filter's, if any).
+  const heldIn = data.holdings.filter(
+    (entry) => entry.security.id === security.id
+  );
+  // Held in several of them, the sheet is for all together: the server adds up.
+  const position = data.positions.find((entry) =>
+    entry.holdingIds.includes(holding.id)
+  );
+  const merged = position && position.accountCount > 1 ? position : undefined;
+  const view: HoldingDTO = merged
+    ? {
+        ...holding,
+        quantity: merged.quantity,
+        share: merged.share,
+        costBasis: merged.costBasis,
+        averageCost: merged.averageCost,
+        dividends: merged.dividends,
+      }
+    : holding;
 
   return (
     <>
@@ -102,36 +122,40 @@ const HoldingDetail: React.FC<{
       </SheetHeader>
 
       <div className="flex flex-col gap-6 px-4 pb-6">
-        <section aria-label="Your position" className="flex flex-col gap-1">
-          <div className="text-muted-foreground text-xs">Your position</div>
-          <div className="text-3xl font-semibold tracking-tight tabular-nums">
-            {formatMoney(holding.valueInBase, baseCurrency)}
-          </div>
-          {foreign && (
-            <div className="text-muted-foreground text-xs tabular-nums">
-              {formatMoney(holding.value, holding.currency)}
+        {merged ? (
+          <MergedPosition position={merged} baseCurrency={baseCurrency} />
+        ) : (
+          <section aria-label="Your position" className="flex flex-col gap-1">
+            <div className="text-muted-foreground text-xs">Your position</div>
+            <div className="text-3xl font-semibold tracking-tight tabular-nums">
+              {formatMoney(holding.valueInBase, baseCurrency)}
             </div>
-          )}
-          {holding.gain !== null && (
-            <div className="flex items-center gap-2 pt-1">
-              <Badge
-                variant="secondary"
-                className={cn('tabular-nums', gainTone(holding.gain))}
-              >
-                {formatGain(
-                  holding.gain,
-                  holding.gainPercent,
-                  holding.currency
-                )}
-              </Badge>
-              <span className="text-muted-foreground text-xs">
-                since purchase
-              </span>
-            </div>
-          )}
-        </section>
+            {foreign && (
+              <div className="text-muted-foreground text-xs tabular-nums">
+                {formatMoney(holding.value, holding.currency)}
+              </div>
+            )}
+            {holding.gain !== null && (
+              <div className="flex items-center gap-2 pt-1">
+                <Badge
+                  variant="secondary"
+                  className={cn('tabular-nums', gainTone(holding.gain))}
+                >
+                  {formatGain(
+                    holding.gain,
+                    holding.gainPercent,
+                    holding.currency
+                  )}
+                </Badge>
+                <span className="text-muted-foreground text-xs">
+                  since purchase
+                </span>
+              </div>
+            )}
+          </section>
+        )}
 
-        <Terms holding={holding} baseCurrency={baseCurrency} />
+        <Terms holding={view} baseCurrency={baseCurrency} />
 
         {security.kind === 'option' && (
           <div
@@ -166,6 +190,34 @@ const HoldingDetail: React.FC<{
     </>
   );
 };
+
+/** What is held of the security in all the accounts together. */
+const MergedPosition: React.FC<{
+  position: PositionDTO;
+  baseCurrency: string;
+}> = ({ position, baseCurrency }) => (
+  <section aria-label="Your position" className="flex flex-col gap-1">
+    <div className="text-muted-foreground text-xs">
+      Your position · {position.accountCount} accounts
+    </div>
+    <div className="text-3xl font-semibold tracking-tight tabular-nums">
+      {formatMoney(position.valueInBase, baseCurrency)}
+    </div>
+    {position.gainInBase !== null && (
+      <div className="flex items-center gap-2 pt-1">
+        <Badge
+          variant="secondary"
+          className={cn('tabular-nums', gainTone(position.gainInBase))}
+        >
+          {formatSignedMoney(position.gainInBase, baseCurrency)}
+          {position.gainPercent !== null &&
+            ` (${formatSignedPercent(position.gainPercent)})`}
+        </Badge>
+        <span className="text-muted-foreground text-xs">since purchase</span>
+      </div>
+    )}
+  </section>
+);
 
 const Row: React.FC<{ label: string; children: React.ReactNode }> = ({
   label,
@@ -272,9 +324,9 @@ const Terms: React.FC<{ holding: HoldingDTO; baseCurrency: string }> = ({
     <dl aria-label="Position details">
       <Row label="Shares">{holding.quantity}</Row>
       <Row label="Price">{price}</Row>
-      {holding.costBasis !== null && holding.quantity > 0 && (
+      {holding.averageCost !== null && (
         <Row label="Average cost per share">
-          {formatMoney(holding.costBasis / holding.quantity, holding.currency)}
+          {formatMoney(holding.averageCost, holding.currency)}
         </Row>
       )}
       <Row label="Cost basis">{basis}</Row>
@@ -312,6 +364,7 @@ const HoldingActivity: React.FC<{ holding: HoldingDTO }> = ({ holding }) => {
             title={activityTitle(item)}
             subtitle={activitySubtitle(item)}
             trailingTitle={formatSignedMoney(item.amount, item.currency)}
+            trailingSubtitle={activityQuantity(item)}
           />
         ))}
       </List>
