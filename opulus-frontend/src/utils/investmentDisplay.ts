@@ -66,25 +66,20 @@ export function activityIcon(kind: ActivityItemDTO['kind']): LucideIcon {
   return ACTIVITY_ICONS[kind] ?? CircleDollarSign;
 }
 
-/** "10 shares at $33.80 · Wealthsimple TFSA ••7714". */
+/** "0.5209 shares" bought or sold (at most 4 decimals); none for other changes. */
+export function activityQuantity(item: ActivityItemDTO): string | undefined {
+  if ((item.kind !== 'buy' && item.kind !== 'sell') || item.quantity === null) {
+    return undefined;
+  }
+  const quantity = Number(item.quantity.toFixed(4));
+  return `${quantity} ${quantity === 1 ? 'share' : 'shares'}`;
+}
+
+/** "Oct 11", or "Oct 11 · Monthly account fee" for a fee or other change. */
 export function activitySubtitle(item: ActivityItemDTO): string {
-  const trade =
-    (item.kind === 'buy' || item.kind === 'sell') &&
-    item.quantity !== null &&
-    item.price !== null
-      ? `${item.quantity} ${item.quantity === 1 ? 'share' : 'shares'} at ${formatMoney(item.price, item.currency)}`
-      : item.kind === 'fee' || item.kind === 'other'
-        ? item.description
-        : null;
   return [
     formatShortDay(item.date),
-    trade,
-    [
-      item.institutionName,
-      accountLabel({ subtype: item.accountSubtype, mask: item.accountMask }),
-    ]
-      .filter(Boolean)
-      .join(' '),
+    item.kind === 'fee' || item.kind === 'other' ? item.description : null,
   ]
     .filter(Boolean)
     .join(' · ');
