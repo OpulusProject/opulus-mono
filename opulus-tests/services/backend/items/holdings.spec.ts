@@ -66,7 +66,6 @@ test.describe("investment holdings synced by linking and updating (Plaid stub)",
     expect(stored.map((h) => h.security.tickerSymbol)).toEqual(["AAPL", "CAD"]);
     expect(stored[0]).toMatchObject({ itemId, isoCurrencyCode: "USD" });
     expect(Number(stored[0]!.quantity)).toBe(10);
-    expect(Number(stored[0]!.institutionPrice)).toBe(190.25);
     expect(Number(stored[0]!.institutionValue)).toBe(1902.5);
     expect(Number(stored[0]!.costBasis)).toBe(1500);
     expect(stored[0]!.security).toMatchObject({ name: "Apple Inc.", type: "equity", isCashEquivalent: false });

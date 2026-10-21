@@ -338,8 +338,8 @@ test.describe("GET /api/investments/holdings", () => {
     // Arrange: 10 shares, two days of prices, and a holding of another security with no price.
     const { cookie, userId, item } = await setup(request);
     const base = { userId, itemId: item.itemId, accountId: item.accountId, currency: "CAD" };
-    const priced = await seedHolding({ ...base, tickerSymbol: "PRICED", quantity: 10, value: 1, price: 1 });
-    await seedHolding({ ...base, tickerSymbol: "NOPRICE", quantity: 5, value: 300, price: 60 });
+    const priced = await seedHolding({ ...base, tickerSymbol: "PRICED", quantity: 10, value: 1 });
+    await seedHolding({ ...base, tickerSymbol: "NOPRICE", quantity: 5, value: 300 });
     await seedSecurityPrice({ securityId: priced.securityId, date: day(-1), close: 20 });
     await seedSecurityPrice({ securityId: priced.securityId, date: day(0), close: 25 });
 

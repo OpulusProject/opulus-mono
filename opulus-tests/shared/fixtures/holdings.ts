@@ -36,8 +36,6 @@ export async function seedHolding(params: {
   type?: string;
   isCashEquivalent?: boolean;
   quantity?: number;
-  price?: number;
-  priceAsOf?: Date | null;
   value?: number;
   /** The total paid; null (the default) is "the institution sent none". */
   costBasis?: number | null;
@@ -78,8 +76,6 @@ export async function seedHolding(params: {
       itemId: params.itemId,
       userId: params.userId,
       quantity: params.quantity ?? 1,
-      institutionPrice: params.price ?? 10,
-      institutionPriceAsOf: params.priceAsOf ?? null,
       institutionValue: params.value ?? 10,
       costBasis: params.costBasis ?? null,
       isoCurrencyCode: params.currency === undefined ? "CAD" : params.currency,

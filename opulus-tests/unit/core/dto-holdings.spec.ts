@@ -23,8 +23,6 @@ const row = (overrides: {
     userId: "user-1",
     securityId: "sec-1",
     quantity: D(10),
-    institutionPrice: D(overrides.value / 10),
-    institutionPriceAsOf: null,
     institutionValue: D(overrides.value),
     costBasis: overrides.basis === null ? null : D(overrides.basis),
     isoCurrencyCode: overrides.currency === undefined ? "USD" : overrides.currency,

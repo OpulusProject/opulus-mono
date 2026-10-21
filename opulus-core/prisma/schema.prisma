@@ -407,8 +407,6 @@ model Holding {
   itemId               String
   userId               String
   quantity             Decimal
-  institutionPrice     Decimal // per unit, as the institution last quoted it
-  institutionPriceAsOf DateTime?
   institutionValue     Decimal // the whole holding's value, as the institution reports it
   costBasis            Decimal? // the total paid for everything held; many institutions send none
   isoCurrencyCode      String?
