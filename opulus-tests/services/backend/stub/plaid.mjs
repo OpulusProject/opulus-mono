@@ -3,7 +3,11 @@
  * of Link that go through Plaid with no third party. The backend is pointed at
  * it with PLAID_BASE_URL=http://localhost:4546.
  *
- *   POST /user/create          a user token
+ *   POST /user/create          a user ID and a user token (the token is left out
+ *                              after /__control/user-create { no_user_token: true },
+ *                              as Plaid does for integrations created after 2025-12-10)
+ *   POST /__control/user-create  { no_user_token: true } or {} (the default)
+ *   GET  /__control/user-create-count   how many /user/create calls were made
  *   POST /link/token/create    a link token (and the request is remembered)
  *   POST /item/public_token/exchange   an access token and item id
  *   POST /item/get             the item (no error, background updates)
@@ -95,6 +99,9 @@ const PORT = Number(process.env.PLAID_STUB_PORT ?? 4546);
 
 /** @type {Record<string, unknown>[]} */
 let linkTokenRequests = [];
+/** How /user/create answers, and how often it was called. */
+let userCreate = {};
+let userCreateCount = 0;
 let counter = 0;
 /** @type {string[]} */
 let removedItems = [];
@@ -227,6 +234,8 @@ const server = createServer(async (req, res) => {
   }
   if (req.method === "POST" && url.pathname === "/__control/reset") {
     linkTokenRequests = [];
+    userCreate = {};
+    userCreateCount = 0;
     holdings = NO_HOLDINGS;
     syncPages = new Map();
     syncCursors = new Map();
@@ -263,6 +272,13 @@ const server = createServer(async (req, res) => {
   if (req.method === "POST" && url.pathname === "/__control/item-remove") {
     itemRemove = await readJson(req);
     return send(res, 200, {});
+  }
+  if (req.method === "POST" && url.pathname === "/__control/user-create") {
+    userCreate = await readJson(req);
+    return send(res, 200, {});
+  }
+  if (req.method === "GET" && url.pathname === "/__control/user-create-count") {
+    return send(res, 200, { count: userCreateCount });
   }
   if (req.method === "POST" && url.pathname === "/__control/sandbox-error") {
     sandboxError = await readJson(req);
@@ -324,9 +340,10 @@ const server = createServer(async (req, res) => {
 
   if (req.method === "POST" && url.pathname === "/user/create") {
     counter += 1;
+    userCreateCount += 1;
     return send(res, 200, /** @satisfies {Wire<import("plaid").UserCreateResponse>} */ ({
       user_id: `stub-user-${counter}`,
-      user_token: `stub-user-token-${counter}`,
+      ...(!userCreate.no_user_token && { user_token: `stub-user-token-${counter}` }),
       request_id: `stub-request-${counter}`,
     }));
   }

@@ -229,6 +229,25 @@ export async function sandboxRequests(): Promise<{ path: string; body: Record<st
   return (await res.json()).requests;
 }
 
+/**
+ * Make `/user/create` answer without a user token, as Plaid does for
+ * integrations created after 2025-12-10 (they get only a user ID); `false`
+ * restores the default of both.
+ */
+export async function omitPlaidUserToken(omit = true): Promise<void> {
+  await fetch(`${STUB_URL}/__control/user-create`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(omit ? { no_user_token: true } : {}),
+  });
+}
+
+/** How many times the backend has called `/user/create` since the last reset. */
+export async function plaidUserCreateCount(): Promise<number> {
+  const res = await fetch(`${STUB_URL}/__control/user-create-count`);
+  return (await res.json()).count;
+}
+
 /** Make Plaid refuse to describe the institution (`/institutions/get_by_id`) with this error code (an empty call makes it work again). */
 export async function failInstitutionLookup(errorCode?: string): Promise<void> {
   await fetch(`${STUB_URL}/__control/institution-error`, {
