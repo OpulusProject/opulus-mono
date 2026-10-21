@@ -1,4 +1,4 @@
-import type { HoldingDTO, HoldingsResponse } from '@opulus/core/dto';
+import type { HoldingsResponse, PositionDTO } from '@opulus/core/dto';
 import { Coins, Gem, Landmark, LineChart, Wallet } from 'lucide-react';
 import * as React from 'react';
 
@@ -10,7 +10,6 @@ import {
   amountTone,
   daysUntil,
   formatGain,
-  formatPercent,
   holdingTitle,
 } from '@/utils/investmentDisplay';
 
@@ -33,9 +32,10 @@ interface HoldingsListProps {
 }
 
 /**
- * Every holding but cash, one group per kind (stocks, ETFs, bonds, ...) as on Credit and
- * loans: the largest kind first, each with its total (the server's allocation)
- * and its holdings largest first. Each opens its sheet.
+ * Every position but cash, one group per kind (stocks, ETFs, bonds, ...) as on
+ * Credit and loans: the largest kind first, each with its total (the server's
+ * allocation) and its positions largest first. A security held in several
+ * accounts is one row, added up by the server. Each opens its sheet.
  */
 export const HoldingsList: React.FC<HoldingsListProps> = ({
   data,
@@ -44,8 +44,8 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({
 }) => {
   const groups = data.summary.allocation.flatMap((slice) => {
     if (slice.kind === 'balance' || slice.kind === 'cash') return [];
-    const rows = data.holdings.filter(
-      (holding) => holding.security.kind === slice.kind
+    const rows = data.positions.filter(
+      (position) => position.security.kind === slice.kind
     );
     return rows.length > 0 ? [{ slice, rows }] : [];
   });
@@ -65,12 +65,12 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({
             title={ALLOCATION_LABELS[slice.kind]}
             trailingTitle={formatMoney(slice.value, data.baseCurrency)}
           >
-            {rows.map((holding) => (
-              <HoldingRow
-                key={holding.id}
-                holding={holding}
+            {rows.map((position) => (
+              <PositionRow
+                key={position.security.id}
+                position={position}
                 baseCurrency={data.baseCurrency}
-                onOpen={() => onOpenHolding(holding.id)}
+                onOpen={() => onOpenHolding(position.holdingIds[0])}
               />
             ))}
           </ListGroup>
@@ -80,17 +80,13 @@ export const HoldingsList: React.FC<HoldingsListProps> = ({
   );
 };
 
-const HoldingRow: React.FC<{
-  holding: HoldingDTO;
+const PositionRow: React.FC<{
+  position: PositionDTO;
   baseCurrency: string;
   onOpen: () => void;
-}> = ({ holding, baseCurrency, onOpen }) => {
-  const { security } = holding;
-  const cash = security.kind === 'cash';
+}> = ({ position, baseCurrency, onOpen }) => {
+  const { security } = position;
   const notices: Notice[] = [];
-  if (holding.priceStale) {
-    notices.push({ text: 'Price may be out of date', tone: 'warning' });
-  }
   const expires = security.option?.expirationDate;
   if (expires) {
     const days = daysUntil(expires);
@@ -105,18 +101,16 @@ const HoldingRow: React.FC<{
   return (
     <ListRow
       icon={KIND_ICONS[security.kind]}
-      title={holdingTitle(holding)}
+      title={holdingTitle(position)}
       subtitle={security.name ?? undefined}
       notices={notices}
-      trailingTitle={formatMoney(holding.valueInBase, baseCurrency)}
+      trailingTitle={formatMoney(position.valueInBase, baseCurrency)}
       trailingSubtitle={
-        holding.gain === null
-          ? cash
-            ? formatPercent(holding.share, 0) + ' of total'
-            : 'No cost basis'
-          : formatGain(holding.gain, holding.gainPercent, holding.currency)
+        position.gainInBase === null
+          ? 'No cost basis'
+          : formatGain(position.gainInBase, position.gainPercent, baseCurrency)
       }
-      trailingSubtitleTone={amountTone(holding.gain)}
+      trailingSubtitleTone={amountTone(position.gainInBase)}
       onClick={onOpen}
     />
   );
