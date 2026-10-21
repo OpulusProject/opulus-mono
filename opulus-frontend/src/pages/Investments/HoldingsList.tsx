@@ -7,7 +7,6 @@ import type { Notice } from '@/types/notice';
 import { formatMoney } from '@/utils/accountDisplay';
 import {
   ALLOCATION_LABELS,
-  accountLabel,
   amountTone,
   daysUntil,
   formatGain,
@@ -88,21 +87,6 @@ const HoldingRow: React.FC<{
 }> = ({ holding, baseCurrency, onOpen }) => {
   const { security } = holding;
   const cash = security.kind === 'cash';
-  const price = formatMoney(holding.price, holding.currency);
-
-  const detail = cash
-    ? null
-    : security.kind === 'option' && security.option?.expirationDate
-      ? `${holding.quantity} ${holding.quantity === 1 ? 'contract' : 'contracts'}`
-      : `${holding.quantity} × ${price}`;
-  const subtitle = [
-    cash ? null : security.name,
-    detail,
-    `${holding.accountName} ${accountLabel({ subtype: holding.accountSubtype, mask: holding.accountMask })}`,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-
   const notices: Notice[] = [];
   if (holding.priceStale) {
     notices.push({ text: 'Price may be out of date', tone: 'warning' });
@@ -122,7 +106,7 @@ const HoldingRow: React.FC<{
     <ListRow
       icon={KIND_ICONS[security.kind]}
       title={holdingTitle(holding)}
-      subtitle={subtitle}
+      subtitle={security.name ?? undefined}
       notices={notices}
       trailingTitle={formatMoney(holding.valueInBase, baseCurrency)}
       trailingSubtitle={
