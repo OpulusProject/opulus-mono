@@ -2,6 +2,7 @@ import { Prisma, PrismaClient } from "@prisma/client";
 import type { Holding as PlaidHolding, Security as PlaidSecurity } from "plaid";
 import prisma from "../client/prisma.js";
 import { AppError } from "../utils/errors.js";
+import { trackSecurity } from "./securityTrackingRepository.js";
 
 /** A security ready to upsert, keyed by Plaid's security id. */
 export interface NormalizedSecurity {
@@ -81,8 +82,8 @@ export function normalizePlaidSecurity(
 }
 
 /**
- * Upsert securities inside a transaction. Returns our id for each, by Plaid's
- * security id.
+ * Upsert securities inside a transaction, and track each (see
+ * `trackSecurity`). Returns our id for each, by Plaid's security id.
  */
 export async function upsertSecurities(
   tx: Prisma.TransactionClient,
@@ -94,8 +95,14 @@ export async function upsertSecurities(
       where: { plaidSecurityId },
       create: { plaidSecurityId, ...data },
       update: data,
-      select: { id: true },
+      select: {
+        id: true,
+        priceStatus: true,
+        priceSymbol: true,
+        priceSymbolSource: true,
+      },
     });
+    await trackSecurity(tx, stored, data);
     ids.set(plaidSecurityId, stored.id);
   }
   return ids;

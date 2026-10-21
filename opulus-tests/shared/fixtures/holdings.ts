@@ -87,3 +87,27 @@ export async function seedHolding(params: {
     },
   });
 }
+
+/** How a security is priced (its tracking columns), by Plaid security id; undefined if there is no such security. */
+export async function readSecurityPricing(plaidSecurityId: string) {
+  const security = await testDb().security.findUnique({
+    where: { plaidSecurityId },
+    select: {
+      priceSymbol: true,
+      priceSymbolSource: true,
+      priceStatus: true,
+      priceFailures: true,
+      priceHistoryFrom: true,
+      priceBackfilledAt: true,
+    },
+  });
+  return security ?? undefined;
+}
+
+/** Change how a security is priced by hand (its tracking columns), as a backfill or a manual symbol would. */
+export async function setSecurityPricing(
+  plaidSecurityId: string,
+  data: { priceSymbol?: string; priceSymbolSource?: string; priceBackfilledAt?: Date; priceHistoryFrom?: Date },
+) {
+  await testDb().security.update({ where: { plaidSecurityId }, data });
+}

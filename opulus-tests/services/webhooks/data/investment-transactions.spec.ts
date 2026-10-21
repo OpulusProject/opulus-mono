@@ -3,6 +3,7 @@ import { uniqueId } from "../../../shared/client.js";
 import {
   readInvestmentTransactions,
   readInvestmentTransactionsSyncedAt,
+  readSecurityPricing,
   readWebhookEvents,
   seedLinkedItem,
 } from "../../../shared/fixtures/index.js";
@@ -30,6 +31,7 @@ const investmentsWebhook = (plaidItemId: string, code = "DEFAULT_UPDATE", news =
  *
  * Test cases:
  * - stores the transactions and securities Plaid reports, with Plaid's sign (a buy out, a dividend in)
+ * - tracks a security that only appears in the transactions, such as one sold before the account was linked
  * - asks for 24 months the first time and records when it synced
  * - a HISTORICAL_UPDATE syncs like a DEFAULT_UPDATE
  * - asks only for the time since the last sync (and a month before it) the next time
@@ -67,6 +69,21 @@ test.describe("INVESTMENTS_TRANSACTIONS webhooks", () => {
     expect(stored[0]!.security).toMatchObject({ tickerSymbol: "AAPL" });
     expect([Number(stored[0]!.quantity), Number(stored[0]!.price), Number(stored[0]!.amount)]).toEqual([10, 190, 1900]);
     expect(Number(stored[1]!.amount)).toBe(-12.5);
+  });
+
+  test("tracks a security that only appears in the transactions, such as one sold before the account was linked", async ({ request }) => {
+    // Arrange: bought and sold in the period, so no holding has it.
+    const item = await linkedItem();
+    const aapl = uniqueId("sec_aapl");
+    await setPlaidInvestmentTransactions(
+      transactionsAnswer([buy(item.providerAccountId, uniqueId("it"), aapl, daysAgo(40), 10, 190)], [apple(aapl)], [item.providerAccountId]),
+    );
+
+    // Act
+    await deliverWebhook(request, investmentsWebhook(item.plaidItemId));
+
+    // Assert
+    expect(await readSecurityPricing(aapl)).toMatchObject({ priceSymbol: "AAPL", priceStatus: "active" });
   });
 
   test("asks for 24 months the first time and records when it synced", async ({ request }) => {
