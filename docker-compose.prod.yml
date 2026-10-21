@@ -1,0 +1,183 @@
+# Production stack for a single self-hosted server (e.g. a home server reached
+# over the LAN and Tailscale). Everything runs on a private network; the only
+# published port is the reverse proxy's, so it can be moved off ports other
+# services on the host already use.
+#
+#   cp .env.production.example .env.production   # then fill it in
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# The proxy speaks plain HTTP. Put HTTPS in front of it (the backend refuses to
+# start unless BETTER_AUTH_BASE_URL is https, and auth cookies are Secure), for
+# example with Tailscale:  tailscale serve --bg http://127.0.0.1:${OPULUS_HTTP_PORT}
+#
+# Plaid reaches the webhook receiver through a zrok tunnel (profile "zrok"),
+# which exposes only /webhook/plaid at https://${ZROK_UNIQUE_NAME}.share.zrok.io:
+#   docker compose -f docker-compose.prod.yml --env-file .env.production --profile zrok up -d --build
+
+x-app-env: &app-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://opulus:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@db:5432/opulus?schema=public
+  REDIS_HOST: redis
+  REDIS_PORT: "6379"
+  REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD}
+  PORT: "8080"
+  WEBHOOK_PORT: "8081"
+  SCHEDULER_PORT: "8082"
+
+services:
+  proxy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "${OPULUS_BIND_ADDRESS:-127.0.0.1}:${OPULUS_HTTP_PORT:-8480}:80"
+    volumes:
+      - ./ops/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+      webhooks:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: opulus-frontend/Dockerfile
+      args:
+        # Baked into the bundle: changing it means rebuilding this image.
+        VITE_API_URL: ${PUBLIC_URL:?set PUBLIC_URL}
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: opulus-backend/Dockerfile
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      <<: *app-env
+      # Same origin as the SPA: the proxy serves both, so cookies are first-party.
+      BETTER_AUTH_BASE_URL: ${PUBLIC_URL}
+      CLIENT_URL: ${PUBLIC_URL}
+      RATE_LIMIT_STORE: redis
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  webhooks:
+    build:
+      context: .
+      dockerfile: opulus-webhooks/Dockerfile
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      <<: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: opulus-scheduler/Dockerfile
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      <<: *app-env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      # Migrations are applied by the backend on its start.
+      backend:
+        condition: service_healthy
+
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: opulus
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: opulus
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opulus -d opulus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+      - ./ops/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    environment:
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass "${REDIS_PASSWORD}"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Public tunnel for Plaid webhooks. It shares the proxy's internal :8090
+  # listener, which serves /webhook/plaid and nothing else. The reservation (and
+  # so the URL) lives in the zrok_env volume.
+  zrok-init:
+    image: busybox:1.37
+    profiles: [zrok]
+    # Matches the uid:gid of "ziggy" in the zrok image.
+    command: chown -Rc 2171:2171 /mnt/
+    user: root
+    volumes:
+      - zrok_env:/mnt
+
+  zrok-enable:
+    image: ${ZROK_CONTAINER_IMAGE:-docker.io/openziti/zrok:1.1.0}
+    profiles: [zrok]
+    entrypoint: zrok-enable.bash
+    depends_on:
+      zrok-init:
+        condition: service_completed_successfully
+    volumes:
+      - zrok_env:/mnt
+    environment:
+      HOME: /mnt
+      ZROK_ENABLE_TOKEN: ${ZROK_ENABLE_TOKEN:-}
+      ZROK_ENVIRONMENT_NAME: opulus-webhooks
+
+  zrok-share:
+    image: ${ZROK_CONTAINER_IMAGE:-docker.io/openziti/zrok:1.1.0}
+    profiles: [zrok]
+    restart: unless-stopped
+    entrypoint: zrok-share.bash
+    depends_on:
+      zrok-enable:
+        condition: service_completed_successfully
+      proxy:
+        condition: service_started
+    volumes:
+      - zrok_env:/mnt
+    environment:
+      HOME: /mnt
+      ZROK_UNIQUE_NAME: ${ZROK_UNIQUE_NAME:-}
+      ZROK_BACKEND_MODE: proxy
+      ZROK_TARGET: http://proxy:8090
+      PFXLOG_NO_JSON: "true"
+
+volumes:
+  zrok_env:
+  postgres_data:
+  redis_data:
+  caddy_data:
+  caddy_config:

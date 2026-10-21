@@ -1,0 +1,40 @@
+# The single entry point of docker-compose.prod.yml. Serves the SPA and the API
+# from one origin (so auth cookies are first-party and CORS sees one origin),
+# and the Plaid webhook receiver under /webhook. Plain HTTP: TLS is terminated
+# in front of it (e.g. `tailscale serve`).
+{
+	auto_https off
+	admin off
+	servers {
+		# Keep the client address and scheme set by the TLS terminator in front.
+		trusted_proxies static private_ranges
+	}
+}
+
+:80 {
+	encode gzip
+
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	handle /webhook/* {
+		reverse_proxy webhooks:8081
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
+}
+
+# Internal only (not published): what the zrok tunnel exposes to the internet.
+# Just the Plaid webhook receiver, so the public URL cannot reach the app or API.
+:8090 {
+	handle /webhook/plaid {
+		reverse_proxy webhooks:8081
+	}
+
+	handle {
+		respond 404
+	}
+}
