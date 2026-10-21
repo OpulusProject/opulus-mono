@@ -27,17 +27,18 @@ export async function createLinkToken(
 
   const user = await userRepository.getById(userId);
 
-  let userToken = user.plaidUserToken;
+  let { plaidUserToken: userToken, plaidId } = user;
 
-  if (!userToken) {
+  if (!userToken && !plaidId) {
     const plaidUserResponse = await plaidGateway.createUser(userId);
-    const { user_token: plaidUserToken, user_id: plaidId } = plaidUserResponse;
-
     // Plaid stopped issuing user tokens to integrations created after
-    // 2025-12-10; ours still depends on one to make link tokens.
-    if (!plaidUserToken) {
+    // 2025-12-10; those identify the user by the Plaid user ID instead.
+    const { user_token: plaidUserToken, user_id: plaidUserId } =
+      plaidUserResponse;
+
+    if (!plaidUserToken && !plaidUserId) {
       throw new AppError(
-        "Plaid did not return a user token",
+        "Plaid did not return a user",
         502,
         "PLAID_NO_USER_TOKEN"
       );
@@ -45,15 +46,16 @@ export async function createLinkToken(
 
     await userRepository.update({
       id: userId,
-      plaidId,
-      plaidUserToken,
+      plaidId: plaidUserId,
+      plaidUserToken: plaidUserToken || undefined,
     });
 
-    userToken = plaidUserToken;
+    userToken = plaidUserToken || null;
+    plaidId = plaidUserId;
   }
 
   const linkTokenResponse = await plaidGateway.createLinkToken(
-    userToken,
+    userToken ? { userToken } : { plaidUserId: plaidId! },
     userId
   );
   const linkToken = linkTokenResponse.link_token;

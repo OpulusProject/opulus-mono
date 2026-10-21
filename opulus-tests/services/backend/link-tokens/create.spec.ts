@@ -6,7 +6,12 @@ import {
   createAuthedUser,
   seedItemWithAccount,
 } from "../../../shared/fixtures/index.js";
-import { linkTokenRequests, resetPlaidStub } from "../../../shared/plaid-stub.js";
+import {
+  linkTokenRequests,
+  omitPlaidUserToken,
+  plaidUserCreateCount,
+  resetPlaidStub,
+} from "../../../shared/plaid-stub.js";
 
 /**
  * This file: the Plaid link-token create endpoint. Its happy path proxies the
@@ -94,5 +99,53 @@ test.describe("link tokens and the OAuth redirect URI", () => {
     expect(requests).toHaveLength(1);
     expect(requests[0]).toMatchObject({ redirect_uri: REDIRECT_URI });
     expect(requests[0]).toHaveProperty("access_token");
+  });
+});
+
+/**
+ * This file: how the backend identifies the user to Plaid. Integrations created
+ * before 2025-12-10 get a user token from /user/create; later ones get only a
+ * user ID, which /link/token/create takes in its place.
+ */
+test.describe("link tokens and the Plaid user", () => {
+  test.beforeEach(async () => {
+    await resetPlaidStub();
+  });
+
+  test("a user Plaid gives a user token to sends that token", async ({
+    request,
+  }) => {
+    // Arrange
+    const { cookie } = await createAuthedUser(request);
+
+    // Act
+    await request.post("/api/link-tokens", { headers: withSession(cookie) });
+
+    // Assert
+    const [requested] = await linkTokenRequests();
+    expect(requested.user_token).toMatch(/^stub-user-token-/);
+    expect(requested).not.toHaveProperty("user_id");
+  });
+
+  test("a user Plaid gives no user token to gets link tokens by user ID", async ({
+    request,
+  }) => {
+    // Arrange: Plaid answers /user/create with a user ID only.
+    await omitPlaidUserToken();
+    const { cookie } = await createAuthedUser(request);
+
+    // Act: link twice, as a user connecting a second bank would.
+    const first = await request.post("/api/link-tokens", { headers: withSession(cookie) });
+    const second = await request.post("/api/link-tokens", { headers: withSession(cookie) });
+
+    // Assert: both succeed with the same Plaid user ID, which is created once.
+    await expectMatchesSchema(first, LinkTokenResponseSchema);
+    await expectMatchesSchema(second, LinkTokenResponseSchema);
+    const requests = await linkTokenRequests();
+    expect(requests).toHaveLength(2);
+    expect(requests[0].user_id).toMatch(/^stub-user-/);
+    expect(requests[1].user_id).toBe(requests[0].user_id);
+    expect(requests[0]).not.toHaveProperty("user_token");
+    expect(await plaidUserCreateCount()).toBe(1);
   });
 });
