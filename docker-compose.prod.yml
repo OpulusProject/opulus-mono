@@ -9,6 +9,10 @@
 # The proxy speaks plain HTTP. Put HTTPS in front of it (the backend refuses to
 # start unless BETTER_AUTH_BASE_URL is https, and auth cookies are Secure), for
 # example with Tailscale:  tailscale serve --bg http://127.0.0.1:${OPULUS_HTTP_PORT}
+#
+# Plaid reaches the webhook receiver through a zrok tunnel (profile "zrok"),
+# which exposes only /webhook/plaid at https://${ZROK_UNIQUE_NAME}.share.zrok.io:
+#   docker compose -f docker-compose.prod.yml --env-file .env.production --profile zrok up -d --build
 
 x-app-env: &app-env
   NODE_ENV: production
@@ -126,7 +130,53 @@ services:
       timeout: 5s
       retries: 5
 
+  # Public tunnel for Plaid webhooks. It shares the proxy's internal :8090
+  # listener, which serves /webhook/plaid and nothing else. The reservation (and
+  # so the URL) lives in the zrok_env volume.
+  zrok-init:
+    image: busybox:1.37
+    profiles: [zrok]
+    # Matches the uid:gid of "ziggy" in the zrok image.
+    command: chown -Rc 2171:2171 /mnt/
+    user: root
+    volumes:
+      - zrok_env:/mnt
+
+  zrok-enable:
+    image: ${ZROK_CONTAINER_IMAGE:-docker.io/openziti/zrok:1.1.0}
+    profiles: [zrok]
+    entrypoint: zrok-enable.bash
+    depends_on:
+      zrok-init:
+        condition: service_completed_successfully
+    volumes:
+      - zrok_env:/mnt
+    environment:
+      HOME: /mnt
+      ZROK_ENABLE_TOKEN: ${ZROK_ENABLE_TOKEN:-}
+      ZROK_ENVIRONMENT_NAME: opulus-webhooks
+
+  zrok-share:
+    image: ${ZROK_CONTAINER_IMAGE:-docker.io/openziti/zrok:1.1.0}
+    profiles: [zrok]
+    restart: unless-stopped
+    entrypoint: zrok-share.bash
+    depends_on:
+      zrok-enable:
+        condition: service_completed_successfully
+      proxy:
+        condition: service_started
+    volumes:
+      - zrok_env:/mnt
+    environment:
+      HOME: /mnt
+      ZROK_UNIQUE_NAME: ${ZROK_UNIQUE_NAME:-}
+      ZROK_BACKEND_MODE: proxy
+      ZROK_TARGET: http://proxy:8090
+      PFXLOG_NO_JSON: "true"
+
 volumes:
+  zrok_env:
   postgres_data:
   redis_data:
   caddy_data:

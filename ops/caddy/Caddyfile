@@ -26,3 +26,15 @@
 		reverse_proxy frontend:80
 	}
 }
+
+# Internal only (not published): what the zrok tunnel exposes to the internet.
+# Just the Plaid webhook receiver, so the public URL cannot reach the app or API.
+:8090 {
+	handle /webhook/plaid {
+		reverse_proxy webhooks:8081
+	}
+
+	handle {
+		respond 404
+	}
+}
