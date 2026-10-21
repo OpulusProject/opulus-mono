@@ -99,8 +99,9 @@ const PORT = Number(process.env.PLAID_STUB_PORT ?? 4546);
 
 /** @type {Record<string, unknown>[]} */
 let linkTokenRequests = [];
-/** How /user/create answers, and how often it was called. */
+/** How /user/create answers. @type {{ no_user_token?: boolean }} */
 let userCreate = {};
+/** How many times /user/create was called. */
 let userCreateCount = 0;
 let counter = 0;
 /** @type {string[]} */
