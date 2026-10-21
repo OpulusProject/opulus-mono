@@ -91,6 +91,7 @@ const HoldingDetail: React.FC<{
         quantity: merged.quantity,
         share: merged.share,
         costBasis: merged.costBasis,
+        averageCost: merged.averageCost,
         dividends: merged.dividends,
       }
     : holding;
@@ -323,9 +324,9 @@ const Terms: React.FC<{ holding: HoldingDTO; baseCurrency: string }> = ({
     <dl aria-label="Position details">
       <Row label="Shares">{holding.quantity}</Row>
       <Row label="Price">{price}</Row>
-      {holding.costBasis !== null && holding.quantity > 0 && (
+      {holding.averageCost !== null && (
         <Row label="Average cost per share">
-          {formatMoney(holding.costBasis / holding.quantity, holding.currency)}
+          {formatMoney(holding.averageCost, holding.currency)}
         </Row>
       )}
       <Row label="Cost basis">{basis}</Row>
