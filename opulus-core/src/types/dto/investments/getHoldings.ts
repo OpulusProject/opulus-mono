@@ -100,6 +100,8 @@ export const HoldingDTOSchema = z.object({
   share: z.number(),
   /** What was paid in total for everything held, when the institution says. */
   costBasis: z.number().nullable(),
+  /** `costBasis` for one unit, in `currency`; null without a cost basis or a quantity. */
+  averageCost: z.number().nullable(),
   /** `value` minus `costBasis` (negative for a loss); null without a cost basis. */
   gain: z.number().nullable(),
   /** `gain` in the base currency, at today's rate; null without a cost basis. */
@@ -138,6 +140,8 @@ export const PositionDTOSchema = z.object({
    * cost basis and they share a currency.
    */
   costBasis: z.number().nullable(),
+  /** `costBasis` for one unit, in `currency`; null when `costBasis` is, or without a quantity. */
+  averageCost: z.number().nullable(),
   /** What the holdings paid out in the last twelve months, in the base currency. */
   dividends: z.number(),
   /** Null unless every holding of it has a cost basis. */
@@ -318,6 +322,10 @@ export function holdingKind(
 /** A money amount rounded to Plaid's 4 decimals. */
 const round = (amount: number) => fromUnits(toUnits(amount));
 
+/** What was paid for one unit, rounded to Plaid's 4 decimals; null without both. */
+const perUnit = (costBasis: number | null, quantity: number) =>
+  costBasis === null || quantity <= 0 ? null : round(costBasis / quantity);
+
 const iso = (date: Date | null) => (date ? toIsoString(date) : null);
 
 /** Fractions rounded to 6 places, so a share is stable to compare. */
@@ -458,6 +466,7 @@ export function toHoldingsDTO(
         dividendsByHolding.get(`${row.accountId}:${security.id}`) ?? 0
       ),
       costBasis: rowBasis,
+      averageCost: perUnit(rowBasis, row.quantity.toNumber()),
       gain,
       gainUnits,
       basisUnits: rowBasis === null ? null : toUnits(rowBasis * rate),
@@ -540,6 +549,11 @@ export function toHoldingsDTO(
       const gainUnits = complete
         ? group.reduce((sum, h) => sum + h.gainUnits!, 0)
         : null;
+      const quantity = group.reduce((sum, h) => sum + h.quantity, 0);
+      const costBasis =
+        complete && sharedCurrency !== undefined
+          ? round(group.reduce((sum, h) => sum + h.costBasis!, 0))
+          : null;
       const basisUnits = complete
         ? group.reduce((sum, h) => sum + h.basisUnits!, 0)
         : null;
@@ -549,14 +563,12 @@ export function toHoldingsDTO(
           security: group[0]!.security,
           holdingIds: group.map((h) => h.id),
           accountCount: new Set(group.map((h) => h.accountId)).size,
-          quantity: group.reduce((sum, h) => sum + h.quantity, 0),
+          quantity,
           valueInBase: fromUnits(units),
           share: fraction(units, value),
           currency: sharedCurrency ?? null,
-          costBasis:
-            complete && sharedCurrency !== undefined
-              ? round(group.reduce((sum, h) => sum + h.costBasis!, 0))
-              : null,
+          costBasis,
+          averageCost: perUnit(costBasis, quantity),
           dividends: round(group.reduce((sum, h) => sum + h.dividends, 0)),
           gainInBase: gainUnits === null ? null : fromUnits(gainUnits),
           gainPercent:

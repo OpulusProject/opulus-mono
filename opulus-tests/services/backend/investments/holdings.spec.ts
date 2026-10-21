@@ -132,6 +132,7 @@ test.describe("GET /api/investments/holdings", () => {
       currency: "CAD",
       valueInBase: 1902.5,
       costBasis: 1500,
+      averageCost: 30,
       gain: 402.5,
     });
     expect(holdings[0]!.gainPercent).toBeCloseTo(402.5 / 1500, 10);
@@ -163,7 +164,7 @@ test.describe("GET /api/investments/holdings", () => {
 
     const { holdings, summary } = await getHoldings(request, cookie);
 
-    expect(holdings[0]).toMatchObject({ costBasis: null, gain: null, gainPercent: null, valueInBase: 250 });
+    expect(holdings[0]).toMatchObject({ costBasis: null, averageCost: null, gain: null, gainPercent: null, valueInBase: 250 });
     expect(summary).toMatchObject({
       value: 250, costBasis: 0, gain: 0, gainPercent: null, holdingsWithoutCostBasis: 1,
     });
@@ -448,6 +449,7 @@ test.describe("GET /api/investments/holdings", () => {
       share: r6(300 / summary.value),
       currency: "CAD",
       costBasis: 200,
+      averageCost: 40,
       dividends: 0,
       gainInBase: 100,
       gainPercent: 0.5,
@@ -469,7 +471,7 @@ test.describe("GET /api/investments/holdings", () => {
 
     // Assert
     expect(positions).toHaveLength(1);
-    expect(positions[0]).toMatchObject({ accountCount: 2, quantity: 5, valueInBase: 500, costBasis: 350, gainInBase: 150 });
+    expect(positions[0]).toMatchObject({ accountCount: 2, quantity: 5, valueInBase: 500, costBasis: 350, averageCost: 70, gainInBase: 150 });
   });
 
   test("gives a position a gain only when every holding of it has a cost basis", async ({ request }) => {
@@ -484,7 +486,7 @@ test.describe("GET /api/investments/holdings", () => {
 
     // Assert
     expect(positions).toHaveLength(1);
-    expect(positions[0]).toMatchObject({ valueInBase: 300, costBasis: null, gainInBase: null, gainPercent: null });
+    expect(positions[0]).toMatchObject({ valueInBase: 300, costBasis: null, averageCost: null, gainInBase: null, gainPercent: null });
   });
 
   test("flags a position whose price is stale in any account", async ({ request }) => {
