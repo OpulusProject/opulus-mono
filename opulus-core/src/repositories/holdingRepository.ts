@@ -12,8 +12,6 @@ export interface NormalizedSecurity {
     type: string | null;
     isCashEquivalent: boolean;
     isoCurrencyCode: string | null;
-    closePrice: number | null;
-    closePriceAsOf: Date | null;
     unofficialCurrencyCode: string | null;
     marketIdentifierCode: string | null;
     optionContractType: string | null;
@@ -63,8 +61,6 @@ export function normalizePlaidSecurity(
       type: security.type ?? null,
       isCashEquivalent: security.is_cash_equivalent ?? false,
       isoCurrencyCode: security.iso_currency_code ?? null,
-      closePrice: security.close_price ?? null,
-      closePriceAsOf: toDate(security.close_price_as_of),
       unofficialCurrencyCode: security.unofficial_currency_code ?? null,
       marketIdentifierCode: security.market_identifier_code ?? null,
       optionContractType: option?.contract_type ?? null,
