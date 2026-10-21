@@ -3,6 +3,15 @@ import prisma from "../client/prisma.js";
 import { AppError } from "../utils/errors.js";
 import type { SymbolInput } from "../utils/securitySymbol.js";
 
+/** A security's latest stored price. */
+export interface LatestPrice {
+  price: number;
+  /** ISO 4217 code the price is in. */
+  currency: string;
+  /** When the provider says it is from. */
+  asOf: Date;
+}
+
 /** A security as pricing sees it: ours, and what its provider symbol is worked out from. */
 export interface PricedSecurity extends SymbolInput {
   id: string;
@@ -36,8 +45,8 @@ const forPricing = {
 } as const;
 
 /**
- * Repository for writing security prices (the scheduler's jobs do) and finding
- * the securities to price. Every security is priced, held or not, so there is
+ * Repository for security prices: written by the scheduler's jobs, read by the
+ * holdings API, and for finding the securities to price. Every security is priced, held or not, so there is
  * nothing to track. Shared by every user: nothing here is per user.
  */
 class SecurityPriceRepository {
@@ -59,6 +68,36 @@ class SecurityPriceRepository {
       });
     } catch (error) {
       throw wrap(error, "get the securities to price");
+    }
+  }
+
+  /**
+   * The latest stored price of each of these securities, by security id. A
+   * security with no stored price is absent.
+   * @param securityIds - Our security ids
+   * @throws AppError if database error occurs
+   */
+  async getLatest(securityIds: string[]): Promise<Map<string, LatestPrice>> {
+    if (securityIds.length === 0) return new Map();
+    try {
+      const rows = await this.prisma.securityPrice.findMany({
+        where: { securityId: { in: securityIds } },
+        distinct: ["securityId"],
+        orderBy: [{ securityId: "asc" }, { date: "desc" }],
+        select: { securityId: true, close: true, currency: true, asOf: true },
+      });
+      return new Map(
+        rows.map((row) => [
+          row.securityId,
+          {
+            price: row.close.toNumber(),
+            currency: row.currency,
+            asOf: row.asOf,
+          },
+        ])
+      );
+    } catch (error) {
+      throw wrap(error, "get security prices");
     }
   }
 

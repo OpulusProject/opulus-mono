@@ -239,15 +239,16 @@ const Terms: React.FC<{ holding: HoldingDTO; baseCurrency: string }> = ({
   baseCurrency,
 }) => {
   const { security } = holding;
-  const price = (
-    <>
-      {formatMoney(holding.price, holding.currency)}
-      {holding.priceAsOf && (
-        <Muted>as of {formatShortDay(holding.priceAsOf)}</Muted>
-      )}
-      {!holding.priceAsOf && <Muted>date unknown</Muted>}
-    </>
-  );
+  // No price of one unit for a security we do not price (the value is the institution's).
+  const price =
+    holding.price === null ? null : (
+      <>
+        {formatMoney(holding.price, holding.currency)}
+        {holding.priceAsOf && (
+          <Muted>as of {formatShortDay(holding.priceAsOf)}</Muted>
+        )}
+      </>
+    );
   const basis =
     holding.costBasis === null
       ? 'Not reported'
@@ -262,7 +263,7 @@ const Terms: React.FC<{ holding: HoldingDTO; baseCurrency: string }> = ({
             {formatMoney(bond.faceValue, holding.currency)}
           </Row>
         )}
-        <Row label="Price">{price}</Row>
+        {price && <Row label="Price">{price}</Row>}
         {bond.yieldRate !== null && (
           <Row
             label={bond.yieldType === 'coupon' ? 'Coupon' : 'Yield to maturity'}
@@ -298,10 +299,12 @@ const Terms: React.FC<{ holding: HoldingDTO; baseCurrency: string }> = ({
         {option.expirationDate && (
           <Row label="Expires">{formatLongDay(option.expirationDate)}</Row>
         )}
-        <Row label="Price">
-          {price}
-          <Muted>a share</Muted>
-        </Row>
+        {price && (
+          <Row label="Price">
+            {price}
+            <Muted>a share</Muted>
+          </Row>
+        )}
         {option.underlyingTicker && (
           <Row label="Underlying">{option.underlyingTicker}</Row>
         )}
@@ -323,7 +326,7 @@ const Terms: React.FC<{ holding: HoldingDTO; baseCurrency: string }> = ({
   return (
     <dl aria-label="Position details">
       <Row label="Shares">{holding.quantity}</Row>
-      <Row label="Price">{price}</Row>
+      {price && <Row label="Price">{price}</Row>}
       {holding.averageCost !== null && (
         <Row label="Average cost per share">
           {formatMoney(holding.averageCost, holding.currency)}

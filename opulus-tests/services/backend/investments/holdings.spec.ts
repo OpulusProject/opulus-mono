@@ -9,6 +9,7 @@ import {
   seedExchangeRates,
   seedHolding,
   seedItemWithAccount,
+  seedSecurityPrice,
 } from "../../../shared/fixtures/index.js";
 
 /** The day this many days from today, "YYYY-MM-DD" (UTC). */
@@ -58,7 +59,9 @@ async function getHoldings(
  * - gives each holding's share of the total and the share of the three largest that are not cash
  * - gives each account's value, share and gain, largest first
  * - counts an investment account with no holdings by its balance, and says it has no holdings
- * - flags a price older than five days as stale, and not one with no date
+ * - flags a price older than five days as stale, and not a holding with no price
+ * - values a holding at its quantity times our latest price, and a security with no price at the institution's value
+ * - converts our price to the holding's currency, and gives no gain when the two currencies differ
  * - gives an option's contract and a bond's terms, and exchange
  * - gives the dividends of the last twelve months in total and per holding, the dividend yield, and the total return (gain plus dividends)
  * - ranks the holdings by what they earned (in CAD, not as a fraction), largest first, leaving out those without a cost basis
@@ -68,7 +71,6 @@ async function getHoldings(
  * - adds a security held in several accounts up into one position, largest first
  * - adds a position over just the accounts selected
  * - gives a position a gain only when every holding of it has a cost basis
- * - flags a position whose price is stale in any account
  * - contains only the requesting user's holdings, even with another user's accountId
  * - rejects an empty accountId (validation)
  */
@@ -105,14 +107,14 @@ test.describe("GET /api/investments/holdings", () => {
   test("gives a holding's value, cost basis, gain and gain as a fraction, with its security and account", async ({
     request,
   }) => {
-    // Arrange: 1,902.50 worth, 1,500 paid.
+    // Arrange: 50 shares at our price of 38.05 (1,902.50 worth; the institution reports nothing), 1,500 paid.
     const { cookie, userId, item } = await setup(request);
-    await seedHolding({
+    const held = await seedHolding({
       userId, itemId: item.itemId, accountId: item.accountId,
       tickerSymbol: "XEQT", securityName: "iShares Core Equity ETF", type: "etf",
-      quantity: 50, price: 38.05, priceAsOf: new Date("2026-10-14T00:00:00Z"),
-      value: 1902.5, costBasis: 1500, currency: "CAD",
+      quantity: 50, value: 0, costBasis: 1500, currency: "CAD",
     });
+    await seedSecurityPrice({ securityId: held.securityId, date: "2026-10-14", close: 38.05, currency: "CAD" });
 
     // Act
     const { holdings } = await getHoldings(request, cookie);
@@ -314,20 +316,61 @@ test.describe("GET /api/investments/holdings", () => {
     expect(holdings).toHaveLength(1);
   });
 
-  test("flags a price older than five days as stale, and not one with no date", async ({ request }) => {
-    // Arrange
+  test("flags a price older than five days as stale, and not a holding with no price", async ({ request }) => {
+    // Arrange: our prices from 2 and 9 days ago, and a security we have none for.
     const { cookie, userId, item } = await setup(request);
     const base = { userId, itemId: item.itemId, accountId: item.accountId, currency: "CAD" };
-    await seedHolding({ ...base, tickerSymbol: "FRESH", priceAsOf: new Date(Date.now() - 2 * 86_400_000) });
-    await seedHolding({ ...base, tickerSymbol: "OLD", priceAsOf: new Date(Date.now() - 9 * 86_400_000) });
-    await seedHolding({ ...base, tickerSymbol: "NODATE", priceAsOf: null });
+    const fresh = await seedHolding({ ...base, tickerSymbol: "FRESH" });
+    const old = await seedHolding({ ...base, tickerSymbol: "OLD" });
+    await seedHolding({ ...base, tickerSymbol: "NOPRICE" });
+    await seedSecurityPrice({ securityId: fresh.securityId, date: day(-2), close: 10 });
+    await seedSecurityPrice({ securityId: old.securityId, date: day(-9), close: 10 });
 
     // Act
     const { holdings } = await getHoldings(request, cookie);
 
     // Assert
     const stale = Object.fromEntries(holdings.map((h) => [h.security.tickerSymbol, h.priceStale]));
-    expect(stale).toEqual({ FRESH: false, OLD: true, NODATE: false });
+    expect(stale).toEqual({ FRESH: false, OLD: true, NOPRICE: false });
+  });
+
+  test("values a holding at its quantity times our latest price, and a security with no price at the institution's value", async ({ request }) => {
+    // Arrange: 10 shares, two days of prices, and a holding of another security with no price.
+    const { cookie, userId, item } = await setup(request);
+    const base = { userId, itemId: item.itemId, accountId: item.accountId, currency: "CAD" };
+    const priced = await seedHolding({ ...base, tickerSymbol: "PRICED", quantity: 10, value: 1, price: 1 });
+    await seedHolding({ ...base, tickerSymbol: "NOPRICE", quantity: 5, value: 300, price: 60 });
+    await seedSecurityPrice({ securityId: priced.securityId, date: day(-1), close: 20 });
+    await seedSecurityPrice({ securityId: priced.securityId, date: day(0), close: 25 });
+
+    // Act
+    const { holdings, summary } = await getHoldings(request, cookie);
+
+    // Assert: the latest day's price; the unpriced one keeps the institution's value and shows no price.
+    const byTicker = Object.fromEntries(holdings.map((h) => [h.security.tickerSymbol, h]));
+    expect(byTicker.PRICED).toMatchObject({ price: 25, value: 250, valueInBase: 250 });
+    expect(byTicker.NOPRICE).toMatchObject({ price: null, priceAsOf: null, value: 300, valueInBase: 300 });
+    expect(summary).toMatchObject({ value: 550, holdingCount: 2 });
+    expect(holdings.map((h) => h.security.tickerSymbol)).toEqual(["NOPRICE", "PRICED"]);
+  });
+
+  test("converts our price to the holding's currency, and gives no gain when the two currencies differ", async ({ request }) => {
+    // Arrange: a USD price (1.25 CAD) on a holding Plaid labels CAD, and another labelled USD.
+    const { cookie, userId, item } = await setup(request);
+    const base = { userId, itemId: item.itemId, accountId: item.accountId, quantity: 10, value: 0, costBasis: 500 };
+    const labelledCad = await seedHolding({ ...base, tickerSymbol: "ACAD", currency: "CAD" });
+    const labelledUsd = await seedHolding({ ...base, tickerSymbol: "AUSD", currency: "USD" });
+    await seedSecurityPrice({ securityId: labelledCad.securityId, date: day(0), close: 100, currency: "USD" });
+    await seedSecurityPrice({ securityId: labelledUsd.securityId, date: day(0), close: 100, currency: "USD" });
+
+    // Act
+    const { holdings, summary } = await getHoldings(request, cookie);
+
+    // Assert: both are worth 10 x US$100; the first in CAD, with no gain (which currency the basis is in is a guess).
+    const byTicker = Object.fromEntries(holdings.map((h) => [h.security.tickerSymbol, h]));
+    expect(byTicker.ACAD).toMatchObject({ currency: "CAD", price: 125, value: 1250, valueInBase: 1250, costBasis: 500, gain: null, gainPercent: null });
+    expect(byTicker.AUSD).toMatchObject({ currency: "USD", price: 100, value: 1000, valueInBase: 1250, costBasis: 500, gain: 500 });
+    expect(summary).toMatchObject({ value: 2500, holdingsWithoutCostBasis: 1 });
   });
 
   test("gives an option's contract and a bond's terms, and exchange", async ({ request }) => {
@@ -487,20 +530,6 @@ test.describe("GET /api/investments/holdings", () => {
     // Assert
     expect(positions).toHaveLength(1);
     expect(positions[0]).toMatchObject({ valueInBase: 300, costBasis: null, averageCost: null, gainInBase: null, gainPercent: null });
-  });
-
-  test("flags a position whose price is stale in any account", async ({ request }) => {
-    // Arrange: SH in two accounts, one priced twelve days ago.
-    const { cookie, userId, item } = await setup(request);
-    const other = await seedItemWithAccount(userId, { account: { type: "investment" } });
-    await seedHolding({ userId, itemId: item.itemId, accountId: item.accountId, plaidSecurityId: "sec_shared", tickerSymbol: "SH", value: 100, priceAsOf: new Date(), currency: "CAD" });
-    await seedHolding({ userId, itemId: other.itemId, accountId: other.accountId, plaidSecurityId: "sec_shared", tickerSymbol: "SH", value: 200, priceAsOf: new Date(Date.now() - 12 * 86_400_000), currency: "CAD" });
-
-    // Act
-    const { positions } = await getHoldings(request, cookie);
-
-    // Assert
-    expect(positions[0]?.priceStale).toBe(true);
   });
 
   test("filters to several accounts with a repeated accountId, with the summary over just those", async ({ request }) => {
