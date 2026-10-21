@@ -350,8 +350,6 @@ model Security {
   type                   String? // equity, etf, mutual fund, fixed income, cash, ...
   isCashEquivalent       Boolean                 @default(false)
   isoCurrencyCode        String?
-  closePrice             Decimal? // the previous trading session's close, when Plaid has one
-  closePriceAsOf         DateTime?
   unofficialCurrencyCode String? // a currency ISO 4217 has no code for, such as a cryptocurrency's
   marketIdentifierCode   String? // the ISO 10383 code of the exchange it trades on, when Plaid has one
   // An option contract (type "derivative"):
