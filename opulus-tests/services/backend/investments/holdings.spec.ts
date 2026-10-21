@@ -64,9 +64,11 @@ async function getHoldings(
  * - ranks the holdings by what they earned (in CAD, not as a fraction), largest first, leaving out those without a cost basis
  * - filters to one account with accountId
  * - filters to several accounts with a repeated accountId, with the summary over just those
- * - filters to accounts of one subtype, with the summary over just those
  * - filters to the holdings of one security
- * - sorts account by account, the largest account first, each account's holdings largest first
+ * - adds a security held in several accounts up into one position, largest first
+ * - adds a position over just the accounts selected
+ * - gives a position a gain only when every holding of it has a cost basis
+ * - flags a position whose price is stale in any account
  * - contains only the requesting user's holdings, even with another user's accountId
  * - rejects an empty accountId (validation)
  */
@@ -96,6 +98,7 @@ test.describe("GET /api/investments/holdings", () => {
       },
       accounts: [],
       holdings: [],
+      positions: [],
     });
   });
 
@@ -407,22 +410,6 @@ test.describe("GET /api/investments/holdings", () => {
     expect(holdings.find((h) => h.id === ids.USD)).toMatchObject({ gain: 400, gainInBase: 500 });
   });
 
-  test("filters to accounts of one subtype, with the summary over just those", async ({ request }) => {
-    // Arrange: a TFSA (setup) and an RRSP, 300 and 700.
-    const { cookie, userId, item } = await setup(request);
-    const rrsp = await seedItemWithAccount(userId, { account: { type: "investment", subtype: "rrsp" } });
-    await seedHolding({ userId, itemId: item.itemId, accountId: item.accountId, tickerSymbol: "T", value: 300, currency: "CAD" });
-    await seedHolding({ userId, itemId: rrsp.itemId, accountId: rrsp.accountId, tickerSymbol: "R", value: 700, currency: "CAD" });
-
-    // Act
-    const { holdings, summary, accounts } = await getHoldings(request, cookie, "?accountSubtype=rrsp");
-
-    // Assert
-    expect(holdings.map((h) => h.security.tickerSymbol)).toEqual(["R"]);
-    expect(accounts.map((a) => a.id)).toEqual([rrsp.accountId]);
-    expect(summary).toMatchObject({ value: 700, accountCount: 1 });
-  });
-
   test("filters to the holdings of one security", async ({ request }) => {
     // Arrange: the same security held in two accounts, and another security.
     const { cookie, userId, item } = await setup(request);
@@ -439,24 +426,79 @@ test.describe("GET /api/investments/holdings", () => {
     expect(summary.holdingCount).toBe(2);
   });
 
-  test("sorts account by account, the largest account first, each account's holdings largest first", async ({ request }) => {
-    // Arrange: account X holds 300 + 100, account Y holds 500 and 50; by value alone Y500, X300, X100, Y50.
+  test("adds a security held in several accounts up into one position, largest first", async ({ request }) => {
+    // Arrange: SH in two accounts (100 and 200 CAD, 2 and 3 shares), and a larger security ELSE.
     const { cookie, userId, item } = await setup(request);
-    const y = await seedItemWithAccount(userId, { account: { type: "investment" } });
-    const x = { userId, itemId: item.itemId, accountId: item.accountId, currency: "CAD" };
-    const yy = { userId, itemId: y.itemId, accountId: y.accountId, currency: "CAD" };
-    await seedHolding({ ...x, tickerSymbol: "X300", value: 300 });
-    await seedHolding({ ...x, tickerSymbol: "X100", value: 100 });
-    await seedHolding({ ...yy, tickerSymbol: "Y500", value: 500 });
-    await seedHolding({ ...yy, tickerSymbol: "Y50", value: 50 });
+    const other = await seedItemWithAccount(userId, { account: { type: "investment" } });
+    const a = await seedHolding({ userId, itemId: item.itemId, accountId: item.accountId, plaidSecurityId: "sec_shared", tickerSymbol: "SH", quantity: 2, value: 100, costBasis: 80, currency: "CAD" });
+    const b = await seedHolding({ userId, itemId: other.itemId, accountId: other.accountId, plaidSecurityId: "sec_shared", tickerSymbol: "SH", quantity: 3, value: 200, costBasis: 120, currency: "CAD" });
+    await seedHolding({ userId, itemId: item.itemId, accountId: item.accountId, tickerSymbol: "ELSE", value: 500, currency: "CAD" });
 
     // Act
-    const byValue = await getHoldings(request, cookie);
-    const byAccount = await getHoldings(request, cookie, "?sort=account");
+    const { positions, holdings, summary } = await getHoldings(request, cookie);
 
-    // Assert: X is worth 400 and Y 550, so Y comes first.
-    expect(byValue.holdings.map((h) => h.security.tickerSymbol)).toEqual(["Y500", "X300", "X100", "Y50"]);
-    expect(byAccount.holdings.map((h) => h.security.tickerSymbol)).toEqual(["Y500", "Y50", "X300", "X100"]);
+    // Assert: the holdings stay one per account; the position adds the two up.
+    expect(holdings).toHaveLength(3);
+    expect(positions.map((p) => p.security.tickerSymbol)).toEqual(["ELSE", "SH"]);
+    expect(positions[1]).toMatchObject({
+      holdingIds: [b.id, a.id],
+      accountCount: 2,
+      quantity: 5,
+      valueInBase: 300,
+      share: r6(300 / summary.value),
+      currency: "CAD",
+      costBasis: 200,
+      dividends: 0,
+      gainInBase: 100,
+      gainPercent: 0.5,
+    });
+  });
+
+  test("adds a position over just the accounts selected", async ({ request }) => {
+    // Arrange: SH in three accounts, 100, 200 and 400.
+    const { cookie, userId, item } = await setup(request);
+    const second = await seedItemWithAccount(userId, { account: { type: "investment" } });
+    const third = await seedItemWithAccount(userId, { account: { type: "investment" } });
+    const sh = { plaidSecurityId: "sec_shared", tickerSymbol: "SH", currency: "CAD" };
+    await seedHolding({ userId, itemId: item.itemId, accountId: item.accountId, ...sh, quantity: 1, value: 100, costBasis: 50 });
+    await seedHolding({ userId, itemId: second.itemId, accountId: second.accountId, ...sh, quantity: 2, value: 200, costBasis: 100 });
+    await seedHolding({ userId, itemId: third.itemId, accountId: third.accountId, ...sh, quantity: 4, value: 400, costBasis: 300 });
+
+    // Act: two of the three.
+    const { positions } = await getHoldings(request, cookie, `?accountId=${item.accountId}&accountId=${third.accountId}`);
+
+    // Assert
+    expect(positions).toHaveLength(1);
+    expect(positions[0]).toMatchObject({ accountCount: 2, quantity: 5, valueInBase: 500, costBasis: 350, gainInBase: 150 });
+  });
+
+  test("gives a position a gain only when every holding of it has a cost basis", async ({ request }) => {
+    // Arrange: SH in two accounts, one without a cost basis.
+    const { cookie, userId, item } = await setup(request);
+    const other = await seedItemWithAccount(userId, { account: { type: "investment" } });
+    await seedHolding({ userId, itemId: item.itemId, accountId: item.accountId, plaidSecurityId: "sec_shared", tickerSymbol: "SH", value: 100, costBasis: 80, currency: "CAD" });
+    await seedHolding({ userId, itemId: other.itemId, accountId: other.accountId, plaidSecurityId: "sec_shared", tickerSymbol: "SH", value: 200, costBasis: null, currency: "CAD" });
+
+    // Act
+    const { positions } = await getHoldings(request, cookie);
+
+    // Assert
+    expect(positions).toHaveLength(1);
+    expect(positions[0]).toMatchObject({ valueInBase: 300, costBasis: null, gainInBase: null, gainPercent: null });
+  });
+
+  test("flags a position whose price is stale in any account", async ({ request }) => {
+    // Arrange: SH in two accounts, one priced twelve days ago.
+    const { cookie, userId, item } = await setup(request);
+    const other = await seedItemWithAccount(userId, { account: { type: "investment" } });
+    await seedHolding({ userId, itemId: item.itemId, accountId: item.accountId, plaidSecurityId: "sec_shared", tickerSymbol: "SH", value: 100, priceAsOf: new Date(), currency: "CAD" });
+    await seedHolding({ userId, itemId: other.itemId, accountId: other.accountId, plaidSecurityId: "sec_shared", tickerSymbol: "SH", value: 200, priceAsOf: new Date(Date.now() - 12 * 86_400_000), currency: "CAD" });
+
+    // Act
+    const { positions } = await getHoldings(request, cookie);
+
+    // Assert
+    expect(positions[0]?.priceStale).toBe(true);
   });
 
   test("filters to several accounts with a repeated accountId, with the summary over just those", async ({ request }) => {

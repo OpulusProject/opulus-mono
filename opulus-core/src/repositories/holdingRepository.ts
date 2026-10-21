@@ -208,15 +208,14 @@ class HoldingRepository {
    * A user's current holdings, with their security, account name and the
    * institution's name. Only the user's own, whatever the filter.
    * @param userId - The user
-   * @param filters - Only these accounts' holdings (our account ids), accounts of
-   *   this subtype (tfsa, rrsp, ...), or holdings of this security (our id)
+   * @param filters - Only these accounts' holdings (our account ids), or holdings
+   *   of this security (our id)
    * @throws AppError if database error occurs
    */
   async getAllByUserId(
     userId: string,
     filters: {
       accountIds?: string[];
-      accountSubtype?: string;
       securityId?: string;
     } = {}
   ) {
@@ -226,9 +225,6 @@ class HoldingRepository {
           userId,
           ...(filters.accountIds && { accountId: { in: filters.accountIds } }),
           securityId: filters.securityId,
-          ...(filters.accountSubtype && {
-            account: { subtype: filters.accountSubtype },
-          }),
         },
         include: {
           security: true,

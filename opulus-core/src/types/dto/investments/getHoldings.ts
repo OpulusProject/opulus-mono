@@ -115,6 +115,41 @@ export const HoldingDTOSchema = z.object({
 
 export type HoldingDTO = z.infer<typeof HoldingDTOSchema>;
 
+/**
+ * One security across the accounts that hold it: what is held in all of them
+ * together, in the base currency. The gain is shown only when every holding of
+ * it has a cost basis, as a partial one would understate what was paid.
+ */
+export const PositionDTOSchema = z.object({
+  security: HoldingSecurityDTOSchema,
+  /** The holdings (one per account) it is made of, largest first. */
+  holdingIds: z.array(z.string()),
+  /** How many accounts hold it. */
+  accountCount: z.number().int(),
+  /** The shares (or units, contracts) held, in all the accounts. */
+  quantity: z.number(),
+  valueInBase: z.number(),
+  /** `valueInBase` as a fraction of the summary's value. */
+  share: z.number(),
+  /** The currency the security is held in, if every holding agrees. */
+  currency: z.string().nullable(),
+  /**
+   * What was paid in all, in `currency`; null unless every holding of it has a
+   * cost basis and they share a currency.
+   */
+  costBasis: z.number().nullable(),
+  /** What the holdings paid out in the last twelve months, in the base currency. */
+  dividends: z.number(),
+  /** Null unless every holding of it has a cost basis. */
+  gainInBase: z.number().nullable(),
+  /** `gainInBase` as a fraction of what was paid; null when `gainInBase` is. */
+  gainPercent: z.number().nullable(),
+  /** Any of the holdings has an old price. */
+  priceStale: z.boolean(),
+});
+
+export type PositionDTO = z.infer<typeof PositionDTOSchema>;
+
 /** One slice of the portfolio, by kind. */
 export const AllocationDTOSchema = z.object({
   kind: AllocationKindSchema,
@@ -202,6 +237,8 @@ export const HoldingsResponseSchema = z.object({
     /** The user's investment accounts, largest first. */
     accounts: z.array(HoldingsAccountDTOSchema),
     holdings: z.array(HoldingDTOSchema),
+    /** The holdings added up by security, largest first. */
+    positions: z.array(PositionDTOSchema),
   }),
 });
 
@@ -247,8 +284,6 @@ export interface HoldingsOptions {
   accounts?: HoldingsAccountRow[];
   /** The last twelve months' dividend payments of the user, all accounts. */
   dividends?: DividendRow[];
-  /** `value` (largest first, the default) or `account` (account by account, then largest first). */
-  sort?: "value" | "account";
   /** The current moment, for telling a price is old. */
   now?: Date;
 }
@@ -303,7 +338,6 @@ export function toHoldingsDTO(
     rateOn,
     accounts = [],
     dividends = [],
-    sort = "value",
     now = new Date(),
   }: HoldingsOptions
 ): HoldingsResponse["data"] {
@@ -426,6 +460,7 @@ export function toHoldingsDTO(
       costBasis: rowBasis,
       gain,
       gainUnits,
+      basisUnits: rowBasis === null ? null : toUnits(rowBasis * rate),
       gainInBase: gainUnits === null ? null : fromUnits(gainUnits),
       gainPercent:
         rowBasis === null || rowBasis === 0
@@ -454,24 +489,7 @@ export function toHoldingsDTO(
     });
   }
 
-  const accountOrder = new Map(
-    accounts
-      .map((account) => ({
-        id: account.id,
-        units: byAccount.get(account.id)?.value ?? 0,
-      }))
-      .sort((a, b) => b.units - a.units || a.id.localeCompare(b.id))
-      .map((account, index) => [account.id, index])
-  );
-  holdings.sort(
-    (a, b) =>
-      (sort === "account"
-        ? (accountOrder.get(a.accountId) ?? 0) -
-          (accountOrder.get(b.accountId) ?? 0)
-        : 0) ||
-      b.units - a.units ||
-      a.id.localeCompare(b.id)
-  );
+  holdings.sort((a, b) => b.units - a.units || a.id.localeCompare(b.id));
   const top3 = holdings
     .filter((h) => h.security.kind !== "cash")
     .slice(0, 3)
@@ -502,6 +520,57 @@ export function toHoldingsDTO(
 
   const slices = <K>(map: Map<K, number>) =>
     [...map.entries()].sort((a, b) => b[1] - a[1]);
+
+  // One position per security, over the accounts that hold it.
+  const bySecurity = new Map<string, typeof holdings>();
+  for (const holding of holdings) {
+    const group = bySecurity.get(holding.security.id) ?? [];
+    group.push(holding);
+    bySecurity.set(holding.security.id, group);
+  }
+  const positions = [...bySecurity.values()]
+    .map((group) => {
+      const units = group.reduce((sum, h) => sum + h.units, 0);
+      const complete = group.every((h) => h.gainUnits !== null);
+      const sharedCurrency = group.every(
+        (h) => h.currency === group[0]!.currency
+      )
+        ? group[0]!.currency
+        : undefined;
+      const gainUnits = complete
+        ? group.reduce((sum, h) => sum + h.gainUnits!, 0)
+        : null;
+      const basisUnits = complete
+        ? group.reduce((sum, h) => sum + h.basisUnits!, 0)
+        : null;
+      return {
+        units,
+        position: {
+          security: group[0]!.security,
+          holdingIds: group.map((h) => h.id),
+          accountCount: new Set(group.map((h) => h.accountId)).size,
+          quantity: group.reduce((sum, h) => sum + h.quantity, 0),
+          valueInBase: fromUnits(units),
+          share: fraction(units, value),
+          currency: sharedCurrency ?? null,
+          costBasis:
+            complete && sharedCurrency !== undefined
+              ? round(group.reduce((sum, h) => sum + h.costBasis!, 0))
+              : null,
+          dividends: round(group.reduce((sum, h) => sum + h.dividends, 0)),
+          gainInBase: gainUnits === null ? null : fromUnits(gainUnits),
+          gainPercent:
+            gainUnits === null || !basisUnits ? null : gainUnits / basisUnits,
+          priceStale: group.some((h) => h.priceStale),
+        },
+      };
+    })
+    .sort(
+      (a, b) =>
+        b.units - a.units ||
+        a.position.holdingIds[0]!.localeCompare(b.position.holdingIds[0]!)
+    )
+    .map(({ position }) => position);
 
   const totalGain = valueWithBasis - costBasis;
   const gainRanking = holdings
@@ -538,9 +607,17 @@ export function toHoldingsDTO(
       holdingsWithoutCostBasis: withoutBasis,
     },
     accounts: accountRows.map(({ units: _units, ...account }) => account),
-    holdings: holdings.map(({ units, gainUnits: _gainUnits, ...holding }) => ({
-      ...holding,
-      share: fraction(units, value),
-    })),
+    holdings: holdings.map(
+      ({
+        units,
+        gainUnits: _gainUnits,
+        basisUnits: _basisUnits,
+        ...holding
+      }) => ({
+        ...holding,
+        share: fraction(units, value),
+      })
+    ),
+    positions,
   };
 }
