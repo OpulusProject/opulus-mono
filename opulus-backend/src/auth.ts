@@ -1,4 +1,5 @@
 import { ALLOWED_AUTH_PATHS } from "@/authEndpoints.js";
+import { getCookieScope } from "@/cookieDomain.js";
 import { disconnectUserItems } from "@/services/items/disconnectUserItems.js";
 import { passkey } from "@better-auth/passkey";
 import { AppError, config, prisma } from "@opulus/core";
@@ -21,20 +22,11 @@ import { haveIBeenPwned, twoFactor } from "better-auth/plugins";
  *
  * With crossSubDomainCookies, cookies are shared across all subdomains of opulus.app
  * This allows us to use SameSite=Lax (more secure than SameSite=None)
+ *
+ * A self-hosted deploy on one hostname (a Tailscale name, an IP address) sets
+ * COOKIE_DOMAIN=host for host-only cookies instead; see cookieDomain.ts.
  */
-
-// Extract root domain from clientUrl (e.g., "https://www.opulus.app" -> ".opulus.app")
-const getRootDomain = (url: string): string => {
-  try {
-    const urlObj = new URL(url);
-    const parts = urlObj.hostname.split(".");
-    // Get last two parts (e.g., "opulus.app") and add leading dot
-    const rootDomain = parts.slice(-2).join(".");
-    return `.${rootDomain}`;
-  } catch {
-    return ".opulus.app"; // Fallback
-  }
-};
+const cookieScope = getCookieScope(config.clientUrl, config.cookieDomain);
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -136,11 +128,12 @@ export const auth = betterAuth({
     // Passkeys (WebAuthn): sign in with a device's own unlock instead of a
     // password. The relying party is the site's registrable domain, so a passkey
     // made on www.opulus.app also works on api.opulus.app and the other
-    // subdomains, and the origin is the frontend. A passkey must be used with
+    // subdomains (with host-only cookies it is the client's hostname), and the
+    // origin is the frontend. A passkey must be used with
     // user verification (PIN, fingerprint, face): that is what makes it a
     // second factor and not just something that is possessed.
     passkey({
-      rpID: getRootDomain(config.clientUrl).replace(/^\./, ""),
+      rpID: cookieScope.rpID,
       rpName: "Opulus",
       origin: config.clientUrl,
       authenticatorSelection: {
@@ -169,11 +162,11 @@ export const auth = betterAuth({
   trustedOrigins: [config.clientUrl],
   advanced: {
     cookiePrefix: "opulus",
-    crossSubDomainCookies: {
-      enabled: true,
-      // Must be ".opulus.app" (with leading dot) for cross-subdomain cookies to work
-      domain: getRootDomain(config.clientUrl),
-    },
+    // Off for host-only cookies. When on, the domain must be ".opulus.app"
+    // (with leading dot) for cross-subdomain cookies to work.
+    crossSubDomainCookies: cookieScope.domain
+      ? { enabled: true, domain: cookieScope.domain }
+      : { enabled: false },
     defaultCookieAttributes: {
       httpOnly: true,
       secure: true,
