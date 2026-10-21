@@ -61,11 +61,16 @@ class PlaidGateway {
 
   /**
    * Create a Plaid Link token for the user
-   * @param userToken - Plaid user token (from userCreate)
+   * @param plaidUser - The user's Plaid identity from userCreate: the user
+   *   token for integrations that had one before 2025-12-10, otherwise the
+   *   Plaid user ID
    * @param userId - User ID from your database
    * @returns Link token response from Plaid
    */
-  async createLinkToken(userToken: string, userId: string) {
+  async createLinkToken(
+    plaidUser: { userToken: string } | { plaidUserId: string },
+    userId: string
+  ) {
     // Only what we use. Every product here must be supported by an institution
     // for Link to offer it, so an unused one (Assets, which we never read) only
     // hides institutions. Transaction history comes from `days_requested`.
@@ -83,7 +88,9 @@ class PlaidGateway {
     const countryCodes: CountryCode[] = [CountryCode.Ca];
 
     const request: LinkTokenCreateRequest = {
-      user_token: userToken,
+      ...("userToken" in plaidUser
+        ? { user_token: plaidUser.userToken }
+        : { user_id: plaidUser.plaidUserId }),
       user: {
         client_user_id: userId,
       },
