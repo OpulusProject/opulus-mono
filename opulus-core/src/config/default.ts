@@ -15,6 +15,10 @@ export default {
   port: parseInt(process.env.PORT || "8080", 10),
   nodeEnv: getEnv("NODE_ENV", "development"),
   clientUrl: getEnv("CLIENT_URL", "http://localhost:5173"),
+  // The domain the session cookie is shared across (for example "opulus.app").
+  // Unset derives it from CLIENT_URL's last two labels; "host" sets host-only
+  // cookies, for one hostname such as a Tailscale name (*.ts.net).
+  cookieDomain: getEnv("COOKIE_DOMAIN"),
   databaseUrl: getEnv("DATABASE_URL"),
   plaidClientId: getEnv("PLAID_CLIENT_ID"),
   plaidSecret: getEnv("PLAID_SECRET"),
