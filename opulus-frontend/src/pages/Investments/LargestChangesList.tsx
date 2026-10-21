@@ -3,7 +3,6 @@ import * as React from 'react';
 
 import { List, ListHeader, ListRow } from '@/common/List';
 import {
-  accountLabel,
   amountTone,
   formatSignedMoney,
   formatSignedPercent,
@@ -25,7 +24,7 @@ interface LargestChangesListProps {
  * The holdings whose value has moved the most since they were bought, the
  * biggest gain first (the server ranks them, in CAD). When little has gained
  * the rows run on into the flat and the losses, so this is not only gains. The
- * ticker and its account are on the left; the amount is on the right with the
+ * ticker and the security's name are on the left, as on Holdings; the amount is on the right with the
  * percentage under it, and only the percentage is coloured (green, red, or
  * neutral for none), as in By account. A row opens the holding's sheet.
  */
@@ -55,10 +54,7 @@ export const LargestChangesList: React.FC<LargestChangesListProps> = ({
           <ListRow
             key={holding.id}
             title={holdingTitle(holding)}
-            subtitle={accountLabel({
-              subtype: holding.accountSubtype,
-              mask: holding.accountMask,
-            })}
+            subtitle={holding.security.name ?? undefined}
             trailingTitle={formatSignedMoney(
               holding.gainInBase!,
               data.baseCurrency
