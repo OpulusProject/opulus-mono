@@ -14,12 +14,8 @@ export interface GetHoldingsParams {
   userId: string;
   /** Only these accounts' holdings (our account ids). */
   accountIds?: string[];
-  /** Only accounts of this subtype (tfsa, rrsp, ...). */
-  accountSubtype?: string;
   /** Only holdings of this security (our security id). */
   securityId?: string;
-  /** Largest first (the default), or account by account. */
-  sort?: "value" | "account";
   /** The current moment; only tests pass it. */
   now?: Date;
 }
@@ -40,7 +36,6 @@ export async function getHoldings(
   const [rows, allAccounts, dividends] = await Promise.all([
     holdingRepository.getAllByUserId(params.userId, {
       accountIds: params.accountIds,
-      accountSubtype: params.accountSubtype,
       securityId: params.securityId,
     }),
     accountRepository.getAllByUserId(params.userId, ["investment"]),
@@ -54,7 +49,6 @@ export async function getHoldings(
   const accounts = allAccounts.filter(
     (account) =>
       (!params.accountIds || params.accountIds.includes(account.id)) &&
-      (!params.accountSubtype || account.subtype === params.accountSubtype) &&
       (!params.securityId || holders.has(account.id))
   );
 
@@ -73,7 +67,6 @@ export async function getHoldings(
     rateOn: (currency) => converter.rateOn(currency, today),
     accounts,
     dividends,
-    sort: params.sort,
     now,
   });
 }

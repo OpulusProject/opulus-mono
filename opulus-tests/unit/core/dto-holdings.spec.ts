@@ -113,6 +113,7 @@ test.describe("holdings DTO", () => {
       },
       accounts: [],
       holdings: [],
+      positions: [],
     });
   });
 
