@@ -54,9 +54,9 @@ RUN echo 'server { \
 # Expose port
 EXPOSE 80
 
-# Health check
+# Health check (127.0.0.1, not localhost: busybox wget tries ::1 first and nginx listens on IPv4 only)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://localhost/ || exit 1
+  CMD wget --quiet --tries=1 --spider http://127.0.0.1/ || exit 1
 
 # Start nginx
 CMD ["nginx", "-g", "daemon off;"]
