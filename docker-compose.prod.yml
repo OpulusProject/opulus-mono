@@ -62,6 +62,8 @@ services:
       # Same origin as the SPA: the proxy serves both, so cookies are first-party.
       BETTER_AUTH_BASE_URL: ${PUBLIC_URL}
       CLIENT_URL: ${PUBLIC_URL}
+      # One hostname (e.g. a *.ts.net name) serves everything: host-only cookies.
+      COOKIE_DOMAIN: host
       RATE_LIMIT_STORE: redis
     depends_on:
       db:
