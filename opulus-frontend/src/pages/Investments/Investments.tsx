@@ -1,16 +1,16 @@
-import { Link, getRouteApi } from '@tanstack/react-router';
-import { Landmark } from 'lucide-react';
+import { getRouteApi } from '@tanstack/react-router';
 import * as React from 'react';
 
-import { List, ListEmpty, ListError } from '@/common/List';
+import { List, ListError } from '@/common/List';
 import { Page } from '@/common/Page';
-import { Button } from '@/components/ui';
 import { useHoldings } from '@/hooks/investments/useHoldings';
 
 import { AccountFilter } from './AccountFilter';
 import { ByAccountList } from './ByAccountList';
 import { HoldingSheet } from './HoldingSheet';
+import { InvestmentsTabs } from './InvestmentsTabs';
 import { LargestChangesList } from './LargestChangesList';
+import { NoInvestmentAccounts } from './NoInvestmentAccounts';
 import { PortfolioSummary } from './PortfolioSummary';
 
 const route = getRouteApi('/_authenticated/investments/');
@@ -31,15 +31,19 @@ export const Investments: React.FC = () => {
           'Connect a brokerage, TFSA, RRSP or other investment account and Opulus shows what you hold and what it is worth.',
       }}
       actions={
-        <AccountFilter
-          selected={accounts}
-          onChange={(selected) =>
-            void navigate({
-              search: { account: selected.length > 0 ? selected : undefined },
-              replace: true,
-            })
-          }
-        />
+        // Wraps, so on a phone the filter goes under the toggle.
+        <div className="flex flex-wrap items-center gap-2">
+          <InvestmentsTabs active="overview" accounts={accounts} />
+          <AccountFilter
+            selected={accounts}
+            onChange={(selected) =>
+              void navigate({
+                search: { account: selected.length > 0 ? selected : undefined },
+                replace: true,
+              })
+            }
+          />
+        </div>
       }
     >
       <InvestmentsContent
@@ -79,20 +83,7 @@ const InvestmentsContent: React.FC<{
   // Connected, but with no investment account at all (a filter that matches
   // nothing is not that): say so, and where cash lives.
   if (holdings.data.accounts.length === 0 && accounts.length === 0) {
-    return (
-      <List>
-        <ListEmpty
-          icon={Landmark}
-          title="No investment accounts yet"
-          description="Connect a brokerage, TFSA, RRSP or other investment account and Opulus shows what you hold and what it is worth. Your cash accounts are on the Accounts page."
-          action={
-            <Button asChild>
-              <Link to="/settings/connections">Go to connections</Link>
-            </Button>
-          }
-        />
-      </List>
-    );
+    return <NoInvestmentAccounts />;
   }
 
   return (

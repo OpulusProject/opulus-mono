@@ -22,6 +22,7 @@ import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedInvestmentsIndexRouteImport } from './routes/_authenticated/investments.index'
 import { Route as AuthenticatedSettingsConnectionsRouteImport } from './routes/_authenticated/settings.connections'
+import { Route as AuthenticatedInvestmentsHoldingsRouteImport } from './routes/_authenticated/investments.holdings'
 
 const TwoFactorRoute = TwoFactorRouteImport.update({
   id: '/two-factor',
@@ -92,6 +93,12 @@ const AuthenticatedSettingsConnectionsRoute =
     path: '/settings/connections',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedInvestmentsHoldingsRoute =
+  AuthenticatedInvestmentsHoldingsRouteImport.update({
+    id: '/investments/holdings',
+    path: '/investments/holdings',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/spending': typeof AuthenticatedSpendingRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
+  '/investments/holdings': typeof AuthenticatedInvestmentsHoldingsRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/investments': typeof AuthenticatedInvestmentsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
@@ -117,6 +125,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/spending': typeof AuthenticatedSpendingRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
+  '/investments/holdings': typeof AuthenticatedInvestmentsHoldingsRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/investments': typeof AuthenticatedInvestmentsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
@@ -133,6 +142,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/spending': typeof AuthenticatedSpendingRoute
   '/_authenticated/transactions': typeof AuthenticatedTransactionsRoute
+  '/_authenticated/investments/holdings': typeof AuthenticatedInvestmentsHoldingsRoute
   '/_authenticated/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/_authenticated/investments/': typeof AuthenticatedInvestmentsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/spending'
     | '/transactions'
+    | '/investments/holdings'
     | '/settings/connections'
     | '/investments'
     | '/settings'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/spending'
     | '/transactions'
+    | '/investments/holdings'
     | '/settings/connections'
     | '/investments'
     | '/settings'
@@ -178,6 +190,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/spending'
     | '/_authenticated/transactions'
+    | '/_authenticated/investments/holdings'
     | '/_authenticated/settings/connections'
     | '/_authenticated/investments/'
     | '/_authenticated/settings/'
@@ -284,6 +297,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsConnectionsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/investments/holdings': {
+      id: '/_authenticated/investments/holdings'
+      path: '/investments/holdings'
+      fullPath: '/investments/holdings'
+      preLoaderRoute: typeof AuthenticatedInvestmentsHoldingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -293,6 +313,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedSpendingRoute: typeof AuthenticatedSpendingRoute
   AuthenticatedTransactionsRoute: typeof AuthenticatedTransactionsRoute
+  AuthenticatedInvestmentsHoldingsRoute: typeof AuthenticatedInvestmentsHoldingsRoute
   AuthenticatedSettingsConnectionsRoute: typeof AuthenticatedSettingsConnectionsRoute
   AuthenticatedInvestmentsIndexRoute: typeof AuthenticatedInvestmentsIndexRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
@@ -304,6 +325,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedSpendingRoute: AuthenticatedSpendingRoute,
   AuthenticatedTransactionsRoute: AuthenticatedTransactionsRoute,
+  AuthenticatedInvestmentsHoldingsRoute: AuthenticatedInvestmentsHoldingsRoute,
   AuthenticatedSettingsConnectionsRoute: AuthenticatedSettingsConnectionsRoute,
   AuthenticatedInvestmentsIndexRoute: AuthenticatedInvestmentsIndexRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
