@@ -365,11 +365,38 @@ model Security {
   bondFaceValue          Decimal?
   bondYieldRate          Decimal? // a percentage; bondYieldType says which kind
   bondYieldType          String? // coupon, coupon_equivalent, discount, yield_to_maturity or yield_to_worst
+  // When its price history was last fetched from the market-data provider (see
+  // ACTIVE_PRICE_PROVIDER); null until it has been. Every security is priced, so
+  // there is nothing more to track. Changing provider means clearing this on
+  // every security and fetching the history again.
+  priceBackfilledAt      DateTime?
   updatedAt              DateTime                @updatedAt
   holdings               Holding[]
   investmentTransactions InvestmentTransaction[]
-
+  prices                 SecurityPrice[]
   @@map("security")
+}
+
+/// A security's price on a day: the close for a past day, and for today the
+/// latest quote (replaced every few minutes, and the close once the day ends).
+/// About two years of days are kept. Not per user: shared by everyone.
+model SecurityPrice {
+  id         String   @id @default(cuid())
+  securityId String
+  date       DateTime @db.Date // The trading day (UTC date of the quote)
+  close      Decimal  @db.Decimal(20, 6) // In `currency`
+  currency   String // ISO 4217 code the price is in
+  source     String // the provider, e.g. "yahoo"
+  asOf       DateTime // when the provider says the price is from
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  security   Security @relation(fields: [securityId], references: [id], onDelete: Restrict)
+
+  // One price per security per day
+  @@unique([securityId, date])
+  // The days of a date range, across securities
+  @@index([date])
+  @@map("security_price")
 }
 
 /// How much of a security an investment account holds right now, as of Plaid's
