@@ -5,8 +5,7 @@ import { exited, startService, type RunningService } from "../helpers/service.js
 const PORT = 18297;
 const JOB = "refresh-exchange-rates";
 const PRICES = "refresh-security-prices";
-const BACKFILL = "backfill-security-prices";
-const JOBS = [BACKFILL, JOB, PRICES];
+const JOBS = [JOB, PRICES];
 const RETIRED = "a-job-that-was-removed";
 
 /** Stop it the way a deploy does, so that nothing is left holding the port (a kill would leave tsx's child running). */
@@ -66,7 +65,6 @@ test.describe("scheduler schedules", () => {
     const registered = await queue.getJobSchedulers();
     expect(registered.map((s) => s.key).sort()).toEqual(JOBS);
     expect(registered.find((s) => s.key === JOB)).toMatchObject({ name: JOB, pattern: "5 4 * * *", tz: "UTC" });
-    expect(registered.find((s) => s.key === BACKFILL)).toMatchObject({ every: 5 * 60 * 1000 });
   });
 
   test("schedules the security prices job every SECURITY_PRICES_INTERVAL_MINUTES, and every 15 minutes when it is not a whole number from 1 to 1440", async () => {

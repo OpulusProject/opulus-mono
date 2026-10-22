@@ -1,5 +1,4 @@
 import {
-  backfillSecurityPrices,
   config,
   logger,
   refreshExchangeRates,
@@ -52,18 +51,10 @@ export const jobs = {
   },
   "refresh-security-prices": {
     description:
-      "Quote every tracked security and store the price as today's (the last quote of a day is its close)",
+      "Quote every security and store the price as today's (the last quote of a day is its close), then fetch the history of any that has none",
     schedule: { everyMs: securityPricesIntervalMs() },
     runOnStart: true,
     run: () => refreshSecurityPrices(),
-  },
-  "backfill-security-prices": {
-    description:
-      "Fetch up to two years of daily closes for tracked securities that have none yet",
-    // Soon after a security is first seen, but not so often that it matters.
-    schedule: { everyMs: 5 * 60 * 1000 },
-    runOnStart: true,
-    run: () => backfillSecurityPrices(),
   },
 } satisfies Record<string, ScheduledJob>;
 

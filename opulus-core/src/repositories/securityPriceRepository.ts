@@ -54,15 +54,19 @@ class SecurityPriceRepository {
 
   /**
    * Every security, in the order they were first stored (ids are time-ordered),
-   * or only those whose history has not been fetched yet.
+   * or only those with no stored price, or those whose history has not been
+   * fetched yet.
    * @throws AppError if database error occurs
    */
   async getForPricing(
-    options: { withoutHistory?: boolean } = {}
+    options: { withoutPrice?: boolean; withoutHistory?: boolean } = {}
   ): Promise<PricedSecurity[]> {
     try {
       return await this.prisma.security.findMany({
-        where: options.withoutHistory ? { priceBackfilledAt: null } : {},
+        where: {
+          ...(options.withoutPrice && { prices: { none: {} } }),
+          ...(options.withoutHistory && { priceBackfilledAt: null }),
+        },
         select: forPricing,
         orderBy: { id: "asc" },
       });

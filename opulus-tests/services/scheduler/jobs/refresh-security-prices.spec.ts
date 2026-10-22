@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { uniqueId } from "../../../shared/client.js";
 import { readSecurityPrices, seedSecurity, seedSecurityPrice } from "../../../shared/fixtures/index.js";
 import { runToEnd } from "../../../shared/scheduler.js";
-import { failYahooStub, resetYahooStub, setYahooPrice, yahooRequests } from "../helpers/yahooStub.js";
+import { failYahooStub, resetYahooStub, setYahooPrice, yahooRequests } from "../../../shared/yahoo-stub.js";
 
 const JOB = "refresh-security-prices";
 
@@ -14,9 +14,13 @@ const tradingDay = () => new Date(Date.now() - 4 * 3600_000).toISOString().slice
 
 const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
 
-/** A security on its own, on the Toronto exchange (its symbol is the ticker with .TO, in CAD) or with no exchange (USD). */
+/**
+ * A security on its own, on the Toronto exchange (its symbol is the ticker with
+ * .TO, in CAD) or with no exchange (USD). Its history counts as fetched, so these
+ * tests see only the quotes (the history is the other spec's).
+ */
 const listed = (symbol: string, mic: string | null = null) =>
-  seedSecurity({ plaidSecurityId: uniqueId("sec"), tickerSymbol: symbol, marketIdentifierCode: mic });
+  seedSecurity({ plaidSecurityId: uniqueId("sec"), tickerSymbol: symbol, marketIdentifierCode: mic, backfilled: true });
 
 /** The chart requests the stub saw for one symbol. */
 const quotesFor = async (request: Parameters<typeof yahooRequests>[0], symbol: string) =>

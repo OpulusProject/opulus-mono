@@ -70,6 +70,10 @@ jobs:
       # (opulus-tests/services/backend/stub/plaid.mjs), started below.
       PLAID_BASE_URL: http://localhost:4546
       PLAID_REDIRECT_URI: http://localhost:5173/settings/connections
+      # Securities a sync stores are priced at once; the Yahoo stub answers (no
+      # third party), started below.
+      YAHOO_FINANCE_BASE_URL: http://localhost:4547
+      YAHOO_STUB_URL: http://localhost:4547
       TEST_BASE_URL: http://localhost:8080
 
     services:
@@ -124,6 +128,18 @@ jobs:
           echo "Plaid stub did not start in time" >&2
           exit 1
 
+      - name: Start the Yahoo stub
+        run: |
+          node opulus-tests/services/scheduler/stub/yahoo.mjs &
+          for i in $(seq 1 30); do
+            if curl -sf "$YAHOO_STUB_URL/health" >/dev/null; then
+              echo "Yahoo stub is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Yahoo stub did not start in time" >&2
+          exit 1
+
       - name: Boot backend service
         run: |
           pnpm --filter @opulus/backend exec tsx src/server.ts &
@@ -167,6 +183,10 @@ jobs:
       # stub (opulus-tests/services/backend/stub/plaid.mjs, started below) serves a
       # key of its own, so the specs can sign webhooks the receiver accepts.
       PLAID_BASE_URL: http://localhost:4546
+      # Securities a sync stores are priced at once; the Yahoo stub answers (no
+      # third party), started below.
+      YAHOO_FINANCE_BASE_URL: http://localhost:4547
+      YAHOO_STUB_URL: http://localhost:4547
       TEST_BASE_URL: http://localhost:8081
 
     services:
@@ -228,6 +248,18 @@ jobs:
             sleep 1
           done
           echo "Plaid stub did not start in time" >&2
+          exit 1
+
+      - name: Start the Yahoo stub
+        run: |
+          node opulus-tests/services/scheduler/stub/yahoo.mjs &
+          for i in $(seq 1 30); do
+            if curl -sf "$YAHOO_STUB_URL/health" >/dev/null; then
+              echo "Yahoo stub is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Yahoo stub did not start in time" >&2
           exit 1
 
       - name: Boot webhooks service

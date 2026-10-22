@@ -3,11 +3,13 @@ import { uniqueId } from "../../../shared/client.js";
 import {
   readInvestmentTransactions,
   readInvestmentTransactionsSyncedAt,
+  readSecurityPrices,
   readWebhookEvents,
   seedLinkedItem,
 } from "../../../shared/fixtures/index.js";
 import { investmentTransactionRequests, resetPlaidStub, setPlaidInvestmentTransactions } from "../../../shared/plaid-stub.js";
 import { apple, buy, daysAgo, dividend, transactionsAnswer } from "../../../shared/scenarios/plaid-investments.js";
+import { resetYahooStub } from "../../../shared/yahoo-stub.js";
 import { deliverWebhook } from "../helpers/fixtures/index.js";
 
 const linkedItem = seedLinkedItem;
@@ -30,6 +32,7 @@ const investmentsWebhook = (plaidItemId: string, code = "DEFAULT_UPDATE", news =
  *
  * Test cases:
  * - stores the transactions and securities Plaid reports, with Plaid's sign (a buy out, a dividend in)
+ * - prices a security that only appears in the transactions, such as one sold before the account was linked
  * - asks for 24 months the first time and records when it synced
  * - a HISTORICAL_UPDATE syncs like a DEFAULT_UPDATE
  * - asks only for the time since the last sync (and a month before it) the next time
@@ -38,8 +41,9 @@ const investmentsWebhook = (plaidItemId: string, code = "DEFAULT_UPDATE", news =
  * - handles an INVESTMENTS_TRANSACTIONS code it has no action for (processed, nothing stored)
  */
 test.describe("INVESTMENTS_TRANSACTIONS webhooks", () => {
-  test.beforeEach(async () => {
+  test.beforeEach(async ({ request }) => {
     await resetPlaidStub();
+    await resetYahooStub(request);
   });
 
   test("stores the transactions and securities Plaid reports, with Plaid's sign (a buy out, a dividend in)", async ({ request }) => {
@@ -67,6 +71,23 @@ test.describe("INVESTMENTS_TRANSACTIONS webhooks", () => {
     expect(stored[0]!.security).toMatchObject({ tickerSymbol: "AAPL" });
     expect([Number(stored[0]!.quantity), Number(stored[0]!.price), Number(stored[0]!.amount)]).toEqual([10, 190, 1900]);
     expect(Number(stored[1]!.amount)).toBe(-12.5);
+  });
+
+  test("prices a security that only appears in the transactions, such as one sold before the account was linked", async ({ request }) => {
+    // Arrange: bought and sold in the period, so no holding has it.
+    const item = await linkedItem();
+    const id = uniqueId("sec_sold");
+    const ticker = uniqueId("").replace(/[^a-f]/g, "").toUpperCase().padEnd(6, "Q").slice(0, 6) + "Z";
+    await setPlaidInvestmentTransactions(
+      transactionsAnswer([buy(item.providerAccountId, uniqueId("it"), id, daysAgo(40), 10, 190)], [{ ...apple(id), ticker_symbol: ticker }], [item.providerAccountId]),
+    );
+
+    // Act
+    await deliverWebhook(request, investmentsWebhook(item.plaidItemId));
+
+    // Assert: priced in the background, with its history.
+    const [stored] = await readInvestmentTransactions(item.itemId);
+    await expect.poll(async () => (await readSecurityPrices(stored!.security!.id)).length, { timeout: 15_000 }).toBeGreaterThan(450);
   });
 
   test("asks for 24 months the first time and records when it synced", async ({ request }) => {

@@ -10,6 +10,7 @@ import {
 import { addDays, toDay } from "../utils/day.js";
 import { AppError } from "../utils/errors.js";
 import { logger } from "../utils/logger.js";
+import { requestPricingOfNewSecurities } from "./securityPrices.js";
 
 /**
  * Plaid error codes meaning "this item has no investment transactions to give
@@ -136,6 +137,9 @@ export async function syncItemInvestmentTransactions(params: {
       tx
     );
   });
+
+  // A security seen only in transactions (sold before linking) is priced too.
+  if (response.securities.length > 0) requestPricingOfNewSecurities();
 
   return {
     status: "synced",

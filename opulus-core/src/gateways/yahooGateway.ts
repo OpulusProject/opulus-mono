@@ -10,8 +10,6 @@ import type {
 } from "./priceProvider.js";
 
 const TIMEOUT_MS = 30_000;
-/** Quotes are one request per symbol; this many at a time. */
-const CONCURRENCY = 5;
 const DAY_S = 24 * 60 * 60;
 
 /** The part of Yahoo's chart response we use (`/v8/finance/chart/<symbol>`). */
@@ -108,42 +106,39 @@ export function parseHistory(body: unknown): PriceHistory {
 class YahooGateway implements PriceProvider {
   readonly name = "yahoo";
 
+  /**
+   * One request per symbol, one after another: a request takes tens of
+   * milliseconds, so a hundred symbols take seconds, and nothing here guesses
+   * at a limit Yahoo does not publish. When Yahoo cannot be reached or throttles
+   * (a 502 here), it stops asking, and the symbols not reached come back as
+   * errors to be tried next time.
+   */
   async getQuotes(symbols: string[]): Promise<PriceQuoteResult[]> {
-    const results: PriceQuoteResult[] = new Array<PriceQuoteResult>(
-      symbols.length
-    );
-    let next = 0;
+    const results: PriceQuoteResult[] = [];
     let unreachable: AppError | undefined;
-    const worker = async () => {
-      while (next < symbols.length && !unreachable) {
-        const index = next++;
-        const symbol = symbols[index]!;
-        try {
-          const body = await this.fetchChart(symbol, "1d", "1d");
-          results[index] = { symbol, quote: { ...parseQuote(body), symbol } };
-        } catch (error) {
-          if (error instanceof AppError && error.statusCode === 502) {
-            unreachable ??= error;
-          }
-          results[index] = {
-            symbol,
-            error: error instanceof Error ? error.message : String(error),
-          };
-        }
+    for (const symbol of symbols) {
+      if (unreachable) {
+        results.push({ symbol, error: "Not fetched" });
+        continue;
       }
-    };
-    await Promise.all(
-      Array.from({ length: Math.min(CONCURRENCY, symbols.length) }, worker)
-    );
-    // Every symbol failing to be reached is the provider being down, not a
-    // problem with each symbol: let the job retry instead of marking them.
-    if (unreachable && results.every((r) => !r || "error" in r)) {
+      try {
+        const body = await this.fetchChart(symbol, "1d", "1d");
+        results.push({ symbol, quote: { ...parseQuote(body), symbol } });
+      } catch (error) {
+        if (error instanceof AppError && error.statusCode === 502) {
+          unreachable = error;
+        }
+        results.push({
+          symbol,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    // Yahoo being down, not a problem with each symbol: let the job retry.
+    if (unreachable && results.every((result) => "error" in result)) {
       throw unreachable;
     }
-    return results.map(
-      (result, index) =>
-        result ?? { symbol: symbols[index]!, error: "Not fetched" }
-    );
+    return results;
   }
 
   async getHistory(

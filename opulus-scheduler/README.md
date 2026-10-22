@@ -7,8 +7,7 @@ Runs Opulus's recurring jobs. Each job is a name, a schedule and a call to a cor
 | Job | When (UTC) | What |
 | --- | --- | --- |
 | `refresh-exchange-rates` | `0 17 * * *` (daily, after the European Central Bank publishes), and once on start | `refreshExchangeRates()` from core: fills `exchange_rate` with about two years of daily rates when it is empty, then adds the days since the latest stored one |
-| `refresh-security-prices` | every `SECURITY_PRICES_INTERVAL_MINUTES` (15 by default), and once on start | `refreshSecurityPrices()` from core: quotes every security (held or not) by the provider symbol worked out from its ticker and exchange, and stores the price as today's in `security_price`, so the last quote of a day is its close. A security the provider has no price for is logged and keeps its last price; it is asked about again next time |
-| `backfill-security-prices` | every 5 minutes, and once on start | `backfillSecurityPrices()` from core: fetches up to two years of daily closes (a batch of 20 securities per run) for securities whose history has not been fetched; one the provider has no history for is recorded as done |
+| `refresh-security-prices` | every `SECURITY_PRICES_INTERVAL_MINUTES` (15 by default), and once on start | `refreshSecurityPrices()` from core: quotes every security (held or not) by the provider symbol worked out from its ticker and exchange, and stores the price as today's in `security_price`, so the last quote of a day is its close; then fetches up to two years of daily closes for any security whose history has not been fetched. A security the provider has no price for is logged and keeps its last price; one it has no history for is recorded as done. New securities are priced at once, when a sync stores them, without waiting for this run (`requestPricingOfNewSecurities()`) |
 
 ### Adding a job
 

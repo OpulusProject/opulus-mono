@@ -138,11 +138,12 @@ jobs:
             url=http://localhost:4546/health
           else
             node opulus-tests/services/scheduler/stub/frankfurter.mjs &
-            node opulus-tests/services/scheduler/stub/yahoo.mjs &
             url=http://localhost:4545/health
           fi
+          # Every service prices the securities it stores: the Yahoo stub too.
+          node opulus-tests/services/scheduler/stub/yahoo.mjs &
           for i in $(seq 1 30); do
-            curl -sf "$url" >/dev/null && { [ "${{ matrix.stub }}" = "plaid" ] || curl -sf "$YAHOO_STUB_URL/health" >/dev/null; } && exit 0
+            curl -sf "$url" >/dev/null && curl -sf "$YAHOO_STUB_URL/health" >/dev/null && exit 0
             sleep 1
           done
           echo "The stub did not start in time" >&2
