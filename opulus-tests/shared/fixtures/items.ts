@@ -144,6 +144,31 @@ export async function seedAccountOnItem(params: {
   return { accountId: account.id, providerAccountId: account.providerAccountId };
 }
 
+/**
+ * Seed an item that has no accounts, as one is left when the user stops sharing
+ * the last of them. Returns the ids a spec needs.
+ */
+export async function seedItemWithoutAccounts(
+  userId: string,
+  overrides: Partial<{ errorType: string | null; errorCode: string | null }> = {},
+): Promise<{ itemId: string; plaidItemId: string }> {
+  const item = await testDb().item.create({
+    data: {
+      plaidItemId: uniqueId("plaid_item"),
+      userId,
+      accessToken: encryptItemToken(uniqueId("access")),
+      institutionId: uniqueId("ins"),
+      institutionName: uniqueId("Bank"),
+      updateType: "background",
+      availableProducts: ["transactions"],
+      billedProducts: ["transactions"],
+      products: ["transactions"],
+      ...overrides,
+    },
+  });
+  return { itemId: item.id, plaidItemId: item.plaidItemId };
+}
+
 /** Whether an account is still stored. */
 export async function accountExists(accountId: string): Promise<boolean> {
   return (await testDb().account.count({ where: { id: accountId } })) > 0;

@@ -46,7 +46,7 @@ export const ConnectionActions: React.FC<ConnectionActionsProps> = ({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => onUpdate(item.id, 'reconnect')}
+          onClick={() => onUpdate(item.id, status.ctaMode ?? 'reconnect')}
         >
           {status.ctaLabel}
         </Button>

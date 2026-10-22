@@ -6,6 +6,7 @@ import {
   createAuthedUser,
   seedCreditLiability,
   seedItemWithAccount,
+  seedItemWithoutAccounts,
 } from "../../../shared/fixtures/index.js";
 import { resetPlaidStub, setPlaidLiabilities } from "../../../shared/plaid-stub.js";
 import {
@@ -295,5 +296,24 @@ test.describe("GET /api/items", () => {
       expect.objectContaining({ kind: "student", interestRate: 5.25, minimumPayment: 138.05 }),
     ]));
     for (const loan of loans) expect(Number.isNaN(Date.parse((loan as { syncedAt: string }).syncedAt))).toBe(false);
+  });
+  test("shows an item that has no accounts with the derived NO_ACCOUNTS_SHARED code, and keeps its own error code otherwise", async ({ request }) => {
+    // Arrange: an item with no accounts left, and another with none that Plaid also reports an error on.
+    const { cookie, userId } = await createAuthedUser(request);
+    const empty = await seedItemWithoutAccounts(userId);
+    const broken = await seedItemWithoutAccounts(userId, { errorType: "ITEM_ERROR", errorCode: "ITEM_LOGIN_REQUIRED" });
+    const healthy = await seedItemWithAccount(userId);
+
+    // Act
+    const res = await request.get("/api/items", { headers: withSession(cookie) });
+
+    // Assert: the derived code only where nothing else is wrong; a healthy item has none.
+    await expectOk(res);
+    await expectMatchesSchema(res, ItemsResponseSchema);
+    const items = (await res.json()).data.items as Array<{ id: string; errorCode: string | null; accounts: unknown[] }>;
+    const byId = Object.fromEntries(items.map((item) => [item.id, item]));
+    expect(byId[empty.itemId]).toMatchObject({ errorCode: "NO_ACCOUNTS_SHARED", accounts: [] });
+    expect(byId[broken.itemId]).toMatchObject({ errorCode: "ITEM_LOGIN_REQUIRED", accounts: [] });
+    expect(byId[healthy.itemId]!.errorCode).toBeNull();
   });
 });
