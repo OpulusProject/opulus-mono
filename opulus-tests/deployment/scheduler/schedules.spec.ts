@@ -21,15 +21,14 @@ const queue = new Queue("scheduler", {
 
 /**
  * This file: the schedules the scheduler registers when it starts. A job is a
- * name, a schedule (a cron pattern, or every so many minutes) and a call to a
- * service (jobs/index.ts); at start-up the
+ * name, a cron pattern and a call to a service (jobs/index.ts); at start-up the
  * scheduler makes the queue's schedules match, adding or updating each job's and
  * removing those of jobs that no longer exist. It starts a scheduler of its own
  * (with no start-up run) and reads the schedules from its Redis.
  *
  * Test cases:
  * - registers each job's schedule, in UTC, with the pattern it asks for
- * - schedules the security prices job every SECURITY_PRICES_INTERVAL_MINUTES, and every 15 minutes when it is not a whole number from 1 to 1440
+ * - schedules the security prices job every 15 minutes, or by SECURITY_PRICES_CRON
  * - removes the schedule of a job that no longer exists, and keeps the others
  * - registers the same schedule again when started again (no duplicate)
  * - queues the jobs that ask to run at start-up, unless told not to
@@ -67,21 +66,17 @@ test.describe("scheduler schedules", () => {
     expect(registered.find((s) => s.key === JOB)).toMatchObject({ name: JOB, pattern: "5 4 * * *", tz: "UTC" });
   });
 
-  test("schedules the security prices job every SECURITY_PRICES_INTERVAL_MINUTES, and every 15 minutes when it is not a whole number from 1 to 1440", async () => {
-    // Act and assert: configured, then each kind of bad value.
-    const every = async (minutes?: string) => {
-      await start("5 4 * * *", minutes === undefined ? {} : { SECURITY_PRICES_INTERVAL_MINUTES: minutes });
+  test("schedules the security prices job every 15 minutes, or by SECURITY_PRICES_CRON", async () => {
+    // Act and assert: the default, then a pattern of its own.
+    const pattern = async (cron?: string) => {
+      await start("5 4 * * *", cron === undefined ? {} : { SECURITY_PRICES_CRON: cron });
       const found = (await queue.getJobSchedulers()).find((s) => s.key === PRICES);
       await stop(scheduler!);
       scheduler = undefined;
-      return found?.every;
+      return [found?.pattern, found?.tz];
     };
-    expect(await every("1")).toBe(60 * 1000);
-    expect(await every("7")).toBe(7 * 60 * 1000);
-    expect(await every()).toBe(15 * 60 * 1000);
-    expect(await every("0")).toBe(15 * 60 * 1000);
-    expect(await every("1441")).toBe(15 * 60 * 1000);
-    expect(await every("soon")).toBe(15 * 60 * 1000);
+    expect(await pattern()).toEqual(["*/15 * * * *", "UTC"]);
+    expect(await pattern("*/5 * * * *")).toEqual(["*/5 * * * *", "UTC"]);
   });
 
   test("removes the schedule of a job that no longer exists, and keeps the others", async () => {

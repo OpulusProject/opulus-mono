@@ -31,7 +31,6 @@ const problems = (service: "backend" | "webhooks" | "scheduler", env: Record<str
  * - the backend needs a real session secret of 32+ characters, an https base URL, the client URL, Plaid credentials and the item-token key
  * - the webhooks service needs Plaid credentials, the item-token key and Redis, but not the backend's session settings
  * - the scheduler needs only the database and Redis
- * - the scheduler's SECURITY_PRICES_INTERVAL_MINUTES, when set, must be a whole number of minutes from 1 to 1440
  * - a placeholder from .env.example does not count as set
  * - PLAID_ENV must be sandbox or production
  * - all the problems are reported at once
@@ -81,20 +80,6 @@ test.describe("config problems", () => {
 
     expect(problems("scheduler", nothingElse)).toEqual([]);
     expect(problems("scheduler", { DATABASE_URL: complete.DATABASE_URL })).toHaveLength(1);
-  });
-
-  test("the scheduler's SECURITY_PRICES_INTERVAL_MINUTES, when set, must be a whole number of minutes from 1 to 1440", () => {
-    const scheduler = { DATABASE_URL: complete.DATABASE_URL, REDIS_HOST: complete.REDIS_HOST };
-
-    for (const fine of [undefined, "", "1", "15", "1440"]) {
-      expect(problems("scheduler", { ...scheduler, SECURITY_PRICES_INTERVAL_MINUTES: fine })).toEqual([]);
-    }
-    expect(problems("scheduler", { ...scheduler, SECURITY_PRICES_INTERVAL_MINUTES: "soon" })[0]).toContain("must be a whole number");
-    expect(problems("scheduler", { ...scheduler, SECURITY_PRICES_INTERVAL_MINUTES: "7.5" })[0]).toContain("must be a whole number");
-    expect(problems("scheduler", { ...scheduler, SECURITY_PRICES_INTERVAL_MINUTES: "0" })[0]).toContain("from 1 to 1440");
-    expect(problems("scheduler", { ...scheduler, SECURITY_PRICES_INTERVAL_MINUTES: "1441" })[0]).toContain("from 1 to 1440");
-    // Not a setting of the other services.
-    expect(problems("webhooks", { ...complete, SECURITY_PRICES_INTERVAL_MINUTES: "soon" })).toEqual([]);
   });
 
   test("a placeholder from .env.example does not count as set", () => {

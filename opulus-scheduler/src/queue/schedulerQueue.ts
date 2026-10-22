@@ -27,12 +27,12 @@ export const schedulerQueue = new Queue(QUEUE, {
  */
 export async function registerSchedules(): Promise<void> {
   for (const [name, job] of Object.entries(jobs)) {
-    const repeat =
-      "pattern" in job.schedule
-        ? { pattern: job.schedule.pattern, tz: "UTC" }
-        : { every: job.schedule.everyMs };
-    await schedulerQueue.upsertJobScheduler(name, repeat, { name, data: {} });
-    logger.info({ job: name, ...job.schedule }, "Job scheduled");
+    await schedulerQueue.upsertJobScheduler(
+      name,
+      { pattern: job.pattern, tz: "UTC" },
+      { name, data: {} },
+    );
+    logger.info({ job: name, pattern: job.pattern }, "Job scheduled");
   }
 
   for (const scheduler of await schedulerQueue.getJobSchedulers()) {
