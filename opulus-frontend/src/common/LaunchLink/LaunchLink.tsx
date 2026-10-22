@@ -43,6 +43,13 @@ interface LaunchLinkProps {
    */
   resume?: { linkToken: string; receivedRedirectUri: string };
   /**
+   * The user linked an institution they already have: the id of the existing
+   * connection. When given, this is called instead of `onClose` so the caller
+   * can send them on to manage that connection's accounts (nothing new was
+   * stored: choosing which accounts to track happens in update mode).
+   */
+  onDuplicate?: (existingItemId: string) => void;
+  /**
    * Callback when Link is closed (successfully or with error)
    */
   onClose: () => void;
@@ -90,6 +97,7 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
   itemId,
   updateMode,
   resume,
+  onDuplicate,
   onClose,
   onSuccess,
   onExit,
@@ -138,6 +146,7 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
       return;
     }
 
+    let handedOff = false;
     createItem.mutate(
       {
         publicToken,
@@ -146,13 +155,20 @@ export const LaunchLink: React.FC<LaunchLinkProps> = ({
       {
         onSuccess: (result) => {
           if (result.data.duplicate) {
+            if (onDuplicate) {
+              handedOff = true;
+              onDuplicate(result.data.itemId);
+              return;
+            }
             console.info(
               result.message ?? 'You are already connected to this institution.'
             );
           }
         },
         onError: (error) => console.error('Failed to create item:', error),
-        onSettled: onClose,
+        onSettled: () => {
+          if (!handedOff) onClose();
+        },
       }
     );
   };

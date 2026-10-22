@@ -115,8 +115,15 @@ export const Connections: React.FC = () => {
 
       {isLinkOpen && (
         <LaunchLink
+          // A new session for each target, so linking an institution we
+          // already have starts the manage-accounts one cleanly.
+          key={updateTarget?.itemId ?? 'new'}
           itemId={updateTarget?.itemId}
           updateMode={updateTarget?.mode}
+          // The institution is already connected: choose its accounts instead.
+          onDuplicate={(itemId) =>
+            setUpdateTarget({ itemId, mode: 'add-accounts' })
+          }
           onClose={() => {
             setIsLinkOpen(false);
             setUpdateTarget(undefined);
