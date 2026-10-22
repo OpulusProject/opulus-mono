@@ -26,6 +26,7 @@ export const PlaidWebhookEventSchema = object({
   canceled_investments_transactions: number().optional(),
   new_holdings: number().optional(),
   updated_holdings: number().optional(),
+  account_id: string().optional(),
   account_ids: array(string()).optional(),
   account_ids_with_new_liabilities: array(string()).optional(),
   account_ids_with_updated_liabilities: record(

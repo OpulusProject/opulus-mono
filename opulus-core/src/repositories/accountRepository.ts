@@ -390,6 +390,35 @@ class AccountRepository {
     }
   }
 
+  /**
+   * Delete some of an item's accounts by Plaid's account ids, with everything
+   * stored for them (cascade).
+   * @returns How many accounts were deleted
+   * @throws AppError if database error occurs
+   */
+  async deleteByProviderAccountIds(
+    itemId: string,
+    providerAccountIds: string[],
+    client: Prisma.TransactionClient = this.prisma
+  ): Promise<number> {
+    try {
+      const result = await client.account.deleteMany({
+        where: { itemId, providerAccountId: { in: providerAccountIds } },
+      });
+      return result.count;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to delete accounts: ${error.message}`
+          : "An unexpected error occurred while deleting accounts";
+      throw new AppError(message, 500);
+    }
+  }
+
   async deleteByItemId(
     itemId: string,
     client: Prisma.TransactionClient = this.prisma
