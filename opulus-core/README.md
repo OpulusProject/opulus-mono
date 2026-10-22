@@ -19,6 +19,7 @@ Shared package containing repositories (data access), gateways (external APIs), 
 - **Plaid Client** - Plaid API integration
 - **Plaid Gateway** - Plaid API wrapper with error handling
 - **Frankfurter Gateway** - Daily exchange rates against the euro (the European Central Bank's), from `FRANKFURTER_BASE_URL`; implements `ExchangeRateProvider`
+- **Yahoo Gateway** - Security quotes and daily closes from Yahoo Finance's chart endpoint (`YAHOO_FINANCE_BASE_URL`); implements `PriceProvider`, so a licensed provider can replace it
 
 ### Repositories
 

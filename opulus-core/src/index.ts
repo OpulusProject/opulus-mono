@@ -28,6 +28,8 @@ export * from "./repositories/webhookEventRepository.js";
 export * from "./gateways/exchangeRateProvider.js";
 export * from "./gateways/frankfurterGateway.js";
 export * from "./gateways/plaidGateway.js";
+export * from "./gateways/priceProvider.js";
+export * from "./gateways/yahooGateway.js";
 
 // Service exports (business logic shared by the backend and webhooks)
 export * from "./services/exchangeRateConverter.js";
@@ -47,6 +49,7 @@ export * from "./utils/currency.js";
 export * from "./utils/day.js";
 export * from "./utils/errors.js";
 export * from "./utils/itemTokenCrypto.js";
+export * from "./utils/securitySymbol.js";
 export * from "./utils/logger.js";
 export * from "./utils/money.js";
 export * from "./utils/plaidErrors.js";

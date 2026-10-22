@@ -67,6 +67,12 @@ export default {
     "FRANKFURTER_BASE_URL",
     "https://api.frankfurter.dev/v1"
   ),
+  // Yahoo Finance's public chart endpoint (security prices). Point it
+  // elsewhere to use a stub in tests.
+  yahooFinanceBaseUrl: getEnv(
+    "YAHOO_FINANCE_BASE_URL",
+    "https://query1.finance.yahoo.com"
+  ),
   // 32 bytes, base64. Encrypts Plaid access tokens at rest; see utils/itemTokenCrypto.ts.
   itemTokenEncryptionKey: getEnv("ITEM_TOKEN_ENCRYPTION_KEY"),
 };
