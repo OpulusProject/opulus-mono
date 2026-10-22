@@ -7,6 +7,8 @@ Runs Opulus's recurring jobs. Each job is a name, a schedule and a call to a cor
 | Job | When (UTC) | What |
 | --- | --- | --- |
 | `refresh-exchange-rates` | `0 17 * * *` (daily, after the European Central Bank publishes), and once on start | `refreshExchangeRates()` from core: fills `exchange_rate` with about two years of daily rates when it is empty, then adds the days since the latest stored one |
+| `refresh-security-prices` | every `SECURITY_PRICES_INTERVAL_MINUTES` (15 by default), and once on start | `refreshSecurityPrices()` from core: quotes every security (held or not) by the provider symbol worked out from its ticker and exchange, and stores the price as today's in `security_price`, so the last quote of a day is its close. A security the provider has no price for is logged and keeps its last price; it is asked about again next time |
+| `backfill-security-prices` | every 5 minutes, and once on start | `backfillSecurityPrices()` from core: fetches up to two years of daily closes (a batch of 20 securities per run) for securities whose history has not been fetched; one the provider has no history for is recorded as done |
 
 ### Adding a job
 
@@ -18,7 +20,7 @@ That is all: on start the scheduler registers every job's schedule (`upsertJobSc
 ## How it runs
 
 ```
-BullMQ job scheduler (cron, UTC) -> "scheduler" queue (Redis) -> worker -> job -> core service
+BullMQ job scheduler (cron in UTC, or every N minutes) -> "scheduler" queue (Redis) -> worker -> job -> core service
 ```
 
 - **Schedules** are stored in Redis, so several instances starting at once still schedule each run once.
@@ -66,6 +68,8 @@ The response shape is `JobRunResponse` in `@opulus/core` (`types/dto/jobs`).
 | `SCHEDULER_ADMIN_TOKEN` | *unset* | Turns on the jobs API; generate with `openssl rand -base64 32` |
 | `SCHEDULER_RUN_ON_START` | `true` | `false` to skip the start-up runs |
 | `EXCHANGE_RATES_CRON` | `0 17 * * *` | When `refresh-exchange-rates` runs (UTC) |
+| `SECURITY_PRICES_INTERVAL_MINUTES` | `15` | How often `refresh-security-prices` runs: a whole number of minutes from 1 to 1440 (anything else is ignored, with a warning, and 15 is used) |
+| `YAHOO_FINANCE_BASE_URL` | `https://query1.finance.yahoo.com` | Where prices come from (read by core) |
 | `FRANKFURTER_BASE_URL` | `https://api.frankfurter.dev/v1` | Where rates come from (read by core) |
 
 ## Local development

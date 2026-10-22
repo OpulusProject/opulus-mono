@@ -69,6 +69,9 @@ export function parseQuote(body: unknown): PriceQuote {
     price: meta.regularMarketPrice,
     currency: meta.currency,
     asOf: new Date(meta.regularMarketTime * 1000),
+    day: new Date((meta.regularMarketTime + meta.gmtoffset) * 1000)
+      .toISOString()
+      .slice(0, 10),
   };
 }
 

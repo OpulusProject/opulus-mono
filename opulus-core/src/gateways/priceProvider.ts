@@ -7,6 +7,8 @@ export interface PriceQuote {
   currency: string;
   /** When the provider says the price is from (the last trade). */
   asOf: Date;
+  /** The trading day it is for ("YYYY-MM-DD"), in the exchange's own time zone. */
+  day: string;
 }
 
 /** One quote asked for: the price, or why there is none. */

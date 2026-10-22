@@ -73,6 +73,12 @@ export default {
     "YAHOO_FINANCE_BASE_URL",
     "https://query1.finance.yahoo.com"
   ),
+  // How often the scheduler quotes every tracked security, in minutes (a whole
+  // number from 1 to 1440). Defaults to 15.
+  securityPricesIntervalMinutes: parseInt(
+    getEnv("SECURITY_PRICES_INTERVAL_MINUTES", "15"),
+    10
+  ),
   // 32 bytes, base64. Encrypts Plaid access tokens at rest; see utils/itemTokenCrypto.ts.
   itemTokenEncryptionKey: getEnv("ITEM_TOKEN_ENCRYPTION_KEY"),
 };
