@@ -32,8 +32,6 @@ export interface NormalizedHolding {
   plaidSecurityId: string;
   data: {
     quantity: number;
-    institutionPrice: number;
-    institutionPriceAsOf: Date | null;
     institutionValue: number;
     costBasis: number | null;
     isoCurrencyCode: string | null;
@@ -115,8 +113,6 @@ export function normalizePlaidHoldings(response: {
       plaidSecurityId: holding.security_id,
       data: {
         quantity: holding.quantity,
-        institutionPrice: holding.institution_price,
-        institutionPriceAsOf: toDate(holding.institution_price_as_of),
         institutionValue: holding.institution_value,
         costBasis: holding.cost_basis ?? null,
         isoCurrencyCode: holding.iso_currency_code ?? null,

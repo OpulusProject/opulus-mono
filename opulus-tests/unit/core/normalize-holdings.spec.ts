@@ -13,7 +13,7 @@ const holding = { account_id: "acct", security_id: "sec-1", quantity: 10, instit
  *
  * Test cases:
  * - keeps a security's name, ticker, type and currency
- * - keeps a holding's quantity, price, value and cost basis, keyed by Plaid's account and security ids
+ * - keeps a holding's quantity, value and cost basis (not its price: prices come from our own provider), keyed by Plaid's account and security ids
  * - turns what Plaid left out into null (a cash security with no ticker or price, a holding with no cost basis), and no cash flag into false
  * - drops a holding in a security that was not described
  * - keeps nothing Plaid also sends, such as CUSIP, ISIN, SEDOL or its close price (prices come from our own provider)
@@ -37,7 +37,7 @@ test.describe("normalizePlaidHoldings", () => {
     ]);
   });
 
-  test("keeps a holding's quantity, price, value and cost basis, keyed by Plaid's account and security ids", () => {
+  test("keeps a holding's quantity, value and cost basis (not its price: prices come from our own provider), keyed by Plaid's account and security ids", () => {
     const { holdings } = normalizePlaidHoldings(plaid({ securities: [security], holdings: [holding] }));
 
     expect(holdings).toEqual([
@@ -46,8 +46,6 @@ test.describe("normalizePlaidHoldings", () => {
         plaidSecurityId: "sec-1",
         data: {
           quantity: 10,
-          institutionPrice: 190.25,
-          institutionPriceAsOf: new Date("2026-10-14"),
           institutionValue: 1902.5,
           costBasis: 1500,
           isoCurrencyCode: "USD",
@@ -71,7 +69,7 @@ test.describe("normalizePlaidHoldings", () => {
       isCashEquivalent: false,
       isoCurrencyCode: null,
     });
-    expect(holdings[0]!.data).toMatchObject({ costBasis: null, isoCurrencyCode: null, institutionPriceAsOf: null });
+    expect(holdings[0]!.data).toMatchObject({ costBasis: null, isoCurrencyCode: null });
   });
 
   test("drops a holding in a security that was not described", () => {
