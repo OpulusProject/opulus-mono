@@ -11,7 +11,6 @@ const row = (overrides: {
   currency?: string | null;
   ticker?: string;
   id?: string;
-  priceAsOf?: Date | null;
   type?: string;
   isCashEquivalent?: boolean;
   accountId?: string;
@@ -25,7 +24,7 @@ const row = (overrides: {
     securityId: "sec-1",
     quantity: D(10),
     institutionPrice: D(overrides.value / 10),
-    institutionPriceAsOf: overrides.priceAsOf === undefined ? new Date("2026-10-14T00:00:00Z") : overrides.priceAsOf,
+    institutionPriceAsOf: null,
     institutionValue: D(overrides.value),
     costBasis: overrides.basis === null ? null : D(overrides.basis),
     isoCurrencyCode: overrides.currency === undefined ? "USD" : overrides.currency,
@@ -49,10 +48,13 @@ const toBase = (rates: Record<string, number>) => (currency: string | null) => (
  * - the summary converts each holding to the base currency before adding, and its gain counts only holdings with a basis
  * - holdings come largest in the base currency first, ties by id
  * - an empty list gives an empty, zero summary with no percentage
- * - a holding with no price date has a null priceAsOf
+ * - a holding of a security we have no price for is valued as the institution reports it, with no price or price date
  * - a security's kind comes from Plaid's type, and cash from the cash flag
  * - the summary splits the value by kind, largest first, and each holding has its share of the total
- * - a price older than the limit is stale, one at the limit, or with no date, is not
+ * - a holding is valued at its quantity times our price when we have one, whatever the institution reports
+ * - our price is converted to the holding's currency, and the gain is withheld when the two currencies differ (the cost basis' currency is a guess)
+ * - the summary, allocation and gain follow our prices, and a security with none stays at the institution's value
+ * - a price older than the limit is stale, one at the limit is not, and a holding with no price is not
  * - an option and a bond carry their terms, and other securities carry none
  * - dividends are added up in the base currency, per holding and in total, only for accounts in view, and make the total return
  * - a holding's gain is also given in the base currency, at today's rate
@@ -63,7 +65,7 @@ test.describe("holdings DTO", () => {
   test("a holding's gain is its value minus its cost basis, with the gain as a fraction of the basis", () => {
     const { holdings } = toHoldingsDTO([row({ value: 1500, basis: 1000 })], { baseCurrency: "USD", rateOn: toBase({}) });
 
-    expect(holdings[0]).toMatchObject({ value: 1500, costBasis: 1000, gain: 500, gainPercent: 0.5, valueInBase: 1500, priceAsOf: "2026-10-14T00:00:00.000Z" });
+    expect(holdings[0]).toMatchObject({ value: 1500, costBasis: 1000, gain: 500, gainPercent: 0.5, valueInBase: 1500, price: null, priceAsOf: null });
   });
 
   test("a holding with no cost basis has no gain, and is counted as without one in the summary", () => {
@@ -117,10 +119,49 @@ test.describe("holdings DTO", () => {
     });
   });
 
-  test("a holding with no price date has a null priceAsOf", () => {
-    const { holdings } = toHoldingsDTO([row({ value: 100, basis: 50, priceAsOf: null })], { baseCurrency: "USD", rateOn: toBase({}) });
+  test("a holding of a security we have no price for is valued as the institution reports it, with no price or price date", () => {
+    const { holdings, summary } = toHoldingsDTO([row({ value: 100, basis: 50 })], { baseCurrency: "USD", rateOn: toBase({}) });
 
-    expect(holdings[0]!.priceAsOf).toBeNull();
+    expect(holdings[0]).toMatchObject({ value: 100, price: null, priceAsOf: null, priceStale: false, gain: 50 });
+    expect(summary.value).toBe(100);
+  });
+
+  test("a holding is valued at its quantity times our price when we have one, whatever the institution reports", () => {
+    // 10 shares; the institution says 0 (as Wealthsimple did), we have a price of 12.5.
+    const prices = new Map([["sec-1", { price: 12.5, currency: "USD", asOf: new Date("2026-10-20T15:00:00Z") }]]);
+    const { holdings, summary } = toHoldingsDTO([row({ value: 0, basis: 100 })], { baseCurrency: "USD", rateOn: toBase({}), prices });
+
+    expect(holdings[0]).toMatchObject({ price: 12.5, priceAsOf: "2026-10-20T15:00:00.000Z", value: 125, valueInBase: 125, costBasis: 100, gain: 25, gainPercent: 0.25 });
+    expect(summary).toMatchObject({ value: 125, gain: 25 });
+  });
+
+  test("our price is converted to the holding's currency, and the gain is withheld when the two currencies differ (the cost basis' currency is a guess)", () => {
+    // A USD price (rate 1.25 CAD) on a holding Plaid labels CAD.
+    const prices = new Map([["sec-1", { price: 100, currency: "USD", asOf: new Date("2026-10-20T15:00:00Z") }]]);
+    const { holdings, summary } = toHoldingsDTO([row({ value: 0, basis: 900, currency: "CAD" })], {
+      baseCurrency: "CAD",
+      rateOn: toBase({ USD: 1.25 }),
+      prices,
+    });
+
+    // 10 shares at US$100 is C$1,250; the holding is in CAD, the base.
+    expect(holdings[0]).toMatchObject({ currency: "CAD", price: 125, value: 1250, valueInBase: 1250, costBasis: 900, gain: null, gainInBase: null, gainPercent: null });
+    expect(summary).toMatchObject({ value: 1250, holdingsWithoutCostBasis: 1, gain: 0 });
+  });
+
+  test("the summary, allocation and gain follow our prices, and a security with none stays at the institution's value", () => {
+    const prices = new Map([["priced", { price: 20, currency: "USD", asOf: new Date("2026-10-20T15:00:00Z") }]]);
+    const { holdings, summary } = toHoldingsDTO(
+      [
+        row({ id: "a", value: 0, basis: 100, security: { id: "priced" } }),
+        row({ id: "b", value: 300, basis: 200, security: { id: "other" } }),
+      ],
+      { baseCurrency: "USD", rateOn: toBase({}), prices },
+    );
+
+    expect(holdings.map((h) => [h.id, h.value])).toEqual([["b", 300], ["a", 200]]);
+    expect(summary).toMatchObject({ value: 500, costBasis: 300, gain: 200 });
+    expect(summary.allocation).toEqual([{ kind: "stock", value: 500, share: 1 }]);
   });
 
   test("a security's kind comes from Plaid's type, and cash from the cash flag", () => {
@@ -146,16 +187,21 @@ test.describe("holdings DTO", () => {
     expect(summary.topHoldingsShare).toBe(0.9);
   });
 
-  test("a price older than the limit is stale, one at the limit, or with no date, is not", () => {
+  test("a price older than the limit is stale, one at the limit is not, and a holding with no price is not", () => {
     const now = new Date("2026-10-20T00:00:00Z");
     const ago = (days: number) => new Date(now.getTime() - days * 86_400_000);
+    const price = (days: number) => ({ price: 1, currency: "USD", asOf: ago(days) });
+    const prices = new Map([
+      ["s-old", price(STALE_PRICE_DAYS + 1)],
+      ["s-edge", price(STALE_PRICE_DAYS)],
+    ]);
     const { holdings } = toHoldingsDTO(
       [
-        row({ id: "old", value: 1, basis: null, priceAsOf: ago(STALE_PRICE_DAYS + 1) }),
-        row({ id: "edge", value: 1, basis: null, priceAsOf: ago(STALE_PRICE_DAYS) }),
-        row({ id: "none", value: 1, basis: null, priceAsOf: null }),
+        row({ id: "old", value: 1, basis: null, security: { id: "s-old" } }),
+        row({ id: "edge", value: 1, basis: null, security: { id: "s-edge" } }),
+        row({ id: "none", value: 1, basis: null, security: { id: "s-none" } }),
       ],
-      { baseCurrency: "USD", rateOn: toBase({}), now },
+      { baseCurrency: "USD", rateOn: toBase({}), now, prices },
     );
 
     expect(Object.fromEntries(holdings.map((h) => [h.id, h.priceStale]))).toEqual({ old: true, edge: false, none: false });

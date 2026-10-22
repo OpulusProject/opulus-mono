@@ -5,6 +5,7 @@ import {
   holdingRepository,
   investmentTransactionRepository,
   loadExchangeRateConverter,
+  securityPriceRepository,
   toDay,
   toHoldingsDTO,
   type HoldingsResponse,
@@ -25,8 +26,11 @@ export interface GetHoldingsParams {
  * and gain as a percentage, and what they add up to, in the base currency, with
  * the split by kind, currency and account. An investment account with no
  * holdings is counted by its balance.
- * Amounts in another currency are converted at today's stored rate. The data is
- * as fresh as Plaid's last pull from the institution.
+ * Amounts in another currency are converted at today's stored rate. A holding is
+ * valued at its quantity times our own price of the security (kept fresh by the
+ * scheduler) when we have one, and as the institution reports it when we do not
+ * (cash, options, bonds); quantities and cost bases are as fresh as Plaid's last
+ * pull from the institution.
  */
 export async function getHoldings(
   params: GetHoldingsParams
@@ -52,10 +56,17 @@ export async function getHoldings(
       (!params.securityId || holders.has(account.id))
   );
 
+  // Our own price of each security, where we have one; the rest are valued as
+  // the institution reports them.
+  const prices = await securityPriceRepository.getLatest([
+    ...new Set(rows.map((row) => row.securityId)),
+  ]);
+
   const converter = await loadExchangeRateConverter({
     baseCurrency: BASE_CURRENCY,
     currencies: [
       ...rows.map((row) => row.isoCurrencyCode),
+      ...[...prices.values()].map((price) => price.currency),
       ...accounts.map((account) => account.isoCurrencyCode),
       ...dividends.map((payment) => payment.isoCurrencyCode),
     ],
@@ -67,6 +78,7 @@ export async function getHoldings(
     rateOn: (currency) => converter.rateOn(currency, today),
     accounts,
     dividends,
+    prices,
     now,
   });
 }

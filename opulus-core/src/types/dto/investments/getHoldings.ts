@@ -82,16 +82,23 @@ export const HoldingDTOSchema = z.object({
   institutionName: z.string().nullable(),
   security: HoldingSecurityDTOSchema,
   quantity: z.number(),
-  /** The price of one unit, as the institution last quoted it. */
-  price: z.number(),
-  /** When that price was current (the institution's date), if it said. */
+  /**
+   * The price of one unit, in `currency`, from our own price for the security.
+   * Null for a security we do not price (cash, options, bonds, a fund with no
+   * symbol), whose value is the institution's.
+   */
+  price: z.number().nullable(),
+  /** When that price is from (the provider's time); null with no price. */
   priceAsOf: IsoTimestampSchema.nullable(),
   /**
-   * The price is older than a few days (a long weekend is not). False when the
-   * institution gave no date: nothing says it is old, nothing says it is not.
+   * The price is older than a few days (a long weekend is not). False with no
+   * price: nothing says it is old.
    */
   priceStale: z.boolean(),
-  /** The whole holding's value, as the institution reports it. */
+  /**
+   * The whole holding's value: its quantity at our price when we have one,
+   * otherwise as the institution reports it.
+   */
   value: z.number(),
   currency: z.string().nullable(),
   /** `value` in the base currency, at today's rate. */
@@ -231,8 +238,9 @@ export type HoldingsSummaryDTO = z.infer<typeof HoldingsSummaryDTOSchema>;
 
 /**
  * Holdings API response: the user's investment holdings, largest first, with a
- * summary in `baseCurrency`. The prices are as fresh as Plaid's last pull from
- * the institution (usually about daily): see `priceAsOf`.
+ * summary in `baseCurrency`. A holding is valued at our own price of its
+ * security when we have one (see `priceAsOf`), otherwise as the institution
+ * reports it.
  */
 export const HoldingsResponseSchema = z.object({
   data: z.object({
@@ -277,6 +285,15 @@ export interface DividendRow {
   isoCurrencyCode: string | null;
 }
 
+/** A security's latest price, as stored. */
+export interface SecurityPriceRow {
+  price: number;
+  /** ISO 4217 code the price is in. */
+  currency: string;
+  /** When the provider says it is from. */
+  asOf: Date;
+}
+
 /** How many holdings the gain ranking names. */
 export const GAIN_RANKING_SIZE = 6;
 
@@ -288,6 +305,12 @@ export interface HoldingsOptions {
   accounts?: HoldingsAccountRow[];
   /** The last twelve months' dividend payments of the user, all accounts. */
   dividends?: DividendRow[];
+  /**
+   * Our latest price of each security, by security id. A holding of a security
+   * in it is valued at this price; one that is not is valued as the institution
+   * reports it.
+   */
+  prices?: ReadonlyMap<string, SecurityPriceRow>;
   /** The current moment, for telling a price is old. */
   now?: Date;
 }
@@ -346,6 +369,7 @@ export function toHoldingsDTO(
     rateOn,
     accounts = [],
     dividends = [],
+    prices = new Map(),
     now = new Date(),
   }: HoldingsOptions
 ): HoldingsResponse["data"] {
@@ -386,39 +410,54 @@ export function toHoldingsDTO(
   }
 
   const holdings = rows.map((row) => {
-    const rate = rateOn(row.isoCurrencyCode);
-    const rowValue = row.institutionValue.toNumber();
+    // Our price of the security when we have one, in the holding's currency
+    // (its own, or the price's when it names none). Otherwise the institution's.
+    const ours = prices.get(row.security.id);
+    const currency = row.isoCurrencyCode ?? ours?.currency ?? null;
+    const rate = rateOn(currency);
+    const price =
+      ours && ours.currency !== currency
+        ? ours.price * (rateOn(ours.currency) / rate)
+        : (ours?.price ?? null);
+    const quantity = row.quantity.toNumber();
+    const rowValue =
+      price === null
+        ? row.institutionValue.toNumber()
+        : round(quantity * price);
     const rowBasis = row.costBasis?.toNumber() ?? null;
+    // The cost basis is in the currency Plaid labels the holding with. When our
+    // price is in another one we cannot tell which the institution meant (it
+    // sometimes labels a US security's holding in dollars it did not use), so
+    // a gain would be a guess: there is none.
+    const basis = ours && ours.currency !== currency ? null : rowBasis;
     const valueInBase = round(rowValue * rate);
     const kind = holdingKind(row.security.type, row.security.isCashEquivalent);
 
     const units = toUnits(rowValue * rate);
     value += units;
     add(byKind, kind, units);
-    add(byCurrency, row.isoCurrencyCode ?? baseCurrency, units);
+    add(byCurrency, currency ?? baseCurrency, units);
     const account = byAccount.get(row.accountId) ?? {
       value: 0,
       costBasis: 0,
       valueWithBasis: 0,
     };
     account.value += units;
-    if (rowBasis === null) {
+    if (basis === null) {
       withoutBasis += 1;
     } else {
-      costBasis += toUnits(rowBasis * rate);
+      costBasis += toUnits(basis * rate);
       valueWithBasis += units;
-      account.costBasis += toUnits(rowBasis * rate);
+      account.costBasis += toUnits(basis * rate);
       account.valueWithBasis += units;
     }
     byAccount.set(row.accountId, account);
 
-    const gain = rowBasis === null ? null : round(rowValue - rowBasis);
-    const gainUnits =
-      rowBasis === null ? null : units - toUnits(rowBasis * rate);
+    const gain = basis === null ? null : round(rowValue - basis);
+    const gainUnits = basis === null ? null : units - toUnits(basis * rate);
     const stale =
-      row.institutionPriceAsOf !== null &&
-      now.getTime() - row.institutionPriceAsOf.getTime() >
-        STALE_PRICE_DAYS * DAY_MS;
+      ours !== undefined &&
+      now.getTime() - ours.asOf.getTime() > STALE_PRICE_DAYS * DAY_MS;
     const { security } = row;
     return {
       id: row.id,
@@ -454,27 +493,25 @@ export function toHoldingsDTO(
               }
             : null,
       },
-      quantity: row.quantity.toNumber(),
-      price: row.institutionPrice.toNumber(),
-      priceAsOf: iso(row.institutionPriceAsOf),
+      quantity,
+      price: price === null ? null : round(price),
+      priceAsOf: ours ? iso(ours.asOf) : null,
       priceStale: stale,
       value: rowValue,
-      currency: row.isoCurrencyCode,
+      currency,
       valueInBase,
       units,
       dividends: fromUnits(
         dividendsByHolding.get(`${row.accountId}:${security.id}`) ?? 0
       ),
       costBasis: rowBasis,
-      averageCost: perUnit(rowBasis, row.quantity.toNumber()),
+      averageCost: perUnit(rowBasis, quantity),
       gain,
       gainUnits,
-      basisUnits: rowBasis === null ? null : toUnits(rowBasis * rate),
+      basisUnits: basis === null ? null : toUnits(basis * rate),
       gainInBase: gainUnits === null ? null : fromUnits(gainUnits),
       gainPercent:
-        rowBasis === null || rowBasis === 0
-          ? null
-          : (rowValue - rowBasis) / rowBasis,
+        basis === null || basis === 0 ? null : (rowValue - basis) / basis,
     };
   });
 
