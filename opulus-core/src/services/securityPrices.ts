@@ -9,9 +9,6 @@ import { resolveSymbol } from "../utils/securitySymbol.js";
 /** How much history is kept for a security: about two years of days. */
 export const PRICE_HISTORY_DAYS = 730;
 
-/** Securities backfilled in one run; the rest wait for the next. */
-export const BACKFILL_BATCH = 20;
-
 export interface SecurityPricesParams {
   /** Where prices come from; the active provider unless a caller passes another. */
   provider?: PriceProvider;
@@ -19,8 +16,11 @@ export interface SecurityPricesParams {
   now?: Date;
 }
 
-/** Every security with a provider symbol, with it (cash, options and bonds have none). */
-async function priceable(options: { withoutHistory?: boolean } = {}) {
+/** Securities with a provider symbol, with it (cash, options and bonds have none). */
+async function priceable(options: {
+  withoutPrice?: boolean;
+  withoutHistory?: boolean;
+}) {
   const securities = await securityPriceRepository.getForPricing(options);
   return securities.flatMap((security) => {
     const resolved = resolveSymbol(security);
@@ -30,7 +30,7 @@ async function priceable(options: { withoutHistory?: boolean } = {}) {
   });
 }
 
-export interface RefreshSecurityPricesResult {
+export interface QuoteSecuritiesResult {
   /** Securities asked about. */
   requested: number;
   /** Prices stored. */
@@ -40,21 +40,20 @@ export interface RefreshSecurityPricesResult {
 }
 
 /**
- * Quote every security and store the price as today's: one row per security
- * per trading day, replaced by each quote, so the last one of a day is its
- * close. Every security is quoted whether or not anyone holds it. One the
- * provider has no price for is logged and keeps its last good price; it is
- * asked about again next time.
+ * Quote securities and store each price as today's: one row per security per
+ * trading day, replaced by each quote, so the last one of a day is its close.
+ * Every security is quoted whether or not anyone holds it (`onlyUnpriced` limits
+ * it to those with no stored price). One the provider has no price for is
+ * logged and keeps its last good price; it is asked about again next time.
  *
  * Throws when the provider cannot be reached at all, so the run is retried.
- * Lives in core so the scheduler (and a one-off script) can run it.
  */
-export async function refreshSecurityPrices(
-  params: SecurityPricesParams = {}
-): Promise<RefreshSecurityPricesResult> {
+export async function quoteSecurities(
+  params: SecurityPricesParams & { onlyUnpriced?: boolean } = {}
+): Promise<QuoteSecuritiesResult> {
   const provider = params.provider ?? activePriceProvider;
 
-  const securities = await priceable();
+  const securities = await priceable({ withoutPrice: params.onlyUnpriced });
   if (securities.length === 0) return { requested: 0, quoted: 0, failed: 0 };
 
   const results = await provider.getQuotes(securities.map((s) => s.symbol));
@@ -88,10 +87,7 @@ export async function refreshSecurityPrices(
   }
 
   const summary = { requested: securities.length, quoted, failed };
-  logger.info(
-    { ...summary, source: provider.name },
-    "Security prices refreshed"
-  );
+  logger.info({ ...summary, source: provider.name }, "Securities quoted");
   return summary;
 }
 
@@ -100,31 +96,29 @@ export interface BackfillSecurityPricesResult {
   backfilled: number;
   /** Securities the provider has no history for (not asked about again). */
   failed: number;
-  /** Still waiting for a later run. */
-  remaining: number;
 }
 
 /**
- * Fetch up to two years of daily closes for securities that have none yet, a
- * batch per run. A day already stored (today's quote) is left as it is. A
- * security the provider has no history for is logged and recorded as done, so
- * it does not hold up the others or get asked about every run.
+ * Fetch up to two years of daily closes for every security whose history has
+ * not been fetched, one request each. A day already stored (today's quote) is
+ * left as it is. A security the provider has no history for is logged and
+ * recorded as done, so it does not get asked about every run.
  *
- * Throws when the provider cannot be reached, so the run is retried.
+ * Throws when the provider cannot be reached, so the run is retried; the
+ * securities done before that keep their history.
  */
 export async function backfillSecurityPrices(
-  params: SecurityPricesParams & { limit?: number } = {}
+  params: SecurityPricesParams = {}
 ): Promise<BackfillSecurityPricesResult> {
   const provider = params.provider ?? activePriceProvider;
   const to = toDay(params.now ?? new Date());
   const from = addDays(to, -PRICE_HISTORY_DAYS);
 
   const waiting = await priceable({ withoutHistory: true });
-  const batch = waiting.slice(0, params.limit ?? BACKFILL_BATCH);
 
   let backfilled = 0;
   let failed = 0;
-  for (const { securityId, symbol } of batch) {
+  for (const { securityId, symbol } of waiting) {
     try {
       const history = await provider.getHistory(symbol, from, to);
       await securityPriceRepository.recordBackfill(provider.name, {
@@ -149,14 +143,76 @@ export async function backfillSecurityPrices(
     }
   }
 
-  const summary = {
-    backfilled,
-    failed,
-    remaining: waiting.length - batch.length,
-  };
+  const summary = { backfilled, failed };
   logger.info(
     { ...summary, source: provider.name },
     "Security price history backfilled"
   );
   return summary;
+}
+
+export interface RefreshSecurityPricesResult {
+  quotes: QuoteSecuritiesResult;
+  history: BackfillSecurityPricesResult;
+}
+
+/**
+ * Quote every security, then fetch the history of any that has none. This is
+ * the scheduled run: the history step is its safety net, catching a security
+ * whose history could not be fetched earlier (the provider was down).
+ * Lives in core so the scheduler (and a one-off script) can run it.
+ */
+export async function refreshSecurityPrices(
+  params: SecurityPricesParams = {}
+): Promise<RefreshSecurityPricesResult> {
+  const quotes = await quoteSecurities(params);
+  const history = await backfillSecurityPrices(params);
+  return { quotes, history };
+}
+
+/**
+ * Price securities that were just stored: quote those with no price, so their
+ * values are right at once, then fetch their history.
+ */
+export async function priceNewSecurities(
+  params: SecurityPricesParams = {}
+): Promise<RefreshSecurityPricesResult> {
+  const quotes = await quoteSecurities({ ...params, onlyUnpriced: true });
+  const history = await backfillSecurityPrices(params);
+  return { quotes, history };
+}
+
+let running = false;
+let again = false;
+
+/**
+ * Start pricing the securities a sync just stored, in the background: the sync
+ * does not wait for it and cannot fail because of it. Calls made while a run is
+ * going become one more run afterwards (a holdings and a transactions sync close
+ * together are one burst of work), and a failure is logged, then left to the
+ * scheduled run.
+ */
+export function requestPricingOfNewSecurities(): void {
+  if (running) {
+    again = true;
+    return;
+  }
+  running = true;
+  void (async () => {
+    try {
+      do {
+        again = false;
+        await priceNewSecurities();
+      } while (again);
+    } catch (error) {
+      logger.warn(
+        {
+          error_message: error instanceof Error ? error.message : String(error),
+        },
+        "Pricing new securities failed; the next scheduled run will retry"
+      );
+    } finally {
+      running = false;
+    }
+  })();
 }

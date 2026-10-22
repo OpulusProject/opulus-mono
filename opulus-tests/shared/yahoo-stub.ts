@@ -1,8 +1,8 @@
 import type { APIRequestContext } from "@playwright/test";
-import { expectOk } from "../../../shared/assertions.js";
+import { expectOk } from "./assertions.js";
 
 /**
- * Controlling the Yahoo stub (stub/yahoo.mjs) the scheduler is pointed at.
+ * Controlling the Yahoo stub (services/scheduler/stub/yahoo.mjs) the services are pointed at.
  * YAHOO_STUB_URL is where the specs reach it.
  */
 export const YAHOO_STUB_URL = process.env.YAHOO_STUB_URL ?? "http://localhost:4547";

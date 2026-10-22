@@ -1,8 +1,9 @@
 import { expect, test } from "@playwright/test";
 import { uniqueId } from "../../../shared/client.js";
-import { seedLinkedItem, readWebhookEvents, readHoldings } from "../../../shared/fixtures/index.js";
+import { seedLinkedItem, readWebhookEvents, readHoldings, readSecurityPrices } from "../../../shared/fixtures/index.js";
 import { resetPlaidStub, setPlaidHoldings } from "../../../shared/plaid-stub.js";
 import { answer, apple, cash, holding } from "../../../shared/scenarios/plaid-investments.js";
+import { resetYahooStub, yahooRequests } from "../../../shared/yahoo-stub.js";
 import { deliverWebhook } from "../helpers/fixtures/index.js";
 
 const linkedItem = seedLinkedItem;
@@ -24,12 +25,15 @@ const holdingsWebhook = (plaidItemId: string, newHoldings = 1) => ({
  * Test cases:
  * - stores the holdings and securities Plaid reports
  * - replaces what it stored before, dropping holdings Plaid no longer reports
+ * - prices the securities it stores at once: a quote, then two years of history
+ * - prices only the securities that have no price yet
  * - keeps what it had when Plaid has no investments to give for the item
  * - handles a HOLDINGS code it has no action for (processed, nothing stored)
  */
 test.describe("HOLDINGS webhooks", () => {
-  test.beforeEach(async () => {
+  test.beforeEach(async ({ request }) => {
     await resetPlaidStub();
+    await resetYahooStub(request);
   });
 
   test("stores the holdings and securities Plaid reports", async ({ request }) => {
@@ -75,6 +79,50 @@ test.describe("HOLDINGS webhooks", () => {
     const stored = await readHoldings(item.itemId);
     expect(stored.map((h) => h.security.tickerSymbol)).toEqual(["AAPL"]);
     expect(Number(stored[0]!.quantity)).toBe(12);
+  });
+
+  test("prices the securities it stores at once: a quote, then two years of history", async ({ request }) => {
+    // Arrange: a new security (its ticker is its own, so the stub's price for it is its own).
+    const item = await linkedItem();
+    const id = uniqueId("sec_new");
+    const ticker = uniqueId("").replace(/[^a-f]/g, "").toUpperCase().padEnd(6, "Q").slice(0, 6) + "Z";
+    await setPlaidHoldings(answer([item.providerAccountId], [holding(item.providerAccountId, id, 10, 190)], [{ ...apple(id), ticker_symbol: ticker }]));
+
+    // Act
+    await deliverWebhook(request, holdingsWebhook(item.plaidItemId));
+
+    // Assert: the pricing runs in the background, so wait for the history, which comes last.
+    const [stored] = await readHoldings(item.itemId);
+    await expect.poll(async () => (await readSecurityPrices(stored!.securityId)).length, { timeout: 15_000 }).toBeGreaterThan(450);
+    const asked = (await yahooRequests(request)).filter((r) => r.symbol === ticker).map((r) => r.kind);
+    expect(asked).toEqual(["quote", "history"]);
+  });
+
+  test("prices only the securities that have no price yet", async ({ request }) => {
+    // Arrange: one security stored and priced by a first update.
+    const item = await linkedItem();
+    const ticker = () => uniqueId("").replace(/[^a-f]/g, "").toUpperCase().padEnd(6, "Q").slice(0, 6) + "Z";
+    const [oldId, newId, oldTicker, newTicker] = [uniqueId("sec_old"), uniqueId("sec_new"), ticker(), ticker()];
+    const old = { ...apple(oldId), ticker_symbol: oldTicker };
+    await setPlaidHoldings(answer([item.providerAccountId], [holding(item.providerAccountId, oldId, 10, 190)], [old]));
+    await deliverWebhook(request, holdingsWebhook(item.plaidItemId));
+    const [first] = await readHoldings(item.itemId);
+    await expect.poll(async () => (await readSecurityPrices(first!.securityId)).length, { timeout: 15_000 }).toBeGreaterThan(450);
+    await resetYahooStub(request);
+
+    // Act: an update adds a second security.
+    const added = { ...apple(newId), ticker_symbol: newTicker };
+    await setPlaidHoldings(
+      answer([item.providerAccountId], [holding(item.providerAccountId, oldId, 10, 190), holding(item.providerAccountId, newId, 5, 50)], [old, added]),
+    );
+    await deliverWebhook(request, holdingsWebhook(item.plaidItemId, 2));
+
+    // Assert: the new one is priced (history last, so the run is over); the old one was not asked about.
+    const second = (await readHoldings(item.itemId)).find((h) => h.security.tickerSymbol === newTicker)!;
+    await expect.poll(async () => (await readSecurityPrices(second.securityId)).length, { timeout: 15_000 }).toBeGreaterThan(450);
+    const symbols = (await yahooRequests(request)).map((r) => r.symbol);
+    expect(symbols).toContain(newTicker);
+    expect(symbols).not.toContain(oldTicker);
   });
 
   test("keeps what it had when Plaid has no investments to give for the item", async ({ request }) => {

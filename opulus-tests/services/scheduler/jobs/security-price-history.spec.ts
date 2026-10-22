@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 import { uniqueId } from "../../../shared/client.js";
 import { readBackfilledAt, readSecurityPrices, seedSecurity, seedSecurityPrice } from "../../../shared/fixtures/index.js";
 import { runToEnd } from "../../../shared/scheduler.js";
-import { failYahooStub, resetYahooStub, yahooRequests } from "../helpers/yahooStub.js";
+import { failYahooStub, resetYahooStub, yahooRequests } from "../../../shared/yahoo-stub.js";
 
-const JOB = "backfill-security-prices";
+const JOB = "refresh-security-prices";
 
 /** A ticker of its own, letters only. */
 const ticker = () => uniqueId("").replace(/[^a-f]/g, "").toUpperCase().padEnd(6, "Q").slice(0, 6) + "Z";
@@ -21,10 +21,11 @@ const historyFor = async (request: Parameters<typeof yahooRequests>[0], symbol: 
   (await yahooRequests(request)).filter((r) => r.symbol === symbol && r.kind === "history");
 
 /**
- * This file: the backfill-security-prices job, run through the scheduler against
- * the Yahoo stub. It checks what the job asked the provider for and what it
- * stored in security_price and on the security (read from the test database).
- * The tables are shared, so each test uses securities of its own.
+ * This file: the history step of the refresh-security-prices job (it fetches the
+ * history of any security that has none after quoting), run through the
+ * scheduler against the Yahoo stub. It checks what the job asked the provider
+ * for and what it stored in security_price and on the security (read from the
+ * test database). The tables are shared, so each test uses securities of its own.
  *
  * Test cases:
  * - fetches about two years of daily closes for a security, and records that its history was fetched
@@ -33,7 +34,7 @@ const historyFor = async (request: Parameters<typeof yahooRequests>[0], symbol: 
  * - records a security the provider has no history for as done, stores nothing, and does not ask again or hold up the others
  * - fails the run when the provider cannot be reached, leaving the security for the next run
  */
-test.describe("backfill-security-prices (job)", () => {
+test.describe("refresh-security-prices (job): history", () => {
   test.beforeEach(async ({ request }) => {
     await resetYahooStub(request);
   });
@@ -62,7 +63,6 @@ test.describe("backfill-security-prices (job)", () => {
     expect(prices.every((p) => ![0, 6].includes(new Date(`${p.date}T00:00:00Z`).getUTCDay()))).toBe(true);
     expect(prices[0]).toMatchObject({ currency: "CAD", source: "yahoo" });
     expect(await readBackfilledAt(security.id)).not.toBeNull();
-    expect(run.result).toMatchObject({ failed: 0 });
   });
 
   test("leaves a day that is already stored as it is", async ({ request }) => {
@@ -88,9 +88,9 @@ test.describe("backfill-security-prices (job)", () => {
     // Act
     await runToEnd(request, JOB);
 
-    // Assert
+    // Assert: no history is asked for or stored; the quote step still stores today's price.
     expect(await historyFor(request, `${base}.TO`)).toEqual([]);
-    expect(await readSecurityPrices(security.id)).toEqual([]);
+    expect(await readSecurityPrices(security.id)).toHaveLength(1);
   });
 
   test("records a security the provider has no history for as done, stores nothing, and does not ask again or hold up the others", async ({ request }) => {

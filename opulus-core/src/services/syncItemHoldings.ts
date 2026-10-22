@@ -6,6 +6,7 @@ import {
 import { plaidGateway } from "../gateways/plaidGateway.js";
 import { AppError } from "../utils/errors.js";
 import { logger } from "../utils/logger.js";
+import { requestPricingOfNewSecurities } from "./securityPrices.js";
 
 /**
  * Plaid error codes meaning "this item has no investments data to give right
@@ -85,6 +86,8 @@ export async function syncItemHoldings(params: {
     normalized.securities,
     matched
   );
+  // New securities get a price and history at once, not at the next scheduled run.
+  if (normalized.securities.length > 0) requestPricingOfNewSecurities();
 
   return {
     status: "synced",
