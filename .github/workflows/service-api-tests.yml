@@ -267,9 +267,11 @@ jobs:
       SCHEDULER_ADMIN_TOKEN: ci-scheduler-tests-token-not-a-secret
       # The specs run every job themselves; a start-up run would race them.
       SCHEDULER_RUN_ON_START: "false"
-      # No third party: the scheduler asks the stub for rates.
+      # No third party: the scheduler asks the stubs for rates and for prices.
       FRANKFURTER_BASE_URL: http://localhost:4545/v1
       STUB_URL: http://localhost:4545
+      YAHOO_FINANCE_BASE_URL: http://localhost:4547
+      YAHOO_STUB_URL: http://localhost:4547
       TEST_BASE_URL: http://localhost:8082
 
     services:
@@ -326,6 +328,18 @@ jobs:
           node opulus-tests/services/scheduler/stub/frankfurter.mjs &
           for i in $(seq 1 30); do
             if curl -sf "$STUB_URL/health" >/dev/null; then
+              echo "Stub is up"; exit 0
+            fi
+            sleep 1
+          done
+          echo "Stub did not start in time" >&2
+          exit 1
+
+      - name: Start the Yahoo stub
+        run: |
+          node opulus-tests/services/scheduler/stub/yahoo.mjs &
+          for i in $(seq 1 30); do
+            if curl -sf "$YAHOO_STUB_URL/health" >/dev/null; then
               echo "Stub is up"; exit 0
             fi
             sleep 1

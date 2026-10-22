@@ -21,10 +21,12 @@ export * from "./repositories/linkEventRepository.js";
 export * from "./repositories/linkSessionRepository.js";
 export * from "./repositories/transactionRepository.js";
 export * from "./repositories/recurringStreamRepository.js";
+export * from "./repositories/securityPriceRepository.js";
 export * from "./repositories/userRepository.js";
 export * from "./repositories/webhookEventRepository.js";
 
 // Gateway exports (external APIs)
+export * from "./gateways/activePriceProvider.js";
 export * from "./gateways/exchangeRateProvider.js";
 export * from "./gateways/frankfurterGateway.js";
 export * from "./gateways/plaidGateway.js";
@@ -34,6 +36,7 @@ export * from "./gateways/yahooGateway.js";
 // Service exports (business logic shared by the backend and webhooks)
 export * from "./services/exchangeRateConverter.js";
 export * from "./services/refreshExchangeRates.js";
+export * from "./services/securityPrices.js";
 export * from "./services/syncItemHoldings.js";
 export * from "./services/syncItemInvestmentTransactions.js";
 export * from "./services/syncItemLiabilities.js";
@@ -49,6 +52,7 @@ export * from "./utils/currency.js";
 export * from "./utils/day.js";
 export * from "./utils/errors.js";
 export * from "./utils/itemTokenCrypto.js";
+export * from "./utils/priceProviderName.js";
 export * from "./utils/securitySymbol.js";
 export * from "./utils/logger.js";
 export * from "./utils/money.js";

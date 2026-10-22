@@ -27,7 +27,7 @@ const chart = (overrides: Record<string, unknown> = {}) => ({
  * the latest quote, and the daily closes with their trading day.
  *
  * Test cases:
- * - gives the latest price, its currency and when it is from
+ * - gives the latest price, its currency, when it is from and the trading day it is for
  * - refuses a symbol with no price
  * - refuses an unknown symbol, with Yahoo's reason
  * - refuses something that is not a chart
@@ -35,12 +35,14 @@ const chart = (overrides: Record<string, unknown> = {}) => ({
  * - leaves out days with no close, and keeps the last bar of a day
  */
 test.describe("Yahoo chart parsing", () => {
-  test("gives the latest price, its currency and when it is from", () => {
+  test("gives the latest price, its currency, when it is from and the trading day it is for", () => {
     expect(parseQuote(chart())).toEqual({
       symbol: "VEQT.TO",
       price: 62.32,
       currency: "CAD",
       asOf: new Date(1792607230 * 1000),
+      // 18:27 UTC is 14:27 in Toronto, the same day.
+      day: "2026-10-21",
     });
   });
 

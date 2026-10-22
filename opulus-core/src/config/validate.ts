@@ -81,6 +81,19 @@ export function findConfigProblems(service: ServiceName, env: Env): string[] {
     }
   }
 
+  if (service === "scheduler") {
+    const minutes = env.SECURITY_PRICES_INTERVAL_MINUTES;
+    if (minutes !== undefined && minutes !== "" && !/^\d+$/.test(minutes)) {
+      problems.push(
+        `SECURITY_PRICES_INTERVAL_MINUTES must be a whole number of minutes (it is "${minutes}")`
+      );
+    } else if (minutes && (Number(minutes) < 1 || Number(minutes) > 1440)) {
+      problems.push(
+        `SECURITY_PRICES_INTERVAL_MINUTES must be from 1 to 1440 minutes (it is ${minutes})`
+      );
+    }
+  }
+
   return problems;
 }
 

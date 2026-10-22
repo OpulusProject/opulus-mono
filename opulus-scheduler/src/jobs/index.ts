@@ -1,14 +1,37 @@
-import { refreshExchangeRates } from "@opulus/core";
+import {
+  backfillSecurityPrices,
+  config,
+  logger,
+  refreshExchangeRates,
+  refreshSecurityPrices,
+} from "@opulus/core";
 
 export interface ScheduledJob {
   /** What it does, for logs and the README. */
   description: string;
-  /** When it runs: a cron pattern, in UTC. */
-  pattern: string;
+  /** When it runs: a cron pattern (UTC), or every so many milliseconds. */
+  schedule: { pattern: string } | { everyMs: number };
   /** Also run once when the scheduler starts, so a fresh deploy need not wait. */
   runOnStart: boolean;
   /** The work. What it returns is kept as the run's result. */
   run: () => Promise<unknown>;
+}
+
+/**
+ * How often securities are quoted, from SECURITY_PRICES_INTERVAL_MINUTES (15 if
+ * unset). A value that is not a whole number of minutes from 1 to 1440 is
+ * ignored with a warning, so a typo cannot stop prices updating.
+ */
+function securityPricesIntervalMs(): number {
+  const minutes = config.securityPricesIntervalMinutes;
+  if (Number.isInteger(minutes) && minutes >= 1 && minutes <= 1440) {
+    return minutes * 60 * 1000;
+  }
+  logger.warn(
+    { minutes: process.env.SECURITY_PRICES_INTERVAL_MINUTES },
+    "SECURITY_PRICES_INTERVAL_MINUTES is not a whole number from 1 to 1440; using 15",
+  );
+  return 15 * 60 * 1000;
 }
 
 /**
@@ -23,9 +46,24 @@ export const jobs = {
       "Bring exchange_rate up to date from Frankfurter (about two years when it is empty)",
     // The European Central Bank publishes around 16:00 CET; 17:00 UTC is after
     // that all year round.
-    pattern: process.env.EXCHANGE_RATES_CRON || "0 17 * * *",
+    schedule: { pattern: process.env.EXCHANGE_RATES_CRON || "0 17 * * *" },
     runOnStart: true,
     run: () => refreshExchangeRates(),
+  },
+  "refresh-security-prices": {
+    description:
+      "Quote every tracked security and store the price as today's (the last quote of a day is its close)",
+    schedule: { everyMs: securityPricesIntervalMs() },
+    runOnStart: true,
+    run: () => refreshSecurityPrices(),
+  },
+  "backfill-security-prices": {
+    description:
+      "Fetch up to two years of daily closes for tracked securities that have none yet",
+    // Soon after a security is first seen, but not so often that it matters.
+    schedule: { everyMs: 5 * 60 * 1000 },
+    runOnStart: true,
+    run: () => backfillSecurityPrices(),
   },
 } satisfies Record<string, ScheduledJob>;
 

@@ -4,6 +4,9 @@ import { exited, startService, type RunningService } from "../helpers/service.js
 
 const PORT = 18297;
 const JOB = "refresh-exchange-rates";
+const PRICES = "refresh-security-prices";
+const BACKFILL = "backfill-security-prices";
+const JOBS = [BACKFILL, JOB, PRICES];
 const RETIRED = "a-job-that-was-removed";
 
 /** Stop it the way a deploy does, so that nothing is left holding the port (a kill would leave tsx's child running). */
@@ -19,13 +22,15 @@ const queue = new Queue("scheduler", {
 
 /**
  * This file: the schedules the scheduler registers when it starts. A job is a
- * name, a cron pattern and a call to a service (jobs/index.ts); at start-up the
+ * name, a schedule (a cron pattern, or every so many minutes) and a call to a
+ * service (jobs/index.ts); at start-up the
  * scheduler makes the queue's schedules match, adding or updating each job's and
  * removing those of jobs that no longer exist. It starts a scheduler of its own
  * (with no start-up run) and reads the schedules from its Redis.
  *
  * Test cases:
  * - registers each job's schedule, in UTC, with the pattern it asks for
+ * - schedules the security prices job every SECURITY_PRICES_INTERVAL_MINUTES, and every 15 minutes when it is not a whole number from 1 to 1440
  * - removes the schedule of a job that no longer exists, and keeps the others
  * - registers the same schedule again when started again (no duplicate)
  * - queues the jobs that ask to run at start-up, unless told not to
@@ -59,8 +64,26 @@ test.describe("scheduler schedules", () => {
 
     // Assert
     const registered = await queue.getJobSchedulers();
-    expect(registered.map((s) => s.key)).toEqual([JOB]);
-    expect(registered[0]).toMatchObject({ name: JOB, pattern: "5 4 * * *", tz: "UTC" });
+    expect(registered.map((s) => s.key).sort()).toEqual(JOBS);
+    expect(registered.find((s) => s.key === JOB)).toMatchObject({ name: JOB, pattern: "5 4 * * *", tz: "UTC" });
+    expect(registered.find((s) => s.key === BACKFILL)).toMatchObject({ every: 5 * 60 * 1000 });
+  });
+
+  test("schedules the security prices job every SECURITY_PRICES_INTERVAL_MINUTES, and every 15 minutes when it is not a whole number from 1 to 1440", async () => {
+    // Act and assert: configured, then each kind of bad value.
+    const every = async (minutes?: string) => {
+      await start("5 4 * * *", minutes === undefined ? {} : { SECURITY_PRICES_INTERVAL_MINUTES: minutes });
+      const found = (await queue.getJobSchedulers()).find((s) => s.key === PRICES);
+      await stop(scheduler!);
+      scheduler = undefined;
+      return found?.every;
+    };
+    expect(await every("1")).toBe(60 * 1000);
+    expect(await every("7")).toBe(7 * 60 * 1000);
+    expect(await every()).toBe(15 * 60 * 1000);
+    expect(await every("0")).toBe(15 * 60 * 1000);
+    expect(await every("1441")).toBe(15 * 60 * 1000);
+    expect(await every("soon")).toBe(15 * 60 * 1000);
   });
 
   test("removes the schedule of a job that no longer exists, and keeps the others", async () => {
@@ -72,7 +95,7 @@ test.describe("scheduler schedules", () => {
     await start();
 
     // Assert
-    expect((await queue.getJobSchedulers()).map((s) => s.key)).toEqual([JOB]);
+    expect((await queue.getJobSchedulers()).map((s) => s.key).sort()).toEqual(JOBS);
   });
 
   test("registers the same schedule again when started again (no duplicate)", async () => {
@@ -83,15 +106,15 @@ test.describe("scheduler schedules", () => {
     // Act
     await start("30 6 * * *");
 
-    // Assert: still one schedule for the job, with the new pattern.
+    // Assert: still one schedule for each job, with the new pattern.
     const registered = await queue.getJobSchedulers();
-    expect(registered).toHaveLength(1);
-    expect(registered[0]).toMatchObject({ key: JOB, pattern: "30 6 * * *" });
+    expect(registered).toHaveLength(JOBS.length);
+    expect(registered.find((s) => s.key === JOB)).toMatchObject({ pattern: "30 6 * * *" });
   });
 
   test("queues the jobs that ask to run at start-up, unless told not to", async () => {
     // Act: started the way a deploy starts it, with the provider unreachable so the run itself goes nowhere.
-    await start("5 4 * * *", { SCHEDULER_RUN_ON_START: "true", FRANKFURTER_BASE_URL: "http://localhost:1/v1" });
+    await start("5 4 * * *", { SCHEDULER_RUN_ON_START: "true", FRANKFURTER_BASE_URL: "http://localhost:1/v1", YAHOO_FINANCE_BASE_URL: "http://localhost:1" });
 
     // Assert
     expect(scheduler!.output()).toContain("Job queued to run on start");

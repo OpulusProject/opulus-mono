@@ -75,6 +75,8 @@ jobs:
       SCHEDULER_RUN_ON_START: "false"
       FRANKFURTER_BASE_URL: http://localhost:4545/v1
       STUB_URL: http://localhost:4545
+      YAHOO_FINANCE_BASE_URL: http://localhost:4547
+      YAHOO_STUB_URL: http://localhost:4547
       TEST_BASE_URL: http://localhost:${{ matrix.port }}
       # Where Node writes what ran. Set for the service and for every test step,
       # so the processes the specs start are recorded too.
@@ -136,10 +138,11 @@ jobs:
             url=http://localhost:4546/health
           else
             node opulus-tests/services/scheduler/stub/frankfurter.mjs &
+            node opulus-tests/services/scheduler/stub/yahoo.mjs &
             url=http://localhost:4545/health
           fi
           for i in $(seq 1 30); do
-            curl -sf "$url" >/dev/null && exit 0
+            curl -sf "$url" >/dev/null && { [ "${{ matrix.stub }}" = "plaid" ] || curl -sf "$YAHOO_STUB_URL/health" >/dev/null; } && exit 0
             sleep 1
           done
           echo "The stub did not start in time" >&2
