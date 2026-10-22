@@ -3,13 +3,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { accountKeys } from '@/hooks/accounts/queryKeys';
 import { investmentKeys } from '@/hooks/investments/queryKeys';
+import { transactionKeys } from '@/hooks/transactions/queryKeys';
 import { apiClient } from '@/lib/api/client';
 
 import { itemKeys } from './queryKeys';
 
 /**
  * Reconcile a persisted Item's accounts with Plaid after a Link
- * update-mode session completes (Plaid does not fire a webhook for it).
+ * update-mode session completes (Plaid does not fire a webhook for it): accounts
+ * added there appear, and ones the user stopped sharing are removed with their
+ * data, so every list that shows accounts or what is in them is refreshed.
  */
 export function useUpdateItemAccounts() {
   const queryClient = useQueryClient();
@@ -25,6 +28,7 @@ export function useUpdateItemAccounts() {
       void queryClient.invalidateQueries({ queryKey: itemKeys.all });
       void queryClient.invalidateQueries({ queryKey: accountKeys.all });
       void queryClient.invalidateQueries({ queryKey: investmentKeys.all });
+      void queryClient.invalidateQueries({ queryKey: transactionKeys.all });
     },
   });
 }

@@ -4,8 +4,8 @@ import { getItem } from "../items/getItem.js";
 
 /**
  * What the update-mode Link session is for: `reconnect` repairs the connection,
- * `add-accounts` also lets the user share accounts that appeared since they
- * linked it.
+ * `add-accounts` opens Link's account selection so the user can choose which
+ * accounts to share (adding new ones, or removing ones they uncheck).
  */
 export type UpdateLinkTokenMode = "reconnect" | "add-accounts";
 
