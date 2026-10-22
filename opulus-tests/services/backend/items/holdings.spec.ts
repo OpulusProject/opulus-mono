@@ -70,7 +70,6 @@ test.describe("investment holdings synced by linking and updating (Plaid stub)",
     expect(Number(stored[0]!.institutionValue)).toBe(1902.5);
     expect(Number(stored[0]!.costBasis)).toBe(1500);
     expect(stored[0]!.security).toMatchObject({ name: "Apple Inc.", type: "equity", isCashEquivalent: false });
-    expect(Number(stored[0]!.security.closePrice)).toBe(189.5);
     expect(stored[1]!.costBasis).toBeNull();
     expect(stored[1]!.security.isCashEquivalent).toBe(true);
   });

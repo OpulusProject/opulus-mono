@@ -12,15 +12,15 @@ const holding = { account_id: "acct", security_id: "sec-1", quantity: 10, instit
  * only what the API shows, and no holding in a security Plaid did not describe.
  *
  * Test cases:
- * - keeps a security's name, ticker, type, currency and close price, with dates as dates
+ * - keeps a security's name, ticker, type and currency
  * - keeps a holding's quantity, price, value and cost basis, keyed by Plaid's account and security ids
  * - turns what Plaid left out into null (a cash security with no ticker or price, a holding with no cost basis), and no cash flag into false
  * - drops a holding in a security that was not described
- * - keeps nothing Plaid also sends, such as CUSIP, ISIN or SEDOL
+ * - keeps nothing Plaid also sends, such as CUSIP, ISIN, SEDOL or its close price (prices come from our own provider)
  * - gives nothing for no holdings
  */
 test.describe("normalizePlaidHoldings", () => {
-  test("keeps a security's name, ticker, type, currency and close price, with dates as dates", () => {
+  test("keeps a security's name, ticker, type and currency", () => {
     const { securities } = normalizePlaidHoldings(plaid({ securities: [security], holdings: [] }));
 
     expect(securities).toMatchObject([
@@ -32,8 +32,6 @@ test.describe("normalizePlaidHoldings", () => {
           type: "equity",
           isCashEquivalent: false,
           isoCurrencyCode: "USD",
-          closePrice: 189.5,
-          closePriceAsOf: new Date("2026-10-14"),
         },
       },
     ]);
@@ -72,8 +70,6 @@ test.describe("normalizePlaidHoldings", () => {
       type: null,
       isCashEquivalent: false,
       isoCurrencyCode: null,
-      closePrice: null,
-      closePriceAsOf: null,
     });
     expect(holdings[0]!.data).toMatchObject({ costBasis: null, isoCurrencyCode: null, institutionPriceAsOf: null });
   });
@@ -86,13 +82,13 @@ test.describe("normalizePlaidHoldings", () => {
     expect(holdings.map((h) => h.plaidSecurityId)).toEqual(["sec-1"]);
   });
 
-  test("keeps nothing Plaid also sends, such as CUSIP, ISIN or SEDOL", () => {
+  test("keeps nothing Plaid also sends, such as CUSIP, ISIN, SEDOL or its close price (prices come from our own provider)", () => {
     const { securities } = normalizePlaidHoldings(
       plaid({ securities: [{ ...security, cusip: "037833100", isin: "US0378331005", sedol: "2046251" }], holdings: [] }),
     );
 
     const stored = JSON.stringify(securities);
-    for (const extra of ["037833100", "US0378331005", "2046251"]) {
+    for (const extra of ["037833100", "US0378331005", "2046251", "189.5", "closePrice"]) {
       expect(stored).not.toContain(extra);
     }
   });
