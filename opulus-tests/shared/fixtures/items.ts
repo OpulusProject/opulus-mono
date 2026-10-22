@@ -114,6 +114,65 @@ export async function seedItemWithAccount(
 }
 
 /**
+ * Add another account to an item `seedItemWithAccount` made (a second account of
+ * the same institution). Returns the ids a spec needs.
+ */
+export async function seedAccountOnItem(params: {
+  userId: string;
+  itemId: string;
+  name?: string;
+  /** Plaid's account id; unique by default. */
+  providerAccountId?: string;
+  /** Plaid's persistent id for the account, if the institution gives one. */
+  persistentAccountId?: string | null;
+}): Promise<{ accountId: string; providerAccountId: string }> {
+  const account = await testDb().account.create({
+    data: {
+      providerAccountId: params.providerAccountId ?? uniqueId("acct"),
+      persistentAccountId: params.persistentAccountId ?? null,
+      itemId: params.itemId,
+      userId: params.userId,
+      name: params.name ?? uniqueId("Savings"),
+      type: "depository",
+      subtype: "savings",
+      mask: "1111",
+      balanceCurrent: 500,
+      balanceAvailable: 500,
+      isoCurrencyCode: "CAD",
+    },
+  });
+  return { accountId: account.id, providerAccountId: account.providerAccountId };
+}
+
+/** Whether an account is still stored. */
+export async function accountExists(accountId: string): Promise<boolean> {
+  return (await testDb().account.count({ where: { id: accountId } })) > 0;
+}
+
+/** An account's stored Plaid id (it changes when Plaid gives the account a new one). */
+export async function readProviderAccountId(accountId: string): Promise<string> {
+  const { providerAccountId } = await testDb().account.findUniqueOrThrow({
+    where: { id: accountId },
+    select: { providerAccountId: true },
+  });
+  return providerAccountId;
+}
+
+/** How much is stored for an account: the data that goes when the account does. */
+export async function countAccountData(accountId: string) {
+  const db = testDb();
+  const where = { accountId };
+  const [transactions, holdings, investmentTransactions, liabilities, streams] = await Promise.all([
+    db.transaction.count({ where }),
+    db.holding.count({ where }),
+    db.investmentTransaction.count({ where }),
+    db.accountLiability.count({ where }),
+    db.recurringStream.count({ where }),
+  ]);
+  return { transactions, holdings, investmentTransactions, liabilities, streams };
+}
+
+/**
  * What the worker recorded about an item's connection status, read from the
  * ISOLATED test DB (the webhook suite does not run the backend that serves it).
  */

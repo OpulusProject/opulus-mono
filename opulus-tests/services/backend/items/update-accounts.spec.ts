@@ -2,7 +2,20 @@ import { expect, test } from "@playwright/test";
 import { UpdateItemAccountsResponseSchema } from "@opulus/core";
 import { uniqueId, withSession } from "../../../shared/client.js";
 import { expectErrorCode, expectMatchesSchema, expectOk, expectStatus } from "../../../shared/assertions.js";
-import { createAuthedUser, readItemStatus, seedItemWithAccount } from "../../../shared/fixtures/index.js";
+import {
+  accountExists,
+  countAccountData,
+  createAuthedUser,
+  readItemStatus,
+  readProviderAccountId,
+  seedAccountOnItem,
+  seedCreditLiability,
+  seedHolding,
+  seedInvestmentTransaction,
+  seedItemWithAccount,
+  seedStream,
+  seedTransactions,
+} from "../../../shared/fixtures/index.js";
 import { failAccounts, resetPlaidStub, setPlaidItem, setPlaidLiabilities } from "../../../shared/plaid-stub.js";
 import {
   creditCardAccount,
@@ -64,7 +77,138 @@ test.describe("POST /api/items/:id/update-accounts", () => {
     // Assert: nothing new, both updated.
     await expectOk(res);
     const { data } = await expectMatchesSchema(res, UpdateItemAccountsResponseSchema);
-    expect(data).toEqual({ itemId, created: 0, updated: 2 });
+    expect(data).toEqual({ itemId, created: 0, updated: 2, removed: 0 });
+  });
+
+  /** Everything an account can hold, seeded on it: transactions, a holding, an activity, a liability and a stream. */
+  async function seedAccountData(userId: string, itemId: string, accountId: string) {
+    await seedTransactions({ userId, itemId, accountId, count: 2 });
+    await seedHolding({ userId, itemId, accountId });
+    await seedInvestmentTransaction({ userId, itemId, accountId, type: "cash", subtype: "deposit", amount: -100 });
+    await seedCreditLiability({ userId, itemId, accountId });
+    await seedStream({ userId, itemId, accountId });
+  }
+
+  const ALL_SEEDED = { transactions: 2, holdings: 1, investmentTransactions: 1, liabilities: 1, streams: 1 };
+
+  test("removes an account Plaid no longer shares, with everything stored for it, and keeps the others", async ({ request }) => {
+    // Arrange: an item with two accounts, each with data; the user de-selects the second in update mode.
+    const { cookie, userId } = await createAuthedUser(request);
+    const kept = await seedItemWithAccount(userId);
+    const dropped = await seedAccountOnItem({ userId, itemId: kept.itemId });
+    await seedAccountData(userId, kept.itemId, kept.accountId);
+    await seedAccountData(userId, kept.itemId, dropped.accountId);
+    expect(await countAccountData(dropped.accountId)).toEqual(ALL_SEEDED);
+    await setPlaidItem({ accounts: [plaidAccount(kept.providerAccountId)] });
+
+    // Act
+    const res = await updateItemAccounts(request, cookie, kept.itemId);
+
+    // Assert: one removed, and all of its data with it; the other account and its transactions are untouched.
+    await expectOk(res);
+    expect((await res.json()).data).toEqual({ itemId: kept.itemId, created: 0, updated: 1, removed: 1 });
+    expect(await accountExists(dropped.accountId)).toBe(false);
+    expect(await countAccountData(dropped.accountId)).toEqual({ transactions: 0, holdings: 0, investmentTransactions: 0, liabilities: 0, streams: 0 });
+    expect(await accountExists(kept.accountId)).toBe(true);
+    expect((await countAccountData(kept.accountId)).transactions).toBe(2);
+    expect((await readItem(request, cookie, kept.itemId)).accounts.map((a) => a.id)).toEqual([kept.accountId]);
+  });
+
+  test("adds and removes accounts in one update", async ({ request }) => {
+    // Arrange: the user swaps one account for another in a single session.
+    const { cookie, userId } = await createAuthedUser(request);
+    const kept = await seedItemWithAccount(userId);
+    const dropped = await seedAccountOnItem({ userId, itemId: kept.itemId });
+    const addedId = uniqueId("added");
+    await setPlaidItem({ accounts: [plaidAccount(kept.providerAccountId), plaidAccount(addedId)] });
+
+    // Act
+    const res = await updateItemAccounts(request, cookie, kept.itemId);
+
+    // Assert
+    await expectOk(res);
+    expect((await res.json()).data).toMatchObject({ created: 1, updated: 1, removed: 1 });
+    const item = await readItem(request, cookie, kept.itemId);
+    expect(item.accounts).toHaveLength(2);
+    expect(item.accounts.map((a) => a.id)).toContain(kept.accountId);
+    expect(item.accounts.map((a) => a.id)).not.toContain(dropped.accountId);
+  });
+
+  test("keeps an account whose Plaid id changed, matching it by its persistent id, with its data", async ({ request }) => {
+    // Arrange: two accounts with persistent ids; Plaid now reports the second under a new account id.
+    const { cookie, userId } = await createAuthedUser(request);
+    const stable = await seedItemWithAccount(userId);
+    const persistent = uniqueId("persistent");
+    const moved = await seedAccountOnItem({ userId, itemId: stable.itemId, persistentAccountId: persistent });
+    await seedTransactions({ userId, itemId: stable.itemId, accountId: moved.accountId, count: 2 });
+    const newPlaidId = uniqueId("renamed");
+    await setPlaidItem({
+      accounts: [plaidAccount(stable.providerAccountId), plaidAccount(newPlaidId, { persistent_account_id: persistent })],
+    });
+
+    // Act
+    const res = await updateItemAccounts(request, cookie, stable.itemId);
+
+    // Assert: the same account (and its transactions) under its new id; nothing created or removed.
+    await expectOk(res);
+    expect((await res.json()).data).toMatchObject({ created: 0, updated: 2, removed: 0 });
+    expect(await accountExists(moved.accountId)).toBe(true);
+    expect(await readProviderAccountId(moved.accountId)).toBe(newPlaidId);
+    expect((await countAccountData(moved.accountId)).transactions).toBe(2);
+  });
+
+  test("removes nothing when Plaid reports no accounts", async ({ request }) => {
+    // Arrange: an item with an account and data, and Plaid reporting an empty list (an error, not a user de-selecting).
+    const { cookie, userId } = await createAuthedUser(request);
+    const item = await seedItemWithAccount(userId);
+    await seedTransactions({ userId, itemId: item.itemId, accountId: item.accountId, count: 2 });
+    await setPlaidItem({ accounts: [] });
+
+    // Act
+    const res = await updateItemAccounts(request, cookie, item.itemId);
+
+    // Assert
+    await expectOk(res);
+    expect((await res.json()).data).toMatchObject({ removed: 0 });
+    expect(await accountExists(item.accountId)).toBe(true);
+    expect((await countAccountData(item.accountId)).transactions).toBe(2);
+  });
+
+  test("removes nothing when none of the accounts Plaid reports is one we have", async ({ request }) => {
+    // Arrange: Plaid reports only accounts we do not know, as if every id had changed.
+    const { cookie, userId } = await createAuthedUser(request);
+    const item = await seedItemWithAccount(userId);
+    await seedTransactions({ userId, itemId: item.itemId, accountId: item.accountId, count: 2 });
+    await setPlaidItem({ accounts: [plaidAccount(uniqueId("x")), plaidAccount(uniqueId("y"))] });
+
+    // Act
+    const res = await updateItemAccounts(request, cookie, item.itemId);
+
+    // Assert: the new accounts are added, and ours (and their data) stay.
+    await expectOk(res);
+    expect((await res.json()).data).toMatchObject({ created: 2, removed: 0 });
+    expect(await accountExists(item.accountId)).toBe(true);
+    expect((await countAccountData(item.accountId)).transactions).toBe(2);
+  });
+
+  test("removes only the item's own accounts, never another user's", async ({ request }) => {
+    // Arrange: two users, each with an item and accounts; only the first user de-selects an account.
+    const first = await createAuthedUser(request);
+    const second = await createAuthedUser(request);
+    const mine = await seedItemWithAccount(first.userId);
+    const myDropped = await seedAccountOnItem({ userId: first.userId, itemId: mine.itemId });
+    const theirs = await seedItemWithAccount(second.userId);
+    const theirOther = await seedAccountOnItem({ userId: second.userId, itemId: theirs.itemId });
+    await seedTransactions({ userId: second.userId, itemId: theirs.itemId, accountId: theirOther.accountId, count: 2 });
+    await setPlaidItem({ accounts: [plaidAccount(mine.providerAccountId)] });
+
+    // Act
+    await expectOk(await updateItemAccounts(request, first.cookie, mine.itemId));
+
+    // Assert
+    expect(await accountExists(myDropped.accountId)).toBe(false);
+    expect(await accountExists(theirOther.accountId)).toBe(true);
+    expect((await countAccountData(theirOther.accountId)).transactions).toBe(2);
   });
 
   test("refreshes the item's liabilities without duplicating them", async ({ request }) => {

@@ -6,13 +6,15 @@ import { z } from "zod";
 
 /**
  * Update item accounts API response
- * Counts of the accounts inserted and refreshed from Plaid
+ * Counts of the accounts inserted and refreshed from Plaid, and of those removed
+ * because Plaid no longer shares them
  */
 export const UpdateItemAccountsResponseSchema = z.object({
   data: z.object({
     itemId: z.string(),
     created: z.number().int(),
     updated: z.number().int(),
+    removed: z.number().int(),
   }),
 });
 

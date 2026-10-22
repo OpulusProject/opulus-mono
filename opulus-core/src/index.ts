@@ -37,6 +37,7 @@ export * from "./gateways/yahooGateway.js";
 export * from "./services/exchangeRateConverter.js";
 export * from "./services/refreshExchangeRates.js";
 export * from "./services/securityPrices.js";
+export * from "./services/syncItemAccounts.js";
 export * from "./services/syncItemHoldings.js";
 export * from "./services/syncItemInvestmentTransactions.js";
 export * from "./services/syncItemLiabilities.js";

@@ -68,9 +68,12 @@ export interface CreateAccountData {
   unofficialCurrencyCode?: string | null;
 }
 
-/** The details of an account that can change when Plaid is re-read. */
+/**
+ * The details of an account that can change when Plaid is re-read, including
+ * Plaid's id for it (Plaid can give an account a new one).
+ */
 export type UpdateAccountData = Partial<
-  Omit<CreateAccountData, "itemId" | "userId" | "providerAccountId">
+  Omit<CreateAccountData, "itemId" | "userId">
 >;
 
 /** An account's balances, from Plaid, as the columns that hold them. */
@@ -323,6 +326,66 @@ class AccountRepository {
         error instanceof Error
           ? `Failed to get accounts: ${error.message}`
           : "An unexpected error occurred while fetching accounts";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * An item's accounts as reconciling them with Plaid's needs them: our id and
+   * Plaid's two ids for each.
+   * @throws AppError if database error occurs
+   */
+  async getForReconcile(
+    itemId: string,
+    client: Prisma.TransactionClient = this.prisma
+  ) {
+    try {
+      return await client.account.findMany({
+        where: { itemId },
+        select: {
+          id: true,
+          providerAccountId: true,
+          persistentAccountId: true,
+        },
+      });
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get accounts: ${error.message}`
+          : "An unexpected error occurred while fetching accounts";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * Delete accounts by our ids. Everything stored for an account (its
+   * transactions, liabilities, holdings, investment transactions and recurring
+   * streams) is deleted with it (cascade).
+   * @returns How many accounts were deleted
+   * @throws AppError if database error occurs
+   */
+  async deleteByIds(
+    ids: string[],
+    client: Prisma.TransactionClient = this.prisma
+  ): Promise<number> {
+    try {
+      const result = await client.account.deleteMany({
+        where: { id: { in: ids } },
+      });
+      return result.count;
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to delete accounts: ${error.message}`
+          : "An unexpected error occurred while deleting accounts";
       throw new AppError(message, 500);
     }
   }
