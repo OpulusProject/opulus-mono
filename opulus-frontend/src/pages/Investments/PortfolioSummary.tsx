@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { formatMoney } from '@/utils/accountDisplay';
-import { formatGain, gainTone } from '@/utils/investmentDisplay';
+import { formatGain, gainTone, sinceLabel } from '@/utils/investmentDisplay';
 
 import { AllocationDonut } from './AllocationDonut';
 
@@ -43,13 +43,16 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
           {formatMoney(summary.value, baseCurrency)}
         </div>
         {hasGain && (
-          <div>
+          <div className="flex items-center gap-2">
             <Badge
               variant="secondary"
               className={cn('tabular-nums', gainTone(summary.gain))}
             >
               {formatGain(summary.gain, summary.gainPercent, baseCurrency)}
             </Badge>
+            <span className="text-muted-foreground text-xs">
+              {sinceLabel(data)}
+            </span>
           </div>
         )}
       </div>

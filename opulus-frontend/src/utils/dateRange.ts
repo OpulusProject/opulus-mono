@@ -1,3 +1,5 @@
+import { formatDay } from './day';
+
 export interface DayRange {
   /** First day, as `YYYY-MM-DD`. */
   start: string;
@@ -22,11 +24,34 @@ const RANGE_DAYS: Record<RangePreset, number> = {
   year: 365,
 };
 
+/** A custom range as a button says it: "Oct 1 – Oct 9", or "From Oct 1" with no last day. */
+export function formatCustomRange(from?: string, to?: string): string {
+  if (from && to) {
+    return from === to
+      ? formatRangeDay(from)
+      : `${formatRangeDay(from)} – ${formatRangeDay(to)}`;
+  }
+  return from ? `From ${formatRangeDay(from)}` : 'Custom range';
+}
+
+/** "Oct 1", or "Oct 1, 2025" for a day that is not in the current year. */
+export function formatRangeDay(day: string): string {
+  const thisYear = new Date().getFullYear();
+  return formatDay(
+    day,
+    fromDay(day).getFullYear() === thisYear
+      ? SHORT_DAY
+      : { ...SHORT_DAY, year: 'numeric' }
+  );
+}
+
 /** A `YYYY-MM-DD` day as a local Date, for a calendar. */
 export function fromDay(day: string): Date {
   const [y, m, d] = day.split('-').map(Number);
   return new Date(y, m - 1, d);
 }
+
+const SHORT_DAY = { month: 'short', day: 'numeric' } as const;
 
 /** The days a preset covers, ending today (so "Past 7 days" is 7 days). */
 export function resolveRange(

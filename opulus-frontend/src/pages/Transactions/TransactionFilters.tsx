@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import React from 'react';
 
+import { DateRangePanel } from '@/common/DateRangePanel';
 import {
   type MenuOption,
   MultiSelectItems,
@@ -13,7 +14,6 @@ import {
 } from '@/common/MultiSelectMenu';
 import {
   Button,
-  Calendar,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -27,13 +27,7 @@ import {
 } from '@/components/ui';
 import { useItems } from '@/hooks/items/useItems';
 import { cn } from '@/lib/utils';
-import {
-  RANGE_LABELS,
-  type RangePreset,
-  fromDay,
-  toDay,
-} from '@/utils/dateRange';
-import { formatDay } from '@/utils/day';
+import { RANGE_LABELS, formatCustomRange } from '@/utils/dateRange';
 import { getInstitutionLogo } from '@/utils/institution';
 import { getCategoryIcon, getCategoryLabel } from '@/utils/transactionCategory';
 
@@ -127,29 +121,10 @@ export const TransactionFilters: React.FC<TransactionFiltersProps> = ({
   );
 };
 
-const SHORT_DAY = { month: 'short', day: 'numeric' } as const;
-
-/** "Oct 1", or "Oct 1, 2025" for a day that is not in the current year. */
-function formatRangeDay(day: string): string {
-  const thisYear = new Date().getFullYear();
-  return formatDay(
-    day,
-    fromDay(day).getFullYear() === thisYear
-      ? SHORT_DAY
-      : { ...SHORT_DAY, year: 'numeric' }
-  );
-}
-
 /** What the date filter is set to, or nothing for "any time". */
 function dateValue(search: TransactionsSearch): string | undefined {
   const custom = search.range === 'custom';
-  if (custom && search.from && search.to) {
-    return search.from === search.to
-      ? formatRangeDay(search.from)
-      : `${formatRangeDay(search.from)} – ${formatRangeDay(search.to)}`;
-  }
-  if (custom && search.from) return `From ${formatRangeDay(search.from)}`;
-  if (custom) return 'Custom range';
+  if (custom) return formatCustomRange(search.from, search.to);
   if (search.range && search.range !== 'custom') {
     return RANGE_LABELS[search.range];
   }
@@ -227,55 +202,16 @@ const DatePanel: React.FC<DatePanelProps> = ({
   onChange,
   onPreset,
   stacked,
-}) => {
-  const choose = (range: RangePreset | undefined) => {
-    onChange({ range, from: undefined, to: undefined });
-    onPreset?.();
-  };
-
-  return (
-    <div className={cn('flex flex-col', stacked ? 'w-min' : 'sm:flex-row')}>
-      <div
-        role="radiogroup"
-        aria-label="Date range"
-        className={cn(
-          'flex flex-wrap gap-1 border-b p-2',
-          !stacked &&
-            'sm:w-40 sm:shrink-0 sm:flex-col sm:flex-nowrap sm:border-r sm:border-b-0'
-        )}
-      >
-        <PresetItem selected={!search.range} onClick={() => choose(undefined)}>
-          Any time
-        </PresetItem>
-        {(Object.keys(RANGE_LABELS) as RangePreset[]).map((preset) => (
-          <PresetItem
-            key={preset}
-            selected={search.range === preset}
-            onClick={() => choose(preset)}
-          >
-            {RANGE_LABELS[preset]}
-          </PresetItem>
-        ))}
-      </div>
-      <Calendar
-        mode="range"
-        numberOfMonths={1}
-        defaultMonth={search.from ? fromDay(search.from) : undefined}
-        selected={{
-          from: search.from ? fromDay(search.from) : undefined,
-          to: search.to ? fromDay(search.to) : undefined,
-        }}
-        onSelect={(range) =>
-          onChange({
-            range: range?.from ? 'custom' : undefined,
-            from: range?.from ? toDay(range.from) : undefined,
-            to: range?.to ? toDay(range.to) : undefined,
-          })
-        }
-      />
-    </div>
-  );
-};
+}) => (
+  <DateRangePanel
+    presets={RANGE_LABELS}
+    allLabel="Any time"
+    value={search}
+    onChange={onChange}
+    onPreset={onPreset}
+    stacked={stacked}
+  />
+);
 
 interface CollapsedFiltersProps {
   search: TransactionsSearch;
@@ -452,28 +388,4 @@ const FilterLabel: React.FC<{ label: string; value?: string }> = ({
       <span className="text-muted-foreground pl-4 text-xs">{value}</span>
     )}
   </>
-);
-
-interface PresetItemProps extends React.ComponentProps<'button'> {
-  selected: boolean;
-}
-
-/** One preset in the date popover: a radio-style button. */
-const PresetItem: React.FC<PresetItemProps> = ({
-  selected,
-  children,
-  ...props
-}) => (
-  <button
-    type="button"
-    role="radio"
-    aria-checked={selected}
-    className={cn(
-      'hover:bg-accent rounded-md px-2 py-1.5 text-left text-sm transition-colors',
-      selected && 'bg-accent font-medium'
-    )}
-    {...props}
-  >
-    {children}
-  </button>
 );

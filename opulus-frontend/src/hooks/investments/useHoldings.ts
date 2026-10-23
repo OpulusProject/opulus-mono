@@ -1,4 +1,4 @@
-import type { HoldingsResponse } from '@opulus/core/dto';
+import type { HoldingsRange, HoldingsResponse } from '@opulus/core/dto';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
@@ -10,6 +10,11 @@ export interface HoldingsParams {
   accountIds?: string[];
   /** Only holdings of this security (our security id). */
   securityId?: string;
+  /** The period the gains are over; since purchase if omitted. */
+  range?: HoldingsRange;
+  /** The first and last day (`YYYY-MM-DD`) of a `custom` range. */
+  from?: string;
+  to?: string;
 }
 
 const getHoldingsApi = async (
@@ -21,6 +26,9 @@ const getHoldingsApi = async (
       params: {
         ...(params.accountIds?.length && { accountId: params.accountIds }),
         ...(params.securityId && { securityId: params.securityId }),
+        ...(params.range && { range: params.range }),
+        ...(params.from && { from: params.from }),
+        ...(params.to && { to: params.to }),
       },
       // Repeat the parameter (?accountId=a&accountId=b), not accountId[]=a.
       paramsSerializer: { indexes: null },
