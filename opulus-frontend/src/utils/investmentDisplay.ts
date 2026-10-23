@@ -3,6 +3,8 @@ import type {
   AllocationKind,
   HoldingDTO,
   HoldingKind,
+  HoldingsRange,
+  HoldingsResponse,
 } from '@opulus/core/dto';
 import {
   Banknote,
@@ -16,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import { formatMoney, getAccountTypeLabel } from '@/utils/accountDisplay';
+import { formatCustomRange } from '@/utils/dateRange';
 import { formatDay } from '@/utils/day';
 
 /** What the allocation's slices are called. */
@@ -38,6 +41,17 @@ export const KIND_LABELS: Record<HoldingKind, string> = {
   option: 'Option',
   cash: 'Cash',
   other: 'Other',
+};
+
+/** The ranges of the investments' date filter, as its menu names them. */
+export const RANGE_LABELS: Record<HoldingsRange, string> = {
+  day: 'Past day',
+  week: 'Past week',
+  month: 'Past month',
+  year: 'Past year',
+  ytd: 'Year to date',
+  custom: 'Custom range',
+  all: 'All time',
 };
 
 /** "TFSA ••7714" for an account's subtype and the end of its number. */
@@ -157,6 +171,13 @@ export function formatSignedMoney(
   return amount < 0 ? `−${text}` : text;
 }
 
+/** "+26.8%" or "−3.0%" (a real minus sign, as for money). */
+export function formatSignedPercent(fraction: number, digits = 1): string {
+  const text = formatPercent(Math.abs(fraction), digits);
+  if (fraction > 0) return `+${text}`;
+  return fraction < 0 ? `−${text}` : text;
+}
+
 const ACTIVITY_ICONS: Record<ActivityItemDTO['kind'], LucideIcon> = {
   buy: TrendingUp,
   sell: TrendingDown,
@@ -166,13 +187,6 @@ const ACTIVITY_ICONS: Record<ActivityItemDTO['kind'], LucideIcon> = {
   fee: Receipt,
   other: RefreshCw,
 };
-
-/** "+26.8%" or "−3.0%" (a real minus sign, as for money). */
-export function formatSignedPercent(fraction: number, digits = 1): string {
-  const text = formatPercent(Math.abs(fraction), digits);
-  if (fraction > 0) return `+${text}`;
-  return fraction < 0 ? `−${text}` : text;
-}
 
 /** Text and tint for a gain (green) or a loss (red) badge; none for no change. */
 export function gainTone(amount: number): string {
@@ -187,6 +201,27 @@ export function holdingTitle(holding: Pick<HoldingDTO, 'security'>): string {
   const { security } = holding;
   if (security.kind === 'cash') return 'Cash';
   return security.tickerSymbol || security.name || 'Unknown security';
+}
+
+/** The period of a response as a title: "Past month", "Oct 1 – Oct 9", "All time". */
+export function rangeTitle({
+  range,
+  since,
+  until,
+}: Pick<HoldingsResponse['data'], 'range' | 'since' | 'until'>): string {
+  return range === 'custom' && since
+    ? formatCustomRange(since, until ?? undefined)
+    : RANGE_LABELS[range];
+}
+
+/** What a gain is measured over, after it: "since purchase", "past month", "Oct 1 – Oct 9". */
+export function sinceLabel(
+  data: Pick<HoldingsResponse['data'], 'range' | 'since' | 'until'>
+): string {
+  if (data.range === 'all') return 'since purchase';
+  return data.range === 'custom'
+    ? rangeTitle(data)
+    : rangeTitle(data).toLowerCase();
 }
 
 /** "3 years, 7 months" until an ISO date, or "Matured". */

@@ -7,6 +7,7 @@ import {
   formatSignedMoney,
   formatSignedPercent,
   holdingTitle,
+  rangeTitle,
 } from '@/utils/investmentDisplay';
 
 /** Holdings shown; the list is for a glance. */
@@ -41,13 +42,22 @@ export const LargestChangesList: React.FC<LargestChangesListProps> = ({
     })
     .slice(0, ROWS);
 
+  // "Since purchase", or "Past month" and so on.
+  const title = data.range === 'all' ? 'Since purchase' : rangeTitle(data);
+
   return (
-    <List aria-label="Since purchase" isRefreshing={isRefreshing}>
-      <ListHeader title="Since purchase" trailingTitle="largest first" />
+    <List aria-label={title} isRefreshing={isRefreshing}>
+      <ListHeader title={title} trailingTitle="largest first" />
       {ranked.length === 0 ? (
         <ListRow
-          title="No cost basis yet"
-          subtitle="Your institutions have not reported what you paid, so there is nothing to compare."
+          title={
+            data.range === 'all' ? 'No cost basis yet' : 'No price history yet'
+          }
+          subtitle={
+            data.range === 'all'
+              ? 'Your institutions have not reported what you paid, so there is nothing to compare.'
+              : 'There are no prices from the start of this period, so there is nothing to compare.'
+          }
         />
       ) : (
         ranked.map((holding) => (

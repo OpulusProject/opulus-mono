@@ -7,10 +7,12 @@ import { useHoldings } from '@/hooks/investments/useHoldings';
 
 import { AccountFilter } from './AccountFilter';
 import { ByAccountList } from './ByAccountList';
+import { DateRangeFilter } from './DateRangeFilter';
 import { HoldingSheet } from './HoldingSheet';
 import { LargestChangesList } from './LargestChangesList';
 import { NoInvestmentAccounts } from './NoInvestmentAccounts';
 import { PortfolioSummary } from './PortfolioSummary';
+import { type HoldingsPeriod, holdingsPeriod } from './searchSchema';
 
 const route = getRouteApi('/_authenticated/investments/');
 
@@ -19,6 +21,7 @@ export const Investments: React.FC = () => {
   const search = route.useSearch();
   const navigate = route.useNavigate();
   const accounts = React.useMemo(() => search.account ?? [], [search.account]);
+  const period = holdingsPeriod(search);
 
   return (
     <Page
@@ -31,11 +34,23 @@ export const Investments: React.FC = () => {
       }}
       actions={
         <div className="flex flex-wrap items-center gap-2">
+          <DateRangeFilter
+            search={search}
+            onChange={(changes) =>
+              void navigate({
+                search: (previous) => ({ ...previous, ...changes }),
+                replace: true,
+              })
+            }
+          />
           <AccountFilter
             selected={accounts}
             onChange={(selected) =>
               void navigate({
-                search: { account: selected.length > 0 ? selected : undefined },
+                search: (previous) => ({
+                  ...previous,
+                  account: selected.length > 0 ? selected : undefined,
+                }),
                 replace: true,
               })
             }
@@ -45,6 +60,7 @@ export const Investments: React.FC = () => {
     >
       <InvestmentsContent
         accounts={accounts}
+        period={period}
         holding={search.holding}
         onHoldingChange={(holding) =>
           void navigate({
@@ -61,10 +77,11 @@ export const Investments: React.FC = () => {
 // connected.
 const InvestmentsContent: React.FC<{
   accounts: string[];
+  period: HoldingsPeriod;
   holding: string | undefined;
   onHoldingChange: (holding: string | undefined) => void;
-}> = ({ accounts, holding, onHoldingChange }) => {
-  const holdings = useHoldings({ accountIds: accounts });
+}> = ({ accounts, period, holding, onHoldingChange }) => {
+  const holdings = useHoldings({ accountIds: accounts, ...period });
 
   if (holdings.isLoading) return <List isLoading aria-label="Loading" />;
   if (holdings.isError || !holdings.data) {

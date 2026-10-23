@@ -34,6 +34,7 @@ import {
   formatSignedPercent,
   gainTone,
   holdingTitle,
+  sinceLabel,
   timeUntil,
 } from '@/utils/investmentDisplay';
 
@@ -123,7 +124,11 @@ const HoldingDetail: React.FC<{
 
       <div className="flex flex-col gap-6 px-4 pb-6">
         {merged ? (
-          <MergedPosition position={merged} baseCurrency={baseCurrency} />
+          <MergedPosition
+            position={merged}
+            baseCurrency={baseCurrency}
+            period={data}
+          />
         ) : (
           <section aria-label="Your position" className="flex flex-col gap-1">
             <div className="text-muted-foreground text-xs">Your position</div>
@@ -148,7 +153,7 @@ const HoldingDetail: React.FC<{
                   )}
                 </Badge>
                 <span className="text-muted-foreground text-xs">
-                  since purchase
+                  {sinceLabel(data)}
                 </span>
               </div>
             )}
@@ -195,7 +200,8 @@ const HoldingDetail: React.FC<{
 const MergedPosition: React.FC<{
   position: PositionDTO;
   baseCurrency: string;
-}> = ({ position, baseCurrency }) => (
+  period: Pick<HoldingsResponse['data'], 'range' | 'since' | 'until'>;
+}> = ({ position, baseCurrency, period }) => (
   <section aria-label="Your position" className="flex flex-col gap-1">
     <div className="text-muted-foreground text-xs">
       Your position · {position.accountCount} accounts
@@ -213,7 +219,9 @@ const MergedPosition: React.FC<{
           {position.gainPercent !== null &&
             ` (${formatSignedPercent(position.gainPercent)})`}
         </Badge>
-        <span className="text-muted-foreground text-xs">since purchase</span>
+        <span className="text-muted-foreground text-xs">
+          {sinceLabel(period)}
+        </span>
       </div>
     )}
   </section>

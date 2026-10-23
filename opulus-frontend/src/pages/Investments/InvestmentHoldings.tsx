@@ -6,10 +6,11 @@ import { Page } from '@/common/Page';
 import { useHoldings } from '@/hooks/investments/useHoldings';
 
 import { AccountFilter } from './AccountFilter';
+import { DateRangeFilter } from './DateRangeFilter';
 import { HoldingSheet } from './HoldingSheet';
 import { HoldingsList } from './HoldingsList';
 import { NoInvestmentAccounts } from './NoInvestmentAccounts';
-import type { OverviewSearch } from './searchSchema';
+import { type OverviewSearch, holdingsPeriod } from './searchSchema';
 
 const route = getRouteApi('/_authenticated/investments/holdings');
 
@@ -41,6 +42,7 @@ export const InvestmentHoldings: React.FC = () => {
       }}
       actions={
         <div className="flex flex-wrap items-center gap-2">
+          <DateRangeFilter search={search} onChange={update} />
           <AccountFilter
             selected={accounts}
             onChange={(selected) =>
@@ -66,6 +68,7 @@ const HoldingsContent: React.FC<{
 }> = ({ search, update }) => {
   const holdings = useHoldings({
     accountIds: search.account,
+    ...holdingsPeriod(search),
   });
   if (holdings.isLoading) return <List isLoading aria-label="Loading" />;
   if (holdings.isError || !holdings.data) {
