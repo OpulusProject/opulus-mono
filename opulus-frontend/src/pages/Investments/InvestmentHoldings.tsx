@@ -8,7 +8,6 @@ import { useHoldings } from '@/hooks/investments/useHoldings';
 import { AccountFilter } from './AccountFilter';
 import { HoldingSheet } from './HoldingSheet';
 import { HoldingsList } from './HoldingsList';
-import { InvestmentsTabs } from './InvestmentsTabs';
 import { NoInvestmentAccounts } from './NoInvestmentAccounts';
 import type { OverviewSearch } from './searchSchema';
 
@@ -41,9 +40,7 @@ export const InvestmentHoldings: React.FC = () => {
           'Connect a brokerage, TFSA, RRSP or other investment account and Opulus shows what you hold and what it is worth.',
       }}
       actions={
-        // Wraps, so on a phone the filter goes under the toggle.
         <div className="flex flex-wrap items-center gap-2">
-          <InvestmentsTabs active="holdings" accounts={accounts} />
           <AccountFilter
             selected={accounts}
             onChange={(selected) =>
