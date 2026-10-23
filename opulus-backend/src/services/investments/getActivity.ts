@@ -3,14 +3,21 @@ import {
   investmentTransactionRepository,
   loadExchangeRateConverter,
   toActivityItemsDTO,
+  holdingsRangeStart,
   toDay,
   type ActivityFilters,
+  type HoldingsRange,
   type ActivityResponse,
 } from "@opulus/core";
 
 export interface GetActivityParams {
   userId: string;
-  filters: ActivityFilters;
+  filters: Omit<ActivityFilters, "from" | "to">;
+  /** The period to look at; all time when omitted. */
+  range?: HoldingsRange;
+  /** The first and last day ("YYYY-MM-DD") of a `custom` range; the last defaults to today. */
+  from?: string;
+  to?: string;
   page: number;
   limit: number;
   /** The current moment; only tests pass it. */
@@ -26,14 +33,20 @@ export interface GetActivityParams {
 export async function getActivity(
   params: GetActivityParams
 ): Promise<ActivityResponse["data"]> {
+  const today = toDay(params.now ?? new Date());
+  const since = holdingsRangeStart(params.range ?? "all", today, params.from);
+  const until = params.range === "custom" ? params.to : undefined;
   const { rows, pagination } =
     await investmentTransactionRepository.getPageByUserId(
       params.userId,
-      params.filters,
+      {
+        ...params.filters,
+        from: since ? new Date(`${since}T00:00:00Z`) : undefined,
+        to: until ? new Date(`${until}T00:00:00Z`) : undefined,
+      },
       { page: params.page, limit: params.limit }
     );
 
-  const today = toDay(params.now ?? new Date());
   const converter = await loadExchangeRateConverter({
     baseCurrency: BASE_CURRENCY,
     currencies: rows.map((row) => row.isoCurrencyCode),

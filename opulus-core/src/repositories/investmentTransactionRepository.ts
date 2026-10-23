@@ -14,7 +14,8 @@ import {
 } from "./holdingRepository.js";
 
 export interface ActivityFilters {
-  accountId?: string;
+  /** Only these accounts' transactions (our account ids). */
+  accountIds?: string[];
   /** Only this security's transactions (our security id). */
   securityId?: string;
   kind?: ActivityKind;
@@ -61,10 +62,10 @@ function activityWhere(
   userId: string,
   filters: ActivityFilters
 ): Prisma.InvestmentTransactionWhereInput {
-  const { accountId, securityId, kind, from, to } = filters;
+  const { accountIds, securityId, kind, from, to } = filters;
   return {
     userId,
-    ...(accountId && { accountId }),
+    ...(accountIds?.length && { accountId: { in: accountIds } }),
     ...(securityId && { securityId }),
     ...((from || to) && {
       date: {
@@ -222,7 +223,7 @@ class InvestmentTransactionRepository {
    * security, account and institution the activity DTO names. Only the user's
    * own, whatever the filters.
    * @param userId - The user
-   * @param filters - Account (our id), kind, and first / last day (inclusive)
+   * @param filters - Accounts (our ids), kind, and first / last day (inclusive)
    * @param paging - 1-based page and its size
    * @throws AppError if database error occurs
    */
