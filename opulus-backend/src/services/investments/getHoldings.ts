@@ -1,6 +1,5 @@
 import {
   accountRepository,
-  addDays,
   BASE_CURRENCY,
   holdingRepository,
   investmentTransactionRepository,
@@ -58,7 +57,7 @@ export async function getHoldings(
     accountRepository.getAllByUserId(params.userId, ["investment"]),
     investmentTransactionRepository.getDividendsSince(
       params.userId,
-      new Date(`${since ?? addDays(today, -364)}T00:00:00Z`)
+      since ? new Date(`${since}T00:00:00Z`) : null
     ),
     since
       ? investmentTransactionRepository.getTradesSince(

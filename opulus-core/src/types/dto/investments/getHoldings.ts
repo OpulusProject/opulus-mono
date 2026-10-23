@@ -185,7 +185,7 @@ export const HoldingDTOSchema = z.object({
   /** `gain` as a fraction of `costBasis` (0.25 is +25%); null without a cost basis. */
   gainPercent: z.number().nullable(),
   /**
-   * What this holding paid out in the last twelve months (dividends, interest,
+   * What this holding paid out over the range (dividends, interest,
    * capital gains), in the base currency.
    */
   dividends: z.number(),
@@ -218,7 +218,7 @@ export const PositionDTOSchema = z.object({
   costBasis: z.number().nullable(),
   /** `costBasis` for one unit, in `currency`; null when `costBasis` is, or without a quantity. */
   averageCost: z.number().nullable(),
-  /** What the holdings paid out in the last twelve months, in the base currency. */
+  /** What the holdings paid out over the range, in the base currency. */
   dividends: z.number(),
   /** Null unless every holding of it has a cost basis. */
   gainInBase: z.number().nullable(),
@@ -283,9 +283,9 @@ export const HoldingsSummaryDTOSchema = z.object({
   currencies: z.array(CurrencySplitDTOSchema),
   /** The three largest holdings that are not cash, as a fraction of `value`. */
   topHoldingsShare: z.number(),
-  /** Dividends, interest and capital gains paid in the last twelve months, in the base currency. */
+  /** Dividends, interest and capital gains paid over the range, in the base currency; for `all`, every payment we have (Plaid keeps 24 months). */
   dividends: z.number(),
-  /** `dividends` as a fraction of `value`. */
+  /** `dividends` as a fraction of `value`; not a yearly rate unless the range is a year. */
   dividendYield: z.number(),
   /** `gain` plus `dividends`. */
   totalReturn: z.number(),
@@ -393,7 +393,7 @@ export interface HoldingsOptions {
   rateOn: (currency: string | null) => number;
   /** The user's investment accounts; the ones with no holdings are counted by their balance. */
   accounts?: HoldingsAccountRow[];
-  /** The last twelve months' dividend payments of the user, all accounts. */
+  /** The dividend payments of the user over the range, all accounts. */
   dividends?: DividendRow[];
   /**
    * Our latest price of each security, by security id. A holding of a security
