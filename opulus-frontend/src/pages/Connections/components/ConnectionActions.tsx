@@ -29,8 +29,10 @@ interface ConnectionActionsProps {
 
 /**
  * A connection's actions: a button to repair it when it needs attention (or to
- * add newly found accounts when it doesn't), and the "..." menu with its
- * disconnect confirmation.
+ * add newly found accounts when it doesn't), and the "..." menu with "Manage
+ * accounts" (choose which of the institution's accounts Opulus tracks: Link's
+ * account selection adds the ones newly checked and drops the ones unchecked)
+ * and the disconnect confirmation.
  */
 export const ConnectionActions: React.FC<ConnectionActionsProps> = ({
   item,
@@ -76,6 +78,9 @@ export const ConnectionActions: React.FC<ConnectionActionsProps> = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={() => onUpdate(item.id, 'add-accounts')}>
+            Manage accounts
+          </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             onSelect={() => setConfirmOpen(true)}

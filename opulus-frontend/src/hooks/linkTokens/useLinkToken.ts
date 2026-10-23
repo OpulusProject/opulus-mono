@@ -7,8 +7,10 @@ import { linkTokenKeys } from './queryKeys';
 
 /**
  * Update-mode flavors. `reconnect` repairs a broken connection; `add-accounts`
- * also lets the user share accounts that appeared at the institution since
- * they linked it (the "new accounts available" prompt).
+ * opens Link's account selection, where the user chooses which of the
+ * institution's accounts to share: checking one adds it (including accounts
+ * that appeared since they linked it, the "new accounts available" prompt), and
+ * unchecking one removes it. It is the "Manage accounts" session.
  */
 export type UpdateMode = 'reconnect' | 'add-accounts';
 
