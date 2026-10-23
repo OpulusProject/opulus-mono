@@ -57,6 +57,7 @@ const navMain: NavItem[] = [
     items: [
       { title: 'Overview', url: '/investments', exact: true },
       { title: 'Holdings', url: '/investments/holdings' },
+      { title: 'Activity', url: '/investments/activity' },
     ],
   },
   {
