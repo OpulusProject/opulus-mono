@@ -1,10 +1,8 @@
 import {
-  accountRepository,
   itemRepository,
   logger,
-  normalizePlaidAccount,
   plaidGateway,
-  runInTransaction,
+  syncItemAccounts,
   toItemErrorData,
   trySyncItemHoldings,
   trySyncItemInvestmentTransactions,
@@ -22,9 +20,10 @@ import { getItem } from "./getItem.js";
  * It also refreshes the item's stored error and consent expiry from Plaid,
  * and drops the "new accounts available" flag once new accounts were added.
  *
- * Upsert-only: new Plaid accounts are inserted, existing ones have their
- * mutable fields refreshed. De-selection handling (soft or hard delete) is
- * deferred — accounts the user removes stay in the DB for now.
+ * New Plaid accounts are inserted and existing ones refreshed. Accounts Plaid
+ * no longer shares (the user de-selected them) are deleted with everything
+ * stored for them; see `syncItemAccounts` for how an account is matched and when
+ * nothing is deleted.
  */
 export interface UpdateItemAccountsParams {
   userId: string;
@@ -35,13 +34,13 @@ export interface UpdateItemAccountsResult {
   itemId: string;
   created: number;
   updated: number;
+  removed: number;
 }
 
 export async function updateItemAccounts(
   params: UpdateItemAccountsParams
 ): Promise<UpdateItemAccountsResult> {
   const item = await getItem(params);
-  const accountsResponse = await plaidGateway.getAccounts(item.accessToken);
 
   // The user just went through update mode, so whatever error or warning a
   // webhook stored may be resolved. Plaid sends no webhook for that, so take
@@ -54,42 +53,8 @@ export async function updateItemAccounts(
       : null,
   });
 
-  let created = 0;
-  let updated = 0;
-
-  await runInTransaction(async (tx) => {
-    for (const plaidAccount of accountsResponse.accounts) {
-      const data = normalizePlaidAccount(plaidAccount, item.id, item.userId);
-      const existingId = await accountRepository.findIdByProviderAccountId(
-        item.id,
-        data.providerAccountId,
-        tx
-      );
-
-      if (!existingId) {
-        await accountRepository.create(data, tx);
-        created += 1;
-      } else {
-        await accountRepository.update(
-          existingId,
-          {
-            name: data.name,
-            officialName: data.officialName,
-            type: data.type,
-            subtype: data.subtype,
-            mask: data.mask,
-            balanceAvailable: data.balanceAvailable,
-            balanceCurrent: data.balanceCurrent,
-            balanceLimit: data.balanceLimit,
-            isoCurrencyCode: data.isoCurrencyCode,
-            unofficialCurrencyCode: data.unofficialCurrencyCode,
-            persistentAccountId: data.persistentAccountId,
-          },
-          tx
-        );
-        updated += 1;
-      }
-    }
+  const { created, updated, removed, reported } = await syncItemAccounts({
+    item,
   });
 
   // The accounts Plaid flagged as new have been added, so stop prompting.
@@ -109,12 +74,13 @@ export async function updateItemAccounts(
       item_id: item.id,
       plaid_item_id: item.plaidItemId,
       user_id: item.userId,
-      accounts_total: accountsResponse.accounts.length,
+      accounts_total: reported,
       accounts_created: created,
       accounts_updated: updated,
+      accounts_removed: removed,
     },
     "Item accounts updated from Plaid"
   );
 
-  return { itemId: item.id, created, updated };
+  return { itemId: item.id, created, updated, removed };
 }
