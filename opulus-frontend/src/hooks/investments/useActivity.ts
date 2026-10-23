@@ -1,4 +1,8 @@
-import type { ActivityKind, ActivityResponse } from '@opulus/core/dto';
+import type {
+  ActivityKind,
+  ActivityResponse,
+  HoldingsRange,
+} from '@opulus/core/dto';
 import { keepPreviousData, useInfiniteQuery } from '@tanstack/react-query';
 
 import { apiClient } from '@/lib/api/client';
@@ -8,12 +12,15 @@ import { investmentKeys } from './queryKeys';
 const PAGE_SIZE = 50;
 
 export interface ActivityParams {
-  accountId?: string;
+  /** Only these accounts (our account ids). */
+  accountIds?: string[];
   securityId?: string;
   kind?: ActivityKind;
-  /** First and last day, `YYYY-MM-DD`. */
-  startDate?: string;
-  endDate?: string;
+  /** The period to look at; all time if omitted. */
+  range?: HoldingsRange;
+  /** The first and last day (`YYYY-MM-DD`) of a `custom` range. */
+  from?: string;
+  to?: string;
 }
 
 const getActivityApi = async (
@@ -21,7 +28,20 @@ const getActivityApi = async (
 ): Promise<ActivityResponse['data']> => {
   const response = await apiClient.get<ActivityResponse>(
     '/api/investments/activity',
-    { params }
+    {
+      params: {
+        page: params.page,
+        limit: params.limit,
+        ...(params.accountIds?.length && { accountId: params.accountIds }),
+        ...(params.securityId && { securityId: params.securityId }),
+        ...(params.kind && { kind: params.kind }),
+        ...(params.range && { range: params.range }),
+        ...(params.from && { from: params.from }),
+        ...(params.to && { to: params.to }),
+      },
+      // Repeat the parameter (?accountId=a&accountId=b), not accountId[]=a.
+      paramsSerializer: { indexes: null },
+    }
   );
   return response.data.data;
 };
