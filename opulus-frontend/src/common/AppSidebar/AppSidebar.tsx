@@ -53,6 +53,7 @@ const navMain: NavItem[] = [
     url: '/investments',
     icon: TrendingUp,
     opensUrl: true,
+    carriedSearch: ['account', 'range', 'from', 'to'],
     items: [
       { title: 'Overview', url: '/investments', exact: true },
       { title: 'Holdings', url: '/investments/holdings' },

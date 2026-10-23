@@ -32,6 +32,11 @@ export interface NavItem {
   items?: { title: string; url: string; exact?: boolean }[];
   /** Clicking the group also opens its own `url`, besides expanding it. */
   opensUrl?: boolean;
+  /**
+   * Search params the group's pages share (filters): moving between its pages
+   * keeps them as they are in the address, and drops the page's other state.
+   */
+  carriedSearch?: string[];
 }
 
 function isPathActive(pathname: string, url: string, exact = false) {
@@ -41,11 +46,27 @@ function isPathActive(pathname: string, url: string, exact = false) {
   );
 }
 
+/** The entries of a search object that are in `keys`. */
+function pick(search: Record<string, unknown>, keys: string[]) {
+  return Object.fromEntries(
+    Object.entries(search).filter(([key]) => keys.includes(key))
+  );
+}
+
 function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
   const children = item.items ?? [];
   const navigate = useNavigate();
   const hasActiveChild = children.some((child) =>
     isPathActive(pathname, child.url, child.exact)
+  );
+  // The filters of the page the user is on, for the group's other pages.
+  const currentSearch = useRouterState({ select: (s) => s.location.search });
+  const carried = React.useMemo(
+    () =>
+      hasActiveChild && item.carriedSearch
+        ? pick(currentSearch as Record<string, unknown>, item.carriedSearch)
+        : undefined,
+    [hasActiveChild, item.carriedSearch, currentSearch]
   );
   const [open, setOpen] = React.useState(hasActiveChild);
 
@@ -72,7 +93,9 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
             <DropdownMenuLabel>{item.title}</DropdownMenuLabel>
             {children.map((child) => (
               <DropdownMenuItem key={child.title} asChild>
-                <Link to={child.url}>{child.title}</Link>
+                <Link to={child.url} search={carried as never}>
+                  {child.title}
+                </Link>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -112,7 +135,7 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
                   className="h-8"
                   isActive={isPathActive(pathname, child.url, child.exact)}
                 >
-                  <Link to={child.url}>
+                  <Link to={child.url} search={carried as never}>
                     <span>{child.title}</span>
                   </Link>
                 </SidebarMenuSubButton>
