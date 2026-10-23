@@ -178,6 +178,14 @@ export function formatSignedPercent(fraction: number, digits = 1): string {
   return fraction < 0 ? `−${text}` : text;
 }
 
+/** Text and tint for a gain (green) or a loss (red) badge; none for no change. */
+export function gainTone(amount: number): string {
+  if (amount > 0) {
+    return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400';
+  }
+  return amount < 0 ? 'bg-destructive/10 text-destructive' : '';
+}
+
 const ACTIVITY_ICONS: Record<ActivityItemDTO['kind'], LucideIcon> = {
   buy: TrendingUp,
   sell: TrendingDown,
@@ -188,19 +196,20 @@ const ACTIVITY_ICONS: Record<ActivityItemDTO['kind'], LucideIcon> = {
   other: RefreshCw,
 };
 
-/** Text and tint for a gain (green) or a loss (red) badge; none for no change. */
-export function gainTone(amount: number): string {
-  if (amount > 0) {
-    return 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400';
-  }
-  return amount < 0 ? 'bg-destructive/10 text-destructive' : '';
-}
-
 /** What a holding is called in a list: its ticker, or "Cash", or its name. */
 export function holdingTitle(holding: Pick<HoldingDTO, 'security'>): string {
   const { security } = holding;
   if (security.kind === 'cash') return 'Cash';
   return security.tickerSymbol || security.name || 'Unknown security';
+}
+
+/** What a period of payments is called after the amount: "past month", "Oct 1 – Oct 9", "all time". */
+export function periodLabel(
+  data: Pick<HoldingsResponse['data'], 'range' | 'since' | 'until'>
+): string {
+  return data.range === 'custom'
+    ? rangeTitle(data)
+    : rangeTitle(data).toLowerCase();
 }
 
 /** The period of a response as a title: "Past month", "Oct 1 – Oct 9", "All time". */

@@ -34,6 +34,7 @@ import {
   formatSignedPercent,
   gainTone,
   holdingTitle,
+  periodLabel,
   sinceLabel,
   timeUntil,
 } from '@/utils/investmentDisplay';
@@ -160,7 +161,7 @@ const HoldingDetail: React.FC<{
           </section>
         )}
 
-        <Terms holding={view} baseCurrency={baseCurrency} />
+        <Terms holding={view} baseCurrency={baseCurrency} period={data} />
 
         {security.kind === 'option' && (
           <div
@@ -242,10 +243,11 @@ const Muted: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 );
 
 /** The facts that differ by kind of holding. */
-const Terms: React.FC<{ holding: HoldingDTO; baseCurrency: string }> = ({
-  holding,
-  baseCurrency,
-}) => {
+const Terms: React.FC<{
+  holding: HoldingDTO;
+  baseCurrency: string;
+  period: Pick<HoldingsResponse['data'], 'range' | 'since' | 'until'>;
+}> = ({ holding, baseCurrency, period }) => {
   const { security } = holding;
   // No price of one unit for a security we do not price (the value is the institution's).
   const price =
@@ -344,7 +346,7 @@ const Terms: React.FC<{ holding: HoldingDTO; baseCurrency: string }> = ({
       {holding.dividends > 0 && (
         <Row label="Dividends received">
           {formatMoney(holding.dividends, baseCurrency)}
-          <Muted>12 months</Muted>
+          <Muted>{periodLabel(period)}</Muted>
         </Row>
       )}
       <Row label="Share of your portfolio">{formatPercent(holding.share)}</Row>
