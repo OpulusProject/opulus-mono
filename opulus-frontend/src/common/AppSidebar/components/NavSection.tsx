@@ -1,6 +1,6 @@
 'use client';
 
-import { Link, useRouterState } from '@tanstack/react-router';
+import { Link, useNavigate, useRouterState } from '@tanstack/react-router';
 import { ChevronRight, type LucideIcon } from 'lucide-react';
 import * as React from 'react';
 
@@ -29,17 +29,23 @@ export interface NavItem {
   url: string;
   icon?: LucideIcon;
   /** Child links. When present the item renders as an expandable group. */
-  items?: { title: string; url: string }[];
+  items?: { title: string; url: string; exact?: boolean }[];
+  /** Clicking the group also opens its own `url`, besides expanding it. */
+  opensUrl?: boolean;
 }
 
-function isPathActive(pathname: string, url: string) {
-  return url !== '#' && (pathname === url || pathname.startsWith(`${url}/`));
+function isPathActive(pathname: string, url: string, exact = false) {
+  return (
+    url !== '#' &&
+    (pathname === url || (!exact && pathname.startsWith(`${url}/`)))
+  );
 }
 
 function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
   const children = item.items ?? [];
+  const navigate = useNavigate();
   const hasActiveChild = children.some((child) =>
-    isPathActive(pathname, child.url)
+    isPathActive(pathname, child.url, child.exact)
   );
   const [open, setOpen] = React.useState(hasActiveChild);
 
@@ -79,7 +85,15 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
     <Collapsible open={open} onOpenChange={setOpen} asChild>
       <SidebarMenuItem>
         <CollapsibleTrigger asChild>
-          <SidebarMenuButton tooltip={item.title}>
+          <SidebarMenuButton
+            tooltip={item.title}
+            onClick={() => {
+              // Already on one of its pages, the click only folds the group.
+              if (item.opensUrl && !hasActiveChild) {
+                void navigate({ to: item.url });
+              }
+            }}
+          >
             {item.icon && <item.icon />}
             <span>{item.title}</span>
             <ChevronRight
@@ -96,7 +110,7 @@ function NavGroup({ item, pathname }: { item: NavItem; pathname: string }) {
                 <SidebarMenuSubButton
                   asChild
                   className="h-8"
-                  isActive={isPathActive(pathname, child.url)}
+                  isActive={isPathActive(pathname, child.url, child.exact)}
                 >
                   <Link to={child.url}>
                     <span>{child.title}</span>
