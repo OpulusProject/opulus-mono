@@ -106,6 +106,43 @@ class SecurityPriceRepository {
   }
 
   /**
+   * Each security's last stored price on or before a day: what it was worth then.
+   * A security with no price that early is absent.
+   * @param securityIds - Our security ids
+   * @param day - "YYYY-MM-DD"
+   * @throws AppError if database error occurs
+   */
+  async getOn(
+    securityIds: string[],
+    day: string
+  ): Promise<Map<string, LatestPrice>> {
+    if (securityIds.length === 0) return new Map();
+    try {
+      const rows = await this.prisma.securityPrice.findMany({
+        where: {
+          securityId: { in: securityIds },
+          date: { lte: new Date(`${day}T00:00:00Z`) },
+        },
+        distinct: ["securityId"],
+        orderBy: [{ securityId: "asc" }, { date: "desc" }],
+        select: { securityId: true, close: true, currency: true, asOf: true },
+      });
+      return new Map(
+        rows.map((row) => [
+          row.securityId,
+          {
+            price: row.close.toNumber(),
+            currency: row.currency,
+            asOf: row.asOf,
+          },
+        ])
+      );
+    } catch (error) {
+      throw wrap(error, "get security prices");
+    }
+  }
+
+  /**
    * Store a security's latest quote as the price of its trading day, replacing
    * the earlier quote of the day.
    * @param source - The provider the quote is from

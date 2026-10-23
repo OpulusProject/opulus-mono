@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { holdingKind, Prisma, STALE_PRICE_DAYS, toHoldingsDTO } from "@opulus/core";
+import { holdingKind, holdingsRangeStart, Prisma, STALE_PRICE_DAYS, toHoldingsDTO } from "@opulus/core";
 
 const D = (n: number | string) => new Prisma.Decimal(n);
 type Rows = Parameters<typeof toHoldingsDTO>[0];
@@ -58,6 +58,14 @@ const toBase = (rates: Record<string, number>) => (currency: string | null) => (
  * - a holding's gain is also given in the base currency, at today's rate
  * - the gain ranking is the holdings that earned the most, in the base currency and not as a fraction, without those that have no cost basis
  * - an account with no holdings is counted by its balance, as "balance"
+ * - a range starts a day, week, month or year back (clamped to the month's last day), or on 1 January, and "all" has no start
+ * - over a range, a holding's gain is its value minus its value at the start, with no buys in the range counted as a gain and no sells as a loss
+ * - over a range, a holding bought entirely in it is measured against what was paid
+ * - over a range, a holding with no price at the start, or no price of ours, has no gain
+ * - a custom range starts on its first day, or today without one
+ * - a custom range that ended before today measures the gain up to its last day, from the quantity held and the price then
+ * - a custom range that ended before today gives no gain for a holding with no price on its last day
+ * - the response names its range, first day and last day
  */
 test.describe("holdings DTO", () => {
   test("a holding's gain is its value minus its cost basis, with the gain as a fraction of the basis", () => {
@@ -106,6 +114,9 @@ test.describe("holdings DTO", () => {
   test("an empty list gives an empty, zero summary with no percentage", () => {
     expect(toHoldingsDTO([], { baseCurrency: "CAD", rateOn: toBase({}) })).toEqual({
       baseCurrency: "CAD",
+      range: "all",
+      since: null,
+      until: null,
       summary: {
         value: 0, accountCount: 0, holdingCount: 0, allocation: [], currencies: [], topHoldingsShare: 0,
         dividends: 0, dividendYield: 0, totalReturn: 0, totalReturnPercent: null, gainRanking: [],
@@ -284,5 +295,95 @@ test.describe("holdings DTO", () => {
     expect(summary.value).toBe(1200);
     expect(summary.allocation.map((a) => a.kind)).toEqual(["balance", "stock"]);
     expect(accounts.map((a) => [a.id, a.value, a.hasHoldings])).toEqual([["resp", 1100, false], ["acct-1", 100, true]]);
+  });
+
+  const price = (n: number) => ({ price: n, currency: "USD", asOf: new Date("2026-10-23T00:00:00Z") });
+  const trade = (quantity: number, amount: number) => ({ accountId: "acct-1", date: new Date("2026-10-01T00:00:00Z"), securityId: "sec-1", quantity: D(quantity), amount: D(amount), isoCurrencyCode: "USD" });
+  const over = (opts: { quantity?: number; now: number; start?: number; trades?: ReturnType<typeof trade>[] }) =>
+    toHoldingsDTO([row({ value: 0, basis: 500 })], {
+      baseCurrency: "USD",
+      rateOn: toBase({}),
+      now: new Date("2026-10-23T12:00:00Z"),
+      range: "month",
+      prices: new Map([["sec-1", price(opts.now)]]),
+      startPrices: opts.start === undefined ? new Map() : new Map([["sec-1", price(opts.start)]]),
+      trades: opts.trades ?? [],
+    });
+
+  test("a range starts a day, week, month or year back (clamped to the month's last day), or on 1 January, and \"all\" has no start", () => {
+    expect(holdingsRangeStart("day", "2026-03-01")).toBe("2026-02-28");
+    expect(holdingsRangeStart("week", "2026-03-03")).toBe("2026-02-24");
+    expect(holdingsRangeStart("month", "2026-03-31")).toBe("2026-02-28");
+    expect(holdingsRangeStart("month", "2026-01-15")).toBe("2025-12-15");
+    expect(holdingsRangeStart("year", "2028-02-29")).toBe("2027-02-28");
+    expect(holdingsRangeStart("ytd", "2026-10-23")).toBe("2026-01-01");
+    expect(holdingsRangeStart("all", "2026-10-23")).toBeNull();
+  });
+
+  test("over a range, a holding's gain is its value minus its value at the start, with no buys in the range counted as a gain and no sells as a loss", () => {
+    // 10 shares now at 110; 4 of them were bought in the range for 400, so 6 started it at 90.
+    const { holdings, summary, range, since } = over({ now: 110, start: 90, trades: [trade(4, 400)] });
+
+    // 1100 now - (6 * 90 + 400) = 160, of the 940 it started with and put in.
+    expect(holdings[0]).toMatchObject({ value: 1100, costBasis: 500, gain: 160 });
+    expect(holdings[0]!.gainPercent).toBeCloseTo(160 / 940);
+    expect(summary).toMatchObject({ costBasis: 940, gain: 160 });
+
+    // 2 shares sold for 220 leave 10 at 110, so 12 started it: 1100 - (12 * 90 - 220) = 240.
+    expect(over({ now: 110, start: 90, trades: [trade(-2, -220)] }).holdings[0]!.gain).toBe(240);
+    expect([range, since]).toEqual(["month", "2026-09-23"]);
+  });
+
+  test("over a range, a holding bought entirely in it is measured against what was paid", () => {
+    const { holdings } = over({ now: 110, trades: [trade(10, 1000)] });
+
+    expect(holdings[0]).toMatchObject({ gain: 100, gainPercent: 0.1 });
+  });
+
+  test("over a range, a holding with no price at the start, or no price of ours, has no gain", () => {
+    expect(over({ now: 110 }).holdings[0]).toMatchObject({ gain: null, gainPercent: null });
+
+    const { holdings, summary } = toHoldingsDTO([row({ value: 1000, basis: 800 })], { baseCurrency: "USD", rateOn: toBase({}), range: "week" });
+    expect(holdings[0]).toMatchObject({ gain: null });
+    expect(summary.holdingsWithoutCostBasis).toBe(1);
+  });
+
+  test("the response names its range and first day", () => {
+    expect(toHoldingsDTO([], { baseCurrency: "USD", rateOn: toBase({}) })).toMatchObject({ range: "all", since: null, until: null });
+    expect(over({ now: 110, start: 90 })).toMatchObject({ range: "month", since: "2026-09-23", until: "2026-10-23" });
+  });
+
+  test("a custom range starts on its first day, or today without one", () => {
+    expect(holdingsRangeStart("custom", "2026-10-23", "2026-01-05")).toBe("2026-01-05");
+    expect(holdingsRangeStart("custom", "2026-10-23")).toBe("2026-10-23");
+  });
+
+  const customOver = (opts: { end?: number; trades: ReturnType<typeof trade>[] }) =>
+    toHoldingsDTO([row({ value: 0, basis: 500 })], {
+      baseCurrency: "USD",
+      rateOn: toBase({}),
+      now: new Date("2026-10-23T12:00:00Z"),
+      range: "custom",
+      from: "2026-03-01",
+      until: "2026-03-31",
+      prices: new Map([["sec-1", price(200)]]),
+      startPrices: new Map([["sec-1", price(90)]]),
+      endPrices: opts.end === undefined ? new Map() : new Map([["sec-1", price(opts.end)]]),
+      trades: opts.trades,
+    });
+  const dated = (day: string, quantity: number, amount: number) => ({ ...trade(quantity, amount), date: new Date(`${day}T00:00:00Z`) });
+
+  test("a custom range that ended before today measures the gain up to its last day, from the quantity held and the price then", () => {
+    // 10 shares now; 5 were bought on 10 March for 500 and 2 more on 15 April (after the range): 8 at the end of March, 3 at the start.
+    const { holdings, since, until } = customOver({ end: 100, trades: [dated("2026-03-10", 5, 500), dated("2026-04-15", 2, 400)] });
+
+    // 8 * 100 = 800 at the end; it started with 3 * 90 = 270 and put in 500, so it made 30.
+    expect(holdings[0]).toMatchObject({ value: 2000, gain: 30 });
+    expect(holdings[0]!.gainPercent).toBeCloseTo(30 / 770);
+    expect([since, until]).toEqual(["2026-03-01", "2026-03-31"]);
+  });
+
+  test("a custom range that ended before today gives no gain for a holding with no price on its last day", () => {
+    expect(customOver({ trades: [] }).holdings[0]).toMatchObject({ gain: null, gainPercent: null });
   });
 });

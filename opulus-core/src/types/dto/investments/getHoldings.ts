@@ -5,8 +5,73 @@
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
+import { addDays, toDay } from "../../../utils/day.js";
 import { fromUnits, toUnits } from "../../../utils/money.js";
 import { IsoTimestampSchema, toIsoString } from "../common.js";
+
+/** The presets of the period the holdings' gain is over, counting back from today. */
+export const HOLDINGS_PRESETS = [
+  "day",
+  "week",
+  "month",
+  "year",
+  "ytd",
+] as const;
+
+/**
+ * The periods the holdings' gain can be looked at over: a preset, `custom` (a
+ * first and last day), or `all`, since purchase.
+ */
+export const HOLDINGS_RANGES = [...HOLDINGS_PRESETS, "custom", "all"] as const;
+export const HoldingsRangeSchema = z.enum(HOLDINGS_RANGES);
+export type HoldingsRange = z.infer<typeof HoldingsRangeSchema>;
+
+/**
+ * The first day of a range, counting back from `today` ("YYYY-MM-DD"); null for
+ * `all`, which has no start. A custom range starts on `from` (today without one).
+ */
+export function holdingsRangeStart(
+  range: HoldingsRange,
+  today: string,
+  from?: string
+): string | null {
+  switch (range) {
+    case "day":
+      return addDays(today, -1);
+    case "week":
+      return addDays(today, -7);
+    case "month": {
+      // The same day a month back, or the month's last day when it has none.
+      const [year, month, day] = today.split("-").map(Number) as [
+        number,
+        number,
+        number,
+      ];
+      const lastDay = new Date(Date.UTC(year, month - 1, 0)).getUTCDate();
+      return new Date(Date.UTC(year, month - 2, Math.min(day, lastDay)))
+        .toISOString()
+        .slice(0, 10);
+    }
+    case "year": {
+      const [year, month, day] = today.split("-").map(Number) as [
+        number,
+        number,
+        number,
+      ];
+      // 29 February a year back becomes 28 February.
+      const lastDay = new Date(Date.UTC(year - 1, month, 0)).getUTCDate();
+      return new Date(Date.UTC(year - 1, month - 1, Math.min(day, lastDay)))
+        .toISOString()
+        .slice(0, 10);
+    }
+    case "ytd":
+      return `${today.slice(0, 4)}-01-01`;
+    case "custom":
+      return from ?? today;
+    case "all":
+      return null;
+  }
+}
 
 /**
  * What a holding is, in the terms the page groups by. Derived from Plaid's
@@ -109,7 +174,11 @@ export const HoldingDTOSchema = z.object({
   costBasis: z.number().nullable(),
   /** `costBasis` for one unit, in `currency`; null without a cost basis or a quantity. */
   averageCost: z.number().nullable(),
-  /** `value` minus `costBasis` (negative for a loss); null without a cost basis. */
+  /**
+   * `value` minus what it is measured against: `costBasis` for the whole range,
+   * otherwise its value at the start of the range plus what was put in since
+   * (negative for a loss); null when that is unknown.
+   */
   gain: z.number().nullable(),
   /** `gain` in the base currency, at today's rate; null without a cost basis. */
   gainInBase: z.number().nullable(),
@@ -245,6 +314,12 @@ export type HoldingsSummaryDTO = z.infer<typeof HoldingsSummaryDTOSchema>;
 export const HoldingsResponseSchema = z.object({
   data: z.object({
     baseCurrency: z.string(),
+    /** The period the gains are over. */
+    range: HoldingsRangeSchema,
+    /** The first day of `range` ("YYYY-MM-DD"); null for `all`. */
+    since: z.string().nullable(),
+    /** The last day of `range`: today unless a custom range ends earlier; null for `all`. */
+    until: z.string().nullable(),
     summary: HoldingsSummaryDTOSchema,
     /** The user's investment accounts, largest first. */
     accounts: z.array(HoldingsAccountDTOSchema),
@@ -285,6 +360,21 @@ export interface DividendRow {
   isoCurrencyCode: string | null;
 }
 
+/**
+ * A buy, sell or transfer of a security in the range, for working out what a
+ * holding was worth at its start and what was put in since.
+ */
+export interface TradeRow {
+  accountId: string;
+  date: Date;
+  securityId: string;
+  /** Units bought or moved in (positive) or sold or moved out (negative). */
+  quantity: Prisma.Decimal;
+  /** Plaid's sign: money out of the account is positive, so a buy is positive. */
+  amount: Prisma.Decimal;
+  isoCurrencyCode: string | null;
+}
+
 /** A security's latest price, as stored. */
 export interface SecurityPriceRow {
   price: number;
@@ -313,6 +403,24 @@ export interface HoldingsOptions {
   prices?: ReadonlyMap<string, SecurityPriceRow>;
   /** The current moment, for telling a price is old. */
   now?: Date;
+  /** The period the gains are over; the whole time held when omitted. */
+  range?: HoldingsRange;
+  /**
+   * With a range other than `all`: the buys, sells and transfers since its start,
+   * and each security's last price on or before that day (the quantity and price
+   * the holding started it with). A holding with no start price has no gain.
+   */
+  trades?: TradeRow[];
+  startPrices?: ReadonlyMap<string, SecurityPriceRow>;
+  /**
+   * The last day of the range, when it is before today: the gain is then up to
+   * that day, from the quantity held and the price then (`endPrices`, each
+   * security's last on or before it). A holding with no price then has no gain.
+   */
+  until?: string | null;
+  /** The first day of a `custom` range (for the response's `since`). */
+  from?: string;
+  endPrices?: ReadonlyMap<string, SecurityPriceRow>;
 }
 
 /** A price older than this many days is flagged (a long weekend is four). */
@@ -371,6 +479,12 @@ export function toHoldingsDTO(
     dividends = [],
     prices = new Map(),
     now = new Date(),
+    range = "all",
+    trades = [],
+    startPrices = new Map(),
+    until = null,
+    from,
+    endPrices = new Map(),
   }: HoldingsOptions
 ): HoldingsResponse["data"] {
   let value = 0;
@@ -409,6 +523,13 @@ export function toHoldingsDTO(
     }
   }
 
+  // Over a range, a holding's gain is measured from where it started the range.
+  const tradesByHolding = new Map<string, TradeRow[]>();
+  for (const trade of trades) {
+    const key = `${trade.accountId}:${trade.securityId}`;
+    tradesByHolding.set(key, [...(tradesByHolding.get(key) ?? []), trade]);
+  }
+
   const holdings = rows.map((row) => {
     // Our price of the security when we have one, in the holding's currency
     // (its own, or the price's when it names none). Otherwise the institution's.
@@ -429,11 +550,58 @@ export function toHoldingsDTO(
     // price is in another one we cannot tell which the institution meant (it
     // sometimes labels a US security's holding in dollars it did not use), so
     // a gain would be a guess: there is none.
-    const basis = ours && ours.currency !== currency ? null : rowBasis;
+    const sameCurrency = !ours || ours.currency === currency;
+    let basis = sameCurrency ? rowBasis : null;
+    // What the gain is up to: the holding's value now, or its value on the last
+    // day of a range that ended earlier.
+    let endValue = rowValue;
+    if (range !== "all") {
+      // What the holding was worth when the range began, plus what was put in
+      // during it (a buy adds, a sell takes away), so only the price's move counts.
+      const started = startPrices.get(row.security.id);
+      const moves =
+        tradesByHolding.get(`${row.accountId}:${row.security.id}`) ?? [];
+      const inRange = moves.filter(
+        (t) => until === null || toDay(t.date) <= until
+      );
+      const quantityOf = (trades: TradeRow[]) =>
+        trades.reduce((sum, t) => sum + t.quantity.toNumber(), 0);
+      const quantityBefore = Math.max(0, quantity - quantityOf(moves));
+      const quantityEnd = Math.max(
+        0,
+        quantity - quantityOf(moves.filter((t) => !inRange.includes(t)))
+      );
+      const invested = inRange.reduce(
+        (sum, t) =>
+          sum + t.amount.toNumber() * (rateOn(t.isoCurrencyCode) / rate),
+        0
+      );
+      const inCurrency = (price: SecurityPriceRow) =>
+        price.currency === currency
+          ? price.price
+          : price.price * (rateOn(price.currency) / rate);
+      const ended = endPrices.get(row.security.id);
+      if (
+        !ours ||
+        !sameCurrency ||
+        (quantityBefore > 0 && !started) ||
+        (until !== null && quantityEnd > 0 && !ended)
+      ) {
+        basis = null;
+      } else {
+        basis = round(
+          quantityBefore * (started ? inCurrency(started) : 0) + invested
+        );
+        if (until !== null) {
+          endValue = round(quantityEnd * (ended ? inCurrency(ended) : 0));
+        }
+      }
+    }
     const valueInBase = round(rowValue * rate);
     const kind = holdingKind(row.security.type, row.security.isCashEquivalent);
 
     const units = toUnits(rowValue * rate);
+    const endUnits = toUnits(endValue * rate);
     value += units;
     add(byKind, kind, units);
     add(byCurrency, currency ?? baseCurrency, units);
@@ -447,14 +615,14 @@ export function toHoldingsDTO(
       withoutBasis += 1;
     } else {
       costBasis += toUnits(basis * rate);
-      valueWithBasis += units;
+      valueWithBasis += endUnits;
       account.costBasis += toUnits(basis * rate);
-      account.valueWithBasis += units;
+      account.valueWithBasis += endUnits;
     }
     byAccount.set(row.accountId, account);
 
-    const gain = basis === null ? null : round(rowValue - basis);
-    const gainUnits = basis === null ? null : units - toUnits(basis * rate);
+    const gain = basis === null ? null : round(endValue - basis);
+    const gainUnits = basis === null ? null : endUnits - toUnits(basis * rate);
     const stale =
       ours !== undefined &&
       now.getTime() - ours.asOf.getTime() > STALE_PRICE_DAYS * DAY_MS;
@@ -511,7 +679,7 @@ export function toHoldingsDTO(
       basisUnits: basis === null ? null : toUnits(basis * rate),
       gainInBase: gainUnits === null ? null : fromUnits(gainUnits),
       gainPercent:
-        basis === null || basis === 0 ? null : (rowValue - basis) / basis,
+        basis === null || basis === 0 ? null : (endValue - basis) / basis,
     };
   });
 
@@ -629,6 +797,9 @@ export function toHoldingsDTO(
     .map((holding) => holding.id);
   return {
     baseCurrency,
+    range,
+    since: holdingsRangeStart(range, toDay(now), from),
+    until: range === "all" ? null : (until ?? toDay(now)),
     summary: {
       value: fromUnits(value),
       accountCount: accountRows.length,
