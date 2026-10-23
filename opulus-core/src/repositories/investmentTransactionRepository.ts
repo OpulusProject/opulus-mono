@@ -265,15 +265,15 @@ class InvestmentTransactionRepository {
    * The dividends, interest and capital gains paid to a user since a day, for
    * adding up per holding and in total.
    * @param userId - The user
-   * @param since - First day (inclusive)
+   * @param since - First day (inclusive); null for every payment stored
    * @throws AppError if database error occurs
    */
-  async getDividendsSince(userId: string, since: Date) {
+  async getDividendsSince(userId: string, since: Date | null) {
     try {
       return await this.prisma.investmentTransaction.findMany({
         where: {
           userId,
-          date: { gte: since },
+          date: since ? { gte: since } : undefined,
           type: "cash",
           subtype: { in: DIVIDEND_SUBTYPES },
         },

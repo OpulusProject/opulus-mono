@@ -431,7 +431,7 @@ test.describe("GET /api/investments/holdings", () => {
     });
   });
 
-  test("gives the dividends of the last twelve months in total and per holding, the dividend yield, and the total return (gain plus dividends)", async ({ request }) => {
+  test("gives the dividends of the range in total and per holding, the dividend yield, and the total return (gain plus dividends), every payment we have for all time", async ({ request }) => {
     // Arrange: 1,000 worth, 800 paid (gain 200); XIC paid 30 + 20 this year and 99 two years ago; a 10 USD interest payment (12.50 CAD) belongs to no holding.
     const { cookie, userId, item } = await setup(request);
     const base = { userId, itemId: item.itemId, accountId: item.accountId };
@@ -445,13 +445,16 @@ test.describe("GET /api/investments/holdings", () => {
     await seedInvestmentTransaction({ ...base, type: "buy", amount: 500, securityId: xic.securityId });
 
     // Act
-    const { summary, holdings } = await getHoldings(request, cookie);
+    const all = await getHoldings(request, cookie);
+    const year = await getHoldings(request, cookie, "?range=year");
 
-    // Assert
-    expect(holdings[0]!.dividends).toBe(50);
-    expect(summary).toMatchObject({ gain: 200, dividends: 62.5, totalReturn: 262.5 });
-    expect(summary.dividendYield).toBeCloseTo(62.5 / 1000, 6);
-    expect(summary.totalReturnPercent).toBeCloseTo(262.5 / 800, 10);
+    // Assert: all time counts the payment from two years ago, a year does not.
+    expect(all.holdings[0]!.dividends).toBe(149);
+    expect(all.summary).toMatchObject({ gain: 200, dividends: 161.5, totalReturn: 361.5 });
+    expect(all.summary.dividendYield).toBeCloseTo(161.5 / 1000, 6);
+    expect(all.summary.totalReturnPercent).toBeCloseTo(361.5 / 800, 10);
+    expect(year.holdings[0]!.dividends).toBe(50);
+    expect(year.summary.dividends).toBe(62.5);
   });
 
   test("ranks the holdings by what they earned (in CAD, not as a fraction), largest first, leaving out those without a cost basis", async ({ request }) => {
