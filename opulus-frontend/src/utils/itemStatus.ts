@@ -1,4 +1,7 @@
+import { NO_ACCOUNTS_ERROR_CODE } from '@opulus/core/dto';
+
 import type { StatusVariant } from '@/components/ui';
+import type { UpdateMode } from '@/hooks/linkTokens/useLinkToken';
 import type { Notice } from '@/types/notice';
 
 /**
@@ -37,6 +40,8 @@ export interface ItemStatus {
   label: string;
   inlineText: string | null;
   ctaLabel: string | null;
+  /** The Link session the call to action opens (set whenever `ctaLabel` is). */
+  ctaMode: UpdateMode | null;
 }
 
 export function getItemStatus(errorCode: string | null): ItemStatus {
@@ -46,6 +51,19 @@ export function getItemStatus(errorCode: string | null): ItemStatus {
       label: 'Connected',
       inlineText: null,
       ctaLabel: null,
+      ctaMode: null,
+    };
+  }
+
+  // Red — nothing is shared any more (derived by the API, not a Plaid error).
+  // Adding accounts brings the connection back.
+  if (errorCode === NO_ACCOUNTS_ERROR_CODE) {
+    return {
+      variant: 'offline',
+      label: 'No accounts',
+      inlineText: 'No accounts',
+      ctaLabel: 'Add accounts',
+      ctaMode: 'add-accounts',
     };
   }
 
@@ -59,6 +77,7 @@ export function getItemStatus(errorCode: string | null): ItemStatus {
       label: 'Pending disconnect',
       inlineText: 'Pending disconnect',
       ctaLabel: 'Reconnect',
+      ctaMode: 'reconnect',
     };
   }
 
@@ -69,6 +88,7 @@ export function getItemStatus(errorCode: string | null): ItemStatus {
       label: 'Login required',
       inlineText: 'Login required',
       ctaLabel: 'Reconnect',
+      ctaMode: 'reconnect',
     };
   }
 
@@ -82,6 +102,7 @@ export function getItemStatus(errorCode: string | null): ItemStatus {
       label: 'Institution unavailable',
       inlineText: 'Institution unavailable',
       ctaLabel: null,
+      ctaMode: null,
     };
   }
 
@@ -92,6 +113,7 @@ export function getItemStatus(errorCode: string | null): ItemStatus {
       label: 'Not supported',
       inlineText: 'Not supported',
       ctaLabel: null,
+      ctaMode: null,
     };
   }
 
@@ -101,6 +123,7 @@ export function getItemStatus(errorCode: string | null): ItemStatus {
     label: 'Unknown error',
     inlineText: 'Unknown error',
     ctaLabel: null,
+    ctaMode: null,
   };
 }
 

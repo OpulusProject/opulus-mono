@@ -8,6 +8,14 @@ import { AccountDTOSchema, toAccountDTO } from "../accounts/account.js";
 import { IsoTimestampSchema, toIsoString } from "../common.js";
 
 /**
+ * The `errorCode` of an item that has no accounts left (the user stopped sharing
+ * them all, or they were closed). It is not one of Plaid's: it is worked out
+ * from the item having no accounts, never stored, so an item with no accounts
+ * shows a warning and can be given accounts again instead of looking healthy.
+ */
+export const NO_ACCOUNTS_ERROR_CODE = "NO_ACCOUNTS_SHARED";
+
+/**
  * Item (a connection to an institution) as returned by the API
  * Only includes fields safe to expose to the client
  */
@@ -17,6 +25,7 @@ export const ItemDTOSchema = z.object({
   institutionLogo: z.string().nullable(),
   institutionColor: z.string().nullable(),
   errorType: z.string().nullable(), // Plaid's error type, e.g. "ITEM_ERROR"
+  // Plaid's error code, or NO_ACCOUNTS_SHARED when the item has no accounts and Plaid reports no error
   errorCode: z.string().nullable(),
   errorMessage: z.string().nullable(),
   displayMessage: z.string().nullable(),
@@ -64,7 +73,9 @@ export function toItemDTO(item: {
     institutionLogo: item.institutionLogo,
     institutionColor: item.institutionColor,
     errorType: item.errorType,
-    errorCode: item.errorCode,
+    errorCode:
+      item.errorCode ??
+      (item.accounts.length === 0 ? NO_ACCOUNTS_ERROR_CODE : null),
     errorMessage: item.errorMessage,
     displayMessage: item.displayMessage,
     newAccountsAvailable: item.newAccountsAvailable,
