@@ -40,13 +40,13 @@ async function getActivity(request: Parameters<typeof createAuthedUser>[0], cook
  * - gives an item's security, account and institution
  * - classifies cash by subtype: dividend and interest as dividends, deposits and contributions as added, withdrawals as removed, the rest as other
  * - filters by kind, including other
- * - filters by account
+ * - filters by account, and by several accounts given repeatedly
  * - filters by security
- * - filters by dates, inclusive of both days
+ * - filters by a custom range, inclusive of both days, and by a preset
  * - converts a USD amount to CAD at today's rate
  * - pages the list and counts the total
  * - contains only the requesting user's activity
- * - rejects an unknown kind, a bad date and an empty accountId (validation)
+ * - rejects an unknown kind, a bad range or day, a custom range without a start, a range that ends before it starts and an empty accountId (validation)
  */
 test.describe("GET /api/investments/activity", () => {
   test.beforeAll(async () => {
@@ -179,6 +179,22 @@ test.describe("GET /api/investments/activity", () => {
     expect(items.map((i) => i.description)).toEqual(["there"]);
   });
 
+  test("filters by several accounts given repeatedly", async ({ request }) => {
+    // Arrange
+    const { cookie, userId, base } = await setup(request);
+    const second = await seedItemWithAccount(userId, { account: { type: "investment" } });
+    const third = await seedItemWithAccount(userId, { account: { type: "investment" } });
+    await seedInvestmentTransaction({ ...base, type: "buy", amount: 1, name: "first" });
+    await seedInvestmentTransaction({ userId, itemId: second.itemId, accountId: second.accountId, type: "buy", amount: 1, name: "second" });
+    await seedInvestmentTransaction({ userId, itemId: third.itemId, accountId: third.accountId, type: "buy", amount: 1, name: "third" });
+
+    // Act
+    const { items } = await getActivity(request, cookie, `?accountId=${base.accountId}&accountId=${third.accountId}`);
+
+    // Assert
+    expect(items.map((i) => i.description).sort()).toEqual(["first", "third"]);
+  });
+
   test("filters by security", async ({ request }) => {
     // Arrange
     const { cookie, base } = await setup(request);
@@ -193,7 +209,7 @@ test.describe("GET /api/investments/activity", () => {
     expect(items.map((i) => i.description)).toEqual(["apple"]);
   });
 
-  test("filters by dates, inclusive of both days", async ({ request }) => {
+  test("filters by a custom range, inclusive of both days, and by a preset", async ({ request }) => {
     // Arrange
     const { cookie, base } = await setup(request);
     for (const [name, offset] of [["before", -10], ["first", -5], ["middle", -3], ["last", -1], ["after", 0]] as const) {
@@ -201,10 +217,12 @@ test.describe("GET /api/investments/activity", () => {
     }
 
     // Act
-    const { items } = await getActivity(request, cookie, `?startDate=${day(-5)}&endDate=${day(-1)}`);
+    const custom = await getActivity(request, cookie, `?range=custom&from=${day(-5)}&to=${day(-1)}`);
+    const week = await getActivity(request, cookie, "?range=week");
 
     // Assert
-    expect(items.map((i) => i.description)).toEqual(["last", "middle", "first"]);
+    expect(custom.items.map((i) => i.description)).toEqual(["last", "middle", "first"]);
+    expect(week.items.map((i) => i.description)).toEqual(["after", "last", "middle", "first"]);
   });
 
   test("converts a USD amount to CAD at today's rate", async ({ request }) => {
@@ -249,10 +267,10 @@ test.describe("GET /api/investments/activity", () => {
     expect(byId.items).toEqual([]);
   });
 
-  test("rejects an unknown kind, a bad date and an empty accountId (validation)", async ({ request }) => {
+  test("rejects an unknown kind, a bad range or day, a custom range without a start, a range that ends before it starts and an empty accountId (validation)", async ({ request }) => {
     const { cookie } = await createAuthedUser(request);
 
-    for (const query of ["?kind=gifts", "?startDate=garbage", "?accountId=", "?limit=1000"]) {
+    for (const query of ["?kind=gifts", "?range=forever", "?range=custom", "?range=custom&from=garbage", `?range=custom&from=${day(-1)}&to=${day(-5)}`, "?accountId=", "?limit=1000"]) {
       await expectValidationError(await request.get(`/api/investments/activity${query}`, { headers: withSession(cookie) }));
     }
   });
