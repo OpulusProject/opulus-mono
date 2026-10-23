@@ -19,21 +19,36 @@ import { formatDay } from '@/utils/day';
 
 import { dayNetLabel, groupByDay } from './transactionDays';
 import { TransactionFilters } from './TransactionFilters';
+import { TransactionsAccountFilter } from './TransactionsAccountFilter';
+import { TransactionsDateFilter } from './TransactionsDateFilter';
 import { TransactionSearch } from './TransactionSearch';
 import { useTransactionFilters } from './useTransactionFilters';
 
-export const Transactions: React.FC = () => (
-  <Page
-    title="Transactions"
-    description="Search everything you've spent and received."
-    requiresConnections={{
-      title: 'No transactions yet',
-      description: 'Connect an account to see your transactions here.',
-    }}
-  >
-    <TransactionsContent />
-  </Page>
-);
+export const Transactions: React.FC = () => {
+  const { search, update } = useTransactionFilters();
+
+  return (
+    <Page
+      title="Transactions"
+      description="Search everything you've spent and received."
+      requiresConnections={{
+        title: 'No transactions yet',
+        description: 'Connect an account to see your transactions here.',
+      }}
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          <TransactionsDateFilter search={search} onChange={update} />
+          <TransactionsAccountFilter
+            selected={search.account ?? []}
+            onChange={(account) => update({ account })}
+          />
+        </div>
+      }
+    >
+      <TransactionsContent />
+    </Page>
+  );
+};
 
 // Its own component so that its queries wait until the page knows something is
 // connected.

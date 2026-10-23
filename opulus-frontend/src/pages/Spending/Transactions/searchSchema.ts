@@ -19,7 +19,7 @@ const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
  */
 export const transactionsSearchSchema = z.object({
   q: z.string().max(100).optional().catch(undefined),
-  /** How far back to look; none means all time. */
+  /** How far back to look; none means all time. Shared by the Spending pages. */
   range: z
     .enum(['today', '7d', '30d', 'year', 'custom'])
     .optional()
@@ -27,8 +27,8 @@ export const transactionsSearchSchema = z.object({
   /** The first and last day of a custom range. */
   from: day.optional().catch(undefined),
   to: day.optional().catch(undefined),
-  /** Institutions (our item ids). */
-  institution: z.array(z.string()).optional().catch(undefined),
+  /** Only these accounts (our account ids); none is all of them. */
+  account: z.array(z.string()).optional().catch(undefined),
   category: z
     .array(z.enum([...TRANSACTION_CATEGORIES, 'UNCATEGORIZED']))
     .optional()

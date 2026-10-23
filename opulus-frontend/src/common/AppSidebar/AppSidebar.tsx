@@ -2,7 +2,6 @@
 
 import { Link } from '@tanstack/react-router';
 import {
-  ArrowLeftRight,
   CreditCard,
   GemIcon,
   Landmark,
@@ -34,14 +33,12 @@ const navMain: NavItem[] = [
     icon: LayoutDashboard,
   },
   {
-    title: 'Transactions',
-    url: '/transactions',
-    icon: ArrowLeftRight,
-  },
-  {
     title: 'Spending',
-    url: '/spending',
+    url: '/spending/transactions',
     icon: PieChart,
+    opensUrl: true,
+    carriedSearch: ['account', 'range', 'from', 'to'],
+    items: [{ title: 'Transactions', url: '/spending/transactions' }],
   },
   {
     title: 'Accounts',

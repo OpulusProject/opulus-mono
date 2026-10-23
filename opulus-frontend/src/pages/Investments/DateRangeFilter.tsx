@@ -1,14 +1,8 @@
 import { HOLDINGS_PRESETS, type HoldingsRange } from '@opulus/core/dto';
-import { CalendarDays, ChevronDown } from 'lucide-react';
 import * as React from 'react';
 
-import { DateRangePanel, type DateRangeValue } from '@/common/DateRangePanel';
-import {
-  Button,
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui';
+import { DateRangeFilter as DateRangeFilterMenu } from '@/common/DateRangeFilter';
+import { type DateRangeValue } from '@/common/DateRangePanel';
 import { toDay } from '@/utils/dateRange';
 import { rangeTitle } from '@/utils/investmentDisplay';
 
@@ -38,7 +32,6 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   search,
   onChange,
 }) => {
-  const [open, setOpen] = React.useState(false);
   const period = holdingsPeriod(search);
   const range: HoldingsRange = period.range ?? 'all';
   const label = rangeTitle({
@@ -53,33 +46,13 @@ export const DateRangeFilter: React.FC<DateRangeFilterProps> = ({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-dashed font-normal"
-          aria-label={`Period: ${label}`}
-        >
-          <CalendarDays />
-          {label}
-          <ChevronDown />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent
-        align="end"
-        collisionPadding={16}
-        className="w-max max-w-[var(--radix-popover-content-available-width)] p-0"
-      >
-        <DateRangePanel
-          presets={PRESET_LABELS}
-          allLabel={rangeTitle({ range: 'all', since: null, until: null })}
-          value={value}
-          onChange={onChange}
-          onPreset={() => setOpen(false)}
-          maxDay={toDay(new Date())}
-        />
-      </PopoverContent>
-    </Popover>
+    <DateRangeFilterMenu
+      presets={PRESET_LABELS}
+      allLabel={rangeTitle({ range: 'all', since: null, until: null })}
+      label={label}
+      value={value}
+      onChange={onChange}
+      maxDay={toDay(new Date())}
+    />
   );
 };

@@ -1,1 +1,1 @@
-export { Spending } from './Spending';
+export { Transactions } from './Transactions';
