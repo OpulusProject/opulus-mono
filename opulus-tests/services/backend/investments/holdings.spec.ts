@@ -93,6 +93,9 @@ test.describe("GET /api/investments/holdings", () => {
 
     expect(data).toEqual({
       baseCurrency: "CAD",
+      range: "all",
+      since: null,
+      until: null,
       summary: {
         value: 0, accountCount: 0, holdingCount: 0, allocation: [], currencies: [], topHoldingsShare: 0,
         dividends: 0, dividendYield: 0, totalReturn: 0, totalReturnPercent: null, gainRanking: [],
@@ -332,6 +335,26 @@ test.describe("GET /api/investments/holdings", () => {
     // Assert
     const stale = Object.fromEntries(holdings.map((h) => [h.security.tickerSymbol, h.priceStale]));
     expect(stale).toEqual({ FRESH: false, OLD: true, NOPRICE: false });
+  });
+
+  test("measures a custom range's gain up to its last day by our prices then, and rejects a custom range with no first day", async ({ request }) => {
+    // Arrange: 10 shares, held throughout; 20 on the first day of the range, 30 on its last, 25 now.
+    const { cookie, userId, item } = await setup(request);
+    const base = { userId, itemId: item.itemId, accountId: item.accountId, currency: "CAD" };
+    const held = await seedHolding({ ...base, tickerSymbol: "HELD", quantity: 10, value: 1 });
+    await seedSecurityPrice({ securityId: held.securityId, date: day(-20), close: 20 });
+    await seedSecurityPrice({ securityId: held.securityId, date: day(-10), close: 30 });
+    await seedSecurityPrice({ securityId: held.securityId, date: day(0), close: 25 });
+
+    // Act
+    const data = await getHoldings(request, cookie, `?range=custom&from=${day(-20)}&to=${day(-10)}`);
+    const rejected = await request.get("/api/investments/holdings?range=custom", { headers: withSession(cookie) });
+
+    // Assert: 10 * (30 - 20) = 100, while the holding is still valued at today's price.
+    expect(data).toMatchObject({ range: "custom", since: day(-20), until: day(-10) });
+    expect(data.holdings[0]).toMatchObject({ value: 250, gain: 100 });
+    expect(data.summary).toMatchObject({ gain: 100, costBasis: 200 });
+    expect(rejected.status()).toBe(400);
   });
 
   test("values a holding at its quantity times our latest price, and a security with no price at the institution's value", async ({ request }) => {

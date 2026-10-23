@@ -290,6 +290,40 @@ class InvestmentTransactionRepository {
   }
 
   /**
+   * The buys, sells and transfers of securities by a user since a day, for
+   * working out what holdings were worth at its start.
+   * @param userId - The user
+   * @param since - First day (inclusive)
+   * @throws AppError if database error occurs
+   */
+  async getTradesSince(userId: string, since: Date) {
+    try {
+      const rows = await this.prisma.investmentTransaction.findMany({
+        where: {
+          userId,
+          date: { gte: since },
+          type: { in: ["buy", "sell", "transfer"] },
+          securityId: { not: null },
+          quantity: { not: null },
+        },
+        select: {
+          accountId: true,
+          date: true,
+          securityId: true,
+          quantity: true,
+          amount: true,
+          isoCurrencyCode: true,
+        },
+      });
+      return rows.flatMap(({ securityId, quantity, ...rest }) =>
+        securityId && quantity ? [{ ...rest, securityId, quantity }] : []
+      );
+    } catch (error) {
+      throw wrapDatabaseError(error, "get investment trades");
+    }
+  }
+
+  /**
    * What the summary adds up: the type, subtype, amount, fees and currency of a
    * user's investment transactions since a day.
    * @param userId - The user
