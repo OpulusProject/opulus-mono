@@ -11,26 +11,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui';
-import { useHoldings } from '@/hooks/investments/useHoldings';
 
 interface AccountFilterProps {
+  /** The accounts to choose from: all of them, not just those in view. */
+  accounts: { id: string; name: string }[];
   /** The accounts the page is limited to (our account ids); none is all of them. */
   selected: string[];
   onChange: (selected: string[]) => void;
 }
 
 /**
- * A menu for limiting the page to some of the user's investment accounts, each
- * listed by its name: a dashed button with a filter icon, saying "All
- * accounts", one account's name, or how many; it opens a list of checkboxes.
- * Not shown with fewer than two accounts, as there is nothing to choose.
+ * A menu for limiting a page to some of the user's accounts, each listed by its
+ * name: a dashed button with a filter icon, saying "All accounts", one
+ * account's name, or how many; it opens a list of checkboxes. Not shown with
+ * fewer than two accounts, as there is nothing to choose.
  */
 export const AccountFilter: React.FC<AccountFilterProps> = ({
+  accounts,
   selected,
   onChange,
 }) => {
-  // All the accounts, not just those in view, so the choices do not shrink.
-  const accounts = useHoldings().data?.accounts ?? [];
   if (accounts.length < 2) return null;
 
   const options: MenuOption[] = accounts.map((account) => ({

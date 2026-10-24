@@ -6,14 +6,15 @@ import { resolveRange } from '@/utils/dateRange';
 
 import type { TransactionsSearch } from './searchSchema';
 
-const route = getRouteApi('/_authenticated/transactions');
+const route = getRouteApi('/_authenticated/spending/transactions');
 
 /**
  * The page's search and filters, read from and written to the URL.
  *
  * `filters` is what to ask the API for; `hasFilters` is whether a filter is
  * set (not counting the search) and `isFiltered` whether the search or a filter
- * is. `clearFilters` clears the filters, but not the search.
+ * is. `clearFilters` clears the list's filters, but not the search or the
+ * period and accounts in the page header.
  */
 export function useTransactionFilters() {
   const search = route.useSearch();
@@ -30,7 +31,7 @@ export function useTransactionFilters() {
       search: search.q,
       startDate: days?.start,
       endDate: days?.end,
-      itemIds: search.institution,
+      accountIds: search.account,
       categories: search.category,
     };
   }, [search]);
@@ -65,21 +66,13 @@ export function useTransactionFilters() {
     [navigate]
   );
 
-  const hasFilters = !!(
-    search.range ||
-    search.institution?.length ||
-    search.category?.length
-  );
+  // The period and accounts are filtered in the page header, which has its own
+  // way to clear them; what is cleared here is what the list header filters.
+  const hasFilters = !!search.category?.length;
 
-  /** Clear the date, institution and category filters, but not the search. */
+  /** Clear the category filter, but not the search or the page's filters. */
   const clearFilters = useCallback(() => {
-    update({
-      range: undefined,
-      from: undefined,
-      to: undefined,
-      institution: undefined,
-      category: undefined,
-    });
+    update({ category: undefined });
   }, [update]);
 
   return {
@@ -91,7 +84,7 @@ export function useTransactionFilters() {
     isFiltered: !!(
       search.q ||
       search.range ||
-      search.institution?.length ||
+      search.account?.length ||
       search.category?.length
     ),
   };

@@ -24,7 +24,7 @@ export const RecentTransactions: React.FC = () => {
         title="Recent transactions"
         action={
           <Button asChild variant="ghost" size="sm">
-            <Link to="/transactions">View all</Link>
+            <Link to="/spending/transactions">View all</Link>
           </Button>
         }
       />
