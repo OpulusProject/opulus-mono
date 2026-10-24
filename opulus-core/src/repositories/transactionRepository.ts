@@ -4,6 +4,7 @@ import prisma from "../client/prisma.js";
 import {
   UNCATEGORIZED,
   type CategorySpend,
+  type MerchantSpend,
   type DailyTransactionTotals,
 } from "../types/dto/transactions/index.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
@@ -696,6 +697,49 @@ class TransactionRepository {
         error instanceof Error
           ? `Failed to total spending by category: ${error.message}`
           : "An unexpected error occurred while totaling spending by category";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * Money out added up by currency, merchant, category and day, for the
+   * filtered transactions. Every filter applies, so it adds up to exactly what
+   * the filters select.
+   *
+   * @param userId - Owner of the transactions
+   * @param filters - Which transactions to include
+   * @throws AppError if database error occurs
+   */
+  async getMerchantSpendByUserId(
+    userId: string,
+    filters: TransactionFilters = {}
+  ): Promise<MerchantSpend[]> {
+    try {
+      const rows = await this.prisma.transaction.groupBy({
+        // By day too, so each day's spending can be converted at that day's rate.
+        by: ["isoCurrencyCode", "merchantName", "categoryPrimary", "date"],
+        where: { AND: [buildWhere(userId, filters), { amount: { gt: 0 } }] },
+        _sum: { amount: true },
+        _count: { _all: true },
+      });
+
+      return rows.map((row) => ({
+        currency: row.isoCurrencyCode,
+        merchant: row.merchantName,
+        category: row.categoryPrimary,
+        date: row.date.toISOString().slice(0, 10),
+        spent: row._sum.amount ?? new Prisma.Decimal(0),
+        count: row._count._all,
+      }));
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to total spending by merchant: ${error.message}`
+          : "An unexpected error occurred while totaling spending by merchant";
       throw new AppError(message, 500);
     }
   }
