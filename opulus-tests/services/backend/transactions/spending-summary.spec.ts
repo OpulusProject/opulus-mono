@@ -109,7 +109,11 @@ test.describe("GET /api/transactions/spending-summary", () => {
 
   test("follows the filters", async ({ request }) => {
     const { cookie } = await setup(request, [
-      { amount: 100, date: on("2026-06", 3), categoryPrimary: "FOOD_AND_DRINK" },
+      {
+        amount: 100,
+        date: on("2026-06", 3),
+        categoryPrimary: "FOOD_AND_DRINK",
+      },
       { amount: 30, date: on("2026-06", 4), categoryPrimary: "TRAVEL" },
     ]);
 
