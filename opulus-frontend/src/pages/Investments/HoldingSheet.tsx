@@ -366,7 +366,7 @@ const Terms: React.FC<{
       {holding.estimatedAnnualIncome !== null && (
         <Row
           label="Est. annual income"
-          hint="Your current shares times the latest annual dividend per share, before tax. An estimate of a year's income, not cash received."
+          hint="Your current shares times the latest annual dividend per share, before tax."
         >
           {formatMoney(holding.estimatedAnnualIncome, baseCurrency)}
           <Muted>a year</Muted>
