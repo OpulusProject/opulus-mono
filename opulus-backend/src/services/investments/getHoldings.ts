@@ -90,6 +90,7 @@ export async function getHoldings(
     baseCurrency: BASE_CURRENCY,
     currencies: [
       ...rows.map((row) => row.isoCurrencyCode),
+      ...rows.map((row) => row.security.dividendCurrency),
       ...[...prices.values()].map((price) => price.currency),
       ...[...startPrices.values()].map((price) => price.currency),
       ...[...endPrices.values()].map((price) => price.currency),

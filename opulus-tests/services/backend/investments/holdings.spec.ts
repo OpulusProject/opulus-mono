@@ -64,6 +64,7 @@ async function getHoldings(
  * - converts our price to the holding's currency, and gives no gain when the two currencies differ
  * - gives an option's contract and a bond's terms, and exchange
  * - gives the dividends of the last twelve months in total and per holding, the dividend yield, and the total return (gain plus dividends)
+ * - gives each holding's estimated annual income from its quantity and the security's dividend rate, converted to CAD, and none without a rate
  * - ranks the holdings by what they earned (in CAD, not as a fraction), largest first, leaving out those without a cost basis
  * - filters to one account with accountId
  * - filters to several accounts with a repeated accountId, with the summary over just those
@@ -455,6 +456,27 @@ test.describe("GET /api/investments/holdings", () => {
     expect(all.summary.totalReturnPercent).toBeCloseTo(361.5 / 800, 10);
     expect(year.holdings[0]!.dividends).toBe(50);
     expect(year.summary.dividends).toBe(62.5);
+  });
+
+  test("gives each holding's estimated annual income from its quantity and the security's dividend rate, converted to CAD, and none without a rate", async ({ request }) => {
+    // Arrange: 100 shares paying 1.02 CAD a year, 10 paying 1.08 USD (1 USD = 1.25 CAD), a payer of nothing, and one with no rate.
+    const { cookie, userId, item } = await setup(request);
+    const base = { userId, itemId: item.itemId, accountId: item.accountId };
+    await seedHolding({ ...base, tickerSymbol: "CAD1", quantity: 100, value: 5000, currency: "CAD", details: { dividendRate: 1.02, dividendCurrency: "CAD" } });
+    await seedHolding({ ...base, tickerSymbol: "USD1", quantity: 10, value: 3000, currency: "USD", details: { dividendRate: 1.08, dividendCurrency: "USD" } });
+    await seedHolding({ ...base, tickerSymbol: "ZERO", quantity: 10, value: 400, currency: "CAD", details: { dividendRate: 0, dividendCurrency: "CAD" } });
+    await seedHolding({ ...base, tickerSymbol: "NONE", quantity: 10, value: 300, currency: "CAD" });
+
+    // Act
+    const { holdings, positions } = await getHoldings(request, cookie);
+
+    // Assert
+    const income = (ticker: string) => holdings.find((h) => h.security.tickerSymbol === ticker)!.estimatedAnnualIncome;
+    expect(income("CAD1")).toBe(102);
+    expect(income("USD1")).toBe(13.5);
+    expect(income("ZERO")).toBe(0);
+    expect(income("NONE")).toBeNull();
+    expect(positions.find((p) => p.security.tickerSymbol === "USD1")!.estimatedAnnualIncome).toBe(13.5);
   });
 
   test("ranks the holdings by what they earned (in CAD, not as a fraction), largest first, leaving out those without a cost basis", async ({ request }) => {

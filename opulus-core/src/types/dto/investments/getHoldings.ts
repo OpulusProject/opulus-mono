@@ -189,6 +189,14 @@ export const HoldingDTOSchema = z.object({
    * capital gains), in the base currency.
    */
   dividends: z.number(),
+  /**
+   * What this holding should pay out in a year at today's quantity and the
+   * provider's dividend rate per share, in the base currency, before tax. An
+   * estimate, not cash received, and not tied to the range. 0 for a security
+   * that pays nothing; null when the provider has given no rate (cash, options,
+   * bonds, or not fetched yet).
+   */
+  estimatedAnnualIncome: z.number().nullable(),
 });
 
 export type HoldingDTO = z.infer<typeof HoldingDTOSchema>;
@@ -220,6 +228,8 @@ export const PositionDTOSchema = z.object({
   averageCost: z.number().nullable(),
   /** What the holdings paid out over the range, in the base currency. */
   dividends: z.number(),
+  /** What the holdings should pay out in a year, in the base currency (see `HoldingDTO`); null when it has no rate. */
+  estimatedAnnualIncome: z.number().nullable(),
   /** Null unless every holding of it has a cost basis. */
   gainInBase: z.number().nullable(),
   /** `gainInBase` as a fraction of what was paid; null when `gainInBase` is. */
@@ -530,6 +540,20 @@ export function toHoldingsDTO(
     tradesByHolding.set(key, [...(tradesByHolding.get(key) ?? []), trade]);
   }
 
+  // The rate is per share in its own currency; null while the provider has given none.
+  const estimatedAnnualIncome = (
+    security: HoldingRow["security"],
+    quantity: number,
+    holdingCurrency: string | null
+  ): number | null =>
+    security.dividendRate === null
+      ? null
+      : round(
+          quantity *
+            security.dividendRate.toNumber() *
+            rateOn(security.dividendCurrency ?? holdingCurrency)
+        );
+
   const holdings = rows.map((row) => {
     // Our price of the security when we have one, in the holding's currency
     // (its own, or the price's when it names none). Otherwise the institution's.
@@ -672,6 +696,11 @@ export function toHoldingsDTO(
       dividends: fromUnits(
         dividendsByHolding.get(`${row.accountId}:${security.id}`) ?? 0
       ),
+      estimatedAnnualIncome: estimatedAnnualIncome(
+        security,
+        quantity,
+        currency
+      ),
       costBasis: rowBasis,
       averageCost: perUnit(rowBasis, quantity),
       gain,
@@ -775,6 +804,11 @@ export function toHoldingsDTO(
           costBasis,
           averageCost: perUnit(costBasis, quantity),
           dividends: round(group.reduce((sum, h) => sum + h.dividends, 0)),
+          estimatedAnnualIncome: group.every(
+            (h) => h.estimatedAnnualIncome !== null
+          )
+            ? round(group.reduce((sum, h) => sum + h.estimatedAnnualIncome!, 0))
+            : null,
           gainInBase: gainUnits === null ? null : fromUnits(gainUnits),
           gainPercent:
             gainUnits === null || !basisUnits ? null : gainUnits / basisUnits,

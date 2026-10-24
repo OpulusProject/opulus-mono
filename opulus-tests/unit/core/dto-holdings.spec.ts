@@ -28,7 +28,7 @@ const row = (overrides: {
     isoCurrencyCode: overrides.currency === undefined ? "USD" : overrides.currency,
     account: { name: "Brokerage", subtype: "tfsa", mask: "1234" },
     item: { institutionName: "Stub Brokerage" },
-    security: { id: "sec-1", name: "Apple Inc.", tickerSymbol: overrides.ticker ?? "AAPL", type: overrides.type ?? "equity", isCashEquivalent: overrides.isCashEquivalent ?? false, ...overrides.security },
+    security: { id: "sec-1", name: "Apple Inc.", tickerSymbol: overrides.ticker ?? "AAPL", type: overrides.type ?? "equity", isCashEquivalent: overrides.isCashEquivalent ?? false, dividendRate: null, dividendCurrency: null, ...overrides.security },
   }) as unknown as Rows[number];
 
 const toBase = (rates: Record<string, number>) => (currency: string | null) => (currency === null ? 1 : (rates[currency] ?? 1));
@@ -55,6 +55,8 @@ const toBase = (rates: Record<string, number>) => (currency: string | null) => (
  * - a price older than the limit is stale, one at the limit is not, and a holding with no price is not
  * - an option and a bond carry their terms, and other securities carry none
  * - dividends are added up in the base currency, per holding and in total, only for accounts in view, and make the total return
+ * - a holding's estimated annual income is its quantity times the security's dividend rate, in the base currency, and has none without a rate
+ * - a position's estimated annual income adds its holdings up, and has none when one of them has none
  * - a holding's gain is also given in the base currency, at today's rate
  * - the gain ranking is the holdings that earned the most, in the base currency and not as a fraction, without those that have no cost basis
  * - an account with no holdings is counted by its balance, as "balance"
@@ -250,6 +252,39 @@ test.describe("holdings DTO", () => {
     expect(summary.dividendYield).toBeCloseTo(0.061, 6);
     expect(summary.totalReturn).toBe(261);
     expect(summary.totalReturnPercent).toBeCloseTo(261 / 800, 10);
+  });
+
+  test("a holding's estimated annual income is its quantity times the security's dividend rate, in the base currency, and has none without a rate", () => {
+    // 10 shares paying 1.50 USD a year (1 USD = 1.25 base), 10 paying 0, 10 with no rate known.
+    const { holdings } = toHoldingsDTO(
+      [
+        row({ value: 1000, basis: null, id: "pays", security: { id: "s1", dividendRate: D("1.5"), dividendCurrency: "USD" } }),
+        row({ value: 1000, basis: null, id: "zero", security: { id: "s2", dividendRate: D(0), dividendCurrency: "USD" } }),
+        row({ value: 1000, basis: null, id: "unknown", security: { id: "s3", dividendRate: null, dividendCurrency: null } }),
+      ],
+      { baseCurrency: "CAD", rateOn: toBase({ USD: 1.25 }) },
+    );
+
+    const byId = (id: string) => holdings.find((h) => h.id === id)!.estimatedAnnualIncome;
+    expect(byId("pays")).toBe(18.75);
+    expect(byId("zero")).toBe(0);
+    expect(byId("unknown")).toBeNull();
+  });
+
+  test("a position's estimated annual income adds its holdings up, and has none when one of them has none", () => {
+    const security = { id: "sec-shared", dividendRate: D(2), dividendCurrency: "CAD" };
+    const { positions } = toHoldingsDTO(
+      [
+        row({ value: 100, basis: null, id: "a", currency: "CAD", accountId: "acct-1", security }),
+        row({ value: 100, basis: null, id: "b", currency: "CAD", accountId: "acct-2", security }),
+        row({ value: 100, basis: null, id: "c", currency: "CAD", accountId: "acct-1", security: { id: "sec-other", dividendRate: null, dividendCurrency: null } }),
+      ],
+      { baseCurrency: "CAD", rateOn: toBase({}) },
+    );
+
+    // 10 shares in each of two accounts, 2 a share.
+    expect(positions.find((p) => p.security.id === "sec-shared")!.estimatedAnnualIncome).toBe(40);
+    expect(positions.find((p) => p.security.id === "sec-other")!.estimatedAnnualIncome).toBeNull();
   });
 
   test("a holding's gain is also given in the base currency, at today's rate", () => {
