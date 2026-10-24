@@ -10,6 +10,8 @@ const JOB = "refresh-security-prices";
 const ticker = () => uniqueId("").replace(/[^a-f]/g, "").toUpperCase().padEnd(6, "Q").slice(0, 6) + "Z";
 
 const today = () => new Date().toISOString().slice(0, 10);
+/** The day a quote taken now is for: today in Toronto (UTC-4, as the stub's quotes are). */
+const quoteDay = () => new Date(Date.now() - 4 * 3600_000).toISOString().slice(0, 10);
 const daysAgo = (days: number) => new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10);
 
 /** A security on its own, on the Toronto exchange (so its symbol is the ticker with .TO, in CAD), whose history has not been fetched. */
@@ -55,12 +57,13 @@ test.describe("refresh-security-prices (job): history", () => {
     expect(asked!.period1).toBe(Date.parse(`${daysAgo(730)}T00:00:00Z`) / 1000);
     expect(asked!.period2).toBe(Date.parse(`${today()}T00:00:00Z`) / 1000 + 86_400);
 
-    // Weekdays only, oldest first, in the currency the provider gave.
+    // Weekdays only, oldest first, in the currency the provider gave. The run also quotes the security, and a quote is stored on whatever day it is taken, a weekend included, so today's is left out of the weekday check.
     const prices = await readSecurityPrices(security.id);
     expect(prices.length).toBeGreaterThan(450);
     expect(prices.length).toBeLessThan(530);
     expect(prices.map((p) => p.date)).toEqual([...prices.map((p) => p.date)].sort());
-    expect(prices.every((p) => ![0, 6].includes(new Date(`${p.date}T00:00:00Z`).getUTCDay()))).toBe(true);
+    const closes = prices.filter((p) => p.date !== quoteDay());
+    expect(closes.every((p) => ![0, 6].includes(new Date(`${p.date}T00:00:00Z`).getUTCDay()))).toBe(true);
     expect(prices[0]).toMatchObject({ currency: "CAD", source: "yahoo" });
     expect(await readBackfilledAt(security.id)).not.toBeNull();
   });
