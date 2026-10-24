@@ -6,7 +6,7 @@ const PORT = 18297;
 const JOB = "refresh-exchange-rates";
 const PRICES = "refresh-security-prices";
 const DIVIDENDS = "refresh-security-dividends";
-const JOBS = [JOB, PRICES, DIVIDENDS];
+const JOBS = [JOB, DIVIDENDS, PRICES]; // by name, as the registered keys are sorted
 const RETIRED = "a-job-that-was-removed";
 
 /** Stop it the way a deploy does, so that nothing is left holding the port (a kill would leave tsx's child running). */
