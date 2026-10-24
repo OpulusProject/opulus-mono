@@ -87,8 +87,7 @@ const sum = (values: Prisma.Decimal[]) =>
 
 /** Equal spending: named first, by name, unnamed last. */
 const byName = (a: string | null, b: string | null) =>
-  Number(a === null) - Number(b === null) ||
-  (a ?? "").localeCompare(b ?? "");
+  Number(a === null) - Number(b === null) || (a ?? "").localeCompare(b ?? "");
 
 /**
  * Transform the repository's rows to the public DTO. Each row is converted to
@@ -109,7 +108,10 @@ export function toSpendingByMerchantDTO(
 
   const byMerchant = new Map<string | null, typeof positive>();
   for (const row of positive) {
-    byMerchant.set(row.merchant, [...(byMerchant.get(row.merchant) ?? []), row]);
+    byMerchant.set(row.merchant, [
+      ...(byMerchant.get(row.merchant) ?? []),
+      row,
+    ]);
   }
 
   const merchants = [...byMerchant].map(([merchant, merchantRows]) => {

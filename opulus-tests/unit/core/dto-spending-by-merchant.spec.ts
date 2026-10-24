@@ -43,7 +43,7 @@ test.describe("toSpendingByMerchantDTO", () => {
         row({ merchant: "Starbucks", spent: 5, count: 2 }),
         row({ merchant: "Starbucks", spent: 7.5, date: "2026-10-02" }),
       ],
-      flat
+      flat,
     );
     expect(dto.merchants).toEqual([
       {
@@ -65,7 +65,7 @@ test.describe("toSpendingByMerchantDTO", () => {
         row({ merchant: "A", spent: 10 }),
         row({ merchant: "Big", spent: 50 }),
       ],
-      flat
+      flat,
     );
     expect(dto.merchants.map((m) => m.merchant)).toEqual([
       "Big",
@@ -78,7 +78,7 @@ test.describe("toSpendingByMerchantDTO", () => {
   test("each merchant's share is of all spending, and the shares add up to 1", () => {
     const dto = toSpendingByMerchantDTO(
       [row({ merchant: "A", spent: 75 }), row({ merchant: "B", spent: 25 })],
-      flat
+      flat,
     );
     expect(dto.merchants.map((m) => m.share)).toEqual([0.75, 0.25]);
   });
@@ -94,7 +94,7 @@ test.describe("toSpendingByMerchantDTO", () => {
         baseCurrency: "CAD",
         rateOn: (currency, day) =>
           currency === "USD" ? (day === "2026-10-01" ? 1.5 : 2) : 1,
-      }
+      },
     );
     expect(dto.spent).toBe(45);
     expect(dto.merchants[0].spent).toBe(45);
@@ -107,7 +107,7 @@ test.describe("toSpendingByMerchantDTO", () => {
         row({ merchant: "Costco", spent: 80, category: "FOOD_AND_DRINK" }),
         row({ merchant: "Other", spent: 5, category: null }),
       ],
-      flat
+      flat,
     );
     expect(dto.merchants.map((m) => m.category)).toEqual([
       "FOOD_AND_DRINK",
@@ -122,7 +122,7 @@ test.describe("toSpendingByMerchantDTO", () => {
         row({ merchant: "A", spent: -5 }),
         row({ merchant: "B", spent: 0 }),
       ],
-      flat
+      flat,
     );
     expect(dto.merchants).toHaveLength(1);
     expect(dto.spent).toBe(20);
@@ -136,10 +136,15 @@ test.describe("toSpendingByMerchantDTO", () => {
         row({ merchant: "C", spent: 15, count: 3 }),
         row({ merchant: "D", spent: 5 }),
       ],
-      { ...flat, top: 2 }
+      { ...flat, top: 2 },
     );
     expect(dto.merchants.map((m) => m.merchant)).toEqual(["A", "B"]);
-    expect(dto.other).toEqual({ merchants: 2, spent: 20, count: 4, share: 0.2 });
+    expect(dto.other).toEqual({
+      merchants: 2,
+      spent: 20,
+      count: 4,
+      share: 0.2,
+    });
   });
 
   test("no spending gives no merchants, zero spent and no other", () => {
