@@ -3,6 +3,10 @@ import {
   getSpendingByCategoryQuerySchema,
 } from "@/controllers/transactions/getSpendingByCategoryController.js";
 import {
+  getSpendingByMerchantController,
+  getSpendingByMerchantQuerySchema,
+} from "@/controllers/transactions/getSpendingByMerchantController.js";
+import {
   getTransactionsController,
   getTransactionsQuerySchema,
 } from "@/controllers/transactions/getTransactionsController.js";
@@ -39,6 +43,13 @@ router.get(
   requireSession,
   validateQuery(getSpendingByCategoryQuerySchema),
   getSpendingByCategoryController
+);
+
+router.get(
+  "/spending-by-merchant",
+  requireSession,
+  validateQuery(getSpendingByMerchantQuerySchema),
+  getSpendingByMerchantController
 );
 
 export default router;

@@ -1,0 +1,82 @@
+meta {
+  name: Get Spending By Merchant
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/api/transactions/spending-by-merchant
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+params:query {
+  top: 5
+  startDate: 
+  endDate: 
+  hideTransfers: true
+  itemId: 
+  accountId: 
+  category: 
+  search: 
+  type: 
+  includePending: 
+}
+
+docs {
+  # Get Spending By Merchant
+
+  What the authenticated user spent at each merchant, with each merchant's share of the total and its main category, computed on the server so the client only displays it. Spending in other currencies is converted to a base currency (CAD for now), each day's spending at that day's rate, so merchants can be ranked and compared in one list.
+
+  **Endpoint:** `GET /api/transactions/spending-by-merchant`
+
+  ## Query Parameters
+
+  The same filters as `GET /api/transactions` (`itemId`, `accountId`, `category`, `search`, `type`, `hideTransfers`, `includePending`, `startDate`, `endDate`), so the numbers describe the same transactions as the list. `page`, `limit`, `sort` and `order` do not apply.
+
+  - `top` (optional, 1-50): list only this many merchants, and add the rest up in `other`. Without it every merchant is listed and `other` is null.
+
+  ## Success Response (200)
+
+  ```json
+  {
+    "data": {
+      "baseCurrency": "CAD",
+      "spent": 225,
+      "merchants": [
+        {
+          "merchant": "Starbucks",
+          "category": "FOOD_AND_DRINK",
+          "spent": 125,
+          "count": 4,
+          "share": 0.5556
+        },
+        {
+          "merchant": "Air Canada",
+          "category": "TRAVEL",
+          "spent": 100,
+          "count": 1,
+          "share": 0.4444
+        }
+      ],
+      "other": null
+    }
+  }
+  ```
+
+  - `spent` (top level and per merchant) is in `baseCurrency`; `share` is a merchant's `spent` as a fraction (0 to 1) of the top-level `spent`
+  - Only money out counts. Merchants are largest first by converted `spent` (ties by name; transactions with no merchant name, `merchant: null`, are listed together and last on ties)
+  - `category` is the category the merchant's spending was largest in (`null` if uncategorized)
+  - Spending with no currency is taken as `baseCurrency`
+  - Each day's spending is converted at that day's rate from the `exchange_rate` table, the same as `spending-by-category`; converted amounts are rounded to 4 decimal places
+  - `other` is null unless `top` left merchants out; `other.merchants` is how many it adds up
+
+  ## Error Responses
+
+  - `400 Bad Request`: Invalid query parameters
+  - `401 Unauthorized`: No active session found
+}
