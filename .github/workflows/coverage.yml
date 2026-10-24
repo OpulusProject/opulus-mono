@@ -76,6 +76,7 @@ jobs:
       FRANKFURTER_BASE_URL: http://localhost:4545/v1
       STUB_URL: http://localhost:4545
       YAHOO_FINANCE_BASE_URL: http://localhost:4547
+      YAHOO_COOKIE_URL: http://localhost:4547/__cookie
       YAHOO_STUB_URL: http://localhost:4547
       TEST_BASE_URL: http://localhost:${{ matrix.port }}
       # Where Node writes what ran. Set for the service and for every test step,

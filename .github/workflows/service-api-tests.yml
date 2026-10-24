@@ -73,6 +73,7 @@ jobs:
       # Securities a sync stores are priced at once; the Yahoo stub answers (no
       # third party), started below.
       YAHOO_FINANCE_BASE_URL: http://localhost:4547
+      YAHOO_COOKIE_URL: http://localhost:4547/__cookie
       YAHOO_STUB_URL: http://localhost:4547
       TEST_BASE_URL: http://localhost:8080
 
@@ -186,6 +187,7 @@ jobs:
       # Securities a sync stores are priced at once; the Yahoo stub answers (no
       # third party), started below.
       YAHOO_FINANCE_BASE_URL: http://localhost:4547
+      YAHOO_COOKIE_URL: http://localhost:4547/__cookie
       YAHOO_STUB_URL: http://localhost:4547
       TEST_BASE_URL: http://localhost:8081
 
@@ -303,6 +305,7 @@ jobs:
       FRANKFURTER_BASE_URL: http://localhost:4545/v1
       STUB_URL: http://localhost:4545
       YAHOO_FINANCE_BASE_URL: http://localhost:4547
+      YAHOO_COOKIE_URL: http://localhost:4547/__cookie
       YAHOO_STUB_URL: http://localhost:4547
       TEST_BASE_URL: http://localhost:8082
 

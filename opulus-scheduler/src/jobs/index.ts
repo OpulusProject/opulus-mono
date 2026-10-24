@@ -1,4 +1,8 @@
-import { refreshExchangeRates, refreshSecurityPrices } from "@opulus/core";
+import {
+  refreshExchangeRates,
+  refreshSecurityDividends,
+  refreshSecurityPrices,
+} from "@opulus/core";
 
 export interface ScheduledJob {
   /** What it does, for logs and the README. */
@@ -34,6 +38,15 @@ export const jobs = {
     pattern: process.env.SECURITY_PRICES_CRON || "*/15 * * * *",
     runOnStart: true,
     run: () => refreshSecurityPrices(),
+  },
+  "refresh-security-dividends": {
+    description:
+      "Ask the provider what each security pays out per share in a year and store it on the security",
+    // Once a day, at 11:00 UTC; SECURITY_DIVIDENDS_CRON sets another. A rate
+    // changes a few times a year, so a day is fresh enough.
+    pattern: process.env.SECURITY_DIVIDENDS_CRON || "0 11 * * *",
+    runOnStart: true,
+    run: () => refreshSecurityDividends(),
   },
 } satisfies Record<string, ScheduledJob>;
 

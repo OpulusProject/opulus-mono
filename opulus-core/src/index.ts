@@ -36,6 +36,7 @@ export * from "./gateways/yahooGateway.js";
 // Service exports (business logic shared by the backend and webhooks)
 export * from "./services/exchangeRateConverter.js";
 export * from "./services/refreshExchangeRates.js";
+export * from "./services/securityDividends.js";
 export * from "./services/securityPrices.js";
 export * from "./services/syncItemAccounts.js";
 export * from "./services/syncItemHoldings.js";

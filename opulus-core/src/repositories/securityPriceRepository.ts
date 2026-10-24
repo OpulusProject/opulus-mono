@@ -143,6 +143,32 @@ class SecurityPriceRepository {
   }
 
   /**
+   * Store what a security pays out per share in a year, and when it was fetched.
+   * @param info - `annualRate` and `yield` as the provider gave them, with the currency the rate is in
+   * @throws AppError if database error occurs
+   */
+  async recordDividends(
+    securityId: string,
+    info: { annualRate: number; yield: number | null; currency: string },
+    fetchedAt: Date
+  ): Promise<void> {
+    try {
+      await this.prisma.security.update({
+        where: { id: securityId },
+        data: {
+          dividendRate: info.annualRate,
+          dividendYield: info.yield,
+          dividendCurrency: info.currency,
+          dividendsFetchedAt: fetchedAt,
+        },
+        select: { id: true },
+      });
+    } catch (error) {
+      throw wrap(error, "store a dividend rate");
+    }
+  }
+
+  /**
    * Store a security's latest quote as the price of its trading day, replacing
    * the earlier quote of the day.
    * @param source - The provider the quote is from
