@@ -5,6 +5,7 @@ import {
   UNCATEGORIZED,
   type CategorySpend,
   type DailyTransactionTotals,
+  type MonthlyTransactionTotals,
 } from "../types/dto/transactions/index.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
 import { toAmount } from "../utils/money.js";
@@ -653,6 +654,44 @@ class TransactionRepository {
         error instanceof Error
           ? `Failed to get daily transaction totals: ${error.message}`
           : "An unexpected error occurred while getting daily transaction totals";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * Money out added up by currency and day for the same filters as the list;
+   * the service converts each day at its own rate and adds the days up by month.
+   * @param userId - The user ID
+   * @param filters - Which transactions to include
+   * @throws AppError if database error occurs
+   */
+  async getMonthlyTotalsByUserId(
+    userId: string,
+    filters: TransactionFilters = {}
+  ): Promise<MonthlyTransactionTotals> {
+    try {
+      const spentByDay = await this.prisma.transaction.groupBy({
+        by: ["isoCurrencyCode", "date"],
+        where: { AND: [buildWhere(userId, filters), { amount: { gt: 0 } }] },
+        _sum: { amount: true },
+      });
+
+      return {
+        byDay: spentByDay.map((row) => ({
+          currency: row.isoCurrencyCode,
+          date: row.date,
+          spent: row._sum.amount ?? new Prisma.Decimal(0),
+        })),
+      };
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get monthly transaction totals: ${error.message}`
+          : "An unexpected error occurred while getting monthly transaction totals";
       throw new AppError(message, 500);
     }
   }

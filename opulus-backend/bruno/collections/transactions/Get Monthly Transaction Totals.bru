@@ -1,0 +1,64 @@
+meta {
+  name: Get Monthly Transaction Totals
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/api/transactions/monthly-totals
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+params:query {
+  startDate: 
+  endDate: 
+  hideTransfers: true
+  itemId: 
+  accountId: 
+  category: 
+  search: 
+  type: 
+  includePending: 
+}
+
+docs {
+  # Get Monthly Transaction Totals
+
+  Each calendar month's spending for the authenticated user's transactions, computed on the server so the client only displays it.
+
+  **Endpoint:** `GET /api/transactions/monthly-totals`
+
+  ## Query Parameters
+
+  The same filters as `GET /api/transactions` (`itemId`, `accountId`, `category`, `search`, `type`, `hideTransfers`, `includePending`, `startDate`, `endDate`), so the numbers describe the same transactions as the list. `page`, `limit`, `sort` and `order` do not apply.
+
+  ## Success Response (200)
+
+  Every figure is in `baseCurrency` (CAD for now), each transaction converted at the rate of the day it was made, then added up by month.
+
+  ```json
+  {
+    "data": {
+      "baseCurrency": "CAD",
+      "byMonth": [
+        { "month": "2026-09", "spent": 1840.5 },
+        { "month": "2026-10", "spent": 912.25 }
+      ]
+    }
+  }
+  ```
+
+  - `spent` is money out
+  - `byMonth` has one entry for each month with at least one matching transaction that moved money out, ordered by month ascending. It follows every filter
+  - Rates come from the `exchange_rate` table, as for `daily-totals`. Amounts are rounded to 4 decimal places
+
+  ## Error Responses
+
+  - `400 Bad Request`: Invalid query parameters
+  - `401 Unauthorized`: No active session found
+}
