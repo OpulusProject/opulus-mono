@@ -68,6 +68,12 @@ export const HoldingSheet: React.FC<HoldingSheetProps> = ({
       <SheetContent
         // Floats 8px in from the edges with rounded corners, as in the design.
         className="inset-y-2 right-2 h-auto w-[calc(100%-1rem)] overflow-y-auto rounded-xl border sm:max-w-md"
+        // Focus the sheet, not its first control: while it slides in that is a
+        // tooltip's info icon, which opens its tooltip early and in the wrong place.
+        onOpenAutoFocus={(event) => {
+          event.preventDefault();
+          (event.currentTarget as HTMLElement).focus();
+        }}
       >
         {holding && <HoldingDetail holding={holding} data={data} />}
       </SheetContent>
