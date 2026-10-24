@@ -7,6 +7,10 @@ import {
   getTransactionsQuerySchema,
 } from "@/controllers/transactions/getTransactionsController.js";
 import {
+  getSpendingSummaryController,
+  getSpendingSummaryQuerySchema,
+} from "@/controllers/transactions/getSpendingSummaryController.js";
+import {
   getDailyTransactionTotalsController,
   getDailyTransactionTotalsQuerySchema,
 } from "@/controllers/transactions/getDailyTransactionTotalsController.js";
@@ -39,6 +43,13 @@ router.get(
   requireSession,
   validateQuery(getSpendingByCategoryQuerySchema),
   getSpendingByCategoryController
+);
+
+router.get(
+  "/spending-summary",
+  requireSession,
+  validateQuery(getSpendingSummaryQuerySchema),
+  getSpendingSummaryController
 );
 
 export default router;

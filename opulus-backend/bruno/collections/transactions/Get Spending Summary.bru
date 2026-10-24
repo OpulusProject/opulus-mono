@@ -1,0 +1,71 @@
+meta {
+  name: Get Spending Summary
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/api/transactions/spending-summary
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+params:query {
+  month: 
+  hideTransfers: true
+  itemId: 
+  accountId: 
+  category: 
+  search: 
+  type: 
+  includePending: 
+}
+
+docs {
+  # Get Spending Summary
+
+  A month's spending against the month before it, computed on the server so the client only displays it.
+
+  **Endpoint:** `GET /api/transactions/spending-summary`
+
+  ## Query Parameters
+
+  - `month`: the month to summarise, `YYYY-MM`. Defaults to the current month (UTC). A future month is a 400
+  - The filters of `GET /api/transactions` except the dates (`itemId`, `accountId`, `category`, `search`, `type`, `hideTransfers`, `includePending`)
+
+  ## Success Response (200)
+
+  Every amount is in `baseCurrency` (CAD for now), each day converted at that day's rate, as in `daily-totals`.
+
+  ```json
+  {
+    "data": {
+      "baseCurrency": "CAD",
+      "month": "2026-10",
+      "daysElapsed": 10,
+      "daysInMonth": 31,
+      "spentSoFar": 150,
+      "lastMonthSameDays": 120,
+      "changePercent": 25,
+      "dailyAverage": 15,
+      "projectedMonthEnd": 465,
+      "lastMonthTotal": 410
+    }
+  }
+  ```
+
+  - `daysElapsed` is today's day of the month, or every day for a month that is over
+  - `lastMonthSameDays` is the previous month over the same days (all of a shorter month)
+  - `changePercent` is `(spentSoFar - lastMonthSameDays) / lastMonthSameDays x 100` to 1 decimal, `null` when `lastMonthSameDays` is 0
+  - `dailyAverage` is `spentSoFar / daysElapsed`, and `projectedMonthEnd` is `dailyAverage x daysInMonth`
+  - "Spent" is money out only, the same as `spent` in `daily-totals`
+
+  ## Error Responses
+
+  - `400 Bad Request`: Invalid query parameters
+  - `401 Unauthorized`: No active session found
+}
