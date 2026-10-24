@@ -1,12 +1,8 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 
-// Transactions is the only Spending page for now.
+import { Overview } from '@/pages/Spending';
+
 export const Route = createFileRoute('/_authenticated/spending/')({
-  beforeLoad: ({ location }) => {
-    throw redirect({
-      to: '/spending/transactions',
-      search: location.search as never,
-      replace: true,
-    });
-  },
+  staticData: { title: 'Spending' },
+  component: Overview,
 });
