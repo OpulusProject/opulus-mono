@@ -83,7 +83,7 @@ test.describe("GET /api/transactions/spending-summary", () => {
     request,
   }) => {
     // June: 100 CAD + 10 USD (12.50 CAD) + a deposit that does not count.
-    // May: 90 CAD in total.
+    // May: 90 CAD in total, but the 40 on May 31 is past June's 30 days.
     const { cookie } = await setup(request, [
       { amount: 100, date: on("2026-06", 3) },
       { amount: 10, isoCurrencyCode: "USD", date: on("2026-06", 20) },
@@ -99,8 +99,8 @@ test.describe("GET /api/transactions/spending-summary", () => {
       daysElapsed: 30,
       daysInMonth: 30,
       spentSoFar: 112.5,
-      lastMonthSameDays: 90,
-      changePercent: 25,
+      lastMonthSameDays: 50,
+      changePercent: 125,
       dailyAverage: 3.75,
       projectedMonthEnd: 112.5,
       lastMonthTotal: 90,
