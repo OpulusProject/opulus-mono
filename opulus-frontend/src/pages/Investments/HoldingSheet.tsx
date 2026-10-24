@@ -371,7 +371,7 @@ const Terms: React.FC<{
       <Row label="Cost basis">{basis}</Row>
       {holding.estimatedAnnualIncome !== null && (
         <Row
-          label="Est. annual income"
+          label="Estimated dividends"
           hint="Your current shares times the latest annual dividend per share, before tax."
         >
           {formatMoney(holding.estimatedAnnualIncome, baseCurrency)}
