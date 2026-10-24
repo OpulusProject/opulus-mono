@@ -368,10 +368,19 @@ model Security {
   // there is nothing more to track. Changing provider means clearing this on
   // every security and fetching the history again.
   priceBackfilledAt      DateTime?
+  // What the market-data provider says it pays out per share (see the
+  // refresh-security-dividends job). The annual rate is in dividendCurrency: 0
+  // for a security that pays nothing, null while the provider has not said
+  // (cash, options and bonds never get one). The yield is a fraction (0.025 is 2.5%).
+  dividendRate           Decimal?                @db.Decimal(20, 6)
+  dividendYield          Decimal?                @db.Decimal(10, 6)
+  dividendCurrency       String?
+  dividendsFetchedAt     DateTime? // when the rate was last fetched; null until it has been
   updatedAt              DateTime                @updatedAt
   holdings               Holding[]
   investmentTransactions InvestmentTransaction[]
   prices                 SecurityPrice[]
+
   @@map("security")
 }
 
@@ -401,22 +410,22 @@ model SecurityPrice {
 /// last pull from the institution. A snapshot: it is replaced on each sync, not
 /// kept as history.
 model Holding {
-  id                   String    @id @default(cuid())
-  accountId            String
-  securityId           String
-  itemId               String
-  userId               String
-  quantity             Decimal
-  institutionValue     Decimal // the whole holding's value, as the institution reports it
-  costBasis            Decimal? // the total paid for everything held; many institutions send none
-  isoCurrencyCode      String?
-  syncedAt             DateTime
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  account              Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  security             Security  @relation(fields: [securityId], references: [id])
-  item                 Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  accountId        String
+  securityId       String
+  itemId           String
+  userId           String
+  quantity         Decimal
+  institutionValue Decimal // the whole holding's value, as the institution reports it
+  costBasis        Decimal? // the total paid for everything held; many institutions send none
+  isoCurrencyCode  String?
+  syncedAt         DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  account          Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  security         Security @relation(fields: [securityId], references: [id])
+  item             Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([accountId, securityId])
   @@index([itemId])
