@@ -21,6 +21,7 @@ import { Route as AuthenticatedAccountsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedSpendingIndexRouteImport } from './routes/_authenticated/spending.index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedInvestmentsIndexRouteImport } from './routes/_authenticated/investments.index'
+import { Route as AuthenticatedSpendingTrendsRouteImport } from './routes/_authenticated/spending.trends'
 import { Route as AuthenticatedSpendingTransactionsRouteImport } from './routes/_authenticated/spending.transactions'
 import { Route as AuthenticatedSettingsConnectionsRouteImport } from './routes/_authenticated/settings.connections'
 import { Route as AuthenticatedInvestmentsHoldingsRouteImport } from './routes/_authenticated/investments.holdings'
@@ -90,6 +91,12 @@ const AuthenticatedInvestmentsIndexRoute =
     path: '/investments/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedSpendingTrendsRoute =
+  AuthenticatedSpendingTrendsRouteImport.update({
+    id: '/spending/trends',
+    path: '/spending/trends',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedSpendingTransactionsRoute =
   AuthenticatedSpendingTransactionsRouteImport.update({
     id: '/spending/transactions',
@@ -128,6 +135,7 @@ export interface FileRoutesByFullPath {
   '/investments/holdings': typeof AuthenticatedInvestmentsHoldingsRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/spending/transactions': typeof AuthenticatedSpendingTransactionsRoute
+  '/spending/trends': typeof AuthenticatedSpendingTrendsRoute
   '/investments': typeof AuthenticatedInvestmentsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/spending': typeof AuthenticatedSpendingIndexRoute
@@ -145,6 +153,7 @@ export interface FileRoutesByTo {
   '/investments/holdings': typeof AuthenticatedInvestmentsHoldingsRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/spending/transactions': typeof AuthenticatedSpendingTransactionsRoute
+  '/spending/trends': typeof AuthenticatedSpendingTrendsRoute
   '/investments': typeof AuthenticatedInvestmentsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
   '/spending': typeof AuthenticatedSpendingIndexRoute
@@ -164,6 +173,7 @@ export interface FileRoutesById {
   '/_authenticated/investments/holdings': typeof AuthenticatedInvestmentsHoldingsRoute
   '/_authenticated/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/_authenticated/spending/transactions': typeof AuthenticatedSpendingTransactionsRoute
+  '/_authenticated/spending/trends': typeof AuthenticatedSpendingTrendsRoute
   '/_authenticated/investments/': typeof AuthenticatedInvestmentsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
   '/_authenticated/spending/': typeof AuthenticatedSpendingIndexRoute
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/investments/holdings'
     | '/settings/connections'
     | '/spending/transactions'
+    | '/spending/trends'
     | '/investments'
     | '/settings'
     | '/spending'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
     | '/investments/holdings'
     | '/settings/connections'
     | '/spending/transactions'
+    | '/spending/trends'
     | '/investments'
     | '/settings'
     | '/spending'
@@ -218,6 +230,7 @@ export interface FileRouteTypes {
     | '/_authenticated/investments/holdings'
     | '/_authenticated/settings/connections'
     | '/_authenticated/spending/transactions'
+    | '/_authenticated/spending/trends'
     | '/_authenticated/investments/'
     | '/_authenticated/settings/'
     | '/_authenticated/spending/'
@@ -317,6 +330,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedInvestmentsIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/spending/trends': {
+      id: '/_authenticated/spending/trends'
+      path: '/spending/trends'
+      fullPath: '/spending/trends'
+      preLoaderRoute: typeof AuthenticatedSpendingTrendsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/spending/transactions': {
       id: '/_authenticated/spending/transactions'
       path: '/spending/transactions'
@@ -357,6 +377,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedInvestmentsHoldingsRoute: typeof AuthenticatedInvestmentsHoldingsRoute
   AuthenticatedSettingsConnectionsRoute: typeof AuthenticatedSettingsConnectionsRoute
   AuthenticatedSpendingTransactionsRoute: typeof AuthenticatedSpendingTransactionsRoute
+  AuthenticatedSpendingTrendsRoute: typeof AuthenticatedSpendingTrendsRoute
   AuthenticatedInvestmentsIndexRoute: typeof AuthenticatedInvestmentsIndexRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
   AuthenticatedSpendingIndexRoute: typeof AuthenticatedSpendingIndexRoute
@@ -372,6 +393,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsConnectionsRoute: AuthenticatedSettingsConnectionsRoute,
   AuthenticatedSpendingTransactionsRoute:
     AuthenticatedSpendingTransactionsRoute,
+  AuthenticatedSpendingTrendsRoute: AuthenticatedSpendingTrendsRoute,
   AuthenticatedInvestmentsIndexRoute: AuthenticatedInvestmentsIndexRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
   AuthenticatedSpendingIndexRoute: AuthenticatedSpendingIndexRoute,
