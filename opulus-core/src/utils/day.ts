@@ -14,3 +14,10 @@ export function toDay(date: Date): string {
 export function addDays(day: string, days: number): string {
   return toDay(new Date(Date.parse(`${day}T00:00:00Z`) + days * DAY_MS));
 }
+
+/** How many days from `from` to `to` (negative when `to` is earlier). */
+export function daysBetween(from: string, to: string): number {
+  return Math.round(
+    (Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS
+  );
+}

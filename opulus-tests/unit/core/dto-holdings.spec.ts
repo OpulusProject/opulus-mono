@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { holdingKind, holdingsRangeStart, Prisma, STALE_PRICE_DAYS, toHoldingsDTO } from "@opulus/core";
+import { type HoldingsRange, holdingKind, holdingsRangeStart, Prisma, STALE_PRICE_DAYS, toHoldingsDTO } from "@opulus/core";
 
 const D = (n: number | string) => new Prisma.Decimal(n);
 type Rows = Parameters<typeof toHoldingsDTO>[0];
@@ -57,6 +57,8 @@ const toBase = (rates: Record<string, number>) => (currency: string | null) => (
  * - dividends are added up in the base currency, per holding and in total, only for accounts in view, and make the total return
  * - a holding's estimated annual income is its quantity times the security's dividend rate, in the base currency, and has none without a rate
  * - a position's estimated annual income adds its holdings up, and has none when one of them has none
+ * - estimated dividends are a year's income for the days of the range, and none over all time or without a rate
+ * - the summary has no estimated dividends when no holding has a rate
  * - a holding's gain is also given in the base currency, at today's rate
  * - the gain ranking is the holdings that earned the most, in the base currency and not as a fraction, without those that have no cost basis
  * - an account with no holdings is counted by its balance, as "balance"
@@ -121,7 +123,7 @@ test.describe("holdings DTO", () => {
       until: null,
       summary: {
         value: 0, accountCount: 0, holdingCount: 0, allocation: [], currencies: [], topHoldingsShare: 0,
-        dividends: 0, dividendYield: 0, totalReturn: 0, totalReturnPercent: null, gainRanking: [],
+        dividends: 0, estimatedDividends: null, dividendYield: 0, totalReturn: 0, totalReturnPercent: null, gainRanking: [],
         costBasis: 0, gain: 0, gainPercent: null, holdingsWithoutCostBasis: 0,
       },
       accounts: [],
@@ -285,6 +287,39 @@ test.describe("holdings DTO", () => {
     // 10 shares in each of two accounts, 2 a share.
     expect(positions.find((p) => p.security.id === "sec-shared")!.estimatedAnnualIncome).toBe(40);
     expect(positions.find((p) => p.security.id === "sec-other")!.estimatedAnnualIncome).toBeNull();
+  });
+
+  test("estimated dividends are a year's income for the days of the range, and none over all time or without a rate", () => {
+    // 10 shares paying 3.65 a year: 0.10 a day. The week is 7 days, a custom range 10 (1st to 11th).
+    const rows = [
+      row({ value: 1000, basis: null, id: "pays", currency: "CAD", security: { id: "s1", dividendRate: D("3.65"), dividendCurrency: "CAD" } }),
+      row({ value: 1000, basis: null, id: "unknown", currency: "CAD", security: { id: "s2", dividendRate: null, dividendCurrency: null } }),
+    ];
+    const now = new Date("2026-10-24T12:00:00Z");
+    const over = (range: HoldingsRange, extra = {}) => toHoldingsDTO(rows, { baseCurrency: "CAD", rateOn: toBase({}), now, range, ...extra });
+
+    const week = over("week");
+    expect(week.holdings.find((h) => h.id === "pays")!.estimatedDividends).toBe(0.7);
+    expect(week.holdings.find((h) => h.id === "unknown")!.estimatedDividends).toBeNull();
+    expect(week.positions.find((p) => p.security.id === "s1")!.estimatedDividends).toBe(0.7);
+    // The summary adds up the holdings that have a rate.
+    expect(week.summary.estimatedDividends).toBe(0.7);
+
+    const custom = over("custom", { from: "2026-10-01", until: "2026-10-11" });
+    expect(custom.holdings.find((h) => h.id === "pays")!.estimatedDividends).toBe(1);
+
+    const all = over("all");
+    expect(all.holdings.find((h) => h.id === "pays")!.estimatedDividends).toBeNull();
+    expect(all.summary.estimatedDividends).toBeNull();
+  });
+
+  test("the summary has no estimated dividends when no holding has a rate", () => {
+    const { summary } = toHoldingsDTO([row({ value: 100, basis: null, security: { dividendRate: null, dividendCurrency: null } })], {
+      baseCurrency: "CAD",
+      rateOn: toBase({}),
+      range: "month",
+    });
+    expect(summary.estimatedDividends).toBeNull();
   });
 
   test("a holding's gain is also given in the base currency, at today's rate", () => {

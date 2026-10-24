@@ -99,7 +99,7 @@ test.describe("GET /api/investments/holdings", () => {
       until: null,
       summary: {
         value: 0, accountCount: 0, holdingCount: 0, allocation: [], currencies: [], topHoldingsShare: 0,
-        dividends: 0, dividendYield: 0, totalReturn: 0, totalReturnPercent: null, gainRanking: [],
+        dividends: 0, estimatedDividends: null, dividendYield: 0, totalReturn: 0, totalReturnPercent: null, gainRanking: [],
         costBasis: 0, gain: 0, gainPercent: null, holdingsWithoutCostBasis: 0,
       },
       accounts: [],
@@ -477,6 +477,27 @@ test.describe("GET /api/investments/holdings", () => {
     expect(income("ZERO")).toBe(0);
     expect(income("NONE")).toBeNull();
     expect(positions.find((p) => p.security.tickerSymbol === "USD1")!.estimatedAnnualIncome).toBe(13.5);
+  });
+
+  test("gives estimated dividends as a year's income for the days of the range, in the holdings, positions and summary, and none over all time", async ({ request }) => {
+    // Arrange: 100 shares paying 1.02 CAD a year (102 a year), and one with no rate. A custom range of 10 days.
+    const { cookie, userId, item } = await setup(request);
+    const base = { userId, itemId: item.itemId, accountId: item.accountId };
+    await seedHolding({ ...base, tickerSymbol: "CAD1", quantity: 100, value: 5000, currency: "CAD", details: { dividendRate: 1.02, dividendCurrency: "CAD" } });
+    await seedHolding({ ...base, tickerSymbol: "NONE", quantity: 10, value: 300, currency: "CAD" });
+
+    // Act
+    const range = await getHoldings(request, cookie, `?range=custom&from=${day(-20)}&to=${day(-10)}`);
+    const all = await getHoldings(request, cookie);
+
+    // Assert: 102 * 10 / 365
+    const dividends = (data: typeof range, ticker: string) => data.holdings.find((h) => h.security.tickerSymbol === ticker)!.estimatedDividends;
+    expect(dividends(range, "CAD1")).toBe(2.7945);
+    expect(dividends(range, "NONE")).toBeNull();
+    expect(range.positions.find((p) => p.security.tickerSymbol === "CAD1")!.estimatedDividends).toBe(2.7945);
+    expect(range.summary.estimatedDividends).toBe(2.7945);
+    expect(dividends(all, "CAD1")).toBeNull();
+    expect(all.summary.estimatedDividends).toBeNull();
   });
 
   test("ranks the holdings by what they earned (in CAD, not as a fraction), largest first, leaving out those without a cost basis", async ({ request }) => {
