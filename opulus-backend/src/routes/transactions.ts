@@ -10,6 +10,10 @@ import {
   getDailyTransactionTotalsController,
   getDailyTransactionTotalsQuerySchema,
 } from "@/controllers/transactions/getDailyTransactionTotalsController.js";
+import {
+  getSpendingHabitsController,
+  getSpendingHabitsQuerySchema,
+} from "@/controllers/transactions/getSpendingHabitsController.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
 import { validateQuery } from "@/middleware/validation.js";
 import { Router } from "express";
@@ -39,6 +43,13 @@ router.get(
   requireSession,
   validateQuery(getSpendingByCategoryQuerySchema),
   getSpendingByCategoryController
+);
+
+router.get(
+  "/spending-habits",
+  requireSession,
+  validateQuery(getSpendingHabitsQuerySchema),
+  getSpendingHabitsController
 );
 
 export default router;

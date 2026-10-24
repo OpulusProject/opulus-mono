@@ -5,6 +5,7 @@ import {
   UNCATEGORIZED,
   type CategorySpend,
   type DailyTransactionTotals,
+  type HabitTransaction,
 } from "../types/dto/transactions/index.js";
 import { AppError, ConflictError, NotFoundError } from "../utils/errors.js";
 import { toAmount } from "../utils/money.js";
@@ -653,6 +654,56 @@ class TransactionRepository {
         error instanceof Error
           ? `Failed to get daily transaction totals: ${error.message}`
           : "An unexpected error occurred while getting daily transaction totals";
+      throw new AppError(message, 500);
+    }
+  }
+
+  /**
+   * The money-out transactions for the filters, one row each, for work that
+   * needs the individual transactions (the largest one, say). Every filter
+   * applies, so callers should bound the dates.
+   *
+   * @param userId - Owner of the transactions
+   * @param filters - Which transactions to include
+   * @throws AppError if database error occurs
+   */
+  async getSpendTransactionsByUserId(
+    userId: string,
+    filters: TransactionFilters = {}
+  ): Promise<HabitTransaction[]> {
+    try {
+      const rows = await this.prisma.transaction.findMany({
+        where: { AND: [buildWhere(userId, filters), { amount: { gt: 0 } }] },
+        select: {
+          id: true,
+          name: true,
+          isoCurrencyCode: true,
+          categoryPrimary: true,
+          categoryDetailed: true,
+          date: true,
+          amount: true,
+        },
+        orderBy: [{ date: "asc" }, { id: "asc" }],
+      });
+
+      return rows.map((row) => ({
+        id: row.id,
+        name: row.name,
+        currency: row.isoCurrencyCode,
+        category: row.categoryPrimary,
+        categoryDetailed: row.categoryDetailed,
+        date: row.date.toISOString().slice(0, 10),
+        amount: row.amount,
+      }));
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        throw new AppError(`Database error: ${error.message}`, 500, error.code);
+      }
+
+      const message =
+        error instanceof Error
+          ? `Failed to get spending transactions: ${error.message}`
+          : "An unexpected error occurred while getting spending transactions";
       throw new AppError(message, 500);
     }
   }
