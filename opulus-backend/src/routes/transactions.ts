@@ -10,6 +10,10 @@ import {
   getDailyTransactionTotalsController,
   getDailyTransactionTotalsQuerySchema,
 } from "@/controllers/transactions/getDailyTransactionTotalsController.js";
+import {
+  getMonthlyTransactionTotalsController,
+  getMonthlyTransactionTotalsQuerySchema,
+} from "@/controllers/transactions/getMonthlyTransactionTotalsController.js";
 import { requireSession } from "@/middleware/session/requireSession.js";
 import { validateQuery } from "@/middleware/validation.js";
 import { Router } from "express";
@@ -32,6 +36,13 @@ router.get(
   requireSession,
   validateQuery(getDailyTransactionTotalsQuerySchema),
   getDailyTransactionTotalsController
+);
+
+router.get(
+  "/monthly-totals",
+  requireSession,
+  validateQuery(getMonthlyTransactionTotalsQuerySchema),
+  getMonthlyTransactionTotalsController
 );
 
 router.get(
