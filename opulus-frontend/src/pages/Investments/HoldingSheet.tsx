@@ -43,6 +43,8 @@ import {
   timeUntil,
 } from '@/utils/investmentDisplay';
 
+import { EstimatedDividendsLine } from './EstimatedDividendsLine';
+
 interface HoldingSheetProps {
   data: HoldingsResponse['data'];
   /** The holding to show, or undefined for the sheet to be closed. */
@@ -163,6 +165,10 @@ const HoldingDetail: React.FC<{
                 </span>
               </div>
             )}
+            <EstimatedDividendsLine
+              amount={holding.estimatedDividends}
+              currency={baseCurrency}
+            />
           </section>
         )}
 
@@ -230,6 +236,10 @@ const MergedPosition: React.FC<{
         </span>
       </div>
     )}
+    <EstimatedDividendsLine
+      amount={position.estimatedDividends}
+      currency={baseCurrency}
+    />
   </section>
 );
 
