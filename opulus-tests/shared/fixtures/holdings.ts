@@ -52,6 +52,9 @@ export async function seedHolding(params: {
     bondFaceValue: number;
     bondYieldRate: number;
     bondYieldType: string;
+    /** What a share pays in a year, in `dividendCurrency` (see security.dividendRate). */
+    dividendRate: number;
+    dividendCurrency: string;
   }>;
 }) {
   const db = testDb();
