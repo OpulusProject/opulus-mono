@@ -1,0 +1,89 @@
+meta {
+  name: Get Spending Habits
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{base_url}}/api/transactions/spending-habits
+  body: none
+  auth: none
+}
+
+headers {
+  Origin: {{client_url}}
+}
+
+params:query {
+  date: 
+  hideTransfers: true
+  itemId: 
+  accountId: 
+  category: 
+  search: 
+  includePending: 
+}
+
+docs {
+  # Get Spending Habits
+
+  Each category's spending so far this month against its usual, computed on the server so the client only displays it. A category is flagged when it is at least 20% **and** at least $50 (in the base currency, CAD for now) above the usual.
+
+  **Endpoint:** `GET /api/transactions/spending-habits`
+
+  ## Query Parameters
+
+  The same filters as `GET /api/transactions` (`itemId`, `accountId`, `category`, `search`, `hideTransfers`, `includePending`), except `startDate`, `endDate` and `type`: the dates are replaced by the month's windows and only money out counts.
+
+  - `date` (optional, `YYYY-MM-DD`): measure this month up to this day. Defaults to today (UTC).
+
+  ## How it is computed
+
+  - This month: day 1 to `date`.
+  - Usual: the average of the same days (day 1 to the same day of the month, or the month's last day when it is shorter) in each of the 3 months before. Only earlier months that had spending are averaged; `monthsCompared` says how many that was.
+  - Each day's spending is converted to the base currency at that day's rate from the `exchange_rate` table
+
+  ## Success Response (200)
+
+  ```json
+  {
+    "data": {
+      "baseCurrency": "CAD",
+      "rule": { "months": 3, "minIncreaseRatio": 0.2, "minIncrease": 50 },
+      "monthsCompared": 3,
+      "categories": [
+        {
+          "category": "FOOD_AND_DRINK",
+          "spent": 300,
+          "usual": 200,
+          "change": 100,
+          "changeRatio": 0.5,
+          "flagged": true,
+          "tag": "habit",
+          "largestTransaction": {
+            "id": "clx...",
+            "name": "Dinner",
+            "date": "2026-10-09",
+            "spent": 75
+          },
+          "topDetailedCategory": {
+            "category": "FOOD_AND_DRINK_RESTAURANT",
+            "spent": 220
+          }
+        }
+      ]
+    }
+  }
+  ```
+
+  - Flagged categories come first (biggest increase first), then the rest by spending
+  - `tag` is `one-off` when the largest transaction alone accounts for the increase (without it, spending is at or below the usual), otherwise `habit`; null when not flagged
+  - With no earlier spending, `usual`, `change` and `changeRatio` are null and nothing is flagged
+  - A category with no usual spending is flagged on the $50 alone, and its `changeRatio` is null
+  - A category with usual spending but none yet this month is listed with `spent` 0
+
+  ## Error Responses
+
+  - `400 Bad Request`: Invalid query parameters
+  - `401 Unauthorized`: No active session found
+}
