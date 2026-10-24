@@ -1,6 +1,7 @@
 import { ReceiptText } from 'lucide-react';
 import { useMemo } from 'react';
 
+import { AccountFilter } from '@/common/AccountFilter';
 import {
   List,
   ListEmpty,
@@ -12,6 +13,7 @@ import {
 import { Page } from '@/common/Page';
 import { TransactionRow } from '@/common/TransactionRow';
 import { Button, Spinner } from '@/components/ui';
+import { useAccounts } from '@/hooks/accounts/useAccounts';
 import { useDailyTransactionTotals } from '@/hooks/transactions/useDailyTransactionTotals';
 import { useInfiniteTransactions } from '@/hooks/transactions/useInfiniteTransactions';
 import { useOnVisible } from '@/hooks/use-on-visible';
@@ -19,13 +21,16 @@ import { formatDay } from '@/utils/day';
 
 import { dayNetLabel, groupByDay } from './transactionDays';
 import { TransactionFilters } from './TransactionFilters';
-import { TransactionsAccountFilter } from './TransactionsAccountFilter';
 import { TransactionsDateFilter } from './TransactionsDateFilter';
 import { TransactionSearch } from './TransactionSearch';
 import { useTransactionFilters } from './useTransactionFilters';
 
 export const Transactions: React.FC = () => {
   const { search, update } = useTransactionFilters();
+  // Accounts that have transactions, not investments, whose activity is on
+  // its own pages.
+  const accounts =
+    useAccounts(['depository', 'credit', 'loan', 'other']).data?.accounts ?? [];
 
   return (
     <Page
@@ -38,7 +43,8 @@ export const Transactions: React.FC = () => {
       actions={
         <div className="flex flex-wrap items-center gap-2">
           <TransactionsDateFilter search={search} onChange={update} />
-          <TransactionsAccountFilter
+          <AccountFilter
+            accounts={accounts}
             selected={search.account ?? []}
             onChange={(account) => update({ account })}
           />
