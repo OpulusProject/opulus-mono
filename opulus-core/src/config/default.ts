@@ -73,6 +73,10 @@ export default {
     "YAHOO_FINANCE_BASE_URL",
     "https://query1.finance.yahoo.com"
   ),
+  // Where Yahoo hands out the session cookie its quote-summary endpoint (dividend
+  // rates) asks for, with a crumb from the endpoint above. Point it elsewhere to
+  // use a stub in tests.
+  yahooCookieUrl: getEnv("YAHOO_COOKIE_URL", "https://fc.yahoo.com"),
   // 32 bytes, base64. Encrypts Plaid access tokens at rest; see utils/itemTokenCrypto.ts.
   itemTokenEncryptionKey: getEnv("ITEM_TOKEN_ENCRYPTION_KEY"),
 };

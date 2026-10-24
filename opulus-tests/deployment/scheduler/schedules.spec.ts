@@ -5,7 +5,8 @@ import { exited, startService, type RunningService } from "../helpers/service.js
 const PORT = 18297;
 const JOB = "refresh-exchange-rates";
 const PRICES = "refresh-security-prices";
-const JOBS = [JOB, PRICES];
+const DIVIDENDS = "refresh-security-dividends";
+const JOBS = [JOB, PRICES, DIVIDENDS];
 const RETIRED = "a-job-that-was-removed";
 
 /** Stop it the way a deploy does, so that nothing is left holding the port (a kill would leave tsx's child running). */
@@ -29,6 +30,7 @@ const queue = new Queue("scheduler", {
  * Test cases:
  * - registers each job's schedule, in UTC, with the pattern it asks for
  * - schedules the security prices job every 15 minutes, or by SECURITY_PRICES_CRON
+ * - schedules the security dividends job daily at 11:00, or by SECURITY_DIVIDENDS_CRON
  * - removes the schedule of a job that no longer exists, and keeps the others
  * - registers the same schedule again when started again (no duplicate)
  * - queues the jobs that ask to run at start-up, unless told not to
@@ -79,6 +81,19 @@ test.describe("scheduler schedules", () => {
     expect(await pattern("*/5 * * * *")).toEqual(["*/5 * * * *", "UTC"]);
   });
 
+  test("schedules the security dividends job daily at 11:00, or by SECURITY_DIVIDENDS_CRON", async () => {
+    // Act and assert: the default, then a pattern of its own.
+    const pattern = async (cron?: string) => {
+      await start("5 4 * * *", cron === undefined ? {} : { SECURITY_DIVIDENDS_CRON: cron });
+      const found = (await queue.getJobSchedulers()).find((s) => s.key === DIVIDENDS);
+      await stop(scheduler!);
+      scheduler = undefined;
+      return [found?.pattern, found?.tz];
+    };
+    expect(await pattern()).toEqual(["0 11 * * *", "UTC"]);
+    expect(await pattern("30 3 * * *")).toEqual(["30 3 * * *", "UTC"]);
+  });
+
   test("removes the schedule of a job that no longer exists, and keeps the others", async () => {
     // Arrange: a schedule left over from a job that has since been removed.
     await queue.upsertJobScheduler(RETIRED, { pattern: "0 1 * * *", tz: "UTC" }, { name: RETIRED, data: {} });
@@ -107,7 +122,7 @@ test.describe("scheduler schedules", () => {
 
   test("queues the jobs that ask to run at start-up, unless told not to", async () => {
     // Act: started the way a deploy starts it, with the provider unreachable so the run itself goes nowhere.
-    await start("5 4 * * *", { SCHEDULER_RUN_ON_START: "true", FRANKFURTER_BASE_URL: "http://localhost:1/v1", YAHOO_FINANCE_BASE_URL: "http://localhost:1" });
+    await start("5 4 * * *", { SCHEDULER_RUN_ON_START: "true", FRANKFURTER_BASE_URL: "http://localhost:1/v1", YAHOO_FINANCE_BASE_URL: "http://localhost:1", YAHOO_COOKIE_URL: "http://localhost:1" });
 
     // Assert
     expect(scheduler!.output()).toContain("Job queued to run on start");

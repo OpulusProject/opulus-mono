@@ -15,7 +15,7 @@ import { defineSuite } from "../../shared/suite.js";
  *
  * The scheduler must be started pointed at the Frankfurter stub
  * (FRANKFURTER_BASE_URL=http://localhost:4545/v1) and the Yahoo stub
- * (YAHOO_FINANCE_BASE_URL=http://localhost:4547), with SCHEDULER_RUN_ON_START=false
+ * (YAHOO_FINANCE_BASE_URL=http://localhost:4547, YAHOO_COOKIE_URL=http://localhost:4547/__cookie), with SCHEDULER_RUN_ON_START=false
  * so a start-up run does not race the specs. The stubs are started here if they
  * are not already running (CI starts them first, before the scheduler).
  *

@@ -75,3 +75,14 @@ export async function readSecurityPrices(securityId: string) {
     asOf: row.asOf,
   }));
 }
+
+/** A security's stored dividend figures, as numbers. */
+export async function readSecurityDividends(securityId: string) {
+  const row = await testDb().security.findUniqueOrThrow({ where: { id: securityId } });
+  return {
+    rate: row.dividendRate === null ? null : Number(row.dividendRate),
+    yield: row.dividendYield === null ? null : Number(row.dividendYield),
+    currency: row.dividendCurrency,
+    fetchedAt: row.dividendsFetchedAt,
+  };
+}

@@ -9,7 +9,7 @@ export const YAHOO_STUB_URL = process.env.YAHOO_STUB_URL ?? "http://localhost:45
 
 export interface YahooStubRequest {
   symbol: string;
-  kind: "quote" | "history";
+  kind: "quote" | "history" | "dividends";
   period1: number | null;
   period2: number | null;
 }
@@ -19,7 +19,7 @@ export async function resetYahooStub(request: APIRequestContext): Promise<void> 
   await expectOk(await request.post(`${YAHOO_STUB_URL}/__control/reset`));
 }
 
-/** Answer 503 to every chart request from now on. */
+/** Answer 503 to every request from now on. */
 export async function failYahooStub(request: APIRequestContext): Promise<void> {
   await expectOk(await request.post(`${YAHOO_STUB_URL}/__control/fail`));
 }
@@ -35,7 +35,21 @@ export async function setYahooPrice(
   );
 }
 
-/** The chart requests the stub received since the last reset. */
+/**
+ * What the stub's quote summary gives for a symbol from now on: a `dividendRate`
+ * (a stock's), or only a `yield` (a fund's, with the rate left empty).
+ */
+export async function setYahooDividends(
+  request: APIRequestContext,
+  symbol: string,
+  figures: { dividendRate?: number; yield?: number },
+): Promise<void> {
+  await expectOk(
+    await request.post(`${YAHOO_STUB_URL}/__control/dividends`, { data: { symbol, ...figures } }),
+  );
+}
+
+/** The requests the stub received since the last reset. */
 export async function yahooRequests(request: APIRequestContext): Promise<YahooStubRequest[]> {
   const res = await request.get(`${YAHOO_STUB_URL}/__control/requests`);
   await expectOk(res);

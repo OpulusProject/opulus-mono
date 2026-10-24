@@ -8,6 +8,7 @@ Runs Opulus's recurring jobs. Each job is a name, a schedule and a call to a cor
 | --- | --- | --- |
 | `refresh-exchange-rates` | `0 17 * * *` (daily, after the European Central Bank publishes), and once on start | `refreshExchangeRates()` from core: fills `exchange_rate` with about two years of daily rates when it is empty, then adds the days since the latest stored one |
 | `refresh-security-prices` | `*/15 * * * *` (every 15 minutes, on the quarter hour; `SECURITY_PRICES_CRON` changes it), and once on start | `refreshSecurityPrices()` from core: quotes every security (held or not) by the provider symbol worked out from its ticker and exchange, and stores the price as today's in `security_price`, so the last quote of a day is its close; then fetches up to two years of daily closes for any security whose history has not been fetched. A security the provider has no price for is logged and keeps its last price; one it has no history for is recorded as done. New securities are priced at once, when a sync stores them, without waiting for this run (`requestPricingOfNewSecurities()`) |
+| `refresh-security-dividends` | `0 11 * * *` (daily at 11:00 UTC; `SECURITY_DIVIDENDS_CRON` changes it), and once on start | `refreshSecurityDividends()` from core: asks the provider (Yahoo's quote summary, with its cookie and crumb) what each security pays out per share in a year, and stores the rate, yield and currency on the security. A fund Yahoo gives only a yield for is stored as that yield times its price; a yield of 0 is a rate of 0. Cash, options and bonds are skipped; a security the provider has no figure for is logged and keeps what it had |
 
 ### Adding a job
 
@@ -68,7 +69,9 @@ The response shape is `JobRunResponse` in `@opulus/core` (`types/dto/jobs`).
 | `SCHEDULER_RUN_ON_START` | `true` | `false` to skip the start-up runs |
 | `EXCHANGE_RATES_CRON` | `0 17 * * *` | When `refresh-exchange-rates` runs (UTC) |
 | `SECURITY_PRICES_CRON` | `*/15 * * * *` | When `refresh-security-prices` runs (UTC) |
+| `SECURITY_DIVIDENDS_CRON` | `0 11 * * *` | When `refresh-security-dividends` runs (UTC) |
 | `YAHOO_FINANCE_BASE_URL` | `https://query1.finance.yahoo.com` | Where prices come from (read by core) |
+| `YAHOO_COOKIE_URL` | `https://fc.yahoo.com` | Where Yahoo's session cookie for the dividend figures comes from (read by core) |
 | `FRANKFURTER_BASE_URL` | `https://api.frankfurter.dev/v1` | Where rates come from (read by core) |
 
 ## Local development
