@@ -1,11 +1,11 @@
 import { getRouteApi } from '@tanstack/react-router';
 import * as React from 'react';
 
+import { AccountFilter } from '@/common/AccountFilter';
 import { List, ListError } from '@/common/List';
 import { Page } from '@/common/Page';
 import { useHoldings } from '@/hooks/investments/useHoldings';
 
-import { AccountFilter } from './AccountFilter';
 import { DateRangeFilter } from './DateRangeFilter';
 import { HoldingSheet } from './HoldingSheet';
 import { HoldingsList } from './HoldingsList';
@@ -19,6 +19,7 @@ export const InvestmentHoldings: React.FC = () => {
   const search = route.useSearch();
   const navigate = route.useNavigate();
   const accounts = React.useMemo(() => search.account ?? [], [search.account]);
+  const allAccounts = useHoldings().data?.accounts ?? [];
 
   const update = (changes: Partial<OverviewSearch>) =>
     void navigate({
@@ -44,6 +45,8 @@ export const InvestmentHoldings: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           <DateRangeFilter search={search} onChange={update} />
           <AccountFilter
+            // All the accounts, not just those in view, so the choices do not shrink.
+            accounts={allAccounts}
             selected={accounts}
             onChange={(selected) =>
               update({

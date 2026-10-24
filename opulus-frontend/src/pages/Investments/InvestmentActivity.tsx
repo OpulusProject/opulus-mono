@@ -2,6 +2,7 @@ import { getRouteApi } from '@tanstack/react-router';
 import { Receipt } from 'lucide-react';
 import * as React from 'react';
 
+import { AccountFilter } from '@/common/AccountFilter';
 import {
   List,
   ListEmpty,
@@ -14,6 +15,7 @@ import {
 import { Page } from '@/common/Page';
 import { Button, Spinner } from '@/components/ui';
 import { useActivity } from '@/hooks/investments/useActivity';
+import { useHoldings } from '@/hooks/investments/useHoldings';
 import { useOnVisible } from '@/hooks/use-on-visible';
 import { formatDay } from '@/utils/day';
 import {
@@ -23,7 +25,6 @@ import {
   formatSignedMoney,
 } from '@/utils/investmentDisplay';
 
-import { AccountFilter } from './AccountFilter';
 import { ActivityFilters } from './ActivityFilters';
 import { DateRangeFilter } from './DateRangeFilter';
 import { type ActivitySearch, holdingsPeriod } from './searchSchema';
@@ -35,6 +36,7 @@ export const InvestmentActivity: React.FC = () => {
   const search = route.useSearch();
   const navigate = route.useNavigate();
   const accounts = React.useMemo(() => search.account ?? [], [search.account]);
+  const allAccounts = useHoldings().data?.accounts ?? [];
 
   const update = (changes: Partial<ActivitySearch>) =>
     void navigate({
@@ -60,6 +62,8 @@ export const InvestmentActivity: React.FC = () => {
         <div className="flex flex-wrap items-center gap-2">
           <DateRangeFilter search={search} onChange={update} />
           <AccountFilter
+            // All the accounts, not just those in view, so the choices do not shrink.
+            accounts={allAccounts}
             selected={accounts}
             onChange={(selected) =>
               update({ account: selected.length > 0 ? selected : undefined })
