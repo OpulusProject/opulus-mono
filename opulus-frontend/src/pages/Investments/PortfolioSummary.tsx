@@ -7,6 +7,7 @@ import { formatMoney } from '@/utils/accountDisplay';
 import { formatGain, gainTone, sinceLabel } from '@/utils/investmentDisplay';
 
 import { AllocationDonut } from './AllocationDonut';
+import { EstimatedDividendsLine } from './EstimatedDividendsLine';
 
 interface PortfolioSummaryProps {
   data: HoldingsResponse['data'];
@@ -55,6 +56,10 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
             </span>
           </div>
         )}
+        <EstimatedDividendsLine
+          amount={summary.estimatedDividends}
+          currency={baseCurrency}
+        />
       </div>
       {/* The divider is the left edge of the right half: the card's middle. */}
       <div className="min-w-0 lg:self-stretch lg:border-l lg:pl-10">
