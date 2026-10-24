@@ -4,7 +4,7 @@ import type {
   PositionDTO,
 } from '@opulus/core/dto';
 import { Link } from '@tanstack/react-router';
-import { TriangleAlert } from 'lucide-react';
+import { Info, TriangleAlert } from 'lucide-react';
 import * as React from 'react';
 
 import { List, ListRow } from '@/common/List';
@@ -16,6 +16,9 @@ import {
   SheetDescription,
   SheetHeader,
   SheetTitle,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@/components/ui';
 import { useActivity } from '@/hooks/investments/useActivity';
 import { cn } from '@/lib/utils';
@@ -36,7 +39,6 @@ import {
   formatSignedPercent,
   gainTone,
   holdingTitle,
-  periodLabel,
   sinceLabel,
   timeUntil,
 } from '@/utils/investmentDisplay';
@@ -97,6 +99,7 @@ const HoldingDetail: React.FC<{
         costBasis: merged.costBasis,
         averageCost: merged.averageCost,
         dividends: merged.dividends,
+        estimatedAnnualIncome: merged.estimatedAnnualIncome,
       }
     : holding;
 
@@ -163,7 +166,7 @@ const HoldingDetail: React.FC<{
           </section>
         )}
 
-        <Terms holding={view} baseCurrency={baseCurrency} period={data} />
+        <Terms holding={view} baseCurrency={baseCurrency} />
 
         {security.kind === 'option' && (
           <div
@@ -230,12 +233,28 @@ const MergedPosition: React.FC<{
   </section>
 );
 
-const Row: React.FC<{ label: string; children: React.ReactNode }> = ({
-  label,
-  children,
-}) => (
+const Row: React.FC<{
+  label: string;
+  /** Explains the row, in a tooltip on an info icon beside the label. */
+  hint?: string;
+  children: React.ReactNode;
+}> = ({ label, hint, children }) => (
   <div className="flex items-baseline justify-between gap-4 border-b py-2.5 text-sm last:border-b-0">
-    <dt className="text-muted-foreground">{label}</dt>
+    <dt className="text-muted-foreground flex items-center gap-1">
+      {label}
+      {hint && (
+        <Tooltip>
+          <TooltipTrigger
+            type="button"
+            aria-label={`About ${label.toLowerCase()}`}
+            className="text-muted-foreground hover:text-foreground self-center"
+          >
+            <Info className="size-3.5" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-64">{hint}</TooltipContent>
+        </Tooltip>
+      )}
+    </dt>
     <dd className="text-right font-medium tabular-nums">{children}</dd>
   </div>
 );
@@ -248,8 +267,7 @@ const Muted: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 const Terms: React.FC<{
   holding: HoldingDTO;
   baseCurrency: string;
-  period: Pick<HoldingsResponse['data'], 'range' | 'since' | 'until'>;
-}> = ({ holding, baseCurrency, period }) => {
+}> = ({ holding, baseCurrency }) => {
   const { security } = holding;
   // No price of one unit for a security we do not price (the value is the institution's).
   const price =
@@ -345,10 +363,13 @@ const Terms: React.FC<{
         </Row>
       )}
       <Row label="Cost basis">{basis}</Row>
-      {holding.dividends > 0 && (
-        <Row label="Dividends received">
-          {formatMoney(holding.dividends, baseCurrency)}
-          <Muted>{periodLabel(period)}</Muted>
+      {holding.estimatedAnnualIncome !== null && (
+        <Row
+          label="Est. annual income"
+          hint="Your current shares times the latest annual dividend per share, before tax. An estimate of a year's income, not cash received."
+        >
+          {formatMoney(holding.estimatedAnnualIncome, baseCurrency)}
+          <Muted>a year</Muted>
         </Row>
       )}
       <Row label="Share of your portfolio">{formatPercent(holding.share)}</Row>

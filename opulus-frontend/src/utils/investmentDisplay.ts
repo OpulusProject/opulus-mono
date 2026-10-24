@@ -203,15 +203,6 @@ export function holdingTitle(holding: Pick<HoldingDTO, 'security'>): string {
   return security.tickerSymbol || security.name || 'Unknown security';
 }
 
-/** What a period of payments is called after the amount: "past month", "Oct 1 – Oct 9", "all time". */
-export function periodLabel(
-  data: Pick<HoldingsResponse['data'], 'range' | 'since' | 'until'>
-): string {
-  return data.range === 'custom'
-    ? rangeTitle(data)
-    : rangeTitle(data).toLowerCase();
-}
-
 /** The period of a response as a title: "Past month", "Oct 1 – Oct 9", "All time". */
 export function rangeTitle({
   range,
