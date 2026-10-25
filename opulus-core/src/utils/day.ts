@@ -3,7 +3,10 @@
  * not moments in time.
  */
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+export const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** Days in a year, for turning a yearly amount into a daily one. */
+export const DAYS_IN_YEAR = 365;
 
 /** The day a moment falls on, in UTC. */
 export function toDay(date: Date): string {

@@ -5,7 +5,13 @@
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-import { addDays, daysBetween, toDay } from "../../../utils/day.js";
+import {
+  addDays,
+  DAY_MS,
+  DAYS_IN_YEAR,
+  daysBetween,
+  toDay,
+} from "../../../utils/day.js";
 import { fromUnits, toUnits } from "../../../utils/money.js";
 import { IsoTimestampSchema, toIsoString } from "../common.js";
 
@@ -450,10 +456,6 @@ export interface HoldingsOptions {
 
 /** A price older than this many days is flagged (a long weekend is four). */
 export const STALE_PRICE_DAYS = 5;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-const DAYS_IN_YEAR = 365;
 
 /** A security's kind, from Plaid's type. */
 export function holdingKind(
