@@ -34,11 +34,15 @@ const navMain: NavItem[] = [
   },
   {
     title: 'Spending',
-    url: '/spending/transactions',
+    url: '/spending',
     icon: PieChart,
     opensUrl: true,
     carriedSearch: ['account', 'range', 'from', 'to'],
-    items: [{ title: 'Transactions', url: '/spending/transactions' }],
+    items: [
+      { title: 'Overview', url: '/spending', exact: true },
+      { title: 'Trends', url: '/spending/trends' },
+      { title: 'Transactions', url: '/spending/transactions' },
+    ],
   },
   {
     title: 'Accounts',
