@@ -57,7 +57,7 @@ const toBase = (rates: Record<string, number>) => (currency: string | null) => (
  * - dividends are added up in the base currency, per holding and in total, only for accounts in view, and make the total return
  * - a holding's estimated annual income is its quantity times the security's dividend rate, in the base currency, and has none without a rate
  * - a position's estimated annual income adds its holdings up, and has none when one of them has none
- * - estimated dividends are a year's income for the days of the range, and none over all time or without a rate
+ * - estimated dividends are a year's income for the days of the range, a whole year over all time, and none without a rate
  * - the summary has no estimated dividends when no holding has a rate
  * - a holding's gain is also given in the base currency, at today's rate
  * - the gain ranking is the holdings that earned the most, in the base currency and not as a fraction, without those that have no cost basis
@@ -289,7 +289,7 @@ test.describe("holdings DTO", () => {
     expect(positions.find((p) => p.security.id === "sec-other")!.estimatedAnnualIncome).toBeNull();
   });
 
-  test("estimated dividends are a year's income for the days of the range, and none over all time or without a rate", () => {
+  test("estimated dividends are a year's income for the days of the range, a whole year over all time, and none without a rate", () => {
     // 10 shares paying 3.65 a year: 0.10 a day. The week is 7 days, a custom range 10 (1st to 11th).
     const rows = [
       row({ value: 1000, basis: null, id: "pays", currency: "CAD", security: { id: "s1", dividendRate: D("3.65"), dividendCurrency: "CAD" } }),
@@ -309,8 +309,9 @@ test.describe("holdings DTO", () => {
     expect(custom.holdings.find((h) => h.id === "pays")!.estimatedDividends).toBe(1);
 
     const all = over("all");
-    expect(all.holdings.find((h) => h.id === "pays")!.estimatedDividends).toBeNull();
-    expect(all.summary.estimatedDividends).toBeNull();
+    expect(all.holdings.find((h) => h.id === "pays")!.estimatedDividends).toBe(36.5);
+    expect(all.holdings.find((h) => h.id === "unknown")!.estimatedDividends).toBeNull();
+    expect(all.summary.estimatedDividends).toBe(36.5);
   });
 
   test("the summary has no estimated dividends when no holding has a rate", () => {

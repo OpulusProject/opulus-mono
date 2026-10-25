@@ -479,7 +479,7 @@ test.describe("GET /api/investments/holdings", () => {
     expect(positions.find((p) => p.security.tickerSymbol === "USD1")!.estimatedAnnualIncome).toBe(13.5);
   });
 
-  test("gives estimated dividends as a year's income for the days of the range, in the holdings, positions and summary, and none over all time", async ({ request }) => {
+  test("gives estimated dividends as a year's income for the days of the range, in the holdings, positions and summary, and a whole year over all time", async ({ request }) => {
     // Arrange: 100 shares paying 1.02 CAD a year (102 a year), and one with no rate. A custom range of 10 days.
     const { cookie, userId, item } = await setup(request);
     const base = { userId, itemId: item.itemId, accountId: item.accountId };
@@ -496,8 +496,9 @@ test.describe("GET /api/investments/holdings", () => {
     expect(dividends(range, "NONE")).toBeNull();
     expect(range.positions.find((p) => p.security.tickerSymbol === "CAD1")!.estimatedDividends).toBe(2.7945);
     expect(range.summary.estimatedDividends).toBe(2.7945);
-    expect(dividends(all, "CAD1")).toBeNull();
-    expect(all.summary.estimatedDividends).toBeNull();
+    expect(dividends(all, "CAD1")).toBe(102);
+    expect(dividends(all, "NONE")).toBeNull();
+    expect(all.summary.estimatedDividends).toBe(102);
   });
 
   test("ranks the holdings by what they earned (in CAD, not as a fraction), largest first, leaving out those without a cost basis", async ({ request }) => {

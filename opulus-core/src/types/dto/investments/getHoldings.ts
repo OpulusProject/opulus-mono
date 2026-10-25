@@ -205,9 +205,9 @@ export const HoldingDTOSchema = z.object({
   estimatedAnnualIncome: z.number().nullable(),
   /**
    * `estimatedAnnualIncome` for the days of the range (a year's worth times
-   * days over 365), in the base currency. An estimate from today's quantity,
-   * not cash received. Null when `estimatedAnnualIncome` is, and for `all`,
-   * which has no start.
+   * days over 365), in the base currency; for `all`, which has no start, the
+   * whole year. An estimate from today's quantity, not cash received. Null
+   * when `estimatedAnnualIncome` is.
    */
   estimatedDividends: z.number().nullable(),
 });
@@ -312,8 +312,8 @@ export const HoldingsSummaryDTOSchema = z.object({
   dividends: z.number(),
   /**
    * What the holdings should pay out over the range, added up over those with a
-   * dividend rate, in the base currency (see `HoldingDTO.estimatedDividends`);
-   * null when none has a rate, and for `all`.
+   * dividend rate, in the base currency (see `HoldingDTO.estimatedDividends`,
+   * a year's worth for `all`); null when none has a rate.
    */
   estimatedDividends: z.number().nullable(),
   /** `dividends` as a fraction of `value`; not a yearly rate unless the range is a year. */
@@ -573,15 +573,13 @@ export function toHoldingsDTO(
             rateOn(security.dividendCurrency ?? holdingCurrency)
         );
 
-  // A year's income for the days of the range; none for `all`, which has no start.
+  // A year's income for the days of the range; `all` has no start, so it is the whole year.
   const since = holdingsRangeStart(range, toDay(now), from);
   const rangeEnd = until ?? toDay(now);
   const rangeDays =
-    since === null ? null : Math.max(0, daysBetween(since, rangeEnd));
+    since === null ? DAYS_IN_YEAR : Math.max(0, daysBetween(since, rangeEnd));
   const prorated = (annual: number | null): number | null =>
-    annual === null || rangeDays === null
-      ? null
-      : round((annual * rangeDays) / DAYS_IN_YEAR);
+    annual === null ? null : round((annual * rangeDays) / DAYS_IN_YEAR);
 
   const holdings = rows.map((row) => {
     // Our price of the security when we have one, in the holding's currency
