@@ -43,7 +43,7 @@ import {
   timeUntil,
 } from '@/utils/investmentDisplay';
 
-import { DividendsReceivedLine } from './DividendsReceivedLine';
+import { EstimatedDividendsLine } from './EstimatedDividendsLine';
 
 interface HoldingSheetProps {
   data: HoldingsResponse['data'];
@@ -154,12 +154,6 @@ const HoldingDetail: React.FC<{
                 {formatMoney(holding.value, holding.currency)}
               </div>
             )}
-            {security.kind !== 'cash' && (
-              <DividendsReceivedLine
-                amount={holding.dividends}
-                currency={baseCurrency}
-              />
-            )}
             {holding.gain !== null && (
               <div className="flex items-center gap-2 pt-1">
                 <Badge
@@ -177,6 +171,10 @@ const HoldingDetail: React.FC<{
                 </span>
               </div>
             )}
+            <EstimatedDividendsLine
+              amount={holding.estimatedDividends}
+              currency={baseCurrency}
+            />
           </section>
         )}
 
@@ -229,12 +227,6 @@ const MergedPosition: React.FC<{
     <div className="text-3xl font-semibold tracking-tight tabular-nums">
       {formatMoney(position.valueInBase, baseCurrency)}
     </div>
-    {position.security.kind !== 'cash' && (
-      <DividendsReceivedLine
-        amount={position.dividends}
-        currency={baseCurrency}
-      />
-    )}
     {position.gainInBase !== null && (
       <div className="flex items-center gap-2 pt-1">
         <Badge
@@ -250,6 +242,10 @@ const MergedPosition: React.FC<{
         </span>
       </div>
     )}
+    <EstimatedDividendsLine
+      amount={position.estimatedDividends}
+      currency={baseCurrency}
+    />
   </section>
 );
 
