@@ -43,6 +43,11 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
         <div className="text-3xl font-semibold tracking-tight tabular-nums lg:text-4xl">
           {formatMoney(summary.value, baseCurrency)}
         </div>
+        <EstimatedDividendsLine
+          amount={summary.estimatedDividends}
+          currency={baseCurrency}
+          perYear={data.range === 'all'}
+        />
         {hasGain && (
           <div className="flex items-center gap-2">
             <Badge
@@ -56,10 +61,6 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
             </span>
           </div>
         )}
-        <EstimatedDividendsLine
-          amount={summary.estimatedDividends}
-          currency={baseCurrency}
-        />
       </div>
       {/* The divider is the left edge of the right half: the card's middle. */}
       <div className="min-w-0 lg:self-stretch lg:border-l lg:pl-10">
