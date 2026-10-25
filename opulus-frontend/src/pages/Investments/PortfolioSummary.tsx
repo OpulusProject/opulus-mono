@@ -59,6 +59,8 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
         <DividendsReceivedLine
           amount={summary.dividends}
           currency={baseCurrency}
+          periodLabel={sinceLabel(data)}
+          gain={hasGain ? summary.gain : null}
         />
       </div>
       {/* The divider is the left edge of the right half: the card's middle. */}

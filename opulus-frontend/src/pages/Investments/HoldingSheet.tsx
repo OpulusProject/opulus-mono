@@ -175,6 +175,8 @@ const HoldingDetail: React.FC<{
               <DividendsReceivedLine
                 amount={holding.dividends}
                 currency={baseCurrency}
+                periodLabel={sinceLabel(data)}
+                gain={holding.gain === null ? null : holding.gainInBase}
               />
             )}
           </section>
@@ -248,6 +250,8 @@ const MergedPosition: React.FC<{
       <DividendsReceivedLine
         amount={position.dividends}
         currency={baseCurrency}
+        periodLabel={sinceLabel(period)}
+        gain={position.gainInBase}
       />
     )}
   </section>
