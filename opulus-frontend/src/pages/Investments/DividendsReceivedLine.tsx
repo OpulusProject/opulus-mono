@@ -9,7 +9,7 @@ interface DividendsReceivedLineProps {
 }
 
 /**
- * The dividends actually paid out over the selected period, under the gain.
+ * The dividends actually paid out over the selected period, above the gain.
  * Shown at 0 too: a period with no payment is an answer, not a missing figure.
  */
 export const DividendsReceivedLine: React.FC<DividendsReceivedLineProps> = ({

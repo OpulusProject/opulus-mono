@@ -154,6 +154,12 @@ const HoldingDetail: React.FC<{
                 {formatMoney(holding.value, holding.currency)}
               </div>
             )}
+            {security.kind !== 'cash' && (
+              <DividendsReceivedLine
+                amount={holding.dividends}
+                currency={baseCurrency}
+              />
+            )}
             {holding.gain !== null && (
               <div className="flex items-center gap-2 pt-1">
                 <Badge
@@ -170,12 +176,6 @@ const HoldingDetail: React.FC<{
                   {sinceLabel(data)}
                 </span>
               </div>
-            )}
-            {security.kind !== 'cash' && (
-              <DividendsReceivedLine
-                amount={holding.dividends}
-                currency={baseCurrency}
-              />
             )}
           </section>
         )}
@@ -229,6 +229,12 @@ const MergedPosition: React.FC<{
     <div className="text-3xl font-semibold tracking-tight tabular-nums">
       {formatMoney(position.valueInBase, baseCurrency)}
     </div>
+    {position.security.kind !== 'cash' && (
+      <DividendsReceivedLine
+        amount={position.dividends}
+        currency={baseCurrency}
+      />
+    )}
     {position.gainInBase !== null && (
       <div className="flex items-center gap-2 pt-1">
         <Badge
@@ -243,12 +249,6 @@ const MergedPosition: React.FC<{
           {sinceLabel(period)}
         </span>
       </div>
-    )}
-    {position.security.kind !== 'cash' && (
-      <DividendsReceivedLine
-        amount={position.dividends}
-        currency={baseCurrency}
-      />
     )}
   </section>
 );
