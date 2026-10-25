@@ -5,7 +5,13 @@
 import type { Prisma } from "@prisma/client";
 import { z } from "zod";
 
-import { addDays, toDay } from "../../../utils/day.js";
+import {
+  addDays,
+  DAY_MS,
+  DAYS_IN_YEAR,
+  daysBetween,
+  toDay,
+} from "../../../utils/day.js";
 import { fromUnits, toUnits } from "../../../utils/money.js";
 import { IsoTimestampSchema, toIsoString } from "../common.js";
 
@@ -197,6 +203,13 @@ export const HoldingDTOSchema = z.object({
    * bonds, or not fetched yet).
    */
   estimatedAnnualIncome: z.number().nullable(),
+  /**
+   * `estimatedAnnualIncome` for the days of the range (a year's worth times
+   * days over 365), in the base currency. An estimate from today's quantity,
+   * not cash received. Null when `estimatedAnnualIncome` is, and for `all`,
+   * which has no start.
+   */
+  estimatedDividends: z.number().nullable(),
 });
 
 export type HoldingDTO = z.infer<typeof HoldingDTOSchema>;
@@ -230,6 +243,8 @@ export const PositionDTOSchema = z.object({
   dividends: z.number(),
   /** What the holdings should pay out in a year, in the base currency (see `HoldingDTO`); null when it has no rate. */
   estimatedAnnualIncome: z.number().nullable(),
+  /** What the holdings should pay out over the range, in the base currency (see `HoldingDTO`); null when it has no rate. */
+  estimatedDividends: z.number().nullable(),
   /** Null unless every holding of it has a cost basis. */
   gainInBase: z.number().nullable(),
   /** `gainInBase` as a fraction of what was paid; null when `gainInBase` is. */
@@ -295,6 +310,12 @@ export const HoldingsSummaryDTOSchema = z.object({
   topHoldingsShare: z.number(),
   /** Dividends, interest and capital gains paid over the range, in the base currency; for `all`, every payment we have (Plaid keeps 24 months). */
   dividends: z.number(),
+  /**
+   * What the holdings should pay out over the range, added up over those with a
+   * dividend rate, in the base currency (see `HoldingDTO.estimatedDividends`);
+   * null when none has a rate, and for `all`.
+   */
+  estimatedDividends: z.number().nullable(),
   /** `dividends` as a fraction of `value`; not a yearly rate unless the range is a year. */
   dividendYield: z.number(),
   /** `gain` plus `dividends`. */
@@ -436,8 +457,6 @@ export interface HoldingsOptions {
 /** A price older than this many days is flagged (a long weekend is four). */
 export const STALE_PRICE_DAYS = 5;
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 /** A security's kind, from Plaid's type. */
 export function holdingKind(
   type: string | null,
@@ -554,6 +573,16 @@ export function toHoldingsDTO(
             rateOn(security.dividendCurrency ?? holdingCurrency)
         );
 
+  // A year's income for the days of the range; none for `all`, which has no start.
+  const since = holdingsRangeStart(range, toDay(now), from);
+  const rangeEnd = until ?? toDay(now);
+  const rangeDays =
+    since === null ? null : Math.max(0, daysBetween(since, rangeEnd));
+  const prorated = (annual: number | null): number | null =>
+    annual === null || rangeDays === null
+      ? null
+      : round((annual * rangeDays) / DAYS_IN_YEAR);
+
   const holdings = rows.map((row) => {
     // Our price of the security when we have one, in the holding's currency
     // (its own, or the price's when it names none). Otherwise the institution's.
@@ -651,6 +680,7 @@ export function toHoldingsDTO(
       ours !== undefined &&
       now.getTime() - ours.asOf.getTime() > STALE_PRICE_DAYS * DAY_MS;
     const { security } = row;
+    const annualIncome = estimatedAnnualIncome(security, quantity, currency);
     return {
       id: row.id,
       accountId: row.accountId,
@@ -696,11 +726,8 @@ export function toHoldingsDTO(
       dividends: fromUnits(
         dividendsByHolding.get(`${row.accountId}:${security.id}`) ?? 0
       ),
-      estimatedAnnualIncome: estimatedAnnualIncome(
-        security,
-        quantity,
-        currency
-      ),
+      estimatedAnnualIncome: annualIncome,
+      estimatedDividends: prorated(annualIncome),
       costBasis: rowBasis,
       averageCost: perUnit(rowBasis, quantity),
       gain,
@@ -809,6 +836,9 @@ export function toHoldingsDTO(
           )
             ? round(group.reduce((sum, h) => sum + h.estimatedAnnualIncome!, 0))
             : null,
+          estimatedDividends: group.every((h) => h.estimatedDividends !== null)
+            ? round(group.reduce((sum, h) => sum + h.estimatedDividends!, 0))
+            : null,
           gainInBase: gainUnits === null ? null : fromUnits(gainUnits),
           gainPercent:
             gainUnits === null || !basisUnits ? null : gainUnits / basisUnits,
@@ -832,8 +862,8 @@ export function toHoldingsDTO(
   return {
     baseCurrency,
     range,
-    since: holdingsRangeStart(range, toDay(now), from),
-    until: range === "all" ? null : (until ?? toDay(now)),
+    since,
+    until: range === "all" ? null : rangeEnd,
     summary: {
       value: fromUnits(value),
       accountCount: accountRows.length,
@@ -850,6 +880,11 @@ export function toHoldingsDTO(
       })),
       topHoldingsShare: fraction(top3, value),
       dividends: fromUnits(dividendUnits),
+      estimatedDividends: holdings.some((h) => h.estimatedDividends !== null)
+        ? round(
+            holdings.reduce((sum, h) => sum + (h.estimatedDividends ?? 0), 0)
+          )
+        : null,
       dividendYield: fraction(dividendUnits, value),
       totalReturn: fromUnits(totalGain + dividendUnits),
       totalReturnPercent:
