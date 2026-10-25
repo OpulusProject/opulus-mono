@@ -7,7 +7,7 @@ import { formatMoney } from '@/utils/accountDisplay';
 import { formatGain, gainTone, sinceLabel } from '@/utils/investmentDisplay';
 
 import { AllocationDonut } from './AllocationDonut';
-import { EstimatedDividendsLine } from './EstimatedDividendsLine';
+import { DividendsReceivedLine } from './DividendsReceivedLine';
 
 interface PortfolioSummaryProps {
   data: HoldingsResponse['data'];
@@ -56,8 +56,8 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({
             </span>
           </div>
         )}
-        <EstimatedDividendsLine
-          amount={summary.estimatedDividends}
+        <DividendsReceivedLine
+          amount={summary.dividends}
           currency={baseCurrency}
         />
       </div>

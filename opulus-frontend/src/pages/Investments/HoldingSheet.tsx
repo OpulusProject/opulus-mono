@@ -43,7 +43,7 @@ import {
   timeUntil,
 } from '@/utils/investmentDisplay';
 
-import { EstimatedDividendsLine } from './EstimatedDividendsLine';
+import { DividendsReceivedLine } from './DividendsReceivedLine';
 
 interface HoldingSheetProps {
   data: HoldingsResponse['data'];
@@ -171,10 +171,12 @@ const HoldingDetail: React.FC<{
                 </span>
               </div>
             )}
-            <EstimatedDividendsLine
-              amount={holding.estimatedDividends}
-              currency={baseCurrency}
-            />
+            {security.kind !== 'cash' && (
+              <DividendsReceivedLine
+                amount={holding.dividends}
+                currency={baseCurrency}
+              />
+            )}
           </section>
         )}
 
@@ -242,10 +244,12 @@ const MergedPosition: React.FC<{
         </span>
       </div>
     )}
-    <EstimatedDividendsLine
-      amount={position.estimatedDividends}
-      currency={baseCurrency}
-    />
+    {position.security.kind !== 'cash' && (
+      <DividendsReceivedLine
+        amount={position.dividends}
+        currency={baseCurrency}
+      />
+    )}
   </section>
 );
 
